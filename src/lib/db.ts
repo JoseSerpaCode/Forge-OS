@@ -1,6 +1,28 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
+/**
+ * DATABASE ARCHITECTURE DECISION
+ * ──────────────────────────────────────────────────────────────────────────
+ * This project uses two coexisting database access strategies intentionally:
+ *
+ * 1. better-sqlite3 (raw SQL) — used for ALL core tables.
+ *    Rationale: synchronous I/O fits Astro SSR's request lifecycle, explicit
+ *    queries are easy to audit, and there is no runtime ORM overhead.
+ *    Location: this file (db.ts), all src/lib/ services, all src/pages/api/
+ *    routes EXCEPT those under /w/[sys_tag]/db/.
+ *
+ * 2. Drizzle ORM — used ONLY for the Dynamic Databases module.
+ *    Rationale: dynamic_databases/entries/views require runtime-generated
+ *    queries from user-defined schemas; Drizzle's type-safe query builder
+ *    is a better fit than string-concatenated raw SQL there.
+ *    Location: src/lib/db/drizzle.ts + src/pages/api/w/[sys_tag]/db/*.
+ *
+ * RULE: Do NOT use Drizzle for features outside the /db module.
+ *       Do NOT use raw SQL inside the /db module.
+ * ──────────────────────────────────────────────────────────────────────────
+ */
+
 // Asegurar que la base de datos se guarda en la raíz del proyecto
 const dbPath = process.env.DATABASE_URL ? process.env.DATABASE_URL : (process.env.NODE_ENV === 'test' ? path.join(process.cwd(), 'forge_test.db') : 
 path.join(process.cwd(), 'forge.db'));
@@ -57,23 +79,6 @@ CREATE TABLE IF NOT EXISTS workspaces (
 );
 `);
 
-try {
-  db.exec('ALTER TABLE users ADD COLUMN is_guest BOOLEAN DEFAULT 0 CHECK(is_guest IN (0, 1))');
-} catch (e) {
-  // Ignorar error si la columna ya existe
-}
-
-try {
-  db.exec('ALTER TABLE users ADD COLUMN is_public BOOLEAN DEFAULT 1 CHECK(is_public IN (0, 1))');
-} catch (e) {
-  // Ignorar
-}
-
-try {
-  db.exec('ALTER TABLE users ADD COLUMN banner_url TEXT');
-} catch (e) {
-  // Ignorar
-}
 
 // 3. Diccionario de Datos: Aislamiento Multi-Tenant (El Pivote)
 db.exec(`
@@ -424,6 +429,21 @@ CREATE TABLE IF NOT EXISTS time_tracking_sessions (
 );
 `);
 
+// ── Infrastructure tables for migration tracking and rate limiting ────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS schema_migrations (
+    version    INTEGER PRIMARY KEY,
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS rate_limit_attempts (
+    key      TEXT    NOT NULL PRIMARY KEY,
+    count    INTEGER NOT NULL DEFAULT 1,
+    reset_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_rate_limit_reset ON rate_limit_attempts(reset_at);
+`);
+
 const migrations = [
   "ALTER TABLE workspaces ADD COLUMN is_public BOOLEAN DEFAULT 0 CHECK(is_public IN (0, 1))",
   "ALTER TABLE workspaces ADD COLUMN join_policy TEXT DEFAULT 'disabled' CHECK(join_policy IN ('open', 'friends_only', 'disabled'))",
@@ -450,44 +470,116 @@ const migrations = [
   "ALTER TABLE dynamic_entries ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP"
 ];
 
-for (const query of migrations) {
-  try {
-    db.exec(query);
-  } catch (e: any) {
-    if (!e.message.includes("duplicate column name")) {
-      console.warn(`Migration ignored non-duplicate error for query "${query}":`, e.message);
+// ── Versioned Migration System ────────────────────────────────────────────────
+// Helper: check if a column already exists (makes migrations idempotent)
+function hasColumn(table: string, col: string): boolean {
+  return (db.prepare(`PRAGMA table_info("${table}")`).all() as any[])
+    .some((c: any) => c.name === col);
+}
+
+type Migration = { version: number; description: string; run: () => void };
+
+const MIGRATIONS: Migration[] = [
+  // v1-v3: early columns that were previously in bare try/catch blocks
+  { version: 1,  description: 'users: add is_guest',              run: () => { if (!hasColumn('users', 'is_guest'))              db.exec("ALTER TABLE users ADD COLUMN is_guest BOOLEAN DEFAULT 0 CHECK(is_guest IN (0, 1))"); } },
+  { version: 2,  description: 'users: add is_public',             run: () => { if (!hasColumn('users', 'is_public'))             db.exec("ALTER TABLE users ADD COLUMN is_public BOOLEAN DEFAULT 1 CHECK(is_public IN (0, 1))"); } },
+  { version: 3,  description: 'users: add banner_url',            run: () => { if (!hasColumn('users', 'banner_url'))            db.exec('ALTER TABLE users ADD COLUMN banner_url TEXT'); } },
+  // v4-v26: former flat migrations array
+  { version: 4,  description: 'workspaces: add is_public',        run: () => { if (!hasColumn('workspaces', 'is_public'))        db.exec("ALTER TABLE workspaces ADD COLUMN is_public BOOLEAN DEFAULT 0 CHECK(is_public IN (0, 1))"); } },
+  { version: 5,  description: 'workspaces: add join_policy',      run: () => { if (!hasColumn('workspaces', 'join_policy'))      db.exec("ALTER TABLE workspaces ADD COLUMN join_policy TEXT DEFAULT 'disabled' CHECK(join_policy IN ('open', 'friends_only', 'disabled'))"); } },
+  { version: 6,  description: 'sprints: add goal',                run: () => { if (!hasColumn('sprints', 'goal'))                db.exec('ALTER TABLE sprints ADD COLUMN goal TEXT'); } },
+  { version: 7,  description: 'users: add bio',                   run: () => { if (!hasColumn('users', 'bio'))                   db.exec('ALTER TABLE users ADD COLUMN bio TEXT'); } },
+  { version: 8,  description: 'users: add pronouns',              run: () => { if (!hasColumn('users', 'pronouns'))              db.exec('ALTER TABLE users ADD COLUMN pronouns TEXT'); } },
+  { version: 9,  description: 'users: add public_email',          run: () => { if (!hasColumn('users', 'public_email'))          db.exec('ALTER TABLE users ADD COLUMN public_email TEXT'); } },
+  { version: 10, description: 'users: add github_id',             run: () => { if (!hasColumn('users', 'github_id'))             db.exec('ALTER TABLE users ADD COLUMN github_id TEXT'); } },
+  { version: 11, description: 'users: add google_id',             run: () => { if (!hasColumn('users', 'google_id'))             db.exec('ALTER TABLE users ADD COLUMN google_id TEXT'); } },
+  { version: 12, description: 'users: add last_page_id',          run: () => { if (!hasColumn('users', 'last_page_id'))          db.exec('ALTER TABLE users ADD COLUMN last_page_id TEXT'); } },
+  { version: 13, description: 'users: add notif_mute_all',        run: () => { if (!hasColumn('users', 'notif_mute_all'))        db.exec('ALTER TABLE users ADD COLUMN notif_mute_all BOOLEAN DEFAULT 0'); } },
+  { version: 14, description: 'users: add notif_mute_assign',     run: () => { if (!hasColumn('users', 'notif_mute_assign'))     db.exec('ALTER TABLE users ADD COLUMN notif_mute_assign BOOLEAN DEFAULT 0'); } },
+  { version: 15, description: 'users: add notif_mute_mention',    run: () => { if (!hasColumn('users', 'notif_mute_mention'))    db.exec('ALTER TABLE users ADD COLUMN notif_mute_mention BOOLEAN DEFAULT 0'); } },
+  { version: 16, description: 'users: add notif_mute_sprint',     run: () => { if (!hasColumn('users', 'notif_mute_sprint'))     db.exec('ALTER TABLE users ADD COLUMN notif_mute_sprint BOOLEAN DEFAULT 0'); } },
+  { version: 17, description: 'users: add notif_mute_system',     run: () => { if (!hasColumn('users', 'notif_mute_system'))     db.exec('ALTER TABLE users ADD COLUMN notif_mute_system BOOLEAN DEFAULT 0'); } },
+  { version: 18, description: 'notifications: add type',          run: () => { if (!hasColumn('notifications', 'type'))          db.exec("ALTER TABLE notifications ADD COLUMN type TEXT DEFAULT 'info'"); } },
+  { version: 19, description: 'issues: add due_date',             run: () => { if (!hasColumn('issues', 'due_date'))             db.exec('ALTER TABLE issues ADD COLUMN due_date DATETIME'); } },
+  { version: 20, description: 'audit_logs: add workspace_id',     run: () => { if (!hasColumn('audit_logs', 'workspace_id'))     db.exec('ALTER TABLE audit_logs ADD COLUMN workspace_id TEXT'); } },
+  { version: 21, description: 'work_logs: add work_date',         run: () => { if (!hasColumn('work_logs', 'work_date'))         db.exec('ALTER TABLE work_logs ADD COLUMN work_date DATETIME DEFAULT CURRENT_TIMESTAMP'); } },
+  { version: 22, description: 'dynamic_databases: add sys_tag',   run: () => { if (!hasColumn('dynamic_databases', 'sys_tag'))   db.exec("ALTER TABLE dynamic_databases ADD COLUMN sys_tag TEXT DEFAULT ''"); } },
+  { version: 23, description: 'dynamic_databases: add description',run: () => { if (!hasColumn('dynamic_databases', 'description'))db.exec('ALTER TABLE dynamic_databases ADD COLUMN description TEXT'); } },
+  { version: 24, description: 'dynamic_databases: add icon',      run: () => { if (!hasColumn('dynamic_databases', 'icon'))      db.exec('ALTER TABLE dynamic_databases ADD COLUMN icon TEXT'); } },
+  { version: 25, description: 'dynamic_databases: add created_at',run: () => { if (!hasColumn('dynamic_databases', 'created_at'))db.exec('ALTER TABLE dynamic_databases ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP'); } },
+  { version: 26, description: 'dynamic_entries: add updated_at',  run: () => { if (!hasColumn('dynamic_entries', 'updated_at'))  db.exec('ALTER TABLE dynamic_entries ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP'); } },
+  {
+    // Reconstruct attachments table to fix CHECK constraint (add 'user' and 'workspace' entity types)
+    version: 27,
+    description: 'attachments: fix CHECK constraint to include user and workspace',
+    run: () => {
+      const schema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='attachments'").get() as any;
+      if (schema && !schema.sql.includes("'user'")) {
+        db.pragma('foreign_keys = OFF');
+        db.exec('ALTER TABLE attachments RENAME TO attachments_old');
+        db.exec(`
+          CREATE TABLE attachments (
+            id TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL CHECK(entity_type IN ('issue', 'page', 'dynamic_entry', 'message', 'user', 'workspace')),
+            entity_id TEXT NOT NULL,
+            file_name TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            mime_type TEXT NOT NULL,
+            size_bytes INTEGER NOT NULL,
+            uploaded_by TEXT NOT NULL,
+            uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (uploaded_by) REFERENCES users(id)
+          )
+        `);
+        db.exec('INSERT INTO attachments SELECT * FROM attachments_old');
+        db.exec('DROP TABLE attachments_old');
+        db.pragma('foreign_keys = ON');
+      }
     }
+  },
+];
+
+for (const m of MIGRATIONS) {
+  const applied = db.prepare('SELECT 1 FROM schema_migrations WHERE version = ?').get(m.version);
+  if (applied) continue;
+  try {
+    m.run();
+    db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(m.version);
+  } catch (e: any) {
+    // Fail loudly so broken migrations are never silently ignored
+    console.error(`[DB] Migration v${m.version} (${m.description}) failed: ${e.message}`);
+    throw e;
   }
 }
 
-// Fix attachments CHECK constraint if not already fixed
+// ── Expired Guest Cleanup ─────────────────────────────────────────────────────
+// Runs once at startup. Removes guest accounts whose session has expired.
+// These users never converted to real accounts and can no longer log in.
+// SQLite CASCADE handles sessions and workspace_members automatically.
+// Workspaces must be deleted first since created_by has no CASCADE.
 try {
-  const schema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='attachments'").get() as any;
-  if (schema && !schema.sql.includes("'user'")) {
-    db.transaction(() => {
-      db.exec('PRAGMA foreign_keys=OFF;');
-      db.exec('ALTER TABLE attachments RENAME TO attachments_old;');
-      db.exec(`
-        CREATE TABLE attachments (
-         id TEXT PRIMARY KEY,
-         entity_type TEXT NOT NULL CHECK(entity_type IN ('issue', 'page', 'dynamic_entry', 'message', 'user', 'workspace')),
-         entity_id TEXT NOT NULL,
-         file_name TEXT NOT NULL,
-         file_path TEXT NOT NULL,
-         mime_type TEXT NOT NULL,
-         size_bytes INTEGER NOT NULL,
-         uploaded_by TEXT NOT NULL,
-         uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-         FOREIGN KEY (uploaded_by) REFERENCES users(id)
-        );
-      `);
-      db.exec('INSERT INTO attachments SELECT * FROM attachments_old;');
-      db.exec('DROP TABLE attachments_old;');
-      db.exec('PRAGMA foreign_keys=ON;');
-    })();
+  const expiredGuests = db.prepare(`
+    SELECT id FROM users
+    WHERE is_guest = 1
+      AND id NOT IN (SELECT user_id FROM sessions WHERE expires_at > ?)
+      AND id != 'system'
+  `).all(Date.now()) as { id: string }[];
+
+  if (expiredGuests.length > 0) {
+    const ids = expiredGuests.map(g => g.id);
+    const placeholders = ids.map(() => '?').join(',');
+    const guestCleanup = db.transaction(() => {
+      // Delete owned workspaces first (workspaces.created_by has no CASCADE)
+      db.prepare(`DELETE FROM workspaces WHERE created_by IN (${placeholders})`).run(...ids);
+      // Delete users — CASCADE removes sessions and workspace_members
+      db.prepare(`DELETE FROM users WHERE id IN (${placeholders})`).run(...ids);
+    });
+    guestCleanup();
+    console.log(`[DB] Cleaned up ${ids.length} expired guest account(s).`);
   }
 } catch (e) {
-  console.error("Migration error (attachments):", e);
+  // Non-fatal: log and continue. The app is still usable.
+  console.error('[DB] Guest cleanup failed:', e);
 }
 
 export default db;

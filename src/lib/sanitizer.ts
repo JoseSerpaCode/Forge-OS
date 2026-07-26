@@ -78,6 +78,33 @@ export function sanitizeEditorBlocks(blocks: any[]) {
         safeBlocks.push(safeBlock);
         break;
 
+      case 'code':
+        // Code blocks: sanitize the code text but preserve the block
+        if (typeof safeBlock.data.code === 'string') {
+          // Don't use cleanHTML for code — just escape HTML entities to prevent XSS
+          safeBlock.data.code = safeBlock.data.code
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        }
+        safeBlocks.push(safeBlock);
+        break;
+
+      case 'delimiter':
+        // Delimiters have no user-editable content, safe to pass through
+        safeBlocks.push(safeBlock);
+        break;
+
+      case 'warning':
+        if (typeof safeBlock.data.title === 'string') {
+          safeBlock.data.title = cleanHTML(safeBlock.data.title);
+        }
+        if (typeof safeBlock.data.message === 'string') {
+          safeBlock.data.message = cleanHTML(safeBlock.data.message);
+        }
+        safeBlocks.push(safeBlock);
+        break;
+
       default:
         // Cierre crítico de brecha: Cualquier tipo de bloque desconocido o el peligroso 'raw'
         // es descartado completamente. No entra en el array safeBlocks.

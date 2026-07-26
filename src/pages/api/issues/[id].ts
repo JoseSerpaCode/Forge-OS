@@ -1,13 +1,8 @@
 import type { APIRoute } from 'astro';
-import { IssueService, ApiError } from '../../../lib/IssueService';
-
-const handleApiError = (err: any) => {
-  if (err instanceof ApiError) {
-    return new Response(JSON.stringify({ error: err.message }), { status: err.statusCode, headers: { 'Content-Type': 'application/json' } });
-  }
-  console.error('API Error:', err);
-  return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-};
+import { IssueService } from '../../../lib/IssueService';
+import { ApiError, handleApiError } from '../../../lib/errors';
+import { checkWorkspaceAccess } from '../../../lib/guard';
+import db from '../../../lib/db';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const { id } = params;
@@ -15,10 +10,15 @@ export const GET: APIRoute = async ({ params, locals }) => {
   if (!id) return new Response('Bad Request', { status: 400 });
 
   try {
-    // Basic access check: get the issue's workspace
-    const issue = await IssueService.getById(id);
+    const issue = await IssueService.getById(id) as any;
     if (!issue) return new Response('Not Found', { status: 404 });
-    // Detailed access check is omitted for brevity, assuming UI only queries accessible issues
+
+    // IDOR fix: verify user has access to the issue's workspace
+    const access = checkWorkspaceAccess(user.id, user.is_sysadmin, issue.workspace_id, 'viewer');
+    if (!access.granted) {
+      return new Response('Not Found', { status: 404 });
+    }
+
     return new Response(JSON.stringify(issue), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err: any) {
     return handleApiError(err);

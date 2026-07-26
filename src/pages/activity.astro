@@ -260,10 +260,10 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
     
-    const tabBtns = document.querySelectorAll('.activity-tab-btn');
+    const tabBtns = document.querySelectorAll('.activity-tab-btn') as NodeListOf<HTMLElement>;
     const tabContents = document.querySelectorAll('.activity-tab-content');
     
-    function switchTab(targetId) {
+    function switchTab(targetId: string) {
       tabBtns.forEach(btn => {
         if (btn.dataset.target === targetId) {
           btn.classList.add('bg-forge-secondary', 'text-forge-bg', 'active');
@@ -288,14 +288,14 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
         }
       });
       
-      const newUrl = new URL(window.location);
+      const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('tab', targetId);
       window.history.replaceState({}, '', newUrl);
     }
     
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        switchTab(btn.dataset.target);
+        switchTab(btn.dataset.target!);
       });
     });
     

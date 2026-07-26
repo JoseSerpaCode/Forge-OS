@@ -21,6 +21,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       if (new_password.length < 8) {
         return new Response('New password must be at least 8 characters', { status: 400 });
       }
+      // Prevent DoS via bcrypt with extremely long passwords
+      if (new_password.length > 128) {
+        return new Response('New password cannot exceed 128 characters', { status: 400 });
+      }
       updateFields.push('password_hash = ?');
       values.push(bcrypt.hashSync(new_password, 10));
     }
@@ -28,6 +32,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (username && typeof username === 'string') {
       if (username.length < 3) {
         return new Response('Username must be at least 3 characters', { status: 400 });
+      }
+      if (username.length > 32) {
+        return new Response('Username cannot exceed 32 characters', { status: 400 });
+      }
+      // Restrict to safe characters — prevents XSS payloads in usernames
+      if (!/^[a-zA-Z0-9._\-]+$/.test(username)) {
+        return new Response('Username can only contain letters, numbers, dots, hyphens and underscores', { status: 400 });
       }
       const existing = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, user.id);
       if (existing) {

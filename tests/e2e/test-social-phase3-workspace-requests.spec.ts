@@ -56,14 +56,14 @@ test.describe('Social Phase 3 - Workspace Join Requests', () => {
         expect(pendingReqs[0].status).toBe('pending');
         expect(pendingReqs[1].status).toBe('pending');
 
-        const req1Id = pendingReqs.find((r: any) => db.prepare('SELECT user_id FROM workspace_join_requests WHERE id=?').get(r.id).user_id === user1.id).id;
+        const req1Id = pendingReqs.find((r: any) => (db.prepare('SELECT user_id FROM workspace_join_requests WHERE id=?').get(r.id) as any).user_id === user1.id).id;
 
         // 2. Owner changes workspace to private
         const patchRes = await request.patch(`/api/workspaces/${wsId}`, {
             headers: { Cookie: cookieOwner },
             data: {
                 name: 'Public WS',
-                sys_tag: db.prepare('SELECT sys_tag FROM workspaces WHERE id=?').get(wsId).sys_tag,
+                sys_tag: (db.prepare('SELECT sys_tag FROM workspaces WHERE id=?').get(wsId) as any).sys_tag,
                 is_public: false,
                 join_policy: 'disabled'
             }
@@ -91,7 +91,7 @@ test.describe('Social Phase 3 - Workspace Join Requests', () => {
             headers: { Cookie: cookieOwner },
             data: {
                 name: 'Public WS',
-                sys_tag: db.prepare('SELECT sys_tag FROM workspaces WHERE id=?').get(wsId).sys_tag,
+                sys_tag: (db.prepare('SELECT sys_tag FROM workspaces WHERE id=?').get(wsId) as any).sys_tag,
                 is_public: false,
                 join_policy: 'disabled'
             }
@@ -109,7 +109,7 @@ test.describe('Social Phase 3 - Workspace Join Requests', () => {
             headers: { Cookie: cookieOwner },
             data: {
                 name: 'Public WS',
-                sys_tag: db.prepare('SELECT sys_tag FROM workspaces WHERE id=?').get(wsId).sys_tag,
+                sys_tag: (db.prepare('SELECT sys_tag FROM workspaces WHERE id=?').get(wsId) as any).sys_tag,
                 is_public: 1,
                 join_policy: 'friends_only'
             }

@@ -24,6 +24,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     const user = db.prepare('SELECT id, password_hash FROM users WHERE username = ?').get(username) as any;
     
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+      console.error('[LOGIN_DEBUG] Credenciales inválidas for username:', username);
       return new Response(JSON.stringify({ error: 'Credenciales inválidas' }), { status: 401 });
     }
 
@@ -42,10 +43,15 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
          }
       }
       
-      const userWorkspaces = db.prepare('SELECT workspace_id FROM workspace_members WHERE user_id = ?').all(currentUser.id) as any[];
-      for (const uw of userWorkspaces) {
-          db.prepare('DELETE FROM workspaces WHERE id = ?').run(uw.workspace_id);
+      // Only delete workspaces CREATED by the guest (not ones they were invited to)
+      const guestOwnedWorkspaces = db.prepare('SELECT id FROM workspaces WHERE created_by = ?').all(currentUser.id) as any[];
+      for (const uw of guestOwnedWorkspaces) {
+          if (!Array.isArray(keep_workspaces) || !keep_workspaces.includes(uw.id)) {
+              db.prepare('DELETE FROM workspaces WHERE id = ?').run(uw.id);
+          }
       }
+      // Remove guest from any workspaces they were invited to (not owned)
+      db.prepare('DELETE FROM workspace_members WHERE user_id = ?').run(currentUser.id);
       
       // Guest will be unlinked (their cookie replaced), but since we deleted their workspaces, we leave the guest account orphaned to be cleaned up or just delete it if not constrained.
       // We safely deleted workspaces above which cascades to issues, sprints, pages. So the guest account should be clean.
@@ -67,6 +73,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err) {
+    console.error('[LOGIN_DEBUG] Internal Server Error:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 };
