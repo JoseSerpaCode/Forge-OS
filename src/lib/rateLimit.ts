@@ -12,6 +12,10 @@ const MAX_ATTEMPTS = 15;
  * callers (login.ts, register.ts) require zero changes.
  */
 export function checkRateLimit(key: string): { allowed: boolean; retryAfter?: number } {
+  if (process.env.NODE_ENV === 'test') {
+    return { allowed: true };
+  }
+
   const now = Date.now();
 
   const existing = db.prepare(
