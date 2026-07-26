@@ -13,6 +13,11 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     
     if (!status) return new Response('Missing status', { status: 400 });
 
+    const VALID_STATUSES = ['planned', 'active', 'completed'];
+    if (!VALID_STATUSES.includes(status)) {
+      return new Response(JSON.stringify({ error: 'Invalid status. Must be one of: planned, active, completed' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+
     const sprint = db.prepare('SELECT workspace_id FROM sprints WHERE id = ?').get(id) as any;
     if (!sprint) return new Response('Not Found', { status: 404 });
 

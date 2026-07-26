@@ -9,9 +9,9 @@ export function setupSockets(io) {
     const sessionId = cookies.forge_session;
     if (!sessionId) return next(new Error('Unauthorized'));
 
-    // Validar Sesión en DB
-    const session = db.prepare('SELECT user_id FROM sessions WHERE id = ?').get(sessionId);
-    if (!session) return next(new Error('Invalid session'));
+    // Validar Sesión en DB y Expiración
+    const session = db.prepare('SELECT user_id, expires_at FROM sessions WHERE id = ?').get(sessionId);
+    if (!session || session.expires_at < Date.now()) return next(new Error('Invalid session'));
 
     socket.userId = session.user_id;
     next();
@@ -38,8 +38,11 @@ export function setupSockets(io) {
 
     socket.on('send_message', (data) => {
       const { channelId, content } = data;
-      // Validar presencia en el room
+      // Validate presence in the room
       if (!socket.rooms.has(channelId)) return;
+
+      // Validate content is a non-empty string with length limit
+      if (typeof content !== 'string' || content.trim().length === 0 || content.length > 5000) return;
 
       const channel = db.prepare('SELECT workspace_id FROM channels WHERE id = ?').get(channelId);
       if (!channel) return;
@@ -53,14 +56,22 @@ export function setupSockets(io) {
         return;
       }
 
+      // Sanitize content to prevent stored XSS
+      const safeContent = content
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
       const msgId = crypto.randomUUID();
-      db.prepare('INSERT INTO messages (id, channel_id, user_id, content) VALUES (?, ?, ?, ?)').run(msgId, channelId, socket.userId, content);
+      db.prepare('INSERT INTO messages (id, channel_id, user_id, content) VALUES (?, ?, ?, ?)').run(msgId, channelId, socket.userId, safeContent);
 
       io.to(channelId).emit('new_message', {
         id: msgId,
         channel_id: channelId,
         user_id: socket.userId,
-        content,
+        content: safeContent,
         created_at: new Date().toISOString()
       });
 

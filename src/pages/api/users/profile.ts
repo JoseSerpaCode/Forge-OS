@@ -30,8 +30,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
         updateFields.push('is_public = ?'); 
         values.push(user.is_guest === 1 ? 0 : (is_public ? 1 : 0)); 
     }
-    if (avatar_url !== undefined) { updateFields.push('avatar_url = ?'); values.push(avatar_url ? avatar_url.trim() : null); }
-    if (banner_url !== undefined) { updateFields.push('banner_url = ?'); values.push(banner_url ? banner_url.trim() : null); }
+    if (avatar_url !== undefined) { 
+      if (typeof avatar_url !== 'string') return new Response('Invalid avatar format', { status: 400 });
+      if (avatar_url.length > 2048) return new Response('Avatar URL too long', { status: 400 });
+      if (avatar_url !== '' && !avatar_url.startsWith('http://') && !avatar_url.startsWith('https://') && !avatar_url.startsWith('data:image/') && !avatar_url.startsWith('/api/storage/')) {
+        return new Response('Invalid avatar source', { status: 400 });
+      }
+      if (avatar_url.startsWith('data:image/svg+xml')) return new Response('SVG uploads are not permitted', { status: 400 });
+      updateFields.push('avatar_url = ?'); values.push(avatar_url ? avatar_url.trim() : null); 
+    }
+    if (banner_url !== undefined) { 
+      if (typeof banner_url !== 'string') return new Response('Invalid banner format', { status: 400 });
+      if (banner_url.length > 2048) return new Response('Banner URL too long', { status: 400 });
+      if (banner_url !== '' && !banner_url.startsWith('http://') && !banner_url.startsWith('https://') && !banner_url.startsWith('data:image/') && !banner_url.startsWith('/api/storage/')) {
+        return new Response('Invalid banner source', { status: 400 });
+      }
+      if (banner_url.startsWith('data:image/svg+xml')) return new Response('SVG uploads are not permitted', { status: 400 });
+      updateFields.push('banner_url = ?'); values.push(banner_url ? banner_url.trim() : null); 
+    }
 
     if (updateFields.length > 0) {
         values.push(user.id);

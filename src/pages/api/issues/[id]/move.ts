@@ -100,6 +100,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     if (status === 'review' || status === 'done') {
       finalizeIssueSessions(issueId, 'Auto-registrado al completar');
     }
+
+    ForgeEvents.emit('issue.status_changed', { issue_id: issueId, workspace_id: oldIssue.workspace_id, old_status: oldIssue.status, new_status: status });
     
     db.prepare('INSERT INTO audit_logs (id, workspace_id, user_id, action, entity_type, entity_id, details_json) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
       crypto.randomUUID(), oldIssue.workspace_id, user.id, 'ISSUE_MOVED', 'issue', issueId, JSON.stringify({ oldStatus: oldIssue.status, newStatus: status, oldPosition: oldIssue.position, newPosition: finalPosition })

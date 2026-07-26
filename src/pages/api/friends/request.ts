@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import crypto from 'crypto';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
