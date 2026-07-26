@@ -24,27 +24,31 @@ export const onRequest = defineMiddleware(async (context, next) => {
     
     // Insert Guest User
     const guestUsername = `Guest_${guestId.split('-')[0]}_${Math.floor(Math.random() * 1000)}`;
-    db.prepare(`
-      INSERT INTO users (id, username, password_hash, is_guest) 
-      VALUES (?, ?, ?, 1)
-    `).run(guestId, guestUsername, 'guest');
-    
-    // Create Default Workspace for Guest
     const wsId = crypto.randomUUID();
     const sysTag = `guest-${guestId.split('-')[0]}-${Math.floor(Math.random() * 1000)}`;
-    db.prepare(`
-      INSERT INTO workspaces (id, name, sys_tag, created_by) 
-      VALUES (?, ?, ?, ?)
-    `).run(wsId, 'My Workspace', sysTag, guestId);
-    
-    db.prepare(`
-      INSERT INTO workspace_members (workspace_id, user_id, ws_role) 
-      VALUES (?, ?, 'owner')
-    `).run(wsId, guestId);
-    
-    // Create Session
     const expiresAt = Date.now() + 1000 * 60 * 60 * 24 * 30; // 30 days
-    db.prepare(`INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)`).run(newSessionId, guestId, expiresAt);
+    
+    // Wrap all guest creation in a transaction to prevent orphaned data
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO users (id, username, password_hash, is_guest) 
+        VALUES (?, ?, ?, 1)
+      `).run(guestId, guestUsername, 'guest');
+      
+      // Create Default Workspace for Guest
+      db.prepare(`
+        INSERT INTO workspaces (id, name, sys_tag, created_by) 
+        VALUES (?, ?, ?, ?)
+      `).run(wsId, 'My Workspace', sysTag, guestId);
+      
+      db.prepare(`
+        INSERT INTO workspace_members (workspace_id, user_id, ws_role) 
+        VALUES (?, ?, 'owner')
+      `).run(wsId, guestId);
+      
+      // Create Session
+      db.prepare(`INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)`).run(newSessionId, guestId, expiresAt);
+    })();
     
     // Set Cookie
     context.cookies.set('forge_session', newSessionId, {
@@ -138,14 +142,18 @@ function applySecurityHeaders(response: Response): Response {
   // HSTS
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   
-  // CSP: Allow inline scripts/styles (Astro needs them), allow external avatars, allow WS for real-time
+  // CSP: Allow inline scripts/styles (Astro needs them for island hydration),
+  // allow external avatars and fonts, allow WS for real-time features.
+  // NOTE: 'unsafe-inline' is intentional — Astro SSR injects inline scripts for
+  // component hydration. Remove only if Nonce-based CSP is implemented.
+  // NOTE: 'unsafe-eval' is NOT included — no code in this project uses eval().
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://api.dicebear.com",
-    "connect-src 'self' ws: wss: http: https:",
+    "connect-src 'self' ws: wss: https://api.dicebear.com",
     "frame-ancestors 'none'"
   ].join('; ');
   

@@ -1,3 +1,6 @@
+// NOTE: One-time dev helper script — NOT part of the build pipeline.
+// Run manually with: node rearrange.js (requires matching index.astro structure).
+// rearrange.cjs was a duplicate of this file and has been removed.
 const fs = require('fs');
 let content = fs.readFileSync('src/pages/index.astro', 'utf8');
 

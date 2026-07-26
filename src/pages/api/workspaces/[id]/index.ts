@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
-
-import { WorkspaceService, ApiError } from '../../../../lib/WorkspaceService';
+import { WorkspaceService } from '../../../../lib/WorkspaceService';
+import { ApiError, handleApiError } from '../../../../lib/errors';
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
   const user = locals.user!;
@@ -12,12 +12,9 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
 
   try {
     await WorkspaceService.delete(workspaceId, user.id, user.is_sysadmin);
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err: any) {
-    if (err instanceof ApiError) {
-      return new Response(err.message, { status: err.statusCode });
-    }
-    return new Response(err.message, { status: 500 });
+    return handleApiError(err);
   }
 };
 

@@ -2,13 +2,9 @@ import db from '../lib/db';
 import { checkWorkspaceAccess } from '../lib/guard';
 import fs from 'fs/promises';
 import path from 'path';
+import { ApiError } from './errors';
 
-export class ApiError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
+export { ApiError } from './errors';
 
 export class WorkspaceService {
   /**

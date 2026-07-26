@@ -4,13 +4,9 @@ import type { Issue } from '../types/db';
 import { NotificationService } from './NotificationService';
 import crypto from 'crypto';
 import { finalizeIssueSessions } from '../pages/api/issues/[id]/timer';
+import { ApiError } from './errors';
 
-export class ApiError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
+export { ApiError } from './errors';
 
 export class IssueService {
   /**
