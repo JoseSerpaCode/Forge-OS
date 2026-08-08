@@ -1,7 +1,7 @@
 {
   "name": "forge-js",
   "type": "module",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -9,7 +9,11 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "seed": "tsx scripts/seed.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "astro check"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
