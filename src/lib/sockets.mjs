@@ -1,11 +1,11 @@
 // src/lib/sockets.mjs
-import cookie from 'cookie';
+import { parseCookie } from 'cookie';
 import db from './db.ts';
 import crypto from 'crypto';
 
 export function setupSockets(io) {
   io.use((socket, next) => {
-    const cookies = cookie.parse(socket.request.headers.cookie || '');
+    const cookies = parseCookie(socket.request.headers.cookie || '');
     const sessionId = cookies.forge_session;
     if (!sessionId) return next(new Error('Unauthorized'));
 
