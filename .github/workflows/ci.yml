@@ -26,23 +26,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Unit tests first: ~1s, against the browser install plus a full build
+      # that the e2e step needs. A broken run now fails about ten minutes
+      # sooner.
+      #
+      # This ordering used to be impossible: Vitest running first meant several
+      # parallel workers applied migrations to a fresh database at once and the
+      # job died with "duplicate column name". Fixed in db.ts, which now
+      # serialises migrations in an IMMEDIATE transaction.
+      - name: Run Vitest
+        run: npx vitest run
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      # Playwright must run before Vitest, and not only by preference.
-      #
-      # All six Vitest files import src/lib/db.ts, and Vitest runs them in
-      # parallel workers. On a fresh forge_test.db the migration loop in db.ts
-      # is a check-then-act across processes: several workers read
-      # schema_migrations, all see a migration as unapplied, and all attempt the
-      # same ALTER TABLE. One wins, the rest die with "duplicate column name".
-      #
-      # The Playwright step builds and boots the app first, which migrates the
-      # database single-threaded, so by the time Vitest starts there is nothing
-      # left to apply and the race never opens. This ordering is load-bearing
-      # until the migration loop is made atomic — see issue tracking that fix.
       - name: Run Playwright tests
         run: npx playwright test
-
-      - name: Run Vitest
-        run: npx vitest run
