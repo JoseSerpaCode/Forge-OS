@@ -20,6 +20,9 @@ virtual DOM, no client-side framework, no external services.
 
 **English** · [Español](./README.es.md)
 
+<img src="./public/screenshots/board-dark.png#gh-dark-mode-only" alt="Kanban board with sprint columns" width="900" />
+<img src="./public/screenshots/board-light.png#gh-light-mode-only" alt="Kanban board with sprint columns" width="900" />
+
 </div>
 
 <details>
@@ -27,6 +30,7 @@ virtual DOM, no client-side framework, no external services.
 
 - [Why Forge OS](#why-forge-os)
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Getting started](#getting-started)
   - [Requirements](#requirements)
   - [Install](#install)
@@ -73,6 +77,30 @@ running two commands gives you a working instance.
 - **Command palette** — `Cmd/Ctrl+K` for global navigation, plus single-key
   shortcuts throughout the app.
 - **Bilingual UI** — English and Spanish, detected automatically.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Screenshots
+
+Every image below comes from `npm run seed` — regenerate them all with
+`npm run screenshots`.
+
+**Sprint metrics** — velocity, burndown, workload distribution and estimation
+precision, drawn from real work logs.
+
+<img src="./public/screenshots/metrics-dark.png#gh-dark-mode-only" alt="Sprint metrics dashboard" width="900" />
+<img src="./public/screenshots/metrics-light.png#gh-light-mode-only" alt="Sprint metrics dashboard" width="900" />
+
+**Knowledge base** — a Notion-style editor with a page tree and bidirectional
+links between pages and issues.
+
+<img src="./public/screenshots/knowledge-base-dark.png#gh-dark-mode-only" alt="Knowledge base editor" width="900" />
+<img src="./public/screenshots/knowledge-base-light.png#gh-light-mode-only" alt="Knowledge base editor" width="900" />
+
+**Hub** — every workspace, your pending tasks and notifications in one place.
+
+<img src="./public/screenshots/dashboard-dark.png#gh-dark-mode-only" alt="Personal hub" width="900" />
+<img src="./public/screenshots/dashboard-light.png#gh-light-mode-only" alt="Personal hub" width="900" />
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

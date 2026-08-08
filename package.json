@@ -13,7 +13,8 @@
     "seed": "tsx scripts/seed.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",

@@ -65,6 +65,21 @@ const users = [
 const WS = { id: 'demo-ws-atlas', name: 'Atlas Platform', tag: 'atlas' };
 const SPRINT = { id: 'demo-sprint-14', name: 'Sprint 14 — Billing & Search' };
 
+// Closed sprints, so the velocity chart has a trend to draw. Without at least a
+// couple of completed sprints the metrics page renders "Not enough completed
+// sprints" and the screenshot looks broken.
+const PAST_SPRINTS = [
+  { id: 'demo-sprint-11', name: 'Sprint 11 — Attachments', start: -66, end: -52, points: [3, 5, 8] },
+  { id: 'demo-sprint-12', name: 'Sprint 12 — Audit trail', start: -52, end: -38, points: [5, 5, 3, 2] },
+  { id: 'demo-sprint-13', name: 'Sprint 13 — Public forms', start: -38, end: -24, points: [8, 3, 5, 5] },
+];
+
+const PAST_TITLES = [
+  'Attachment storage abstraction', 'Signed download URLs', 'Thumbnail generation',
+  'Audit log schema', 'Record membership changes', 'Audit retention policy', 'Export audit CSV',
+  'Public form builder', 'Form submission throttling', 'Embed snippet generator', 'Form response inbox',
+];
+
 // [id, type, title, status, priority, points, estimated, assignee, description]
 const issues = [
   ['demo-issue-1', 'epic',  'Usage-based billing',                'in_progress', 'highest', 21, 40, 'demo-user-avery', 'Umbrella epic covering metering, invoicing and the customer-facing billing page.'],
@@ -100,7 +115,7 @@ const workLogs = [
 const pages = [
   {
     id: 'demo-page-arch', title: 'Architecture overview', icon: '🏗️', parent: null,
-    content: doc('Architecture overview', [
+    content: doc('How it fits together', [
       'Forge OS runs as a single Astro SSR process backed by SQLite. There is no separate API tier: route handlers under <code>src/pages/api</code> are the API.',
       'Every query is scoped by <code>workspace_id</code>. That scoping is the multi-tenant boundary, so it is enforced in the data layer rather than in the UI.',
     ], [
@@ -111,7 +126,7 @@ const pages = [
   },
   {
     id: 'demo-page-billing', title: 'Billing design notes', icon: '💳', parent: 'demo-page-arch',
-    content: doc('Billing design notes', [
+    content: doc('Metering and invoicing', [
       'Usage is metered per workspace and rolled up nightly. Invoices are generated from the rollup, never from live counters, so a replay always produces the same document.',
       'Plan changes take effect at the start of the next cycle. Mid-cycle upgrades are prorated; downgrades are not.',
     ], [
@@ -121,7 +136,7 @@ const pages = [
   },
   {
     id: 'demo-page-onboarding', title: 'Onboarding runbook', icon: '🚀', parent: null,
-    content: doc('Onboarding runbook', [
+    content: doc('First five minutes', [
       'A new workspace owner should reach a populated board within five minutes. Anything that takes longer than that belongs in this runbook as a fix, not as a step.',
     ], [
       'Invite one teammate',
@@ -175,6 +190,14 @@ function seed() {
       'Ship usage-based billing end to end and make search correct past the first page.'
     );
 
+    const insertSprint = db.prepare(
+      `INSERT INTO sprints (id, workspace_id, name, start_date, end_date, status, goal)
+       VALUES (?, ?, ?, ?, ?, 'completed', ?)`
+    );
+    for (const s of PAST_SPRINTS) {
+      insertSprint.run(s.id, WS.id, s.name, daysOut(s.start), daysOut(s.end), `Delivered in ${s.name}.`);
+    }
+
     const insertIssue = db.prepare(
       `INSERT INTO issues (id, workspace_id, sprint_id, type, title, description, status,
                            priority, story_points, estimated_hours, position, reporter_id, assignee_id, created_at)
@@ -185,6 +208,20 @@ function seed() {
         id, WS.id, SPRINT.id, type, title, description, status,
         priority, points, est, i * 100, users[0].id, assignee, daysOut(-12 + i)
       );
+    });
+
+    // Closed work from earlier sprints — all done, so velocity has real numbers.
+    let t = 0;
+    PAST_SPRINTS.forEach((s) => {
+      s.points.forEach((pts, j) => {
+        const title = PAST_TITLES[t % PAST_TITLES.length];
+        insertIssue.run(
+          `${s.id}-issue-${j + 1}`, WS.id, s.id, 'story', title,
+          `Shipped as part of ${s.name}.`, 'done', 'medium',
+          pts, pts * 2, j * 100, users[0].id, users[(t % 3)].id, daysOut(s.start)
+        );
+        t++;
+      });
     });
 
     // The insert trigger on work_logs keeps issues.logged_hours in sync.
@@ -217,7 +254,14 @@ function seed() {
       insertNotif.run(id, userId, title, message, read, type, `/w/${WS.tag}/board`);
     }
 
-    return { users: users.length, issues: issues.length, logs: workLogs.length, pages: pages.length };
+    const pastIssues = PAST_SPRINTS.reduce((n, s) => n + s.points.length, 0);
+    return {
+      users: users.length,
+      issues: issues.length + pastIssues,
+      sprints: PAST_SPRINTS.length + 1,
+      logs: workLogs.length,
+      pages: pages.length,
+    };
   })();
 
   return created;
@@ -240,6 +284,7 @@ console.log(`
 Seeded the "${WS.name}" workspace.
 
   users     ${summary.users}   (${users.map((u) => u.username).join(', ')})
+  sprints   ${summary.sprints}   (${PAST_SPRINTS.length} completed + 1 active)
   issues    ${summary.issues}  across To Do / In Progress / Review / Done
   worklogs  ${summary.logs}
   pages     ${summary.pages}
