@@ -21,6 +21,9 @@ servicios externos.
 
 [English](./README.md) · **Español**
 
+<img src="./public/screenshots/board-dark.png#gh-dark-mode-only" alt="Tablero Kanban con columnas de sprint" width="900" />
+<img src="./public/screenshots/board-light.png#gh-light-mode-only" alt="Tablero Kanban con columnas de sprint" width="900" />
+
 </div>
 
 <details>
@@ -28,6 +31,7 @@ servicios externos.
 
 - [Por qué Forge OS](#por-qué-forge-os)
 - [Características](#características)
+- [Capturas](#capturas)
 - [Empezar](#empezar)
   - [Requisitos](#requisitos)
   - [Instalación](#instalación)
@@ -75,6 +79,31 @@ repositorio y ejecutar dos comandos te deja una instancia funcionando.
 - **Paleta de comandos**: `Cmd/Ctrl+K` para navegación global, más atajos de una
   sola tecla por toda la aplicación.
 - **Interfaz bilingüe**: inglés y español, detectados automáticamente.
+
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+
+## Capturas
+
+Todas las imágenes salen de `npm run seed` — puedes regenerarlas con
+`npm run screenshots`.
+
+**Métricas de sprint**: velocity, burndown, distribución de carga y precisión de
+estimación, calculadas a partir de registros de trabajo reales.
+
+<img src="./public/screenshots/metrics-dark.png#gh-dark-mode-only" alt="Panel de métricas de sprint" width="900" />
+<img src="./public/screenshots/metrics-light.png#gh-light-mode-only" alt="Panel de métricas de sprint" width="900" />
+
+**Base de conocimiento**: editor tipo Notion con árbol de páginas y enlaces
+bidireccionales entre páginas e issues.
+
+<img src="./public/screenshots/knowledge-base-dark.png#gh-dark-mode-only" alt="Editor de la base de conocimiento" width="900" />
+<img src="./public/screenshots/knowledge-base-light.png#gh-light-mode-only" alt="Editor de la base de conocimiento" width="900" />
+
+**Hub**: todos tus espacios de trabajo, tareas pendientes y notificaciones en un
+único sitio.
+
+<img src="./public/screenshots/dashboard-dark.png#gh-dark-mode-only" alt="Hub personal" width="900" />
+<img src="./public/screenshots/dashboard-light.png#gh-light-mode-only" alt="Hub personal" width="900" />
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
