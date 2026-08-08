@@ -27,7 +27,7 @@
     "@editorjs/underline": "^1.2.1",
     "@editorjs/warning": "^1.4.1",
     "@tailwindcss/typography": "^0.5.20",
-    "@tailwindcss/vite": "^4.3.2",
+    "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
