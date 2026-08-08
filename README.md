@@ -2,161 +2,192 @@
 
 <div align="center">
 
-[![Version][version-shield]][version-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![License][license-shield]][license-url]
-[![CI][ci-shield]][ci-url]
-
-<a href="https://github.com/JoseSerpaCode/Forge-js" target="_blank" rel="noopener noreferrer">
-  <img width="350px" src="./public/screenshot.png" alt="Forge OS Screenshot" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" />
-</a>
-
-<br/>
-<br/>
+<img width="90px" src="./public/forge-icon.svg" alt="Forge OS" />
 
 ## Forge OS • Enterprise Multi-Tenant Workspace
 
-**Forge OS** es un sistema operativo de trabajo colaborativo multi-inquilino (*multi-tenant*), diseñado con un frontend Vanilla JS superrápido sobre Astro y un backend altamente optimizado en NodeJS con SQLite. Unifica Kanban, Bases de Datos dinámicas y Base de Conocimientos en una sola plataforma.
+[![Version][version-shield]][version-url]
+[![CI][ci-shield]][ci-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![License][license-shield]][license-url]
 
-[Reportar bug](https://github.com/JoseSerpaCode/Forge-js/issues) · [Sugerir funcionalidad](https://github.com/JoseSerpaCode/Forge-js/issues) · [Ver Changelog](./CHANGELOG.md)
+**Kanban boards, dynamic databases and a Notion-style knowledge base in one
+self-hosted workspace.** Built on Astro SSR with a synchronous SQLite core — no
+virtual DOM, no client-side framework, no external services.
+
+[Report a bug](https://github.com/JoseSerpaCode/Forge-js/issues) · [Request a feature](https://github.com/JoseSerpaCode/Forge-js/issues) · [Changelog](./CHANGELOG.md)
+
+**English** · [Español](./README.es.md)
 
 </div>
 
 <details>
-<summary><b>Tabla de contenidos</b></summary>
+<summary><b>Table of contents</b></summary>
 
-- [Forge OS • Enterprise Multi-Tenant Workspace](#forge-os--enterprise-multi-tenant-workspace)
-- [Características principales](#características-principales)
-- [Para empezar](#para-empezar)
-  - [Prerequisitos](#prerequisitos)
-  - [Instalación y Configuración](#instalación-y-configuración)
-- [Stack Tecnológico](#stack-tecnológico)
-- [Seguridad y Buenas Prácticas](#seguridad-y-buenas-prácticas)
+- [Why Forge OS](#why-forge-os)
+- [Features](#features)
+- [Getting started](#getting-started)
+  - [Requirements](#requirements)
+  - [Install](#install)
+  - [Scripts](#scripts)
+- [Tech stack](#tech-stack)
+- [Security](#security)
 - [Roadmap](#roadmap)
-- [Contribuir al proyecto](#contribuir-al-proyecto)
+- [Contributing](#contributing)
+- [License](#license)
 
 </details>
 
 <br/>
 
-## Características principales
+## Why Forge OS
 
-Forge OS no es solo un gestor de tareas, es un ecosistema de colaboración completo:
+Most team workspaces make you choose: a fast board with no documentation, or a
+wiki that cannot track work. Forge OS puts both behind the same multi-tenant
+boundary, so an issue can link to a page and the page knows which issues
+reference it.
 
-- **Aislamiento Multi-Tenant Total**: Espacios de trabajo separados lógicamente, garantizando que un usuario no pueda acceder ni modificar datos de otros inquilinos (protección IDOR exhaustiva).
-- **Cuentas de Invitado (Guest Accounts)**: Perfiles de acceso restringido y aislado. No pueden buscar a otros, enviar solicitudes, ni modificar configuraciones de visibilidad.
-- **Red Social Interna (Forge Hub)**: Perfiles públicos personalizables (banner, avatar, biografía) con edición en línea (`inline editing`), sistema de amistades y bloqueo de usuarios.
-- **Tablero Kanban Avanzado**: Gestión de Sprints, Issues y Épicas. Incluye rediseño de flujos, drag & drop persistente, y control de tiempo (Time Tracking) server-side con auto-pausa.
-- **Base de Conocimientos (Knowledge Base)**: Sistema de documentación estilo Notion, con enlaces bidireccionales, organización jerárquica y versionado automático.
-- **Bases de Datos Dinámicas (Fase 1)**: Crea tablas dinámicas tipo Airtable directamente desde la interfaz, adaptando el software a tus necesidades de negocio.
-- **Command Palette & Atajos Globales**: Navegación veloz mediante atajos de teclado (como `/` para buscar espacios o `/u` para usuarios globales).
-- **SEO Dinámico y Optimización**: Las tarjetas de redes sociales (OpenGraph) y meta etiquetas se adaptan dinámicamente al perfil público del usuario o tablero que se está visualizando.
-- **Localización Intuitiva (i18n)**: Soporte nativo para Inglés y Español (detectado automáticamente).
+It runs as a **single Node process against a local SQLite file**. There is no
+database server to operate, no queue, no cache tier. Cloning the repo and
+running two commands gives you a working instance.
 
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+## Features
 
-## Para empezar
+- **Strict multi-tenant isolation** — workspaces are separated at the data
+  layer, not the UI. Every query is scoped by `workspace_id`, with exhaustive
+  IDOR protection on each endpoint.
+- **Kanban and sprints** — epics, stories, tasks and bugs across four columns
+  with persistent drag & drop, plus server-side time tracking that auto-stops
+  when an issue reaches Done.
+- **Knowledge base** — a Notion-style editor built on Editor.js with tables,
+  code blocks, undo/redo and bidirectional links between pages and issues.
+- **Dynamic databases** — build Airtable-style tables from the UI, without
+  touching a schema file.
+- **Sprint metrics** — velocity, burndown, distribution and precision charts
+  rendered with Chart.js from real work logs.
+- **Forge Hub** — public profiles with banner, avatar and bio, inline editing,
+  friendships and user blocking.
+- **Guest accounts** — restricted, isolated sessions that can be promoted to a
+  real account later, carrying their provisional workspaces across.
+- **Command palette** — `Cmd/Ctrl+K` for global navigation, plus single-key
+  shortcuts throughout the app.
+- **Bilingual UI** — English and Spanish, detected automatically.
 
-### Prerequisitos
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Te recomendamos encarecidamente utilizar **Node.js (v22+)** para una máxima compatibilidad y rendimiento.
+## Getting started
 
-* **NVM** (Recomendado para manejar la versión de Node):
-  ```sh
-  nvm install 22
-  nvm use 22
-  ```
+### Requirements
 
-* **NPM**:
-  ```sh
-  npm install npm@latest -g
-  ```
+**Node.js 22.12 or newer.** CI runs on Node 26. `better-sqlite3` compiles a
+native module on install, so a working C++ toolchain is required — on most
+systems it is already present.
 
-### Instalación y Configuración
+### Install
 
-1. **Clona el repositorio**
-   ```sh
-   git clone https://github.com/JoseSerpaCode/Forge-js.git
-   ```
+```sh
+git clone https://github.com/JoseSerpaCode/Forge-js.git
+cd Forge-js
+npm install
+```
 
-2. **Accede al directorio del proyecto**
-   ```sh
-   cd Forge-js
-   ```
+Populate a demo workspace — a sprint, a board spread across all four columns,
+work logs and a small knowledge base:
 
-3. **Instala las dependencias de NPM**
-   ```sh
-   npm install
-   ```
+```sh
+npm run seed
+```
 
-4. **Puebla la base de datos (Opcional pero recomendado)**
-   Este script inicializa `better-sqlite3` e inserta los usuarios y roles requeridos para el entorno de desarrollo.
-   ```sh
-   npm run seed
-   ```
+Then start the dev server:
 
-5. **Levanta el entorno en local**
-   ```sh
-   npm run dev
-   ```
-   > La aplicación estará disponible de inmediato en `http://localhost:4321`.
+```sh
+npm run dev
+```
 
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+The app is served at **http://localhost:4321**. Sign in as `avery` with the
+seed password (`LocalDevPass123!` by default; override it by exporting
+`TEST_PASSWORD` before seeding).
 
-## Stack Tecnológico
+> `npm run seed` refuses to touch a database that already has data. Pass
+> `-- --force` to wipe and reseed. Point it elsewhere with `DATABASE_URL` if you
+> want to keep your working database untouched.
+
+### Scripts
+
+| Command             | What it does                                      |
+| ------------------- | ------------------------------------------------- |
+| `npm run dev`       | Dev server on port 4321                           |
+| `npm run build`     | Production build (Node adapter)                   |
+| `npm run seed`      | Seed a demo workspace (`-- --force` to overwrite) |
+| `npm test`          | Unit tests (Vitest)                               |
+| `npm run test:e2e`  | End-to-end tests (Playwright)                     |
+| `npm run typecheck` | `astro check`                                     |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Tech stack
 
 [![Astro][astro-badge]][astro-url] [![TypeScript][typescript-badge]][typescript-url] [![Node.js][node-badge]][node-url] [![SQLite][sqlite-badge]][sqlite-url] [![Playwright][playwright-badge]][playwright-url]
 
-- **Frontend**: Astro + Vanilla JS + Vanilla CSS (Enfoque en alta velocidad, sin Virtual DOM y cero JavaScript innecesario para los clientes).
-- **Backend**: Astro SSR (Node.js Adapter) actuando como servidor monolítico con Middlewares empresariales.
-- **Base de datos**: SQLite utilizando `better-sqlite3` para I/O ultrarrápido y sincronización síncrona en memoria/disco.
-- **Testing**: Playwright para pruebas End-to-End exhaustivas, Vitest para pruebas unitarias.
+- **Frontend** — Astro 7 with vanilla JS and CSS. No virtual DOM and no
+  framework runtime shipped to the browser.
+- **Backend** — Astro SSR on the Node adapter, running as a single monolithic
+  server with its own middleware chain. Realtime over Socket.IO.
+- **Database** — SQLite through `better-sqlite3`, synchronous and in-process.
+- **Testing** — Playwright for end-to-end flows, Vitest for units.
 
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Seguridad y Buenas Prácticas
+## Security
 
-Forge OS cuenta con auditorías de seguridad incorporadas y Middlewares estrictos:
-- **Protección RBAC**: Roles de acceso (Owner, Admin, Editor, Viewer).
-- **Prevención de Ataques Web**: Protecciones activas contra SQLi, XSS, SSRF y Path Traversal en el manejo de adjuntos.
-- **Validación Estricta**: Tamaños de archivo limitados (10MB max), comprobación de MIME types, e IDs ofuscados o sanitizados con UUIDv4.
+- **RBAC** — owner, editor, commenter and viewer roles, enforced server-side.
+- **Attack surface** — active mitigations for SQL injection, XSS, SSRF and path
+  traversal in attachment handling, behind a strict CSP.
+- **Uploads** — 10 MB ceiling, MIME type verification, UUIDv4 identifiers.
+- **Rate limiting** — persistent across restarts, applied to auth and public
+  endpoints.
 
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+Found something? See [SECURITY.md](./SECURITY.md).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Roadmap
 
-Actualmente Forge OS está en un ciclo de desarrollo activo. Aquí está nuestra hoja de ruta principal:
+- [x] Identity and workspaces — login, sessions, multi-tenant isolation
+- [x] Knowledge base — documents, safe Markdown parsing, bidirectional links
+- [x] Kanban and sprints — drag & drop, velocity/distribution/precision metrics, time tracking
+- [x] Dashboard — cross-workspace summary and global notifications
+- [x] UI/UX and command palette — global shortcuts, modals, toast feedback
+- [x] Dynamic databases (phase 1) — Airtable-style tables from the UI
+- [ ] Dynamic databases (phase 2) — relations, formulas and saved views
+- [ ] Full-text search across pages and issues
 
-- [x] **Módulo de Identidad y Workspaces**: Sistema de login y aislamiento multi-tenant.
-- [x] **Base de Conocimientos (Notion-like)**: Sistema de documentos, parseo seguro Markdown y enlaces bidireccionales.
-- [x] **Kanban & Sprints (Bloque 4)**: Tablero drag&drop, métricas avanzadas (Velocity, Distribution, Precision), control de tiempo (Time Tracking) preciso.
-- [x] **Dashboard General**: Panel central para visualizar el resumen de todos los Workspaces y notificaciones globales.
-- [x] **UI/UX & Command Palette**: Mejoras de usabilidad, atajos globales de teclado, diseño de modales y feedback (Toasts).
-- [ ] **Bases de Datos Dinámicas (Fase 1)**: Creación de tablas dinámicas tipo Airtable para flexibilizar la gestión de datos.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+## Contributing
 
-## Contribuir al proyecto
+Contributions are welcome.
 
-¡Forge OS está abierto a mejoras y extensiones! Las contribuciones son lo que hacen a la comunidad _open source_ un lugar increíble. Toda contribución será **muy apreciada**.
+1. [Fork](https://github.com/JoseSerpaCode/Forge-js/fork) the project
+2. Create your branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'feat(scope): add AmazingFeature'`)
+4. Push the branch (`git push origin feature/AmazingFeature`)
+5. Open a [Pull Request](https://github.com/JoseSerpaCode/Forge-js/pulls)
 
-1. Haz un [_Fork_](https://github.com/JoseSerpaCode/Forge-js/fork) del proyecto
-2. Crea tu rama para la nueva funcionalidad (`git checkout -b feature/CaracteristicaIncreible`)
-3. Haz un commit detallado de tus cambios (`git commit -m 'feat(scope): Añadir CaracterísticaIncreible'`)
-4. Haz push a tu rama (`git push origin feature/CaracteristicaIncreible`)
-5. Abre un [_Pull Request_](https://github.com/JoseSerpaCode/Forge-js/pulls)
+Please read the [contribution guidelines](./CONTRIBUTING.md) first. Pull
+requests that change critical flows are expected to come with Playwright tests.
 
-> **Importante:** Por favor, asegúrate de revisar nuestras [Normas de Contribución](./CONTRIBUTING.md) antes de enviar código. Todos los Pull Requests deben venir acompañados de tests de Playwright para validar flujos críticos.
+## License
 
-<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+Distributed under the MIT License. See [LICENSE](./LICENSE).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
+
 [version-shield]: https://img.shields.io/github/package-json/v/JoseSerpaCode/Forge-js?style=for-the-badge&color=2563eb
 [version-url]: https://github.com/JoseSerpaCode/Forge-js
-[forks-shield]: https://img.shields.io/github/forks/JoseSerpaCode/Forge-js.svg?style=for-the-badge
-[forks-url]: https://github.com/JoseSerpaCode/Forge-js/network/members
 [stars-shield]: https://img.shields.io/github/stars/JoseSerpaCode/Forge-js.svg?style=for-the-badge
 [stars-url]: https://github.com/JoseSerpaCode/Forge-js/stargazers
 [issues-shield]: https://img.shields.io/github/issues/JoseSerpaCode/Forge-js.svg?style=for-the-badge
@@ -165,7 +196,6 @@ Actualmente Forge OS está en un ciclo de desarrollo activo. Aquí está nuestra
 [license-url]: ./LICENSE
 [ci-shield]: https://img.shields.io/github/actions/workflow/status/JoseSerpaCode/Forge-js/ci.yml?style=for-the-badge&label=CI
 [ci-url]: https://github.com/JoseSerpaCode/Forge-js/actions/workflows/ci.yml
-
 [astro-badge]: https://img.shields.io/badge/Astro-fff?style=for-the-badge&logo=astro&logoColor=bd303a&color=352563
 [astro-url]: https://astro.build/
 [typescript-badge]: https://img.shields.io/badge/Typescript-007ACC?style=for-the-badge&logo=typescript&logoColor=white&color=blue
