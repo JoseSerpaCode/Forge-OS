@@ -28,8 +28,43 @@ const dbPath = process.env.DATABASE_URL ? process.env.DATABASE_URL : (process.en
 path.join(process.cwd(), 'forge.db'));
 const db = new Database(dbPath, { verbose: process.env.NODE_ENV === 'development' ? console.log : undefined });
 
+// Esperar al lock en vez de fallar al instante con SQLITE_BUSY.
+//
+// Va PRIMERO, y el orden importa: `journal_mode = WAL` necesita un lock
+// exclusivo, así que si varios procesos abren una base nueva a la vez y el
+// timeout aún no está puesto, ese mismo pragma revienta con SQLITE_BUSY.
+// Varios procesos sobre el mismo archivo es lo normal aquí: workers de test,
+// un servidor y un script, o un despliegue multiproceso.
+db.pragma('busy_timeout = 15000');
+
+/** Espera síncrona, acorde con el resto de la inicialización del módulo. */
+function sleepSync(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Pasar a WAL exige un lock exclusivo y, a diferencia del resto de
+ * operaciones, ese cambio de modo no respeta `busy_timeout`: si otro proceso
+ * está haciendo exactamente lo mismo en ese instante, falla con SQLITE_BUSY.
+ *
+ * Se consulta el modo antes de intentar cambiarlo, porque leerlo no necesita
+ * lock: en cuanto un proceso lo ha puesto, los demás no tienen nada que hacer.
+ */
+function enableWal() {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    try {
+      if (String(db.pragma('journal_mode', { simple: true })).toLowerCase() === 'wal') return;
+      if (String(db.pragma('journal_mode = WAL', { simple: true })).toLowerCase() === 'wal') return;
+    } catch (e: any) {
+      if (e.code !== 'SQLITE_BUSY') throw e;
+    }
+    sleepSync(25);
+  }
+  throw new Error('[DB] No se pudo pasar la base de datos a modo WAL: sigue bloqueada tras 20 intentos');
+}
+
 // Optimizaciones Críticas Obligatorias
-db.pragma('journal_mode = WAL');
+enableWal();
 db.pragma('synchronous = NORMAL');
 db.pragma('foreign_keys = ON'); // Vital para los CASCADE DELETES
 db.pragma('temp_store = MEMORY');
@@ -515,7 +550,9 @@ const MIGRATIONS: Migration[] = [
     run: () => {
       const schema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='attachments'").get() as any;
       if (schema && !schema.sql.includes("'user'")) {
-        db.pragma('foreign_keys = OFF');
+        // Ojo: aquí NO se toca `foreign_keys`. PRAGMA foreign_keys es un no-op
+        // dentro de una transacción, y las migraciones ahora corren dentro de
+        // una. Se desactiva antes de abrirla (ver applyMigrations más abajo).
         db.exec('ALTER TABLE attachments RENAME TO attachments_old');
         db.exec(`
           CREATE TABLE attachments (
@@ -533,23 +570,45 @@ const MIGRATIONS: Migration[] = [
         `);
         db.exec('INSERT INTO attachments SELECT * FROM attachments_old');
         db.exec('DROP TABLE attachments_old');
-        db.pragma('foreign_keys = ON');
       }
     }
   },
 ];
 
-for (const m of MIGRATIONS) {
-  const applied = db.prepare('SELECT 1 FROM schema_migrations WHERE version = ?').get(m.version);
-  if (applied) continue;
-  try {
-    m.run();
-    db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(m.version);
-  } catch (e: any) {
-    // Fail loudly so broken migrations are never silently ignored
-    console.error(`[DB] Migration v${m.version} (${m.description}) failed: ${e.message}`);
-    throw e;
+// El bucle entero va dentro de una transacción IMMEDIATE.
+//
+// Comprobar `schema_migrations` y luego aplicar la migración es un
+// check-then-act: no es atómico entre procesos. Si varios abren una base nueva
+// a la vez, todos leen la misma versión como pendiente y todos ejecutan el
+// mismo ALTER TABLE. Uno gana y el resto muere con "duplicate column name" o
+// "UNIQUE constraint failed: schema_migrations.version".
+//
+// BEGIN IMMEDIATE toma el lock de escritura de entrada, así que solo un proceso
+// migra. Los demás esperan (busy_timeout, arriba), y cuando entran leen
+// schema_migrations ya actualizada y no les queda nada por hacer.
+const applyMigrations = db.transaction(() => {
+  for (const m of MIGRATIONS) {
+    const applied = db.prepare('SELECT 1 FROM schema_migrations WHERE version = ?').get(m.version);
+    if (applied) continue;
+    try {
+      m.run();
+      db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(m.version);
+    } catch (e: any) {
+      // Fail loudly so broken migrations are never silently ignored
+      console.error(`[DB] Migration v${m.version} (${m.description}) failed: ${e.message}`);
+      throw e;
+    }
   }
+});
+
+// PRAGMA foreign_keys no hace nada dentro de una transacción, así que hay que
+// desactivarlo aquí y no dentro de la migración que reconstruye `attachments`.
+// Es además lo que recomienda SQLite para cambios de esquema.
+db.pragma('foreign_keys = OFF');
+try {
+  applyMigrations.immediate();
+} finally {
+  db.pragma('foreign_keys = ON');
 }
 
 // ── Expired Guest Cleanup ─────────────────────────────────────────────────────
