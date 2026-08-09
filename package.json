@@ -35,7 +35,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.0",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "chart.js": "^4.5.1",
     "cookie": "^2.0.1",
     "drizzle-orm": "^0.45.2",
