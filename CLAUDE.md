@@ -83,6 +83,39 @@ La variante `dark:` de Tailwind está atada a `[data-theme]` con
 `@custom-variant`, no a `prefers-color-scheme`. Sin eso, `dark:prose-invert` no
 se activa con el conmutador de la app.
 
+## Tablas reservadas: no están rotas, están sin construir
+
+Hay 7 tablas en el esquema que no consulta ningún código. **No son restos ni un
+error**: son alcance declarado por adelantado. Se mantienen porque crear una
+tabla vacía en SQLite cuesta unos bytes, mientras que borrarlas obliga a
+escribir la migración dos veces cuando llegue la feature.
+
+| Tabla | Feature prevista |
+|---|---|
+| `entry_relations`, `dynamic_views` | Bases de datos dinámicas fase 2 (está en el roadmap del README) |
+| `document_chunks` | Búsqueda semántica / RAG |
+| `public_forms` | Formularios públicos |
+| `labels` | Etiquetas de issues y páginas |
+| `channels`, `messages` | Chat de equipo (tiene esquema, sin interfaz) |
+
+Antes de dar por muerta cualquiera de ellas, comprueba si su feature sigue en el
+roadmap.
+
+## Despliegue
+
+Guía completa en `deploy/README.md`. Tres cosas que conviene saber sin abrirla:
+
+- **Los datos viven fuera del checkout** (`/var/lib/forge-os`), vía
+  `DATABASE_URL` y `STORAGE_DIR`. Un despliegue que limpie el directorio no
+  puede llevarse por delante la base de datos ni los archivos subidos.
+- **`PUBLIC_SITE_URL` es obligatoria en producción.** Sin ella la app se anuncia
+  como `localhost:4321` en la URL canónica y en las etiquetas OpenGraph. Va de
+  la mano de `trust proxy` en `server.mjs`: detrás de Caddy, sin ambas cosas,
+  `Astro.url` miente.
+- **Nunca `cp forge.db`.** La base está en WAL, así que copiar el archivo da una
+  copia incompleta o corrupta. Usa `scripts/backup.sh`, que va por
+  `sqlite3 .backup` y verifica la copia con `integrity_check`.
+
 ## Estado
 
 Remote: `git@github.com:JoseSerpaCode/Forge-OS.git`. Sin PRs ni issues abiertos.

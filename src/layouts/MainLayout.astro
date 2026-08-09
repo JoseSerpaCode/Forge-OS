@@ -25,6 +25,22 @@ if (workspaceId) {
 const metaDesc = description || "Forge OS - Advanced workspace management and task tracking application for professional teams.";
 const metaImg = ogImage || "/forge-icon.svg";
 
+// La URL canónica se construye sobre `Astro.site` (configurada con
+// PUBLIC_SITE_URL), no sobre `Astro.url`.
+//
+// Detrás de un proxy inverso, `Astro.url` toma el esquema de la conexión
+// entrante, que es HTTP plano entre Caddy y Node aunque el visitante llegue por
+// HTTPS. `trust proxy` en Express corrige el host pero no el esquema: el
+// adaptador de Astro no lee X-Forwarded-Proto. El resultado sería
+// `http://forge-os.online/...` en la canónica y en las tarjetas sociales.
+//
+// `Astro.site` es un valor declarado, no deducido de la petición, así que no
+// depende de que la cadena de proxies esté bien montada.
+const canonicalUrl = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).href
+  : Astro.url.href;
+const absoluteImg = Astro.site ? new URL(metaImg, Astro.site).href : metaImg;
+
 // Prevent BFCache and caching to ensure data is always fresh and 404s trigger correctly
 Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
 Astro.response.headers.set('Pragma', 'no-cache');
@@ -43,15 +59,15 @@ Astro.response.headers.set('Pragma', 'no-cache');
     <meta property="og:title" content={`${title} | Forge OS`} />
     <meta property="og:description" content={metaDesc} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={Astro.url.href} />
-    {ogImage && <meta property="og:image" content={metaImg} />}
+    <meta property="og:url" content={canonicalUrl} />
+    {ogImage && <meta property="og:image" content={absoluteImg} />}
     
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={`${title} | Forge OS`} />
     <meta name="twitter:description" content={metaDesc} />
-    {ogImage && <meta name="twitter:image" content={metaImg} />}
+    {ogImage && <meta name="twitter:image" content={absoluteImg} />}
     
-    <link rel="canonical" href={Astro.url.href} />
+    <link rel="canonical" href={canonicalUrl} />
     
     <!-- Preconnect & Preload for Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

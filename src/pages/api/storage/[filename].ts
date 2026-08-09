@@ -3,6 +3,7 @@ import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import fs from 'fs';
 import path from 'path';
+import { STORAGE_DIR } from '../../../lib/storage';
 
 export const GET: APIRoute = async ({ params, request, locals }) => {
   const { filename } = params;
@@ -38,7 +39,7 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
 
   // 4. Serve the file securely
   const safeFilename = path.basename(filename);
-  const filePath = path.join(process.cwd(), '.data', 'storage', safeFilename);
+  const filePath = path.join(STORAGE_DIR, safeFilename);
 
   if (!fs.existsSync(filePath)) {
     return new Response('File not found on disk', { status: 404 });
@@ -56,7 +57,12 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
       'Content-Disposition': isSafeImage ? 'inline' : `attachment; filename="${encodeURIComponent(safeFilename)}"`,
       'X-Content-Type-Options': 'nosniff',
       'Content-Length': stat.size.toString(),
-      'Cache-Control': 'public, max-age=86400',
+      // `private`, no `public`: esta respuesta llega después de comprobar el
+      // acceso del usuario al workspace (checkWorkspaceAccess, arriba).
+      // Marcarla como `public` autoriza a cachés compartidas —un CDN, un proxy
+      // corporativo— a almacenar un archivo privado y servírselo a alguien que
+      // no ha pasado esa comprobación.
+      'Cache-Control': 'private, max-age=86400',
     }
   });
 };

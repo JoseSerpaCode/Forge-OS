@@ -4,6 +4,7 @@ import db from '../../lib/db';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import { STORAGE_DIR } from '../../lib/storage';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = locals.user!;
@@ -68,7 +69,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const fileName = `${crypto.randomUUID()}-${safeFilename}`;
   
   // SECURE STORAGE: Store outside of the public/ directory to prevent unauthorized static access
-  const uploadDir = path.join(process.cwd(), '.data', 'storage');
+  const uploadDir = STORAGE_DIR;
 
   await fs.mkdir(uploadDir, { recursive: true });
   await fs.writeFile(path.join(uploadDir, fileName), buffer);
