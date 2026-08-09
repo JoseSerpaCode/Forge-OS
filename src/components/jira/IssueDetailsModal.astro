@@ -24,14 +24,14 @@ const t = useTranslations(lang);
         <option value="bug">BUG</option>
         <option value="story">STORY</option>
       </select>
-      <span id="modal-issue-id" class="font-mono text-[13px] text-forge-muted/80 tracking-wide font-medium">ID-XXX</span>
+      <span id="modal-issue-id" class="font-mono text-[13px] text-forge-muted tracking-wide font-medium">ID-XXX</span>
     </div>
     <div class="flex items-center gap-3">
-      <button id="btn-share-issue" class="text-forge-muted hover:text-forge-secondary hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1" title="Copy Link to Issue">
+      <button id="btn-share-issue" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1" title="Copy Link to Issue">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
         Share
       </button>
-      <button id="btn-delete-issue" class="text-red-400 hover:bg-red-400/10 hover:text-red-300 px-3 py-1.5 rounded-md text-xs font-bold transition-all hidden border border-transparent hover:border-red-400/20">
+      <button id="btn-delete-issue" class="text-forge-error hover:bg-red-400/10 hover:text-red-300 px-3 py-1.5 rounded-md text-xs font-bold transition-all hidden border border-transparent hover:border-red-400/20">
         {t('modal.delete')}
       </button>
       <button id="close-modal-btn" class="text-forge-muted hover:text-forge-text hover:bg-forge-panel p-1.5 rounded-md transition-colors border border-transparent hover:border-forge-border/30" title="Close (Esc)">
@@ -48,7 +48,7 @@ const t = useTranslations(lang);
     
     <div class="grid grid-cols-2 gap-6">
       <div class="space-y-2 relative">
-        <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest flex items-center gap-1.5">
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           {t('modal.assignee')}
         </label>
@@ -63,7 +63,7 @@ const t = useTranslations(lang);
         </div>
       </div>
       <div class="space-y-2 relative">
-        <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest flex items-center gap-1.5">
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
           {t('modal.reporter')}
         </label>
@@ -80,21 +80,21 @@ const t = useTranslations(lang);
     </div>
     
     <div class="space-y-2 relative">
-      <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest flex justify-between items-center">
+      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex justify-between items-center">
         <span class="flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="3" x2="21" y2="7"></line><polyline points="21 3 17 7 21 11"></polyline><path d="M3 13h10V3H3v10z"></path><path d="M3 21h18V13H3v8z"></path></svg>
           {t('modal.description')}
         </span>
       </label>
       <div class="relative group">
-        <textarea id="modal-issue-desc" rows="6" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-xl p-4 text-[13px] leading-relaxed text-forge-text/90 focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all placeholder:text-forge-muted/50 resize-y shadow-inner" placeholder={t('modal.desc_placeholder') as string}></textarea>
-        <button id="btn-save-desc" class="hidden absolute bottom-3 right-3 bg-forge-primary text-forge-bg text-[11px] uppercase tracking-wider font-bold px-4 py-1.5 rounded-lg hover:bg-forge-primary/90 hover:scale-105 active:scale-95 transition-all shadow-md shadow-forge-primary/20">{t('modal.save')}</button>
+        <textarea id="modal-issue-desc" rows="6" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-xl p-4 text-[13px] leading-relaxed text-forge-text/90 focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all placeholder:text-forge-muted resize-y shadow-inner" placeholder={t('modal.desc_placeholder') as string}></textarea>
+        <button id="btn-save-desc" class="hidden absolute bottom-3 right-3 bg-forge-primary text-forge-on-accent text-[11px] uppercase tracking-wider font-bold px-4 py-1.5 rounded-lg hover:bg-forge-primary/90 hover:scale-105 active:scale-95 transition-all shadow-md shadow-forge-primary/20">{t('modal.save')}</button>
       </div>
     </div>
     
     <div class="grid grid-cols-2 gap-6">
       <div class="space-y-2">
-        <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest">{t('modal.sprint')}</label>
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('modal.sprint')}</label>
         <select id="modal-issue-sprint" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
           <option value="backlog">{t('modal.backlog')}</option>
           {sprints.map((s: any) => (
@@ -103,13 +103,13 @@ const t = useTranslations(lang);
         </select>
       </div>
       <div class="space-y-2 relative group/sp">
-        <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest flex justify-between items-center cursor-help">
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex justify-between items-center cursor-help">
           <span>{t('modal.story_points')}</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted hover:text-forge-secondary transition-colors"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted hover:text-forge-accent-text transition-colors"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         </label>
         
         <div class="absolute bottom-full right-0 mb-2 w-64 bg-forge-panel border border-forge-border p-3 rounded-lg shadow-xl opacity-0 invisible group-hover/sp:opacity-100 group-hover/sp:visible transition-all z-50 text-[11px] text-forge-text font-normal normal-case leading-relaxed">
-          <p class="font-bold mb-1 text-forge-secondary">Fibonacci Estimation (1, 2, 3, 5, 8...)</p>
+          <p class="font-bold mb-1 text-forge-accent-text">Fibonacci Estimation (1, 2, 3, 5, 8...)</p>
           <ul class="space-y-1 text-forge-muted">
             <li><strong class="text-forge-text">1-2:</strong> Trivial or very simple tasks.</li>
             <li><strong class="text-forge-text">3-5:</strong> Standard tasks with known scope.</li>
@@ -118,7 +118,7 @@ const t = useTranslations(lang);
         </div>
         
         <div class="relative">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-forge-secondary">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-forge-accent-text">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon><line x1="12" y1="22" x2="12" y2="15.5"></line><polyline points="22 8.5 12 15.5 2 8.5"></polyline><polyline points="2 15.5 12 8.5 22 15.5"></polyline><line x1="12" y1="2" x2="12" y2="8.5"></line></svg>
           </div>
           <input type="number" id="modal-issue-points" value="0" min="0" class="w-full bg-forge-bg border border-forge-border/50 rounded-lg py-2.5 pl-9 pr-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm font-mono" />
@@ -127,7 +127,7 @@ const t = useTranslations(lang);
     </div>
     
     <div class="space-y-2 relative">
-      <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest">{t('modal.due_date') || 'Due Date'}</label>
+      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('modal.due_date') || 'Due Date'}</label>
       <input type="date" id="modal-issue-due-date" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm font-mono" />
     </div>
     
@@ -135,7 +135,7 @@ const t = useTranslations(lang);
     <div class="bg-forge-panel/20 border border-forge-border/40 rounded-xl p-5 space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="text-[11px] font-bold text-forge-text uppercase tracking-widest flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-secondary"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           {t('modal.time_tracking')}
         </h3>
         <div class="flex items-center gap-2">
@@ -143,7 +143,7 @@ const t = useTranslations(lang);
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>
             Stop Timer
           </button>
-          <button id="btn-log-work" class="bg-forge-secondary/10 hover:bg-forge-secondary/20 text-forge-secondary text-xs font-bold px-3 py-1.5 rounded-lg border border-forge-secondary/30 transition-all flex items-center gap-1.5">
+          <button id="btn-log-work" class="bg-forge-secondary/10 hover:bg-forge-secondary/20 text-forge-accent-text text-xs font-bold px-3 py-1.5 rounded-lg border border-forge-secondary/30 transition-all flex items-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             {t('modal.log_work')}
           </button>
@@ -152,7 +152,7 @@ const t = useTranslations(lang);
       
       <div class="grid grid-cols-2 gap-6">
         <div class="space-y-1.5">
-          <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest">{t('modal.estimated_hours')}</label>
+          <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('modal.estimated_hours')}</label>
           <input type="number" id="modal-issue-estimated" value="0" min="0" step="0.5" class="w-full bg-forge-bg border border-forge-border/50 rounded-lg py-2 px-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all font-mono" />
         </div>
         <div class="space-y-1.5 flex flex-col justify-end">
@@ -174,23 +174,23 @@ const t = useTranslations(lang);
     
     <div class="space-y-2 mt-auto pt-6 border-t border-forge-border/30">
       <div class="flex justify-between items-center">
-        <label class="text-[10px] font-bold text-forge-muted/70 uppercase tracking-widest flex items-center gap-1.5">
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
           {t('modal.attachments')}
         </label>
-        <button id="btn-add-attachment-compact" class="hidden text-forge-secondary hover:bg-forge-secondary/10 p-1.5 rounded transition-colors" title="Add Attachment">
+        <button id="btn-add-attachment-compact" class="hidden text-forge-accent-text hover:bg-forge-secondary/10 p-1.5 rounded transition-colors" title="Add Attachment">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
       </div>
       
       <div id="attachments-list" class="space-y-2 mb-2 empty:hidden"></div>
 
-      <div id="btn-add-attachment" class="border-2 border-dashed border-forge-border/40 bg-forge-panel/20 rounded-xl p-8 flex flex-col items-center justify-center text-forge-muted hover:text-forge-secondary hover:border-forge-secondary/60 hover:bg-forge-secondary/5 transition-all cursor-pointer group">
+      <div id="btn-add-attachment" class="border-2 border-dashed border-forge-border/40 bg-forge-panel/20 rounded-xl p-8 flex flex-col items-center justify-center text-forge-muted hover:text-forge-accent-text hover:border-forge-secondary/60 hover:bg-forge-secondary/5 transition-all cursor-pointer group">
         <div class="bg-forge-bg p-3 rounded-full border border-forge-border/40 group-hover:border-forge-secondary/30 group-hover:scale-110 transition-transform mb-3 shadow-sm">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.4"></path><path d="M12 18v-6"></path><path d="M9 15l3-3 3 3"></path></svg>
         </div>
         <span class="text-sm font-bold tracking-tight">{t('modal.click_or_drag')}</span>
-        <span class="text-[10px] text-forge-muted/60 mt-1">PNG, JPG, PDF up to 20MB</span>
+        <span class="text-[10px] text-forge-muted mt-1">PNG, JPG, PDF up to 20MB</span>
       </div>
       <input type="file" id="file-attachment" class="hidden" />
     </div>
@@ -200,7 +200,7 @@ const t = useTranslations(lang);
 <!-- Log Work Modal -->
 <dialog id="log-work-modal" class="bg-forge-panel border border-forge-border rounded-xl p-6 w-full max-w-[400px] text-forge-text shadow-2xl backdrop:bg-black/60">
   <h2 class="text-lg font-bold mb-5 flex items-center gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
     {t('modal.log_work')}
   </h2>
   <div class="space-y-4">
@@ -216,12 +216,12 @@ const t = useTranslations(lang);
     </div>
     <div>
       <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-1.5">{t('modal.work_desc')}</label>
-      <textarea id="log-work-desc" rows="3" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary focus:outline-none placeholder:text-forge-muted/50" placeholder={t('modal.work_desc_placeholder') as string}></textarea>
+      <textarea id="log-work-desc" rows="3" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary focus:outline-none placeholder:text-forge-muted" placeholder={t('modal.work_desc_placeholder') as string}></textarea>
     </div>
   </div>
   <div class="flex justify-end gap-3 mt-6">
     <button type="button" class="px-4 py-2 text-xs font-bold text-forge-muted hover:text-forge-text transition-colors" onclick="document.getElementById('log-work-modal').close()">{t('modal.cancel')}</button>
-    <button type="button" id="btn-save-log-work" class="bg-forge-secondary text-forge-bg text-xs font-bold px-5 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-forge-secondary/20">{t('modal.save_log')}</button>
+    <button type="button" id="btn-save-log-work" class="bg-forge-primary text-forge-on-accent text-xs font-bold px-5 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-forge-secondary/20">{t('modal.save_log')}</button>
   </div>
 </dialog>
 
@@ -560,7 +560,7 @@ const t = useTranslations(lang);
     } catch (e) {
       console.error('[loadWorkLogs] Error:', e);
       const errMsg = e instanceof Error ? e.message : String(e);
-      container.innerHTML = `<div class="text-xs text-red-400">Failed to load work logs: ${errMsg}</div>`;
+      container.innerHTML = `<div class="text-xs text-forge-error">Failed to load work logs: ${errMsg}</div>`;
     }
   };
 
@@ -593,13 +593,13 @@ const t = useTranslations(lang);
           <div class="text-xs text-forge-text/80 mt-1">${esc(log.description) || '<i class="opacity-50">No description</i>'}</div>
         </div>
         <div class="flex flex-col items-end gap-2 shrink-0">
-          <span class="text-xs font-mono font-bold text-forge-secondary bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${log.hours_spent}h</span>
+          <span class="text-xs font-mono font-bold text-forge-accent-text bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${log.hours_spent}h</span>
           ${role !== 'viewer' ? `
           <div class="hidden group-hover:flex items-center gap-2">
-            <button class="edit-worklog-btn text-forge-muted hover:text-forge-secondary transition-colors" data-id="${log.id}" data-hours="${log.hours_spent}" data-desc="${esc(log.description)}" data-date="${log.work_date}" title="Edit Log">
+            <button class="edit-worklog-btn text-forge-muted hover:text-forge-accent-text transition-colors" data-id="${log.id}" data-hours="${log.hours_spent}" data-desc="${esc(log.description)}" data-date="${log.work_date}" title="Edit Log">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
             </button>
-            <button class="delete-worklog-btn text-red-400 hover:text-red-300 transition-colors" data-id="${log.id}" title="Delete Log"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+            <button class="delete-worklog-btn text-forge-error hover:text-red-300 transition-colors" data-id="${log.id}" title="Delete Log"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
           </div>
           ` : ''}
         </div>
@@ -618,7 +618,7 @@ const t = useTranslations(lang);
             const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
             // @ts-ignore
             window.loadWorkLogs(issueId);
-            const hoursSpan = (e.currentTarget as HTMLElement).closest('.group')?.querySelector('span.text-forge-secondary');
+            const hoursSpan = (e.currentTarget as HTMLElement).closest('.group')?.querySelector('span.text-forge-accent-text');
             if (hoursSpan) {
               const h = parseFloat(hoursSpan.textContent?.replace('h', '') || '0');
               window.dispatchEvent(new CustomEvent('worklog-changed', { detail: { hoursDelta: -h } }));
@@ -761,7 +761,7 @@ const t = useTranslations(lang);
   // @ts-ignore
   window.loadIssueAttachments = async (issueId) => {
     if (!attachmentsList || !attachBtn || !attachBtnCompact) return;
-    attachmentsList.innerHTML = '<span class="text-[10px] text-forge-muted/70">Loading...</span>';
+    attachmentsList.innerHTML = '<span class="text-[10px] text-forge-muted">Loading...</span>';
     
     try {
       const res = await fetch(`/api/attachments/issue/${issueId}`);
@@ -769,7 +769,7 @@ const t = useTranslations(lang);
         const data = await res.json();
         renderAttachments(data);
       } else {
-        attachmentsList.innerHTML = '<span class="text-[10px] text-red-400">Failed to load</span>';
+        attachmentsList.innerHTML = '<span class="text-[10px] text-forge-error">Failed to load</span>';
       }
     } catch (e) {
       attachmentsList.innerHTML = '';
@@ -793,11 +793,11 @@ const t = useTranslations(lang);
         const div = document.createElement('div');
         div.className = 'flex items-center justify-between p-2.5 bg-forge-panel/30 border border-forge-border/40 rounded-lg group';
         div.innerHTML = `
-          <a href="/api/storage/${esc(att.file_path.split('/').pop())}" target="_blank" class="text-[12px] font-mono text-forge-text hover:text-forge-secondary hover:underline truncate max-w-[80%] flex items-center gap-2">
+          <a href="/api/storage/${esc(att.file_path.split('/').pop())}" target="_blank" class="text-[12px] font-mono text-forge-text hover:text-forge-accent-text hover:underline truncate max-w-[80%] flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.4"></path><path d="M12 18v-6"></path><path d="M9 15l3-3 3 3"></path></svg>
             ${esc(att.file_name)}
           </a>
-          <button class="delete-attachment-btn hidden text-red-400 hover:text-red-300 hover:bg-red-400/10 p-1.5 rounded transition-all opacity-0 group-hover:opacity-100" data-id="${att.id}" title="Delete file">
+          <button class="delete-attachment-btn hidden text-forge-error hover:text-red-300 hover:bg-red-400/10 p-1.5 rounded transition-all opacity-0 group-hover:opacity-100" data-id="${att.id}" title="Delete file">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         `;
@@ -834,14 +834,14 @@ const t = useTranslations(lang);
     const issueId = idEl?.getAttribute('data-full-id');
     if (!issueId) return;
 
-    if (attachBtn) attachBtn.innerHTML = '<span class="text-sm font-bold text-forge-secondary animate-pulse">Processing...</span>';
+    if (attachBtn) attachBtn.innerHTML = '<span class="text-sm font-bold text-forge-accent-text animate-pulse">Processing...</span>';
     
     const formData = new FormData();
     formData.append('entity_type', 'issue');
     formData.append('entity_id', issueId);
     
     const uploadFile = async (blobToUpload: Blob, filename: string) => {
-      if (attachBtn) attachBtn.innerHTML = '<span class="text-sm font-bold text-forge-secondary animate-pulse">Uploading...</span>';
+      if (attachBtn) attachBtn.innerHTML = '<span class="text-sm font-bold text-forge-accent-text animate-pulse">Uploading...</span>';
       formData.append('file', blobToUpload, filename);
       try {
         const res = await fetch('/api/upload', { method: 'POST', body: formData });

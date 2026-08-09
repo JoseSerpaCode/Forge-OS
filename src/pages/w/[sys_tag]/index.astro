@@ -166,17 +166,17 @@ const actionLabel = (action: string) => {
 
 const statusColor: Record<string, string> = {
   todo: 'bg-forge-muted/20 text-forge-muted',
-  'in-progress': 'bg-blue-500/20 text-blue-400',
-  'in_progress': 'bg-blue-500/20 text-blue-400',
+  'in-progress': 'bg-forge-info/20 text-forge-info',
+  'in_progress': 'bg-forge-info/20 text-forge-info',
   review: 'bg-yellow-500/20 text-yellow-400',
   done: 'bg-green-500/20 text-green-400',
-  blocked: 'bg-red-500/20 text-red-400',
+  blocked: 'bg-red-500/20 text-forge-error',
 };
 const priorityColor: Record<string, string> = {
-  highest: 'text-red-400',
+  highest: 'text-forge-error',
   high: 'text-orange-400',
   medium: 'text-yellow-400',
-  low: 'text-blue-400',
+  low: 'text-forge-info',
   lowest: 'text-forge-muted',
 };
 ---
@@ -191,7 +191,7 @@ const priorityColor: Record<string, string> = {
         <p class="text-sm text-forge-muted mt-0.5">{t('sidebar.dashboard')} — {t('dashboard.workspace_overview')}</p>
       </div>
       <div class="flex gap-2">
-        <a href={`/w/${sys_tag}/board`} class="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded bg-forge-secondary text-forge-bg hover:opacity-90 transition-opacity">
+        <a href={`/w/${sys_tag}/board`} class="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded bg-forge-primary text-forge-on-accent hover:opacity-90 transition-opacity">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
           {t('dashboard.open_board')}
         </a>
@@ -234,7 +234,7 @@ const priorityColor: Record<string, string> = {
         ) : (
           <div class="mt-1">
             <div class="text-forge-muted text-sm">{t('dashboard.no_active_sprint')}</div>
-            <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-secondary hover:underline mt-1 inline-block">{t('dashboard.new_sprint')}</a>
+            <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-accent-text hover:underline mt-1 inline-block">{t('dashboard.new_sprint')}</a>
           </div>
         )}
       </div>
@@ -243,11 +243,11 @@ const priorityColor: Record<string, string> = {
       <a href={`/w/${sys_tag}/board${activeSprint ? `?sprint=${activeSprint.id}` : ''}`} class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors group block">
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.pending_issues')}</span>
-          <svg class="text-forge-muted group-hover:text-forge-secondary transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <svg class="text-forge-muted group-hover:text-forge-accent-text transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </div>
-        <div class="text-4xl font-black text-forge-secondary">{pendingIssues.count}</div>
+        <div class="text-4xl font-black text-forge-accent-text">{pendingIssues.count}</div>
         {blockedIssues.count > 0 && (
-          <div class="text-xs text-red-400 mt-1 font-medium">{t('dashboard.blocked').replace('{count}', String(blockedIssues.count))}</div>
+          <div class="text-xs text-forge-error mt-1 font-medium">{t('dashboard.blocked').replace('{count}', String(blockedIssues.count))}</div>
         )}
       </a>
 
@@ -255,7 +255,7 @@ const priorityColor: Record<string, string> = {
       <a href={`/w/${sys_tag}/p`} class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors group block">
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.kb_pages')}</span>
-          <svg class="text-forge-muted group-hover:text-forge-secondary transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+          <svg class="text-forge-muted group-hover:text-forge-accent-text transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
         </div>
         <div class="text-4xl font-black text-forge-text">{totalPages.count}</div>
         <div class="text-xs text-forge-muted mt-1">{t('dashboard.knowledge_articles')}</div>
@@ -269,16 +269,16 @@ const priorityColor: Record<string, string> = {
       <div class="lg:col-span-2 bg-forge-panel border border-forge-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-forge-text flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             {t('dashboard.roadmap')}
           </h2>
-          <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-muted hover:text-forge-secondary transition-colors">{t('dashboard.view_board')}</a>
+          <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors">{t('dashboard.view_board')}</a>
         </div>
 
         {allSprints.length === 0 ? (
           <div class="py-8 text-center text-forge-muted text-sm">
             <p>{t('dashboard.no_sprints')}</p>
-            <a href={`/w/${sys_tag}/board`} class="text-forge-secondary hover:underline text-xs mt-2 inline-block">{t('dashboard.create_sprint')}</a>
+            <a href={`/w/${sys_tag}/board`} class="text-forge-accent-text hover:underline text-xs mt-2 inline-block">{t('dashboard.create_sprint')}</a>
           </div>
         ) : (
           <div class="space-y-3" id="roadmap-container">
@@ -327,7 +327,7 @@ const priorityColor: Record<string, string> = {
                     )}
                     <span class={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                       sprint.status === 'completed' ? 'bg-forge-muted/20 text-forge-muted' :
-                      sprint.status === 'active' ? 'bg-forge-secondary/20 text-forge-secondary' :
+                      sprint.status === 'active' ? 'bg-forge-secondary/20 text-forge-accent-text' :
                       'bg-forge-panel text-forge-muted border border-forge-border'
                     }`}>{sprint.status}</span>
                   </div>
@@ -352,7 +352,7 @@ const priorityColor: Record<string, string> = {
       <!-- Workload -->
       <div class="bg-forge-panel border border-forge-border rounded-xl p-5">
         <h2 class="font-bold text-forge-text flex items-center gap-2 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
           {t('dashboard.workload')}
         </h2>
         {members.length === 0 ? (
@@ -393,10 +393,10 @@ const priorityColor: Record<string, string> = {
       <div class="lg:col-span-2 bg-forge-panel border border-forge-border rounded-xl p-5 overflow-hidden flex flex-col">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-forge-text flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             {t('dashboard.my_tasks')}
           </h2>
-          <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-muted hover:text-forge-secondary transition-colors">
+          <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors">
             {t('dashboard.view_all_board')}
           </a>
         </div>
@@ -408,7 +408,7 @@ const priorityColor: Record<string, string> = {
       <!-- Recent Activity -->
       <div class="bg-forge-panel border border-forge-border rounded-xl p-5">
         <h2 class="font-bold text-forge-text flex items-center gap-2 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           {t('dashboard.recent_activity')}
         </h2>
         {recentActivity.length === 0 ? (

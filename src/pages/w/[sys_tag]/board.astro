@@ -105,7 +105,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           <div class="hidden md:flex flex-col min-w-[14rem] bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-1.5 shadow-sm" id="sprint-time-container" data-logged={totalLogged} data-estimated={totalEstimated}>
             <div class="flex justify-between items-center text-[10px] font-mono mb-1.5">
               <span class="text-forge-muted font-bold tracking-wider uppercase">{t('dashboard.time') || 'Time'}</span>
-              <span class="font-bold text-forge-secondary" id="sprint-time-text">
+              <span class="font-bold text-forge-accent-text" id="sprint-time-text">
                 {totalEstimated > 0 
                   ? `${totalLogged}h / ${totalEstimated}h` 
                   : `${totalLogged}h ${t('dashboard.logged') || 'logged'} — ${t('dashboard.no_estimate') || 'no estimate'}`}
@@ -128,7 +128,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         
         {access.role !== 'viewer' && activeSprintId && currentSprintObj && (
           <div class="flex items-center gap-1 bg-forge-bg rounded-md border border-forge-border/50 p-1">
-            <button id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class={`font-bold px-3 py-1 rounded text-xs transition-colors ${currentSprintObj.status === 'planned' ? 'bg-forge-success text-white hover:opacity-90' : currentSprintObj.status === 'active' ? 'bg-forge-primary text-forge-bg hover:opacity-90' : 'bg-forge-secondary text-forge-bg hover:opacity-90'}`}>
+            <button id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class={`font-bold px-3 py-1 rounded text-xs transition-colors ${currentSprintObj.status === 'planned' ? 'bg-forge-success text-white hover:opacity-90' : currentSprintObj.status === 'active' ? 'bg-forge-primary text-forge-on-accent hover:opacity-90' : 'bg-forge-primary text-forge-on-accent hover:opacity-90'}`}>
               {currentSprintObj.status === 'planned' ? 'Start' : currentSprintObj.status === 'active' ? 'Complete' : 'Reopen'}
             </button>
             {currentSprintObj.status === 'active' && (
@@ -146,7 +146,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         )}
         
         {access.role !== 'viewer' && (
-          <button id="btn-new-issue" title="Create New Issue (Press C)" class="bg-forge-secondary text-forge-bg font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity ml-2 relative group z-50">
+          <button id="btn-new-issue" title="Create New Issue (Press C)" class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity ml-2 relative group z-50">
             + Issue
             <!-- Tooltip -->
             <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-forge-panel border border-forge-border text-forge-text text-[10px] px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-50">New Issue <kbd class="font-mono bg-forge-bg border border-forge-border px-1 py-0.5 rounded text-[8px] ml-1">C</kbd></span>
@@ -170,7 +170,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     </div>
     <div class="flex justify-end gap-3 mt-6">
       <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-sprint-modal').close()">Cancel</button>
-      <button type="button" id="btn-save-sprint" class="bg-forge-primary text-forge-bg px-4 py-2 rounded font-bold hover:bg-opacity-90 transition-colors">Create</button>
+      <button type="button" id="btn-save-sprint" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:bg-opacity-90 transition-colors">Create</button>
     </div>
   </dialog>
 
@@ -214,12 +214,12 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       </div>
       <div>
         <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.description') || 'Description'}</label>
-        <textarea id="new-issue-desc" rows="3" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-sm text-forge-text focus:border-forge-secondary outline-none placeholder:text-forge-muted/50" placeholder={t('modal.desc_placeholder') as string}></textarea>
+        <textarea id="new-issue-desc" rows="3" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-sm text-forge-text focus:border-forge-secondary outline-none placeholder:text-forge-muted" placeholder={t('modal.desc_placeholder') as string}></textarea>
       </div>
     </div>
     <div class="flex justify-end gap-3 mt-6">
       <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-issue-modal').close()">{t('modal.cancel')}</button>
-      <button type="button" id="btn-save-issue" class="bg-forge-secondary text-forge-bg px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity">{t('modal.create')}</button>
+      <button type="button" id="btn-save-issue" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity">{t('modal.create')}</button>
     </div>
   </dialog>
 

@@ -54,8 +54,8 @@ if (view && view.visible_columns_json) {
         </div>
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <a href={`/w/${sys_tag}/db`} class="text-xs text-forge-muted hover:text-forge-secondary transition-colors font-bold tracking-wide uppercase">Tables</a>
-            <span class="text-forge-muted/50 text-xs">/</span>
+            <a href={`/w/${sys_tag}/db`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors font-bold tracking-wide uppercase">Tables</a>
+            <span class="text-forge-muted text-xs">/</span>
             <h1 class="text-2xl font-bold text-forge-text leading-none">{database.name}</h1>
           </div>
           {database.description && <p class="text-sm text-forge-muted">{database.description}</p>}
@@ -65,7 +65,7 @@ if (view && view.visible_columns_json) {
       <div class="flex gap-3 items-center">
         {canEdit && (
           <>
-            <button id="btn-delete-db" class="text-forge-muted hover:text-red-400 p-2 rounded-lg transition-all hover:bg-forge-panel" title="Delete Table">
+            <button id="btn-delete-db" class="text-forge-muted hover:text-forge-error p-2 rounded-lg transition-all hover:bg-forge-panel" title="Delete Table">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
             <button id="btn-add-row" class="bg-forge-text text-forge-bg text-sm font-bold px-5 py-2 rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center gap-2">
@@ -112,16 +112,16 @@ if (view && view.visible_columns_json) {
                       return (
                         <td class="px-4 py-2 truncate max-w-[200px]">
                           {col.type === 'select' && val ? (
-                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-forge-secondary/10 text-forge-secondary border border-forge-secondary/20">{val}</span>
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-forge-secondary/10 text-forge-accent-text border border-forge-secondary/20">{val}</span>
                           ) : (
-                            <span class={val ? '' : 'text-forge-muted/30 italic'}>{val !== null && val !== undefined && val !== '' ? val : 'Empty'}</span>
+                            <span class={val ? '' : 'text-forge-muted italic'}>{val !== null && val !== undefined && val !== '' ? val : 'Empty'}</span>
                           )}
                         </td>
                       );
                     })}
                     <td class="px-4 py-2 text-right">
                       {canEdit && (
-                        <button class="btn-delete-row opacity-0 group-hover:opacity-100 text-forge-muted hover:text-red-400 p-1 transition-all" data-id={entry.id} title="Delete Row">
+                        <button class="btn-delete-row opacity-0 group-hover:opacity-100 text-forge-muted hover:text-forge-error p-1 transition-all" data-id={entry.id} title="Delete Row">
                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                       )}
@@ -142,7 +142,7 @@ if (view && view.visible_columns_json) {
       <div class="px-6 py-5 border-b border-forge-border/40 flex justify-between items-center bg-forge-panel rounded-t-2xl">
         <h2 class="text-lg font-bold flex items-center gap-2">
           <div class="w-8 h-8 rounded-lg bg-forge-bg flex items-center justify-center border border-forge-border shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-forge-secondary"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-forge-accent-text"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </div>
           Add New Row
         </h2>
@@ -156,8 +156,8 @@ if (view && view.visible_columns_json) {
           <div>
             <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-2 flex items-center gap-1.5">
               {col.name}
-              {col.type === 'number' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-secondary">NUMBER</span>}
-              {col.type === 'select' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-secondary">SELECT</span>}
+              {col.type === 'number' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">NUMBER</span>}
+              {col.type === 'select' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">SELECT</span>}
             </label>
             
             {col.type === 'select' ? (
@@ -176,7 +176,7 @@ if (view && view.visible_columns_json) {
       
       <div class="px-6 py-5 border-t border-forge-border/40 bg-forge-panel flex justify-end gap-3 rounded-b-2xl">
         <button type="button" class="px-5 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text hover:bg-forge-bg rounded-xl transition-colors" onclick="document.getElementById('new-row-modal').close()">Cancel</button>
-        <button type="button" id="btn-save-row" class="bg-forge-secondary text-forge-bg text-sm font-bold px-6 py-2.5 rounded-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(255,93,0,0.3)]">Save Row</button>
+        <button type="button" id="btn-save-row" class="bg-forge-primary text-forge-on-accent text-sm font-bold px-6 py-2.5 rounded-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(255,93,0,0.3)]">Save Row</button>
       </div>
     </dialog>
   )}

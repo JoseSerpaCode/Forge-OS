@@ -42,12 +42,12 @@ const t = useTranslations(lang);
         <label for="password" class="block text-sm font-bold text-forge-muted uppercase tracking-widest mb-1">{t('auth.password')}</label>
         <input type="password" id="password" name="password" class="w-full bg-forge-bg border border-forge-border p-2 rounded text-forge-text focus:outline-none focus:border-forge-secondary" required />
       </div>
-      <button type="submit" class="mt-4 bg-forge-primary text-forge-bg font-bold uppercase tracking-widest py-2 rounded hover:bg-forge-primary/80 transition-colors">{t('auth.submit')}</button>
+      <button type="submit" class="mt-4 bg-forge-primary text-forge-on-accent font-bold uppercase tracking-widest py-2 rounded hover:bg-forge-primary/80 transition-colors">{t('auth.submit')}</button>
       <p id="error-msg" class="text-forge-error text-sm mt-2 hidden"></p>
     </form>
     
     <div class="mt-6 text-center">
-      <a href="/register" class="text-forge-secondary text-sm hover:underline">{t('auth.no_account')}</a>
+      <a href="/register" class="text-forge-accent-text text-sm hover:underline">{t('auth.no_account')}</a>
     </div>
   </div>
 
@@ -64,8 +64,8 @@ const t = useTranslations(lang);
         ))}
       </div>
       <div class="flex justify-end gap-3 mt-4">
-        <button type="button" id="btn-discard-all" class="px-4 py-2 text-forge-muted hover:text-red-400 text-sm">Discard All</button>
-        <button type="button" id="btn-confirm-transfer" class="bg-forge-secondary text-forge-bg px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity text-sm">Continue Login</button>
+        <button type="button" id="btn-discard-all" class="px-4 py-2 text-forge-muted hover:text-forge-error text-sm">Discard All</button>
+        <button type="button" id="btn-confirm-transfer" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity text-sm">Continue Login</button>
       </div>
     </dialog>
   )}

@@ -2,6 +2,14 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
+/* La variante `dark:` debe seguir al tema de la app, no al del sistema
+   operativo.
+   Por defecto Tailwind la resuelve con `prefers-color-scheme`, así que
+   `dark:prose-invert` en el editor no se activaba al poner la app en oscuro si
+   el SO estaba en claro: el contenido se renderizaba con los colores de prose
+   claros sobre fondo oscuro y el `<code>` quedaba a 1.11:1, ilegible. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 @theme {
   --color-forge-bg: var(--forge-bg);
   --color-forge-panel: var(--forge-panel);
@@ -17,6 +25,11 @@
   --color-forge-error: var(--forge-error);
   --color-forge-warning: var(--forge-warning);
   --color-forge-info: var(--forge-info);
+  /* Texto sobre fondos del color de acento. El naranja es el mismo en ambos
+     temas, así que este token NO se invierte: usar `text-forge-bg` daba texto
+     claro sobre naranja en tema claro (2.85:1). */
+  --color-forge-on-accent: var(--forge-on-accent);
+  --color-forge-accent-text: var(--forge-accent-text);
 
   /* Typography & Structure */
   --color-forge-border: var(--forge-border);
@@ -36,12 +49,14 @@
     --forge-accent-primary: #FF5D00;
     --forge-accent-primary-hover: #E05200;
     --forge-accent-secondary: #FF8533;
+    --forge-accent-text: #FF8533;
 
     /* State Colors */
     --forge-success: #10B981;
     --forge-error: #EF4444;
     --forge-warning: #F59E0B;
-    --forge-info: #3B82F6;
+    --forge-info: #6BA6FF;
+    --forge-on-accent: #0F172A;
   }
   
   [data-theme="dark"] { 
@@ -55,11 +70,12 @@
     --forge-accent-primary: #FF5D00;
     --forge-accent-primary-hover: #E05200;
     --forge-accent-secondary: #FF8533;
+    --forge-accent-text: #FF8533;
 
     --forge-success: #10B981;
     --forge-error: #EF4444;
     --forge-warning: #F59E0B;
-    --forge-info: #3B82F6;
+    --forge-info: #6BA6FF;
   }
 
   [data-theme="light"] {
@@ -67,17 +83,26 @@
     --forge-bg: #F8F6F0;
     --forge-panel: #FFFFFF;
     --forge-text: #0F172A;
-    --forge-muted: #64748B;
+    /* #64748B daba 4.40:1 sobre el fondo: justo por debajo del 4.5:1 que pide
+       WCAG AA. #5A6678 sube a 5.39:1 sobre el fondo y 5.82:1 sobre panel
+       blanco, con margen para que los modificadores de opacidad no lo hundan. */
+    --forge-muted: #4F5A6A;
     --forge-border: #E5E1D8;
-    
+
     --forge-accent-primary: #FF5D00;
     --forge-accent-primary-hover: #E05200;
     --forge-accent-secondary: #CC4A00;
+    /* Naranja para TEXTO sobre fondos claros. Separado del de marca porque
+       #CC4A00 solo da 4.27:1 y oscurecerlo apagaba logos, gradientes y
+       botones, que no son texto y no necesitan contraste de lectura. */
+    --forge-accent-text: #A83C00;
 
-    --forge-success: #059669;
-    --forge-error: #DC2626;
-    --forge-warning: #D97706;
-    --forge-info: #0284C7;
+    --forge-success: #047857;
+    --forge-error: #C41C1C;
+    --forge-warning: #B45309;
+    /* #0284C7 daba 4.10:1 sobre panel blanco. #0369A1 sube a 5.93:1. */
+    --forge-info: #01527E;
+    --forge-on-accent: #0F172A;
   }
   
   body { 
@@ -101,3 +126,29 @@
   }
 }
 
+
+/* ── Base global ─────────────────────────────────────────────────────────────
+   Estas reglas vivían en src/styles/global.css, que no importaba nadie: el
+   único punto de entrada es este fichero. Es decir, la app se quedó sin
+   indicadores de foco por teclado, y `.custom-scrollbar` —usada en cuatro
+   componentes— no hacía nada. Aquí sí se aplican.
+
+   No se traen los `:root` de aquel fichero: definían otros valores de color
+   (#0f111a frente a #0D0B0A) que habrían pisado los temas de arriba. */
+@layer base {
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--forge-accent-secondary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--forge-border); border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--forge-muted); }
+}

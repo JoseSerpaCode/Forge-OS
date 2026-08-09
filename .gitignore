@@ -32,5 +32,6 @@ pnpm-debug.log*
 /playwright/.auth/
 *.db
 *.db-*
+*.db.bak
 cookies.txt
 .data/
