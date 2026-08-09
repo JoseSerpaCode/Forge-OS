@@ -1,15 +1,18 @@
-# forge-js ("Forge OS")
+# Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.4.0, Astro en modo SSR. Requiere Node >=22.12
-(tienes 26 vía mise). El servidor se autodenomina **"Forge OS"** en los logs de
-arranque, aunque el repo y el paquete se llamen `forge-js`.
+conocimiento tipo Notion. Versión 1.5.0, Astro en modo SSR. Requiere Node >=22.12
+(tienes 26 vía mise).
+
+**El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
+El repositorio se renombró a `Forge-OS`. La diferencia es deliberada: renombrar
+el paquete no aporta nada y rompería instalaciones.
 
 ## Stack
 
 - **Astro 7.2** con `@astrojs/node` (adapter standalone) — hay además un `server.mjs`
   con Express 5 en la raíz.
-- **Drizzle ORM 0.45** sobre `better-sqlite3`. Config en `drizzle.config.ts`,
+- **Drizzle ORM 0.45** sobre `better-sqlite3` **v13**. Config en `drizzle.config.ts`,
   esquema versionado también como SQL plano (`schema.sql`, `schema-v1.1-social.sql`).
 - **Editor.js** con un montón de plugins (checklist, code, table, quote, undo,
   drag-drop) — es el núcleo de la UI de edición.
@@ -61,11 +64,25 @@ sugiere "arreglarlo" con `drizzle-kit@0.18.1`, que es retroceder 13 versiones
 menores — **no lo hagas**. El aviso de esbuild solo afecta a su dev server, que
 aquí no se expone. No ejecutes `npm audit fix --force` en este repo.
 
+## Accesibilidad: no lo deshagas sin querer
+
+Los colores están calibrados para pasar WCAG AA en ambos temas (auditoría a 0
+fallos). Tres reglas que se rompen con facilidad:
+
+- **No apliques opacidad al texto** (`text-forge-muted/70` y similares). Los
+  tokens ya están al filo del umbral; bajarles la opacidad los saca de AA. Fue
+  la causa de 6 de los 24 fallos originales.
+- **`--forge-accent-secondary` es color de marca** (logos, gradientes, adornos).
+  Para texto naranja usa **`--forge-accent-text`**, que sí cumple. Están
+  separados justo porque unificarlos obliga a elegir entre marca apagada o texto
+  ilegible.
+- **Texto sobre fondo naranja va con `text-forge-on-accent`**, nunca
+  `text-forge-bg`: ese se invierte con el tema y el naranja no.
+
+La variante `dark:` de Tailwind está atada a `[data-theme]` con
+`@custom-variant`, no a `prefers-color-scheme`. Sin eso, `dark:prose-invert` no
+se activa con el conmutador de la app.
+
 ## Estado
 
-Remote: `git@github.com:JoseSerpaCode/Forge-OS.git`. La rama
-`fix/guest-ui-and-ci-fixes` ya está mergeada (PR #21, 26 de julio de 2026) — no
-trabajes sobre ella.
-
-Quedan PRs de Dependabot abiertos desde julio (tailwind, dompurify, playwright).
-El de astro (#20) queda obsoleto: la subida a 7.2 + `cookie@2` ya está hecha.
+Remote: `git@github.com:JoseSerpaCode/Forge-OS.git`. Sin PRs ni issues abiertos.
