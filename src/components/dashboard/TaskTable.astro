@@ -20,10 +20,10 @@ const statusColor: Record<string, string> = {
   <table class="w-full text-left text-sm whitespace-nowrap table-auto border-collapse">
     <thead>
       <tr class="border-b border-forge-border text-forge-muted text-xs uppercase bg-forge-panel">
-        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="type">{t('table.type')} <span class="sort-indicator inline-block w-3 text-forge-secondary"></span></th>
-        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="name">{t('table.name')} <span class="sort-indicator inline-block w-3 text-forge-secondary"></span></th>
-        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="date">{t('table.due_date')} <span class="sort-indicator inline-block w-3 text-forge-secondary"></span></th>
-        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="status">{t('table.status')} <span class="sort-indicator inline-block w-3 text-forge-secondary"></span></th>
+        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="type">{t('table.type')} <span class="sort-indicator inline-block w-3 text-forge-accent-text"></span></th>
+        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="name">{t('table.name')} <span class="sort-indicator inline-block w-3 text-forge-accent-text"></span></th>
+        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="date">{t('table.due_date')} <span class="sort-indicator inline-block w-3 text-forge-accent-text"></span></th>
+        <th class="p-3 font-bold cursor-pointer hover:text-forge-text transition-colors sort-header select-none" data-sort="status">{t('table.status')} <span class="sort-indicator inline-block w-3 text-forge-accent-text"></span></th>
       </tr>
     </thead>
     <tbody class="task-table-body divide-y divide-forge-border">
@@ -45,7 +45,7 @@ const statusColor: Record<string, string> = {
                 <span class="text-[10px] uppercase font-bold px-2 py-1 rounded border border-forge-border bg-forge-bg text-forge-muted shadow-sm">{task.type || 'task'}</span>
               </td>
               <td class="p-3 max-w-[250px] truncate">
-                <a href={href} class="text-forge-text font-medium group-hover:text-forge-secondary transition-colors block truncate" onclick="event.stopPropagation();">
+                <a href={href} class="text-forge-text font-medium group-hover:text-forge-accent-text transition-colors block truncate" onclick="event.stopPropagation();">
                   {task.title}
                 </a>
                 <div class="text-[10px] text-forge-muted font-mono truncate mt-0.5">

@@ -38,7 +38,7 @@ const canEdit = access.role !== 'viewer';
       <div class="relative z-10">
         <h1 class="text-2xl font-bold text-forge-text flex items-center gap-2.5">
           <div class="w-10 h-10 rounded-xl bg-forge-bg flex items-center justify-center border border-forge-border/60 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
           </div>
           {t('db.title')}
         </h1>
@@ -75,7 +75,7 @@ const canEdit = access.role !== 'viewer';
                   {database.icon || '🗄️'}
                 </div>
                 <div class="flex-1 min-w-0 pt-1">
-                  <h3 class="text-base font-bold text-forge-text truncate group-hover:text-forge-secondary transition-colors">{database.name}</h3>
+                  <h3 class="text-base font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{database.name}</h3>
                   <div class="flex items-center gap-2 mt-1">
                     <span class="inline-flex items-center gap-1 text-[10px] uppercase font-bold text-forge-muted tracking-wider bg-forge-bg px-2 py-0.5 rounded-md border border-forge-border/50">
                       <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
@@ -98,7 +98,7 @@ const canEdit = access.role !== 'viewer';
       <div class="px-8 py-6 border-b border-forge-border/40 flex justify-between items-start sticky top-0 bg-forge-panel/95 backdrop-blur z-20 rounded-t-3xl">
         <div>
           <h2 class="text-2xl font-bold text-forge-text flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             {t('db.new_db')}
           </h2>
           <p class="text-sm text-forge-muted mt-2 ml-13">{t('db.new_db_desc')}</p>
@@ -114,7 +114,7 @@ const canEdit = access.role !== 'viewer';
             <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2 text-center w-full">{t('db.icon')}</label>
             <div class="relative group cursor-text w-full">
               <input type="text" id="db-icon" maxlength="2" class="w-full aspect-square bg-forge-panel border border-forge-border rounded-2xl p-0 text-center text-3xl focus:border-forge-secondary focus:ring-4 focus:ring-forge-secondary/10 outline-none transition-all shadow-sm flex items-center justify-center" value="🗄️">
-              <div class="absolute -bottom-2 -right-2 bg-forge-bg border border-forge-border text-forge-muted rounded-full p-1.5 shadow-sm pointer-events-none group-focus-within:text-forge-secondary group-focus-within:border-forge-secondary transition-colors">
+              <div class="absolute -bottom-2 -right-2 bg-forge-bg border border-forge-border text-forge-muted rounded-full p-1.5 shadow-sm pointer-events-none group-focus-within:text-forge-accent-text group-focus-within:border-forge-secondary transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
               </div>
             </div>
@@ -137,7 +137,7 @@ const canEdit = access.role !== 'viewer';
               <h3 class="text-base font-bold text-forge-text">{t('db.columns_schema')}</h3>
               <p class="text-xs text-forge-muted mt-1">{t('db.columns_schema_desc')}</p>
             </div>
-            <button type="button" id="btn-add-col" class="text-xs font-bold text-forge-secondary bg-forge-secondary/10 hover:bg-forge-secondary hover:text-forge-bg px-4 py-2 rounded-xl transition-all border border-forge-secondary/20 flex items-center gap-2 shadow-sm">
+            <button type="button" id="btn-add-col" class="text-xs font-bold text-forge-accent-text bg-forge-secondary/10 hover:bg-forge-secondary hover:text-forge-bg px-4 py-2 rounded-xl transition-all border border-forge-secondary/20 flex items-center gap-2 shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               {t('db.add_column')}
             </button>
@@ -160,7 +160,7 @@ const canEdit = access.role !== 'viewer';
                 </select>
               </div>
               <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
-                <label class="block text-[9px] font-bold uppercase tracking-widest text-forge-secondary mb-1.5 ml-1">Select Options (Comma separated)</label>
+                <label class="block text-[9px] font-bold uppercase tracking-widest text-forge-accent-text mb-1.5 ml-1">Select Options (Comma separated)</label>
                 <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted" placeholder="e.g. Active, Pending, Closed">
               </div>
             </div>
@@ -242,7 +242,7 @@ const canEdit = access.role !== 'viewer';
             </button>
           </div>
           <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
-            <label class="block text-[9px] font-bold uppercase tracking-widest text-forge-secondary mb-1.5 ml-1">Select Options (Comma separated)</label>
+            <label class="block text-[9px] font-bold uppercase tracking-widest text-forge-accent-text mb-1.5 ml-1">Select Options (Comma separated)</label>
             <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted" placeholder="e.g. Active, Pending, Closed">
           </div>
         `;

@@ -29,6 +29,7 @@
      temas, así que este token NO se invierte: usar `text-forge-bg` daba texto
      claro sobre naranja en tema claro (2.85:1). */
   --color-forge-on-accent: var(--forge-on-accent);
+  --color-forge-accent-text: var(--forge-accent-text);
 
   /* Typography & Structure */
   --color-forge-border: var(--forge-border);
@@ -48,6 +49,7 @@
     --forge-accent-primary: #FF5D00;
     --forge-accent-primary-hover: #E05200;
     --forge-accent-secondary: #FF8533;
+    --forge-accent-text: #FF8533;
 
     /* State Colors */
     --forge-success: #10B981;
@@ -68,6 +70,7 @@
     --forge-accent-primary: #FF5D00;
     --forge-accent-primary-hover: #E05200;
     --forge-accent-secondary: #FF8533;
+    --forge-accent-text: #FF8533;
 
     --forge-success: #10B981;
     --forge-error: #EF4444;
@@ -88,9 +91,11 @@
 
     --forge-accent-primary: #FF5D00;
     --forge-accent-primary-hover: #E05200;
-    /* #CC4A00 daba 4.27:1 sobre el fondo claro. #B84200 llega a 5.09:1 y sigue
-       pasando como fondo de botón con texto claro encima. */
-    --forge-accent-secondary: #A83C00;
+    --forge-accent-secondary: #CC4A00;
+    /* Naranja para TEXTO sobre fondos claros. Separado del de marca porque
+       #CC4A00 solo da 4.27:1 y oscurecerlo apagaba logos, gradientes y
+       botones, que no son texto y no necesitan contraste de lectura. */
+    --forge-accent-text: #A83C00;
 
     --forge-success: #047857;
     --forge-error: #C41C1C;

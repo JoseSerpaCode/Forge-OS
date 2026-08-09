@@ -35,7 +35,7 @@ const t = useTranslations(lang);
       'before:bg-blue-500'} before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:transition-all group-hover:before:w-2
   `}>
   <div class="flex justify-between items-start mb-3 pl-1">
-    <span class="font-mono text-[10px] text-forge-secondary uppercase tracking-wider">{issue.id.substring(0,8)}</span>
+    <span class="font-mono text-[10px] text-forge-accent-text uppercase tracking-wider">{issue.id.substring(0,8)}</span>
     <div class="w-6 h-6 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center overflow-hidden shrink-0" title={issue.assignee_username || 'Unassigned'}>
       {issue.assignee_avatar ? (
         <img src={issue.assignee_avatar} alt={issue.assignee_username} class="w-full h-full object-cover" />
@@ -44,7 +44,7 @@ const t = useTranslations(lang);
       )}
     </div>
   </div>
-  <h4 class="text-forge-text font-semibold text-sm mb-1.5 pl-1 group-hover:text-forge-secondary transition-colors leading-snug">{issue.title}</h4>
+  <h4 class="text-forge-text font-semibold text-sm mb-1.5 pl-1 group-hover:text-forge-accent-text transition-colors leading-snug">{issue.title}</h4>
   
   {issue.due_date && (
     <div class={`text-[10px] font-mono mb-2 ${issue.status !== 'done' && new Date(issue.due_date) < new Date() ? 'text-forge-error font-bold' : 'text-forge-muted'}`}>
@@ -63,7 +63,7 @@ const t = useTranslations(lang);
     <div class="mt-3 flex justify-end">
       {issue.active_session_start ? (
         <div class="flex items-center gap-2">
-          <div class="active-timer-display flex items-center gap-1.5 text-forge-secondary bg-forge-secondary/10 border border-forge-secondary/20 px-2 py-1 rounded text-xs font-mono font-bold" data-start-time={issue.active_session_start} data-logged-hours={issue.logged_hours || 0}>
+          <div class="active-timer-display flex items-center gap-1.5 text-forge-accent-text bg-forge-secondary/10 border border-forge-secondary/20 px-2 py-1 rounded text-xs font-mono font-bold" data-start-time={issue.active_session_start} data-logged-hours={issue.logged_hours || 0}>
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-forge-secondary opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-forge-secondary"></span>
@@ -76,7 +76,7 @@ const t = useTranslations(lang);
           </button>
         </div>
       ) : (
-        <button class="btn-start-timer flex items-center gap-1 text-forge-muted hover:text-forge-secondary transition-colors text-xs font-bold" data-issue-id={issue.id} title="Start Timer (Tracks time automatically)">
+        <button class="btn-start-timer flex items-center gap-1 text-forge-muted hover:text-forge-accent-text transition-colors text-xs font-bold" data-issue-id={issue.id} title="Start Timer (Tracks time automatically)">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           Start
         </button>

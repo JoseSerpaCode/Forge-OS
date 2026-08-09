@@ -56,7 +56,7 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
     <div class="flex items-end justify-between border-b border-forge-border pb-6">
       <div>
         <h1 class="text-3xl font-extrabold text-forge-text mb-2 flex items-center gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-secondary"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
           {t('activity.title')}
         </h1>
         <p class="text-forge-muted font-medium">{t('activity.desc')}</p>
@@ -66,7 +66,7 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
       <div class="flex items-center gap-1 bg-forge-panel border border-forge-border p-1 rounded-xl shadow-sm">
         <button class="activity-tab-btn active px-5 py-2 rounded-lg text-sm font-bold transition-all" data-target="notifications">
           {t('activity.notifications')}
-          {unreadCount > 0 && <span class="ml-2 bg-forge-secondary text-forge-bg px-2 py-0.5 rounded-full text-[10px]">{unreadCount}</span>}
+          {unreadCount > 0 && <span class="ml-2 bg-forge-primary text-forge-on-accent px-2 py-0.5 rounded-full text-[10px]">{unreadCount}</span>}
         </button>
         <button class="activity-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all text-forge-muted hover:text-forge-text" data-target="invites">
           {t('activity.invitations')}
@@ -85,7 +85,7 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
               Recent Notifications
             </h2>
             {unreadCount > 0 && (
-              <button id="btn-activity-mark-read" class="text-xs font-bold text-forge-secondary hover:underline px-3 py-1.5 rounded-lg bg-forge-secondary/10 hover:bg-forge-secondary/20 transition-colors">
+              <button id="btn-activity-mark-read" class="text-xs font-bold text-forge-accent-text hover:underline px-3 py-1.5 rounded-lg bg-forge-secondary/10 hover:bg-forge-secondary/20 transition-colors">
                 {t('activity.mark_all_read')}
               </button>
             )}
@@ -110,13 +110,13 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
                     </div>
                     <p class={`text-sm leading-relaxed ${n.is_read ? 'text-forge-muted' : 'text-forge-muted'}`}>{n.message}</p>
                     {n.link_url && !n.link_url.startsWith('{') && (
-                      <a href={n.link_url} class="inline-flex items-center gap-1 mt-3 text-xs font-bold text-forge-secondary hover:text-forge-primary transition-colors">
+                      <a href={n.link_url} class="inline-flex items-center gap-1 mt-3 text-xs font-bold text-forge-accent-text hover:text-forge-primary transition-colors">
                         {t('activity.view_details')} <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                       </a>
                     )}
                   </div>
                   {!n.is_read && (
-                    <button class="btn-mark-single-read text-forge-muted hover:text-forge-secondary p-2 rounded-lg hover:bg-forge-secondary/10 transition-colors opacity-0 group-hover:opacity-100" data-id={n.id} title="Mark as read">
+                    <button class="btn-mark-single-read text-forge-muted hover:text-forge-accent-text p-2 rounded-lg hover:bg-forge-secondary/10 transition-colors opacity-0 group-hover:opacity-100" data-id={n.id} title="Mark as read">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </button>
                   )}
@@ -195,7 +195,7 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
                         {r.workspace_name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <a href={`/w/${r.sys_tag}`} class="text-base font-bold text-forge-text hover:text-forge-secondary transition-colors">{r.workspace_name}</a>
+                        <a href={`/w/${r.sys_tag}`} class="text-base font-bold text-forge-text hover:text-forge-accent-text transition-colors">{r.workspace_name}</a>
                         <div class="text-xs font-mono text-forge-muted mt-0.5">{new Date(r.created_at + 'Z').toLocaleDateString()}</div>
                       </div>
                     </div>

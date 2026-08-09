@@ -148,7 +148,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                 <!-- User Details -->
                 <div class="mt-4">
                     <h1 class="text-4xl font-extrabold text-forge-text tracking-tight leading-tight mb-1">@{profile.username}</h1>
-                    <p class="text-forge-secondary text-sm font-bold flex items-center gap-2">
+                    <p class="text-forge-accent-text text-sm font-bold flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         Member since {new Date(profile.created_at).toLocaleDateString()}
                     </p>
@@ -165,7 +165,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                     </div>
                     {isOwnProfile && (
                         <div class="flex justify-end mt-2">
-                            <button id="save-bio-btn" class="px-4 py-1.5 bg-forge-secondary text-forge-bg text-xs font-bold rounded shadow hover:opacity-90 hidden">Save Bio</button>
+                            <button id="save-bio-btn" class="px-4 py-1.5 bg-forge-primary text-forge-on-accent text-xs font-bold rounded shadow hover:opacity-90 hidden">Save Bio</button>
                         </div>
                     )}
                 </div>
@@ -175,7 +175,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
         <!-- Workspaces Section -->
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-forge-text flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-secondary"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 {t('profile.public_workspaces')}
             </h2>
             <span class="text-sm font-medium text-forge-muted bg-forge-panel px-3 py-1 rounded-full border border-forge-border/60">{publicWorkspaces.length}</span>
@@ -199,11 +199,11 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                                         {ws.icon.startsWith('data:image') ? <img src={ws.icon} class="w-full h-full object-cover rounded-lg" /> : ws.icon}
                                     </div>
                                 ) : (
-                                    <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center font-bold text-forge-secondary shadow-sm shrink-0">
+                                    <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center font-bold text-forge-accent-text shadow-sm shrink-0">
                                         {ws.name.charAt(0).toUpperCase()}
                                     </div>
                                 )}
-                                <h3 class="text-lg font-bold text-forge-text group-hover:text-forge-secondary transition-colors line-clamp-1">{ws.name}</h3>
+                                <h3 class="text-lg font-bold text-forge-text group-hover:text-forge-accent-text transition-colors line-clamp-1">{ws.name}</h3>
                             </div>
                             <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-forge-bg text-forge-muted border border-forge-border/60 rounded shrink-0">
                                 {ws.join_policy === 'open' ? t('ws.settings.policy_open') : ws.join_policy === 'friends_only' ? t('ws.settings.policy_friends') : t('ws.settings.policy_disabled')}

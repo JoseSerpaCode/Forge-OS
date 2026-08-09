@@ -88,7 +88,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
           {ws.icon && ws.icon.startsWith('data:image') ? (
             <img src={ws.icon} class="w-full h-full object-cover" id="ws-icon-preview-img" alt="Workspace Icon" loading="lazy" />
           ) : (
-            <div class="text-4xl font-black text-forge-secondary" id="ws-icon-preview-text">
+            <div class="text-4xl font-black text-forge-accent-text" id="ws-icon-preview-text">
               {ws.icon || ws.name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -151,7 +151,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
               {m.avatar_url ? (
                 <img src={m.avatar_url} class="w-8 h-8 rounded-full border border-forge-border object-cover" alt={`${m.username} avatar`} loading="lazy" />
               ) : (
-                <div class="w-8 h-8 rounded-full border border-forge-border flex items-center justify-center text-forge-secondary shrink-0">
+                <div class="w-8 h-8 rounded-full border border-forge-border flex items-center justify-center text-forge-accent-text shrink-0">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
               )}
@@ -178,7 +178,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
               {m.avatar_url ? (
                 <img src={m.avatar_url} class="w-8 h-8 rounded-full border border-forge-border object-cover" alt={`${m.username} avatar`} loading="lazy" />
               ) : (
-                <div class="w-8 h-8 rounded-full border border-forge-border flex items-center justify-center text-forge-secondary shrink-0">
+                <div class="w-8 h-8 rounded-full border border-forge-border flex items-center justify-center text-forge-accent-text shrink-0">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
               )}
@@ -202,7 +202,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
     <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-forge-text">{t('ws.settings.join_requests')}</h2>
-        <span class="text-xs text-forge-secondary font-medium px-3 py-1 bg-forge-secondary/10 rounded border border-forge-secondary/20">
+        <span class="text-xs text-forge-accent-text font-medium px-3 py-1 bg-forge-secondary/10 rounded border border-forge-secondary/20">
           {joinRequests.length} pending
         </span>
       </div>
@@ -217,7 +217,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
                 {req.avatar_url ? (
                   <img src={req.avatar_url} class="w-8 h-8 rounded-full border border-forge-border object-cover" alt={`${req.username} avatar`} loading="lazy" />
                 ) : (
-                  <div class="w-8 h-8 rounded-full border border-forge-border flex items-center justify-center text-forge-secondary shrink-0">
+                  <div class="w-8 h-8 rounded-full border border-forge-border flex items-center justify-center text-forge-accent-text shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   </div>
                 )}
@@ -240,10 +240,10 @@ const wsPendingInvites = pendingInvites.filter(n => {
     <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-secondary"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
           {t('ws.settings.automations')}
         </h2>
-        <button id="btn-add-automation" class="bg-forge-secondary text-forge-bg font-bold px-3 py-1.5 text-sm rounded hover:opacity-90 transition-opacity">
+        <button id="btn-add-automation" class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 text-sm rounded hover:opacity-90 transition-opacity">
           {t('ws.settings.new_rule')}
         </button>
       </div>
@@ -281,7 +281,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
     <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6 overflow-hidden flex flex-col max-h-[600px]">
       <div class="flex items-center justify-between mb-6 shrink-0">
         <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-secondary"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
           {t('ws.settings.audit')}
         </h2>
         <span class="text-xs text-forge-muted font-mono bg-forge-bg px-2 py-1 rounded">{t('ws.settings.last_events')}</span>
@@ -330,7 +330,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
                 <span class="text-[10px] text-forge-muted font-mono">{date}</span>
               </div>
               <div class="text-xs text-forge-text/80 pl-8">
-                <span class="font-bold text-forge-secondary">{log.entity_type}</span>: <span class="font-mono text-forge-muted">{log.entity_id.substring(0,8)}</span>
+                <span class="font-bold text-forge-accent-text">{log.entity_type}</span>: <span class="font-mono text-forge-muted">{log.entity_id.substring(0,8)}</span>
                 {detailsText && <p class="mt-1 font-mono text-sm text-forge-text" title={log.details_json}>{detailsText}</p>}
               </div>
             </div>
@@ -384,14 +384,14 @@ const wsPendingInvites = pendingInvites.filter(n => {
     </div>
     <div class="flex justify-end gap-3 mt-6">
       <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('add-member-modal').close()">{t('ws.settings.modal_cancel')}</button>
-      <button type="button" id="btn-confirm-add" class="bg-forge-secondary text-forge-bg px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity" data-ws-id={ws.id}>{t('ws.settings.modal_send_invite')}</button>
+      <button type="button" id="btn-confirm-add" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity" data-ws-id={ws.id}>{t('ws.settings.modal_send_invite')}</button>
     </div>
   </dialog>
 
   <!-- Add Automation Modal -->
   <dialog id="add-automation-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[500px] text-forge-text shadow-xl backdrop:bg-black/50">
     <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-secondary"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
       {t('ws.settings.modal_create_rule')}
     </h2>
     <div class="space-y-4">
@@ -401,7 +401,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
       </div>
       
       <div class="p-4 rounded border border-forge-border bg-forge-bg/30">
-        <label class="block text-sm font-bold text-forge-secondary mb-2 uppercase tracking-wider">{t('ws.settings.modal_trigger')}</label>
+        <label class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_trigger')}</label>
         <select id="auto-trigger" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
           <option value="issue.created">Issue Created</option>
           <option value="issue.moved">Issue Moved to Status</option>
@@ -416,7 +416,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
       </div>
       
       <div class="p-4 rounded border border-forge-border bg-forge-bg/30">
-        <label class="block text-sm font-bold text-forge-secondary mb-2 uppercase tracking-wider">{t('ws.settings.modal_action')}</label>
+        <label class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_action')}</label>
         <select id="auto-action" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
           <option value="assign.user">Assign to User</option>
           <option value="add.label">Add Label</option>
@@ -432,7 +432,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
     
     <div class="flex justify-end gap-3 mt-6">
       <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('add-automation-modal').close()">{t('ws.settings.modal_cancel')}</button>
-      <button type="button" id="btn-save-automation" class="bg-forge-secondary text-forge-bg px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity" data-ws-id={ws.id}>{t('ws.settings.modal_save_rule')}</button>
+      <button type="button" id="btn-save-automation" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity" data-ws-id={ws.id}>{t('ws.settings.modal_save_rule')}</button>
     </div>
   </dialog>
 

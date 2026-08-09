@@ -14,7 +14,7 @@ const isActive = page.id === currentPageId;
 <li class="pl-4 relative group/tree">
   <div class={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors group/item ${isActive ? 'bg-forge-panel border border-forge-border shadow-inner' : 'hover:bg-forge-bg'}`}>
     {hasChildren ? (
-      <button class="w-4 h-4 text-forge-muted hover:text-forge-secondary transition-colors" aria-label="Toggle">
+      <button class="w-4 h-4 text-forge-muted hover:text-forge-accent-text transition-colors" aria-label="Toggle">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right transform transition-transform group-[.expanded]/tree:rotate-90"><path d="m9 18 6-6-6-6"/></svg>
       </button>
     ) : (
