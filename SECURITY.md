@@ -1,4 +1,4 @@
-# Política de Seguridad de Forge JS
+# Política de Seguridad de Forge OS
 
 ## Versiones Soportadas
 
@@ -6,7 +6,7 @@ Actualmente, solo la rama principal (`main`) y la versión activa en desarrollo 
 
 ## Reporte de Vulnerabilidades
 
-La seguridad es una prioridad crítica en **Forge JS**. Si descubres un problema de seguridad en el proyecto, **NO lo reportes abriendo un Issue público en GitHub**.
+La seguridad es una prioridad crítica en **Forge OS**. Si descubres un problema de seguridad en el proyecto, **NO lo reportes abriendo un Issue público en GitHub**.
 
 En su lugar, por favor envía un reporte detallado al correo electrónico:
 📧 `joseserpamedinaxd@gmail.com`
@@ -15,7 +15,7 @@ Responderemos a tu reporte de manera privada lo antes posible para coordinar un 
 
 ## Auditorías de Seguridad Interna
 
-Forge JS ha pasado por rigurosas revisiones de seguridad internas que cubren vectores críticos de ataque, incluyendo pero no limitado a:
+Forge OS ha pasado por rigurosas revisiones de seguridad internas que cubren vectores críticos de ataque, incluyendo pero no limitado a:
 - Protección estricta contra inyección SQL (SQLi) mediante el uso exclusivo de prepared statements en `better-sqlite3`.
 - Bloqueo y saneamiento contra Cross-Site Scripting (XSS) en todos los inputs e inyecciones de HTML (`innerHTML`).
 - Control de Accesos (Insecure Direct Object References - IDOR) resuelto mediante guardias estrictos a nivel de Workspace.
