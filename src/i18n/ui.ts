@@ -13,6 +13,7 @@ export const ui = {
     'sidebar.metrics': 'Metrics',
     'sidebar.settings': 'Workspace Settings',
     'sidebar.notifications': 'Notifications',
+    'sidebar.activity': 'Activity',
     'notifications.markAllRead': 'Mark all as read',
 
     // TopBar
@@ -151,18 +152,6 @@ export const ui = {
     'hub.banner_create_ws': 'Create Workspace',
     'hub.banner_find_people': 'Find People',
     'hub.pending_tasks': 'My Pending Tasks',
-    'hub.view_profile': 'View public profile',
-    'hub.connections': 'Connections',
-    'hub.workspaces_count': 'Workspaces',
-    'hub.notifications': 'Notifications',
-    'hub.unread': 'unread',
-    'hub.all_caught_up': 'All caught up',
-    'hub.invites_requests': 'Invites & Requests',
-    'hub.invites': 'invites',
-    'hub.requests': 'requests',
-    'hub.nothing_pending': 'Nothing pending',
-    'hub.your_network': 'Your Network',
-    'hub.no_network': 'You haven\'t connected with anyone yet. Share your public profile!',
     'hub.no_workspaces': 'You are not assigned to any workspaces. Create one to begin.',
     'hub.no_tasks': 'No pending tasks. Forge a new issue to begin.',
 
@@ -383,6 +372,7 @@ export const ui = {
     'sidebar.metrics': 'Métricas',
     'sidebar.settings': 'Ajustes del Workspace',
     'sidebar.notifications': 'Notificaciones',
+    'sidebar.activity': 'Actividad',
     'notifications.markAllRead': 'Marcar todo como leído',
 
     // TopBar
@@ -521,18 +511,6 @@ export const ui = {
     'hub.banner_create_ws': 'Crear Workspace',
     'hub.banner_find_people': 'Buscar Personas',
     'hub.pending_tasks': 'Mis Tareas Pendientes',
-    'hub.view_profile': 'Ver perfil público',
-    'hub.connections': 'Conexiones',
-    'hub.workspaces_count': 'Workspaces',
-    'hub.notifications': 'Notificaciones',
-    'hub.unread': 'sin leer',
-    'hub.all_caught_up': 'Estás al día',
-    'hub.invites_requests': 'Invitaciones y Solicitudes',
-    'hub.invites': 'invitaciones',
-    'hub.requests': 'solicitudes',
-    'hub.nothing_pending': 'Nada pendiente',
-    'hub.your_network': 'Tu Red',
-    'hub.no_network': 'Aún no has conectado con nadie. ¡Comparte tu perfil público!',
     'hub.no_workspaces': 'No estás asignado a ningún workspace. Crea uno para empezar.',
     'hub.no_tasks': 'No tienes tareas pendientes. Forja un nuevo ticket para comenzar.',
 

@@ -441,7 +441,7 @@ const t = useTranslations(lang);
 
     const msg = document.createElement('span');
     // Start with opacity-0 and transform
-    msg.className = 'inline-success-msg text-green-500 font-bold text-sm flex items-center gap-1.5 opacity-0 transition-all duration-300 transform translate-x-2 pointer-events-none';
+    msg.className = 'inline-success-msg text-forge-success font-bold text-sm flex items-center gap-1.5 opacity-0 transition-all duration-300 transform translate-x-2 pointer-events-none';
     msg.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce"><polyline points="20 6 9 17 4 12"></polyline></svg> ${i18nSaved}`;
     
     btn.parentNode.insertBefore(msg, btn.nextSibling);
