@@ -3,12 +3,13 @@ import db from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { checkRateLimit } from '../../../lib/rateLimit';
+import { getClientIp } from '../../../lib/clientIp';
 
 export const POST: APIRoute = async ({ request, cookies, locals }) => {
   try {
     const { username, password, keep_workspaces } = await request.json();
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || request.headers.get('cf-connecting-ip') || 'unknown';
+    const ip = getClientIp(request);
     const rateCheck = checkRateLimit(ip);
     if (!rateCheck.allowed) {
       return new Response(JSON.stringify({ error: `Too many attempts. Please try again in ${rateCheck.retryAfter} seconds.` }), {

@@ -1,7 +1,23 @@
 import { defineMiddleware } from 'astro:middleware';
 import db from './lib/db';
+import { checkRateLimit } from './lib/rateLimit';
+import { getClientIp } from './lib/clientIp';
 
 import crypto from 'crypto';
+
+// Cuántas cuentas de invitado puede generar una misma IP por hora.
+//
+// Una visita anónima crea cuatro filas (usuario, workspace, membresía y sesión)
+// y la sesión dura 30 días, así que la limpieza de invitados caducados no las
+// toca hasta pasado un mes. Un navegador guarda la cookie y solo genera una;
+// un bot no guarda cookies, así que cada petición suya creaba una cuenta nueva.
+// Medido en producción el primer día: ~30 invitados por minuto, unas 43.000 al
+// día, sin que nadie lo pidiera.
+//
+// 10 por hora deja sitio de sobra a personas detrás de una IP compartida
+// (oficina, universidad, NAT móvil) y corta el goteo automatizado.
+const GUEST_LIMIT_PER_HOUR = Number(process.env.GUEST_LIMIT_PER_HOUR) || 10;
+const GUEST_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const sessionId = context.cookies.get('forge_session')?.value;
@@ -19,6 +35,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
 
     // Auto-login as GUEST for web routes
+    //
+    // Antes de crear nada: una petición anónima NO debería poder generar estado
+    // persistente sin límite. Al superarlo se sirve /login, que no escribe en la
+    // base de datos y deja al visitante iniciar sesión o registrarse.
+    const clientIp = getClientIp(context.request, context.clientAddress);
+    const guestQuota = checkRateLimit(`guest:${clientIp}`, {
+      windowMs: GUEST_LIMIT_WINDOW_MS,
+      max: GUEST_LIMIT_PER_HOUR,
+    });
+    if (!guestQuota.allowed) {
+      return context.redirect('/login');
+    }
+
     const guestId = crypto.randomUUID();
     const newSessionId = crypto.randomUUID();
     
