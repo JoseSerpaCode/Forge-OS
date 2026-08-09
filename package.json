@@ -17,7 +17,7 @@
     "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.9",
+    "@astrojs/check": "^0.9.10",
     "@astrojs/node": "^11.0.3",
     "@editorjs/checklist": "^1.6.0",
     "@editorjs/code": "^2.9.4",
