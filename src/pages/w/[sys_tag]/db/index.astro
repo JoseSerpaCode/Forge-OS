@@ -84,7 +84,7 @@ const canEdit = access.role !== 'viewer';
                   </div>
                 </div>
               </div>
-              <p class="text-sm text-forge-muted/90 line-clamp-2 leading-relaxed h-10">{database.description || <span class="italic opacity-50">No description provided.</span>}</p>
+              <p class="text-sm text-forge-muted line-clamp-2 leading-relaxed h-10">{database.description || <span class="italic opacity-50">No description provided.</span>}</p>
             </div>
           </a>
         ))}
@@ -121,12 +121,12 @@ const canEdit = access.role !== 'viewer';
           </div>
           <div class="flex-1 space-y-5">
             <div>
-              <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2">{t('db.table_name')} <span class="text-red-400">*</span></label>
-              <input type="text" id="db-name" class="w-full bg-forge-panel border border-forge-border rounded-xl px-4 py-3 text-base text-forge-text focus:border-forge-secondary focus:ring-2 focus:ring-forge-secondary/20 outline-none transition-all shadow-sm placeholder:text-forge-muted/40" placeholder={t('db.table_name_ph')}>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2">{t('db.table_name')} <span class="text-forge-error">*</span></label>
+              <input type="text" id="db-name" class="w-full bg-forge-panel border border-forge-border rounded-xl px-4 py-3 text-base text-forge-text focus:border-forge-secondary focus:ring-2 focus:ring-forge-secondary/20 outline-none transition-all shadow-sm placeholder:text-forge-muted" placeholder={t('db.table_name_ph')}>
             </div>
             <div>
-              <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2">{t('db.desc')} <span class="normal-case font-normal text-forge-muted/50">({t('db.optional')})</span></label>
-              <textarea id="db-desc" rows="2" class="w-full bg-forge-panel border border-forge-border rounded-xl px-4 py-3 text-sm text-forge-text focus:border-forge-secondary focus:ring-2 focus:ring-forge-secondary/20 outline-none transition-all shadow-sm placeholder:text-forge-muted/40 custom-scrollbar" placeholder={t('db.desc_ph')}></textarea>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2">{t('db.desc')} <span class="normal-case font-normal text-forge-muted">({t('db.optional')})</span></label>
+              <textarea id="db-desc" rows="2" class="w-full bg-forge-panel border border-forge-border rounded-xl px-4 py-3 text-sm text-forge-text focus:border-forge-secondary focus:ring-2 focus:ring-forge-secondary/20 outline-none transition-all shadow-sm placeholder:text-forge-muted custom-scrollbar" placeholder={t('db.desc_ph')}></textarea>
             </div>
           </div>
         </div>
@@ -161,7 +161,7 @@ const canEdit = access.role !== 'viewer';
               </div>
               <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
                 <label class="block text-[9px] font-bold uppercase tracking-widest text-forge-secondary mb-1.5 ml-1">Select Options (Comma separated)</label>
-                <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted/40" placeholder="e.g. Active, Pending, Closed">
+                <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted" placeholder="e.g. Active, Pending, Closed">
               </div>
             </div>
           </div>
@@ -172,7 +172,7 @@ const canEdit = access.role !== 'viewer';
         <button type="button" class="px-6 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text transition-colors" onclick="document.getElementById('new-db-modal').close()">
           {t('ws.settings.modal_cancel')}
         </button>
-        <button type="button" id="btn-save-db" class="bg-forge-primary text-forge-bg px-8 py-2.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm shadow-forge-primary/20">
+        <button type="button" id="btn-save-db" class="bg-forge-primary text-forge-on-accent px-8 py-2.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm shadow-forge-primary/20">
           {t('db.create')}
         </button>
       </div>
@@ -243,7 +243,7 @@ const canEdit = access.role !== 'viewer';
           </div>
           <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
             <label class="block text-[9px] font-bold uppercase tracking-widest text-forge-secondary mb-1.5 ml-1">Select Options (Comma separated)</label>
-            <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted/40" placeholder="e.g. Active, Pending, Closed">
+            <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted" placeholder="e.g. Active, Pending, Closed">
           </div>
         `;
         

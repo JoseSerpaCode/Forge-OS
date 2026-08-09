@@ -60,7 +60,7 @@ const currentUrl = Astro.url.pathname;
   </div>
   <div class="flex items-center gap-3">
     {user?.is_guest === 1 && (
-      <a href="/register" class="hidden sm:flex items-center justify-center px-3 py-1.5 bg-forge-primary text-forge-bg rounded text-xs font-bold hover:bg-forge-primary/90 transition-colors">
+      <a href="/register" class="hidden sm:flex items-center justify-center px-3 py-1.5 bg-forge-primary text-forge-on-accent rounded text-xs font-bold hover:bg-forge-primary/90 transition-colors">
         {t('auth.login') || 'Sign In'} / {t('auth.register') || 'Register'}
       </a>
     )}
@@ -101,7 +101,7 @@ const currentUrl = Astro.url.pathname;
                   <span class="text-xs font-bold text-forge-text">{n.title}</span>
                 </div>
                 <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">{n.message}</p>
-                <p class="text-[9px] text-forge-muted/60 pl-4 mt-1 font-mono">{new Date(n.created_at).toLocaleString()}</p>
+                <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">{new Date(n.created_at).toLocaleString()}</p>
               </a>
             </li>
           ))}
@@ -393,7 +393,7 @@ const currentUrl = Astro.url.pathname;
             }
           }
         } catch (err) {
-          if (searchResults) searchResults.innerHTML = '<li class="p-2 text-red-400 text-sm text-center">Search error</li>';
+          if (searchResults) searchResults.innerHTML = '<li class="p-2 text-forge-error text-sm text-center">Search error</li>';
         }
       }, 200);
     } else {
@@ -584,7 +584,7 @@ const currentUrl = Astro.url.pathname;
             <span class="text-xs font-bold text-forge-text">${data.title}</span>
           </div>
           <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">${data.message}</p>
-          <p class="text-[9px] text-forge-muted/60 pl-4 mt-1 font-mono">${new Date(data.created_at).toLocaleString()}</p>
+          <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">${new Date(data.created_at).toLocaleString()}</p>
         </a>
       `;
       list.prepend(li);

@@ -166,17 +166,17 @@ const actionLabel = (action: string) => {
 
 const statusColor: Record<string, string> = {
   todo: 'bg-forge-muted/20 text-forge-muted',
-  'in-progress': 'bg-blue-500/20 text-blue-400',
-  'in_progress': 'bg-blue-500/20 text-blue-400',
+  'in-progress': 'bg-forge-info/20 text-forge-info',
+  'in_progress': 'bg-forge-info/20 text-forge-info',
   review: 'bg-yellow-500/20 text-yellow-400',
   done: 'bg-green-500/20 text-green-400',
-  blocked: 'bg-red-500/20 text-red-400',
+  blocked: 'bg-red-500/20 text-forge-error',
 };
 const priorityColor: Record<string, string> = {
-  highest: 'text-red-400',
+  highest: 'text-forge-error',
   high: 'text-orange-400',
   medium: 'text-yellow-400',
-  low: 'text-blue-400',
+  low: 'text-forge-info',
   lowest: 'text-forge-muted',
 };
 ---
@@ -247,7 +247,7 @@ const priorityColor: Record<string, string> = {
         </div>
         <div class="text-4xl font-black text-forge-secondary">{pendingIssues.count}</div>
         {blockedIssues.count > 0 && (
-          <div class="text-xs text-red-400 mt-1 font-medium">{t('dashboard.blocked').replace('{count}', String(blockedIssues.count))}</div>
+          <div class="text-xs text-forge-error mt-1 font-medium">{t('dashboard.blocked').replace('{count}', String(blockedIssues.count))}</div>
         )}
       </a>
 

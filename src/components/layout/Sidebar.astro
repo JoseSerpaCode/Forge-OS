@@ -144,7 +144,7 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
   <!-- User Footer -->
   <div class="p-3 border-t border-forge-border shrink-0">
     {user?.is_guest === 1 && (
-      <a href="/register" class="flex items-center justify-center w-full mb-3 py-1.5 bg-forge-primary text-forge-bg rounded text-xs font-bold hover:bg-forge-primary/90 transition-colors">
+      <a href="/register" class="flex items-center justify-center w-full mb-3 py-1.5 bg-forge-primary text-forge-on-accent rounded text-xs font-bold hover:bg-forge-primary/90 transition-colors">
         {t('auth.login') || 'Sign In'} / {t('auth.register') || 'Register'}
       </a>
     )}

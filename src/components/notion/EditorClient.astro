@@ -368,6 +368,24 @@ function formatDate(dateStr: string | undefined) {
     font-size: 0.9em !important;
   }
 
+  /* El plugin de typography inserta comillas invertidas alrededor de <code>.
+     Con el chip ya delimitado por fondo y borde, sobran. */
+  .editor-js-container :where(code)::before,
+  .editor-js-container :where(code)::after {
+    content: none !important;
+  }
+
+  /* <code> suelto en el contenido (el que no usa la herramienta inline-code)
+     hereda el color del tema en lugar de quedarse con el de prose. */
+  .editor-js-container :where(code) {
+    color: var(--forge-text);
+    background-color: var(--forge-bg);
+    border: 1px solid var(--forge-border);
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
   .codex-editor__redactor {
     padding-bottom: 100px !important;
   }
