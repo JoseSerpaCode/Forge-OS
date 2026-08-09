@@ -17,7 +17,7 @@ Notion en un único espacio de trabajo autoalojado.** Construido sobre Astro SSR
 con un núcleo SQLite síncrono: sin virtual DOM, sin framework en el cliente, sin
 servicios externos.
 
-[Reportar un bug](https://github.com/JoseSerpaCode/Forge-js/issues) · [Sugerir una funcionalidad](https://github.com/JoseSerpaCode/Forge-js/issues) · [Changelog](./CHANGELOG.md)
+[Reportar un bug](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Sugerir una funcionalidad](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Changelog](./CHANGELOG.md)
 
 [English](./README.md) · **Español**
 
@@ -118,8 +118,8 @@ en la mayoría de sistemas ya está presente.
 ### Instalación
 
 ```sh
-git clone https://github.com/JoseSerpaCode/Forge-js.git
-cd Forge-js
+git clone https://github.com/JoseSerpaCode/Forge-OS.git
+cd Forge-OS
 npm install
 ```
 
@@ -200,11 +200,11 @@ contraseña del seed (`LocalDevPass123!` por defecto; cámbiala exportando
 
 Las contribuciones son bienvenidas.
 
-1. Haz un [fork](https://github.com/JoseSerpaCode/Forge-js/fork) del proyecto
+1. Haz un [fork](https://github.com/JoseSerpaCode/Forge-OS/fork) del proyecto
 2. Crea tu rama (`git checkout -b feature/CaracteristicaIncreible`)
 3. Haz commit de tus cambios (`git commit -m 'feat(scope): añadir CaracteristicaIncreible'`)
 4. Sube la rama (`git push origin feature/CaracteristicaIncreible`)
-5. Abre un [Pull Request](https://github.com/JoseSerpaCode/Forge-js/pulls)
+5. Abre un [Pull Request](https://github.com/JoseSerpaCode/Forge-OS/pulls)
 
 Por favor, lee antes las [normas de contribución](./CONTRIBUTING.md). Se espera
 que los pull requests que toquen flujos críticos vengan con tests de Playwright.
@@ -217,16 +217,16 @@ Distribuido bajo licencia MIT. Consulta [LICENSE](./LICENSE).
 
 <!-- MARKDOWN LINKS & IMAGES -->
 
-[version-shield]: https://img.shields.io/github/package-json/v/JoseSerpaCode/Forge-js?style=for-the-badge&color=2563eb
-[version-url]: https://github.com/JoseSerpaCode/Forge-js
-[stars-shield]: https://img.shields.io/github/stars/JoseSerpaCode/Forge-js.svg?style=for-the-badge
-[stars-url]: https://github.com/JoseSerpaCode/Forge-js/stargazers
-[issues-shield]: https://img.shields.io/github/issues/JoseSerpaCode/Forge-js.svg?style=for-the-badge
-[issues-url]: https://github.com/JoseSerpaCode/Forge-js/issues
+[version-shield]: https://img.shields.io/github/package-json/v/JoseSerpaCode/Forge-OS?style=for-the-badge&color=2563eb
+[version-url]: https://github.com/JoseSerpaCode/Forge-OS
+[stars-shield]: https://img.shields.io/github/stars/JoseSerpaCode/Forge-OS.svg?style=for-the-badge
+[stars-url]: https://github.com/JoseSerpaCode/Forge-OS/stargazers
+[issues-shield]: https://img.shields.io/github/issues/JoseSerpaCode/Forge-OS.svg?style=for-the-badge
+[issues-url]: https://github.com/JoseSerpaCode/Forge-OS/issues
 [license-shield]: https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge
 [license-url]: ./LICENSE
-[ci-shield]: https://img.shields.io/github/actions/workflow/status/JoseSerpaCode/Forge-js/ci.yml?style=for-the-badge&label=CI
-[ci-url]: https://github.com/JoseSerpaCode/Forge-js/actions/workflows/ci.yml
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/JoseSerpaCode/Forge-OS/ci.yml?style=for-the-badge&label=CI
+[ci-url]: https://github.com/JoseSerpaCode/Forge-OS/actions/workflows/ci.yml
 [astro-badge]: https://img.shields.io/badge/Astro-fff?style=for-the-badge&logo=astro&logoColor=bd303a&color=352563
 [astro-url]: https://astro.build/
 [typescript-badge]: https://img.shields.io/badge/Typescript-007ACC?style=for-the-badge&logo=typescript&logoColor=white&color=blue

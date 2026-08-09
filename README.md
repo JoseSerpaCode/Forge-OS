@@ -16,7 +16,7 @@
 self-hosted workspace.** Built on Astro SSR with a synchronous SQLite core — no
 virtual DOM, no client-side framework, no external services.
 
-[Report a bug](https://github.com/JoseSerpaCode/Forge-js/issues) · [Request a feature](https://github.com/JoseSerpaCode/Forge-js/issues) · [Changelog](./CHANGELOG.md)
+[Report a bug](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Request a feature](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Changelog](./CHANGELOG.md)
 
 **English** · [Español](./README.es.md)
 
@@ -115,8 +115,8 @@ systems it is already present.
 ### Install
 
 ```sh
-git clone https://github.com/JoseSerpaCode/Forge-js.git
-cd Forge-js
+git clone https://github.com/JoseSerpaCode/Forge-OS.git
+cd Forge-OS
 npm install
 ```
 
@@ -197,11 +197,11 @@ Found something? See [SECURITY.md](./SECURITY.md).
 
 Contributions are welcome.
 
-1. [Fork](https://github.com/JoseSerpaCode/Forge-js/fork) the project
+1. [Fork](https://github.com/JoseSerpaCode/Forge-OS/fork) the project
 2. Create your branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'feat(scope): add AmazingFeature'`)
 4. Push the branch (`git push origin feature/AmazingFeature`)
-5. Open a [Pull Request](https://github.com/JoseSerpaCode/Forge-js/pulls)
+5. Open a [Pull Request](https://github.com/JoseSerpaCode/Forge-OS/pulls)
 
 Please read the [contribution guidelines](./CONTRIBUTING.md) first. Pull
 requests that change critical flows are expected to come with Playwright tests.
@@ -214,16 +214,16 @@ Distributed under the MIT License. See [LICENSE](./LICENSE).
 
 <!-- MARKDOWN LINKS & IMAGES -->
 
-[version-shield]: https://img.shields.io/github/package-json/v/JoseSerpaCode/Forge-js?style=for-the-badge&color=2563eb
-[version-url]: https://github.com/JoseSerpaCode/Forge-js
-[stars-shield]: https://img.shields.io/github/stars/JoseSerpaCode/Forge-js.svg?style=for-the-badge
-[stars-url]: https://github.com/JoseSerpaCode/Forge-js/stargazers
-[issues-shield]: https://img.shields.io/github/issues/JoseSerpaCode/Forge-js.svg?style=for-the-badge
-[issues-url]: https://github.com/JoseSerpaCode/Forge-js/issues
+[version-shield]: https://img.shields.io/github/package-json/v/JoseSerpaCode/Forge-OS?style=for-the-badge&color=2563eb
+[version-url]: https://github.com/JoseSerpaCode/Forge-OS
+[stars-shield]: https://img.shields.io/github/stars/JoseSerpaCode/Forge-OS.svg?style=for-the-badge
+[stars-url]: https://github.com/JoseSerpaCode/Forge-OS/stargazers
+[issues-shield]: https://img.shields.io/github/issues/JoseSerpaCode/Forge-OS.svg?style=for-the-badge
+[issues-url]: https://github.com/JoseSerpaCode/Forge-OS/issues
 [license-shield]: https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge
 [license-url]: ./LICENSE
-[ci-shield]: https://img.shields.io/github/actions/workflow/status/JoseSerpaCode/Forge-js/ci.yml?style=for-the-badge&label=CI
-[ci-url]: https://github.com/JoseSerpaCode/Forge-js/actions/workflows/ci.yml
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/JoseSerpaCode/Forge-OS/ci.yml?style=for-the-badge&label=CI
+[ci-url]: https://github.com/JoseSerpaCode/Forge-OS/actions/workflows/ci.yml
 [astro-badge]: https://img.shields.io/badge/Astro-fff?style=for-the-badge&logo=astro&logoColor=bd303a&color=352563
 [astro-url]: https://astro.build/
 [typescript-badge]: https://img.shields.io/badge/Typescript-007ACC?style=for-the-badge&logo=typescript&logoColor=white&color=blue

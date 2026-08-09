@@ -63,7 +63,7 @@ aquí no se expone. No ejecutes `npm audit fix --force` en este repo.
 
 ## Estado
 
-Remote: `git@github.com:JoseSerpaCode/Forge-js.git`. La rama
+Remote: `git@github.com:JoseSerpaCode/Forge-OS.git`. La rama
 `fix/guest-ui-and-ci-fixes` ya está mergeada (PR #21, 26 de julio de 2026) — no
 trabajes sobre ella.
 
