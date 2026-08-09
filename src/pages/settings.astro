@@ -27,7 +27,7 @@ const t = useTranslations(lang);
         <h1 class="text-2xl font-semibold text-forge-text">{t('user.settings.title')}</h1>
         <p class="text-forge-muted text-sm mt-1">{t('user.settings.desc')}</p>
       </div>
-      <button id="btn-logout" class="bg-forge-panel border border-forge-border/60 hover:border-red-500/50 hover:bg-red-500/10 text-forge-muted hover:text-red-400 font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 text-sm shadow-sm">
+      <button id="btn-logout" class="bg-forge-panel border border-forge-border/60 hover:border-red-500/50 hover:bg-red-500/10 text-forge-muted hover:text-forge-error font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 text-sm shadow-sm">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         {t('user.settings.signout')}
       </button>
@@ -70,7 +70,7 @@ const t = useTranslations(lang);
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-semibold text-forge-text mb-2">{t('user.settings.bio')}</label>
-                <textarea id="profile-bio" rows="3" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm transition-all resize-y placeholder:text-forge-muted/40" placeholder={t('user.settings.bio_placeholder') || "Tell us a little bit about yourself..."}>{userProfile.bio || ''}</textarea>
+                <textarea id="profile-bio" rows="3" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm transition-all resize-y placeholder:text-forge-muted" placeholder={t('user.settings.bio_placeholder') || "Tell us a little bit about yourself..."}>{userProfile.bio || ''}</textarea>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -107,7 +107,7 @@ const t = useTranslations(lang);
           </div>
           <!-- Card Footer -->
           <div class="bg-forge-bg px-6 py-4 border-t border-forge-border/40 flex justify-end">
-              <button id="btn-save-profile" class="w-full bg-forge-primary text-forge-bg font-bold py-2 px-4 rounded hover:bg-forge-primary/90 transition-colors">
+              <button id="btn-save-profile" class="w-full bg-forge-primary text-forge-on-accent font-bold py-2 px-4 rounded hover:bg-forge-primary/90 transition-colors">
                 {t('user.settings.save_profile')}
               </button>
           </div>
@@ -280,7 +280,7 @@ const t = useTranslations(lang);
               </label>
             </div>
             <div class="flex justify-end p-6 border-t border-forge-border/40 bg-forge-bg/10">
-              <button id="btn-save-notifs" class="bg-forge-primary text-forge-bg font-bold py-2 px-6 rounded-md hover:bg-forge-primary/90 transition-colors text-sm shadow-sm">
+              <button id="btn-save-notifs" class="bg-forge-primary text-forge-on-accent font-bold py-2 px-6 rounded-md hover:bg-forge-primary/90 transition-colors text-sm shadow-sm">
                 {t('user.settings.save_notifs')}
               </button>
             </div>
@@ -320,7 +320,7 @@ const t = useTranslations(lang);
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                       {t('user.settings.manage_ws')}
                     </a>
-                    <button class="btn-delete-ws text-xs font-semibold px-4 py-2 rounded-md bg-forge-bg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors shadow-sm" data-id={ws.id}>
+                    <button class="btn-delete-ws text-xs font-semibold px-4 py-2 rounded-md bg-forge-bg border border-red-500/30 text-forge-error hover:bg-red-500/10 transition-colors shadow-sm" data-id={ws.id}>
                       {t('user.settings.delete_ws')}
                     </button>
                   </div>
@@ -497,7 +497,7 @@ const t = useTranslations(lang);
         is_public: document.getElementById('profile-is-public').checked,
         avatar_url: newAvatarUrl
       };
-      await handleSave(btnSaveProfile, '/api/users/profile', payload, 'Profile updated successfully!');
+      await handleSave(btnSaveProfile, '/api/user/settings', payload, 'Profile updated successfully!');
     });
 
     const btnLogout = document.getElementById('btn-logout');
