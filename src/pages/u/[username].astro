@@ -102,7 +102,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                         {!isOwnProfile && currentUser && (
                             <div class="flex items-center gap-2">
                                 {isProfileBlockedByMe ? (
-                                    <button id="unblock-btn" class="px-5 py-2.5 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-red-500/10">
+                                    <button id="unblock-btn" class="px-5 py-2.5 bg-red-500/10 text-forge-error border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-red-500/10">
                                         {t('profile.unblock_user')}
                                     </button>
                                 ) : (
@@ -120,19 +120,19 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                                         )}
                                         {friendshipStatus?.status === 'pending' && !friendshipStatus.isSender && (
                                             <div class="flex gap-2">
-                                                <button id="accept-btn" class="px-5 py-2.5 bg-green-500/20 text-green-500 border border-green-500/30 hover:bg-green-500/30 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-green-500/10">{t('profile.accept_request')}</button>
-                                                <button id="reject-btn" class="px-5 py-2.5 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm shadow-sm">{t('profile.reject_request')}</button>
+                                                <button id="accept-btn" class="px-5 py-2.5 bg-green-500/20 text-forge-success border border-green-500/30 hover:bg-green-500/30 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-green-500/10">{t('profile.accept_request')}</button>
+                                                <button id="reject-btn" class="px-5 py-2.5 bg-red-500/10 text-forge-error border border-red-500/20 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm shadow-sm">{t('profile.reject_request')}</button>
                                             </div>
                                         )}
                                         {friendshipStatus?.status === 'accepted' && (
-                                            <button id="unfriend-btn" class="px-5 py-2.5 bg-forge-bg text-forge-muted border border-forge-border hover:border-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all font-bold text-sm group flex items-center gap-2 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:hidden text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                            <button id="unfriend-btn" class="px-5 py-2.5 bg-forge-bg text-forge-muted border border-forge-border hover:border-red-500/50 hover:text-forge-error hover:bg-red-500/10 rounded-xl transition-all font-bold text-sm group flex items-center gap-2 shadow-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:hidden text-forge-success"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                                                 <span class="group-hover:hidden">Friends</span>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden group-hover:block"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>
                                                 <span class="hidden group-hover:inline">{t('profile.unfriend')}</span>
                                             </button>
                                         )}
-                                        <button id="block-btn" class="text-forge-muted hover:text-red-500 transition-colors p-2.5 rounded-xl hover:bg-red-500/10 ml-1" title={t('profile.block_user')}>
+                                        <button id="block-btn" class="text-forge-muted hover:text-forge-error transition-colors p-2.5 rounded-xl hover:bg-red-500/10 ml-1" title={t('profile.block_user')}>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                                         </button>
                                     </>

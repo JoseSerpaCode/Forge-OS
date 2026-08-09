@@ -141,7 +141,23 @@ function applySecurityHeaders(response: Response): Response {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   // HSTS
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  
+
+  // No filtrar la ruta completa a terceros: los avatares de dicebear y las
+  // fuentes de Google reciben la URL de origen en cada petición.
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // La app no usa ninguna de estas APIs (el único permiso que toca es
+  // navigator.clipboard, que no requiere declaración). Negarlas evita que
+  // un script inyectado pueda pedirlas.
+  response.headers.set(
+    'Permissions-Policy',
+    'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), interest-cohort=()'
+  );
+
+  // Aísla la ventana de aperturas cross-origin (refuerza X-Frame-Options).
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+
+
   // CSP: Allow inline scripts/styles (Astro needs them for island hydration),
   // allow external avatars and fonts, allow WS for real-time features.
   // NOTE: 'unsafe-inline' is intentional — Astro SSR injects inline scripts for

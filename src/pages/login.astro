@@ -22,10 +22,11 @@ const t = useTranslations(lang);
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
   <meta name="description" content="Login to Forge OS workspace." />
+  <link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
   <title>Login | Forge JS</title>
 </head>
 <body class="bg-forge-bg text-white font-sans h-screen flex flex-col items-center justify-center">
-  <div class="bg-forge-panel border border-forge-border p-8 rounded-lg w-96">
+  <main class="bg-forge-panel border border-forge-border p-8 rounded-lg w-96">
     <div class="text-center mb-8">
       <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-forge-secondary to-forge-primary mx-auto mb-6 flex items-center justify-center">
         <span class="text-3xl font-black text-white">F</span>
@@ -49,7 +50,7 @@ const t = useTranslations(lang);
     <div class="mt-6 text-center">
       <a href="/register" class="text-forge-accent-text text-sm hover:underline">{t('auth.no_account')}</a>
     </div>
-  </div>
+  </main>
 
   {guestWorkspaces.length > 0 && (
     <dialog id="guest-ws-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">

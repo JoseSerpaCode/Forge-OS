@@ -186,7 +186,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
               {m.isExpired ? (
                 <span class="text-[10px] font-bold text-forge-error bg-red-400/10 px-2 py-0.5 rounded uppercase tracking-wider" title="This invitation has expired">Expired</span>
               ) : (
-                <span class="text-[10px] font-bold text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded uppercase tracking-wider">Pending</span>
+                <span class="text-[10px] font-bold text-forge-warning bg-orange-400/10 px-2 py-0.5 rounded uppercase tracking-wider">Pending</span>
               )}
             </div>
             
@@ -227,7 +227,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button class="btn-req-accept px-3 py-1 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded border border-green-500/30 transition-colors text-sm font-medium" data-req-id={req.id}>{t('ws.settings.accept')}</button>
+                <button class="btn-req-accept px-3 py-1 bg-green-600/20 text-forge-success hover:bg-green-600/30 rounded border border-green-500/30 transition-colors text-sm font-medium" data-req-id={req.id}>{t('ws.settings.accept')}</button>
                 <button class="btn-req-reject px-3 py-1 bg-red-600/20 text-forge-error hover:bg-red-600/30 rounded border border-red-500/30 transition-colors text-sm font-medium" data-req-id={req.id}>{t('ws.settings.reject')}</button>
               </div>
             </div>
@@ -346,9 +346,9 @@ const wsPendingInvites = pendingInvites.filter(n => {
     
     <!-- Danger Zone -->
     <div class="bg-red-500/5 border border-red-500/20 rounded-lg shadow-lg p-6">
-      <h2 class="text-xl font-bold text-red-500 mb-2">{t('ws.settings.danger')}</h2>
+      <h2 class="text-xl font-bold text-forge-error mb-2">{t('ws.settings.danger')}</h2>
       <p class="text-forge-muted text-sm mb-4">{t('ws.settings.danger_desc')}</p>
-      <button id="btn-delete-workspace-prompt" class="bg-red-500/10 text-red-500 border border-red-500/30 px-4 py-2 rounded font-bold hover:bg-red-500 hover:text-white transition-colors" data-ws-id={ws.id}>
+      <button id="btn-delete-workspace-prompt" class="bg-red-500/10 text-forge-error border border-red-500/30 px-4 py-2 rounded font-bold hover:bg-red-500 hover:text-white transition-colors" data-ws-id={ws.id}>
         {t('ws.settings.delete')}
       </button>
     </div>
@@ -356,7 +356,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
   </div>
 
   <dialog id="delete-workspace-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 class="text-xl font-bold mb-4 text-red-500">Delete Workspace</h2>
+    <h2 class="text-xl font-bold mb-4 text-forge-error">Delete Workspace</h2>
     <p class="mb-4 text-sm text-forge-muted">This action cannot be undone. Please type <span class="font-bold text-forge-text">{ws.name}</span> to confirm.</p>
     <div class="mb-4">
       <input type="text" id="delete-workspace-confirm-input" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-red-500 focus:outline-none" placeholder={ws.name}>

@@ -29,7 +29,7 @@ const isActive = page.id === currentPageId;
       <button class="add-child-btn w-5 h-5 flex items-center justify-center rounded hover:bg-forge-border text-forge-muted hover:text-forge-text transition-all" data-parent-id={page.id} aria-label="Add subpage" title="Add subpage">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
       </button>
-      <button class="delete-tree-page-btn w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-forge-muted hover:text-red-500 transition-all" data-id={page.id} aria-label="Delete page" title="Delete page">
+      <button class="delete-tree-page-btn w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-forge-muted hover:text-forge-error transition-all" data-id={page.id} aria-label="Delete page" title="Delete page">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
       </button>
     </div>

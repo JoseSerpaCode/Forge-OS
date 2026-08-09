@@ -134,7 +134,7 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
         <div class="bg-forge-panel border border-forge-border rounded-2xl shadow-xl overflow-hidden">
           <div class="p-6 border-b border-forge-border bg-forge-bg/30">
             <h2 class="text-lg font-bold text-forge-text flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-warning"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
               {t('activity.invitations')}
             </h2>
           </div>
@@ -151,18 +151,18 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
                       <div>
                         <span class="text-sm font-bold text-forge-text block mb-1">{t('activity.ws_invite')}</span>
                         <span class="text-xs font-medium text-forge-muted bg-forge-panel px-2 py-1 rounded border border-forge-border/60">
-                          {t('activity.role')}: <span class="font-bold text-orange-400 capitalize">{inv.payload?.role || 'viewer'}</span>
+                          {t('activity.role')}: <span class="font-bold text-forge-warning capitalize">{inv.payload?.role || 'viewer'}</span>
                         </span>
                       </div>
-                      <div class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-400 group-hover:scale-110 transition-transform">
+                      <div class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-forge-warning group-hover:scale-110 transition-transform">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
                       </div>
                     </div>
                     <div class="flex items-center gap-3 mt-auto pt-4 border-t border-forge-border/40">
-                      <button class="btn-invite-accept flex-1 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white border border-green-500/20 py-2 rounded-lg transition-all font-bold text-sm" data-id={inv.id}>
+                      <button class="btn-invite-accept flex-1 bg-green-500/10 text-forge-success hover:bg-green-500 hover:text-white border border-green-500/20 py-2 rounded-lg transition-all font-bold text-sm" data-id={inv.id}>
                         {t('ws.settings.accept')}
                       </button>
-                      <button class="btn-invite-reject flex-1 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 py-2 rounded-lg transition-all font-bold text-sm" data-id={inv.id}>
+                      <button class="btn-invite-reject flex-1 bg-red-500/10 text-forge-error hover:bg-red-500 hover:text-white border border-red-500/20 py-2 rounded-lg transition-all font-bold text-sm" data-id={inv.id}>
                         {t('ws.settings.reject')}
                       </button>
                     </div>
@@ -201,14 +201,14 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
                     </div>
                     <div class="flex items-center gap-4">
                       <span class={`text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest
-                        ${r.status === 'pending' ? 'bg-orange-400/10 text-orange-400 border border-orange-400/20' : 
-                          r.status === 'approved' ? 'bg-green-400/10 text-green-400 border border-green-400/20' : 
+                        ${r.status === 'pending' ? 'bg-orange-400/10 text-forge-warning border border-orange-400/20' : 
+                          r.status === 'approved' ? 'bg-green-400/10 text-forge-success border border-green-400/20' : 
                           r.status === 'rejected' ? 'bg-red-400/10 text-forge-error border border-red-400/20' : 
                           'bg-forge-muted/10 text-forge-muted border border-forge-border'}`}>
                         {r.status}
                       </span>
                       {r.status === 'pending' && (
-                        <button class="btn-cancel-request text-forge-muted hover:text-red-500 p-2 rounded-lg hover:bg-red-500/10 transition-colors" data-req-id={r.id} data-ws-id={r.workspace_id} title={t('activity.cancel_request')}>
+                        <button class="btn-cancel-request text-forge-muted hover:text-forge-error p-2 rounded-lg hover:bg-red-500/10 transition-colors" data-req-id={r.id} data-ws-id={r.workspace_id} title={t('activity.cancel_request')}>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                       )}
