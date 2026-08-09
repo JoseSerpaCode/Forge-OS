@@ -1,0 +1,41 @@
+# Caddyfile — /etc/caddy/Caddyfile
+#
+# Caddy obtiene y renueva el certificado de Let's Encrypt solo. No hay que
+# tocar nada de TLS.
+#
+# Requisito previo: el registro A de forge-os.online debe apuntar a la IP
+# pública de la VM ANTES de arrancar Caddy, o el reto ACME falla.
+
+forge-os.online, www.forge-os.online {
+	encode zstd gzip
+
+	# Los assets de Astro llevan un hash de contenido en el nombre: si cambia el
+	# contenido, cambia la URL. Son inmutables, así que se cachean un año y
+	# dejan de consumir egress en visitas repetidas.
+	#
+	# Node ya envía esta cabecera (ver server.mjs); se repite aquí para que siga
+	# siendo correcta aunque algún día Caddy sirva dist/client directamente.
+	@astro path /_astro/*
+	header @astro Cache-Control "public, max-age=31536000, immutable"
+
+	# La API nunca se cachea. /api/storage/ sirve archivos tras comprobar
+	# permisos: cachearlos en una capa compartida los expondría a quien no debe.
+	@api path /api/*
+	header @api Cache-Control "private, no-store"
+
+	reverse_proxy 127.0.0.1:4321 {
+		# Necesario para que Express (trust proxy) reconstruya la URL original.
+		# Sin esto, Astro.url devuelve localhost:4321 y rompe canonical, las
+		# etiquetas OpenGraph y el futuro redirect URI de OAuth.
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+		header_up X-Real-IP {remote_host}
+	}
+
+	log {
+		output file /var/log/caddy/forge-os.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}

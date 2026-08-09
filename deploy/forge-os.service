@@ -1,0 +1,55 @@
+# /etc/systemd/system/forge-os.service
+#
+#   sudo systemctl enable --now forge-os
+#   sudo systemctl status forge-os
+#   sudo journalctl -u forge-os -f
+
+[Unit]
+Description=Forge OS
+Documentation=https://github.com/JoseSerpaCode/Forge-OS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=forge
+Group=forge
+WorkingDirectory=/opt/forge-os
+
+# Secretos y configuración. Fuera del repositorio, permisos 600, propiedad de
+# root: el servicio lo lee al arrancar, el usuario forge no puede leerlo.
+EnvironmentFile=/etc/forge-os.env
+
+ExecStart=/usr/bin/node server.mjs
+
+Restart=always
+RestartSec=5
+# Si falla 5 veces en 60s, deja de intentarlo: reiniciar en bucle una app rota
+# solo llena el disco de logs.
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# ── Endurecimiento ──────────────────────────────────────────────────────────
+# Todo el sistema de archivos en solo lectura salvo lo estrictamente necesario.
+# Si alguien logra ejecutar código, no puede escribir fuera de estos directorios.
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+LockPersonality=true
+
+# Los dos únicos sitios donde la app escribe: la base de datos y los archivos
+# subidos. Ambos fuera de /opt/forge-os para que un despliegue no los borre.
+ReadWritePaths=/var/lib/forge-os
+
+# 1 GB de RAM en la VM: si la app se desboca, que la mate el cgroup en vez de
+# arrastrar a todo el sistema al OOM.
+MemoryMax=600M
+
+[Install]
+WantedBy=multi-user.target
