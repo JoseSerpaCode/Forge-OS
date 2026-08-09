@@ -1,6 +1,6 @@
-# Contribuyendo a Forge JS
+# Contribuyendo a Forge OS
 
-¡Gracias por tu interés en contribuir a **Forge JS**! Este documento detalla nuestras convenciones y flujos de trabajo para mantener la calidad y seguridad del código.
+¡Gracias por tu interés en contribuir a **Forge OS**! Este documento detalla nuestras convenciones y flujos de trabajo para mantener la calidad y seguridad del código.
 
 ## 🛠 Entorno de Desarrollo
 

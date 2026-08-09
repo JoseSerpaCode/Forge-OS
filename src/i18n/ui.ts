@@ -290,7 +290,7 @@ export const ui = {
     'modal.work_desc_placeholder': 'What did you work on?',
     
     // About Modal
-    'about.title': 'About Forge JS',
+    'about.title': 'About Forge OS',
     'about.guide': 'User Guide',
     'about.shortcuts': 'Keyboard Shortcuts',
     'about.shortcuts.desc': 'Speed up your workflow with these shortcuts.',
@@ -649,7 +649,7 @@ export const ui = {
     'modal.work_desc_placeholder': '¿En qué trabajaste?',
     
     // About Modal
-    'about.title': 'Acerca de Forge JS',
+    'about.title': 'Acerca de Forge OS',
     'about.guide': 'Guía de Uso',
     'about.shortcuts': 'Atajos de Teclado',
     'about.shortcuts.desc': 'Acelera tu flujo de trabajo con estos atajos.',
