@@ -1,0 +1,275 @@
+---
+/**
+ * Armazón común de login y registro.
+ *
+ * Las dos páginas eran 125 líneas cada una con el 80% repetido, y cada arreglo
+ * había que hacerlo dos veces —de hecho una tenía `text-white` y la otra
+ * `text-forge-text`, que es exactamente lo que pasa cuando se duplica—. Aquí
+ * queda la estructura y el panel de marca; cada página aporta solo su
+ * formulario.
+ */
+import { useTranslations } from '../../i18n/ui';
+import OAuthButtons from './OAuthButtons.astro';
+
+interface Props {
+  /** Título grande sobre el formulario. */
+  heading: string;
+  /** Frase bajo el título. */
+  sub: string;
+}
+
+const { heading, sub } = Astro.props;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+---
+
+<div class="au">
+  {/*
+    Panel de marca. Repite el choque tipográfico de la landing —el nombre del
+    archivo en mono, dentro de una ficha— para que quien llega desde ahí
+    reconozca dónde está. En móvil se esconde entero: en 390px robaría la
+    pantalla al formulario, que es a lo que se viene.
+  */}
+  <aside class="au-brand" aria-hidden="true">
+    <div class="au-glow"></div>
+    <p class="au-mark">FORGE OS</p>
+    <p class="au-claim">
+      {t('auth.side.claim')}
+      <span class="au-chip">forge.db</span>
+    </p>
+    <ul class="au-points">
+      <li>{t('auth.side.p1')}</li>
+      <li>{t('auth.side.p2')}</li>
+      <li>{t('auth.side.p3')}</li>
+    </ul>
+  </aside>
+
+  <main class="au-main">
+    <a href="/" class="au-back">{t('auth.back')}</a>
+
+    <div class="au-card">
+      <h1 class="au-title">{heading}</h1>
+      <p class="au-sub">{sub}</p>
+
+      {/* Para explicar por qué se ha llegado aquí, cuando no ha sido por
+          voluntad propia — el caso del límite de invitados. */}
+      <slot name="notice" />
+
+      {/* Los proveedores van primero: para quien ya tiene cuenta de Google o de
+          GitHub es un clic frente a recordar una contraseña. El formulario
+          queda debajo, como la alternativa que es. */}
+      <OAuthButtons />
+
+      <div class="au-sep"><span>{t('auth.email')}</span></div>
+
+      <slot />
+
+      <div class="au-sep"><span>{t('auth.or')}</span></div>
+
+      {/*
+        La tercera salida, la misma que ofrece la landing. Es un `form` y no un
+        enlace porque `/api/auth/guest` crea una cuenta: eso es un POST, no una
+        navegación que un prefetch del navegador pueda disparar sola.
+      */}
+      <form method="POST" action="/api/auth/guest">
+        <button type="submit" class="au-ghost">{t('auth.try')}</button>
+      </form>
+      <p class="au-caveat">{t('auth.try.caveat')}</p>
+
+      <p class="au-swap"><slot name="swap" /></p>
+    </div>
+  </main>
+</div>
+
+<style>
+  .au {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 60rem) {
+    .au { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ── Panel de marca ───────────────────────────────────────────────────── */
+  .au-brand {
+    display: none;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.75rem;
+    padding: clamp(2.5rem, 5vw, 4.5rem);
+    border-right: 1px solid var(--forge-border);
+    background: var(--forge-panel);
+  }
+  @media (min-width: 60rem) {
+    .au-brand { display: flex; }
+  }
+
+  .au-glow {
+    position: absolute;
+    z-index: -1;
+    inset: auto auto -20% -20%;
+    width: 70%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--forge-accent-primary);
+    opacity: 0.2;
+    filter: blur(90px);
+  }
+
+  .au-mark {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.24em;
+    color: var(--forge-muted);
+    margin: 0;
+  }
+
+  .au-claim {
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--forge-text);
+    margin: 0;
+    max-width: 18ch;
+  }
+  .au-chip {
+    display: inline-block;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.78em;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--forge-accent-text);
+    background: color-mix(in srgb, var(--forge-accent-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--forge-accent-primary) 30%, transparent);
+    border-radius: 0.5rem;
+    padding: 0.05em 0.35em;
+  }
+
+  .au-points {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    max-width: 34ch;
+  }
+  .au-points li {
+    position: relative;
+    padding-left: 1.4rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--forge-muted);
+  }
+  .au-points li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--forge-accent-primary);
+  }
+
+  /* ── Columna del formulario ───────────────────────────────────────────── */
+  .au-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* `min-height` y no `height`: en móvil, con el teclado abierto, una altura
+       fija recorta el formulario en lugar de dejar desplazarlo. */
+    min-height: 100dvh;
+    padding: 4.5rem 1.25rem 3rem;
+  }
+
+  .au-back {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--forge-muted);
+    text-decoration: none;
+  }
+  .au-back::before { content: '← '; }
+  .au-back:hover { color: var(--forge-text); }
+
+  .au-card { width: 100%; max-width: 23rem; }
+
+  .au-title {
+    font-size: clamp(1.6rem, 4vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--forge-text);
+    margin: 0 0 0.5rem;
+  }
+  .au-sub {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--forge-muted);
+    margin: 0 0 1.75rem;
+  }
+
+  .au-sep {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+  .au-sep::before,
+  .au-sep::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--forge-border);
+  }
+  .au-sep span {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+  }
+
+  .au-ghost {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--forge-text);
+    background: transparent;
+    border: 1px solid var(--forge-border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .au-ghost:hover {
+    border-color: var(--forge-muted);
+    background: var(--forge-panel);
+  }
+
+  .au-caveat {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+    margin: 0.6rem 0 0;
+  }
+
+  .au-swap {
+    margin: 1.75rem 0 0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--forge-muted);
+  }
+</style>

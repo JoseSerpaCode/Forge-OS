@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { handler as astroHandler } from './dist/server/entry.mjs'; // Build output
 import { setupSockets } from './src/lib/sockets.mjs';
+import path from 'path';
 
 const app = express();
 const server = createServer(app);
@@ -19,8 +20,35 @@ const io = new Server(server);
 // delante. Confiar en todos permitiría a un cliente falsear su IP de origen.
 app.set('trust proxy', 1);
 
+// Comprobación de salud para el script de despliegue. Va antes que los
+// estáticos y que Astro para que responda aunque el build esté a medias.
+//
+// Consulta la base de datos a propósito: un proceso que acepta conexiones pero
+// no puede leer su SQLite está caído para todo lo que importa, y un healthcheck
+// que solo devuelve 200 no lo distinguiría.
+//
+// Abre su propia conexión de **solo lectura** en vez de importar `src/lib/db.ts`.
+// Ese módulo crea el esquema y corre las migraciones al importarlo, así que
+// usarlo aquí ataría el arranque del servidor a que la base sea escribible y
+// repetiría todo ese trabajo en cada boot.
+import Database from 'better-sqlite3';
+const DB_PATH =
+  process.env.DATABASE_URL || path.join(process.cwd(), 'forge.db');
+
+app.get('/healthz', (_req, res) => {
+  let probe;
+  try {
+    probe = new Database(DB_PATH, { readonly: true, fileMustExist: true });
+    probe.prepare('SELECT 1').get();
+    res.type('text/plain').send('ok');
+  } catch (err) {
+    res.status(503).type('text/plain').send(`db: ${err.message}`);
+  } finally {
+    probe?.close();
+  }
+});
+
 // Servir estáticos de Astro (CSS, JS, assets)
-import path from 'path';
 app.use(
   express.static(path.join(process.cwd(), 'dist/client'), {
     setHeaders(res, filePath) {

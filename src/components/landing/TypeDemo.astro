@@ -1,0 +1,366 @@
+---
+/**
+ * El producto escribiéndose solo, al lado del titular.
+ *
+ * El hero era una columna de texto y nada más: decía qué es Forge OS pero no
+ * enseñaba nada. Esto pone al lado lo que de verdad hace la herramienta —una
+ * página que se escribe, el menú de `/`, una lista que se marca sola y un
+ * enlace a un issue— sin pedirle al visitante que se registre para verlo.
+ *
+ * Es una recreación en HTML, no una captura: pesa unos pocos KB, se lee nítida
+ * en cualquier pantalla y usa los mismos tokens que la aplicación, así que
+ * cambia con ella en vez de quedarse obsoleta como una imagen.
+ */
+import { useTranslations } from '../../i18n/ui';
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+// El guion vive en el servidor para que sea traducible. El cliente solo lo
+// reproduce.
+const script = {
+  crumb: t('demo.crumb'),
+  title: t('demo.title'),
+  slash: '/',
+  menu: [t('demo.menu.check'), t('demo.menu.table'), t('demo.menu.code')],
+  items: [t('demo.item1'), t('demo.item2'), t('demo.item3')],
+  linkLabel: t('demo.link'),
+};
+---
+
+{/*
+  Toda la demo es decorativa: recrea una interfaz, no la es. Anunciarla letra a
+  letra a un lector de pantalla sería ruido, así que se oculta y el significado
+  lo lleva el titular y el párrafo de al lado, que sí son texto de verdad.
+*/}
+<div class="td" aria-hidden="true">
+  <div class="td-chrome">
+    <span class="td-dots"><i></i><i></i><i></i></span>
+    <span class="td-crumb">{script.crumb}</span>
+  </div>
+
+  <div class="td-page">
+    <h3 class="td-title"><span data-title></span><b class="td-caret" data-caret-title></b></h3>
+
+    <div class="td-line">
+      <span data-body></span><b class="td-caret" data-caret-body></b>
+    </div>
+
+    <div class="td-menu" data-menu hidden>
+      {script.menu.map((m, i) => (
+        <div class="td-menu-row" data-menu-row={i}>
+          <span class="td-menu-ico"></span>
+          {m}
+        </div>
+      ))}
+    </div>
+
+    <ul class="td-check" data-check>
+      {script.items.map((it) => (
+        <li hidden><span class="td-box"></span>{it}</li>
+      ))}
+    </ul>
+
+    <div class="td-link" data-link hidden>
+      <span class="td-link-ico"></span>{script.linkLabel}
+    </div>
+  </div>
+</div>
+
+<style>
+  .td {
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.85rem;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgb(0 0 0 / 0.45);
+  }
+
+  .td-chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--forge-border);
+    background: var(--forge-bg);
+  }
+  .td-dots { display: flex; gap: 0.3rem; }
+  .td-dots i { width: 0.5rem; height: 0.5rem; border-radius: 50%; display: block; }
+  .td-dots i:nth-child(1) { background: var(--forge-error); }
+  .td-dots i:nth-child(2) { background: var(--forge-warning); }
+  .td-dots i:nth-child(3) { background: var(--forge-success); }
+  .td-crumb {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    color: var(--forge-muted);
+  }
+
+  .td-page {
+    position: relative;
+    padding: 1.5rem 1.4rem 1.75rem;
+    min-height: 17rem;
+  }
+
+  .td-title {
+    margin: 0 0 0.9rem;
+    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--forge-text);
+    min-height: 1.6em;
+  }
+
+  .td-line {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+    min-height: 1.6em;
+  }
+
+  /* El cursor. Solo parpadea el que está activo, marcado desde el guion: dos
+     cursores latiendo a la vez no los tiene ningún editor. */
+  .td-caret {
+    display: none;
+    width: 2px;
+    height: 1.05em;
+    margin-left: 1px;
+    vertical-align: text-bottom;
+    background: var(--forge-accent-primary);
+  }
+  .td-caret[data-on] { display: inline-block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .td-caret[data-on] { animation: blink 1.05s step-end infinite; }
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── Menú de barra ────────────────────────────────────────────────────── */
+  .td-menu {
+    margin-top: 0.5rem;
+    width: min(15rem, 100%);
+    padding: 0.3rem;
+    background: var(--forge-bg);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.5rem;
+    box-shadow: 0 12px 30px rgb(0 0 0 / 0.5);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .td-menu:not([hidden]) { animation: pop 0.16s ease-out; }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(-4px); }
+  }
+  .td-menu-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--forge-muted);
+  }
+  .td-menu-row[data-on] {
+    background: color-mix(in srgb, var(--forge-accent-primary) 16%, transparent);
+    color: var(--forge-text);
+  }
+  .td-menu-ico {
+    width: 0.85rem;
+    height: 0.85rem;
+    flex: none;
+    border-radius: 0.2rem;
+    border: 1px solid var(--forge-muted);
+  }
+  .td-menu-row[data-on] .td-menu-ico {
+    border-color: var(--forge-accent-primary);
+    background: color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
+  }
+
+  /* ── Lista de comprobación ────────────────────────────────────────────── */
+  .td-check {
+    list-style: none;
+    margin: 0.9rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .td-check li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.85rem;
+    color: var(--forge-text);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .td-check li:not([hidden]) { animation: pop 0.22s ease-out; }
+  }
+  .td-box {
+    width: 0.9rem;
+    height: 0.9rem;
+    flex: none;
+    border-radius: 0.25rem;
+    border: 1.5px solid var(--forge-muted);
+    position: relative;
+  }
+  .td-check li[data-done] { color: var(--forge-muted); text-decoration: line-through; }
+  .td-check li[data-done] .td-box {
+    border-color: var(--forge-success);
+    background: var(--forge-success);
+  }
+  .td-check li[data-done] .td-box::after {
+    content: '';
+    position: absolute;
+    left: 0.26rem;
+    top: 0.06rem;
+    width: 0.22rem;
+    height: 0.45rem;
+    border: solid var(--forge-bg);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* ── Enlace a un issue ────────────────────────────────────────────────── */
+  .td-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    padding: 0.3rem 0.55rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--forge-accent-text);
+    background: color-mix(in srgb, var(--forge-accent-primary) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--forge-accent-primary) 30%, transparent);
+    border-radius: 0.4rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .td-link:not([hidden]) { animation: pop 0.22s ease-out; }
+  }
+  .td-link-ico {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--forge-accent-primary);
+  }
+</style>
+
+<script define:vars={{ script }}>
+  const root = document.querySelector('.td');
+  if (root) {
+    const $ = (sel) => root.querySelector(sel);
+    const titleEl = $('[data-title]');
+    const bodyEl = $('[data-body]');
+    const caretTitle = $('[data-caret-title]');
+    const caretBody = $('[data-caret-body]');
+    const menu = $('[data-menu]');
+    const menuRows = [...root.querySelectorAll('[data-menu-row]')];
+    const items = [...root.querySelectorAll('[data-check] li')];
+    const link = $('[data-link]');
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    // Ritmo irregular a propósito: una cadencia perfectamente constante suena a
+    // máquina, y lo que se está imitando es a alguien escribiendo.
+    const type = async (el, text, base = 45) => {
+      el.textContent = '';
+      for (const ch of text) {
+        el.textContent += ch;
+        await sleep(base + Math.random() * base);
+      }
+    };
+
+    const reset = () => {
+      titleEl.textContent = '';
+      bodyEl.textContent = '';
+      menu.hidden = true;
+      menuRows.forEach((r) => r.removeAttribute('data-on'));
+      items.forEach((li) => {
+        li.hidden = true;
+        li.removeAttribute('data-done');
+      });
+      link.hidden = true;
+      caretTitle.removeAttribute('data-on');
+      caretBody.removeAttribute('data-on');
+    };
+
+    // Con movimiento reducido no hay animación: se pinta el resultado final y
+    // ahí se queda. Enseña lo mismo sin nada moviéndose.
+    const still = () => {
+      titleEl.textContent = script.title;
+      bodyEl.textContent = '';
+      items.forEach((li) => {
+        li.hidden = false;
+        li.setAttribute('data-done', '');
+      });
+      link.hidden = false;
+    };
+
+    async function play() {
+      reset();
+      await sleep(700);
+
+      caretTitle.setAttribute('data-on', '');
+      await type(titleEl, script.title, 42);
+      caretTitle.removeAttribute('data-on');
+      await sleep(350);
+
+      caretBody.setAttribute('data-on', '');
+      await type(bodyEl, script.slash, 60);
+      menu.hidden = false;
+      await sleep(500);
+
+      // Bajar por el menú hasta la primera opción, como haría un teclado.
+      for (let i = 0; i < menuRows.length; i++) {
+        menuRows.forEach((r) => r.removeAttribute('data-on'));
+        menuRows[i].setAttribute('data-on', '');
+        await sleep(260);
+      }
+      menuRows.forEach((r) => r.removeAttribute('data-on'));
+      menuRows[0].setAttribute('data-on', '');
+      await sleep(450);
+
+      menu.hidden = true;
+      bodyEl.textContent = '';
+      caretBody.removeAttribute('data-on');
+
+      for (const li of items) {
+        li.hidden = false;
+        await sleep(300);
+      }
+      await sleep(400);
+      for (const li of items) {
+        li.setAttribute('data-done', '');
+        await sleep(320);
+      }
+
+      await sleep(450);
+      link.hidden = false;
+      await sleep(3200);
+    }
+
+    if (reduce) {
+      still();
+    } else {
+      // Solo corre mientras se ve. Un bucle infinito en una sección fuera de
+      // pantalla gasta batería sin que nadie lo mire.
+      let running = false;
+      const loop = async () => {
+        while (running) await play();
+      };
+      new IntersectionObserver(
+        ([e]) => {
+          if (e.isIntersecting && !running) {
+            running = true;
+            loop();
+          } else if (!e.isIntersecting) {
+            running = false;
+          }
+        },
+        { threshold: 0.25 }
+      ).observe(root);
+    }
+  }
+</script>

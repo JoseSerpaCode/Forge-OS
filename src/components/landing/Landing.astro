@@ -1,34 +1,36 @@
 ---
 import { useTranslations } from '../../i18n/ui';
 import pkg from '../../../package.json';
+import Bento from './Bento.astro';
+import TypeDemo from './TypeDemo.astro';
+import Showcase from './Showcase.astro';
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 const version = pkg.version;
 
-// Las capturas ya existen en public/screenshots/, generadas con `npm run
-// screenshots` sobre datos de `npm run seed`.
+// Las tres ideas del producto. Ya no llevan captura propia —las cuatro
+// capturas están juntas en el carrusel de arriba, donde se comparan mejor y no
+// obligan a bajar cuatro pantallas para verlas—, sino un dibujo de línea que
+// resume la idea sin competir con el texto.
 const sections = [
   {
     eyebrow: t('landing.f1.eyebrow'),
     title: t('landing.f1.title'),
     body: t('landing.f1.body'),
-    shot: 'board',
-    alt: t('landing.f1.alt'),
+    art: 'board',
   },
   {
     eyebrow: t('landing.f2.eyebrow'),
     title: t('landing.f2.title'),
     body: t('landing.f2.body'),
-    shot: 'knowledge-base',
-    alt: t('landing.f2.alt'),
+    art: 'links',
   },
   {
     eyebrow: t('landing.f3.eyebrow'),
     title: t('landing.f3.title'),
     body: t('landing.f3.body'),
-    shot: 'metrics',
-    alt: t('landing.f3.alt'),
+    art: 'chart',
   },
 ];
 ---
@@ -47,6 +49,7 @@ const sections = [
 
 <main class="lp">
   <section class="lp-hero">
+   <div class="lp-hero-text">
     <p class="lp-eyebrow">{t('landing.eyebrow')}</p>
 
     {/*
@@ -76,17 +79,19 @@ const sections = [
       es una trampa, por barata que salga la conversión.
     */}
     <p class="lp-caveat">{t('landing.try.caveat')}</p>
+   </div>
+
+   {/*
+     La captura gigante que había aquí enseñaba el producto quieto. Esto lo
+     enseña funcionando, pesa unos KB en vez de cientos, y se lee nítido en
+     cualquier pantalla porque es HTML y no una imagen escalada.
+   */}
+   <div class="lp-hero-demo"><TypeDemo /></div>
   </section>
 
-  <section class="lp-shot lp-shot-hero">
-    {/*
-      Siempre la variante oscura: esta página no tiene conmutador de tema ni
-      sesión de la que leer una preferencia, así que su fondo es siempre
-      oscuro. Seguir `prefers-color-scheme` aquí servía capturas claras sobre
-      fondo oscuro.
-    */}
-    <img src="/screenshots/board-dark.png" alt={t('landing.hero.alt')} width="2880" height="1800" loading="eager" />
-  </section>
+  <Showcase />
+
+  <Bento />
 
   <section class="lp-facts">
     <dl>
@@ -97,18 +102,58 @@ const sections = [
     </dl>
   </section>
 
-  {sections.map((s) => (
-    <section class="lp-feature">
-      <div class="lp-feature-text">
+  <div class="lp-cards">
+    {sections.map((s) => (
+      <section class="lp-card">
+        {/*
+          Dibujos de línea, no ilustraciones a todo color. Se hacen con cuatro
+          trazos, pesan nada, heredan el color de marca y —al no representar
+          personas ni escenas— no envejecen ni chocan con el tono del producto.
+          Son decorativos: lo que dicen ya está escrito debajo.
+        */}
+        <div class="lp-art" aria-hidden="true">
+          {s.art === 'board' && (
+            <svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="14" width="30" height="58" rx="4" opacity="0.5" />
+              <rect x="45" y="14" width="30" height="58" rx="4" opacity="0.5" />
+              <rect x="86" y="14" width="30" height="58" rx="4" opacity="0.5" />
+              <rect x="9" y="22" width="20" height="9" rx="2.5" />
+              <rect x="9" y="36" width="20" height="9" rx="2.5" opacity="0.55" />
+              <rect x="91" y="22" width="20" height="9" rx="2.5" opacity="0.55" />
+              <rect x="50" y="49" width="20" height="9" rx="2.5" class="lp-art-hot" />
+              <path d="M32 27c8 3 10 12 17 20" stroke-dasharray="3 4" opacity="0.8" />
+              <path d="M46 44l4 3-4 3" />
+            </svg>
+          )}
+          {s.art === 'links' && (
+            <svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="12" width="38" height="50" rx="4" opacity="0.5" />
+              <path d="M13 24h24M13 32h20M13 40h24M13 48h14" opacity="0.7" />
+              <rect x="76" y="20" width="38" height="42" rx="4" opacity="0.5" />
+              <path d="M83 32h24M83 40h16" opacity="0.7" />
+              <path d="M47 30h24" class="lp-art-hot" />
+              <path d="M67 26l5 4-5 4" class="lp-art-hot" />
+              <path d="M73 48H49" class="lp-art-hot" />
+              <path d="M53 44l-5 4 5 4" class="lp-art-hot" />
+            </svg>
+          )}
+          {s.art === 'chart' && (
+            <svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8v58h96" opacity="0.5" />
+              <rect x="24" y="44" width="13" height="22" rx="2" opacity="0.6" />
+              <rect x="45" y="34" width="13" height="32" rx="2" opacity="0.6" />
+              <rect x="66" y="48" width="13" height="18" rx="2" opacity="0.6" />
+              <rect x="87" y="24" width="13" height="42" rx="2" class="lp-art-hot" />
+              <path d="M26 36c14-4 22 6 34-6s20-6 34-14" stroke-dasharray="3 4" class="lp-art-hot" />
+            </svg>
+          )}
+        </div>
         <p class="lp-eyebrow">{s.eyebrow}</p>
-        <h2 class="lp-h2">{s.title}</h2>
+        <h2 class="lp-h3">{s.title}</h2>
         <p class="lp-body">{s.body}</p>
-      </div>
-      <div class="lp-shot">
-        <img src={`/screenshots/${s.shot}-dark.png`} alt={s.alt} width="2880" height="1800" loading="lazy" />
-      </div>
-    </section>
-  ))}
+      </section>
+    ))}
+  </div>
 
   <section class="lp-end">
     <h2 class="lp-h2">{t('landing.end.title')}</h2>
@@ -122,12 +167,50 @@ const sections = [
     <p class="lp-caveat">{t('landing.try.caveat')}</p>
   </section>
 
+  {/*
+    El pie era una sola línea con la versión y dos enlaces: cerraba la página
+    de golpe, sin darle fondo a nada. Este reparte lo que hay en cuatro
+    columnas —producto, código, legal— y **solo enlaza a sitios que existen**:
+    nada de un «Precios» o un «Blog» de adorno que lleve a un 404.
+  */}
   <footer class="lp-foot">
-    <span>Forge OS v{version}</span>
-    <span class="lp-dot">·</span>
-    <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">GitHub</a>
-    <span class="lp-dot">·</span>
-    <a href="https://github.com/JoseSerpaCode/Forge-OS/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="lp-link">MIT</a>
+    <div class="lp-foot-top">
+      <div class="lp-foot-brand">
+        <a href="/" class="lp-brand">
+          <img src="/forge-icon.svg" alt="" width="28" height="28" />
+          <span>Forge OS</span>
+        </a>
+        <p class="lp-foot-pitch">{t('foot.pitch')}</p>
+        <form method="POST" action="/api/auth/guest">
+          <button type="submit" class="lp-btn lp-btn-ghost lp-foot-cta">{t('landing.try')}</button>
+        </form>
+      </div>
+
+      <nav class="lp-foot-cols" aria-label={t('foot.nav')}>
+        <div class="lp-foot-col">
+          <h2>{t('foot.product')}</h2>
+          <a href="/register" class="lp-link">{t('landing.signup')}</a>
+          <a href="/login" class="lp-link">{t('landing.signin')}</a>
+          <a href="#sc-title" class="lp-link">{t('foot.screens')}</a>
+        </div>
+        <div class="lp-foot-col">
+          <h2>{t('foot.code')}</h2>
+          <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.repo')}</a>
+          <a href="https://github.com/JoseSerpaCode/Forge-OS/issues" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.issues')}</a>
+          <a href="https://github.com/JoseSerpaCode/Forge-OS/blob/main/deploy/README.md" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.deploy')}</a>
+        </div>
+        <div class="lp-foot-col">
+          <h2>{t('foot.legal')}</h2>
+          <a href="https://github.com/JoseSerpaCode/Forge-OS/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.license')}</a>
+          <span class="lp-foot-note">{t('foot.privacy')}</span>
+        </div>
+      </nav>
+    </div>
+
+    <div class="lp-foot-bottom">
+      <span class="lp-foot-ver">Forge OS v{version}</span>
+      <span class="lp-foot-note">{t('foot.built')}</span>
+    </div>
   </footer>
 </main>
 
@@ -193,8 +276,12 @@ const sections = [
     margin: 0 0 1.25rem;
   }
 
+  /* El 8.5vw venía de cuando el titular ocupaba el ancho entero. Ahora vive en
+     media columna, y con ese tamaño se partía en cinco líneas y estiraba el
+     hero a dos pantallas. El `min()` con `7vw` lo ata al ancho real disponible
+     sin renunciar al tamaño en pantallas pequeñas, donde sigue a una columna. */
   .lp-h1 {
-    font-size: clamp(2.75rem, 8.5vw, 6rem);
+    font-size: clamp(2.6rem, 7vw, 4.4rem);
     line-height: 0.98;
     letter-spacing: -0.045em;
     font-weight: 800;
@@ -226,6 +313,7 @@ const sections = [
     border: 1px solid color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
     border-radius: 0.5rem;
     padding: 0.12em 0.4em;
+    box-shadow: 0 0 40px color-mix(in srgb, var(--forge-accent-primary) 22%, transparent);
     display: inline-block;
     white-space: nowrap;
     /* El chip es 0.62em del titular; sin este empuje su caja se cuelga por
@@ -243,7 +331,51 @@ const sections = [
   .lp-body { margin-top: 0; }
 
   /* ── Hero ───────────────────────────────────────────────────────────── */
-  .lp-hero { padding: clamp(3rem, 9vw, 6rem) 0 0; }
+  .lp-hero {
+    padding: clamp(3rem, 9vw, 6rem) 0 0;
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2.5rem, 5vw, 4rem);
+    align-items: center;
+  }
+  /* A dos columnas solo cuando hay sitio de verdad. Por debajo, la demo se
+     pone bajo el texto: partirla antes deja el titular en cuatro palabras por
+     línea. La proporción 1.05/1 da a la demo casi la mitad sin comerse el
+     titular, que sigue siendo lo primero que hay que leer. */
+  @media (min-width: 64rem) {
+    .lp-hero { grid-template-columns: 1.05fr 1fr; }
+    .lp-h1 { font-size: clamp(2.8rem, 4.2vw, 3.9rem); }
+  }
+  .lp-hero-text { min-width: 0; }
+  .lp-hero-demo { min-width: 0; }
+  /* El calor de la forja, que hasta ahora el nombre prometía y el diseño no
+     daba. Difuso, detrás de todo y anclado al chip del archivo, así que
+     refuerza el elemento protagonista en vez de competir con él. */
+  .lp-hero::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: 12%;
+    left: -12%;
+    width: min(680px, 90%);
+    aspect-ratio: 1.6;
+    background: radial-gradient(
+      ellipse at 30% 50%,
+      color-mix(in srgb, var(--forge-accent-primary) 38%, transparent),
+      transparent 68%
+    );
+    filter: blur(70px);
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-hero::before { animation: heat 9s ease-in-out infinite alternate; }
+  }
+  @keyframes heat {
+    from { opacity: 0.75; transform: scale(1); }
+    to   { opacity: 1; transform: scale(1.08); }
+  }
 
   .lp-cta {
     display: flex;
@@ -299,17 +431,6 @@ const sections = [
   }
   .lp-link:hover { color: var(--forge-text); }
 
-  /* ── Capturas ───────────────────────────────────────────────────────── */
-  .lp-shot { margin-top: clamp(3rem, 7vw, 5rem); }
-  .lp-shot img {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 0.9rem;
-    border: 1px solid var(--forge-border);
-  }
-  .lp-shot-hero img { box-shadow: 0 24px 70px rgb(0 0 0 / 0.45); }
-
   /* ── Datos ──────────────────────────────────────────────────────────── */
   .lp-facts { margin-top: var(--lp-gap); }
   .lp-facts dl {
@@ -337,8 +458,61 @@ const sections = [
   }
 
   /* ── Secciones ──────────────────────────────────────────────────────── */
-  .lp-feature { margin-top: var(--lp-gap); }
-  .lp-feature-text { max-width: 46ch; }
+  /* Eran tres bloques de pantalla completa, texto arriba y captura debajo, uno
+     tras otro. Ocupaban cuatro pantallas para decir tres cosas. En rejilla se
+     leen de un vistazo y se comparan entre sí, que es lo que se quiere. */
+  .lp-cards {
+    margin-top: var(--lp-gap);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 0.75rem;
+  }
+  .lp-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: clamp(1.4rem, 2.5vw, 1.9rem);
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.9rem;
+    transition: border-color 0.25s, transform 0.25s;
+  }
+  .lp-card:hover {
+    border-color: color-mix(in srgb, var(--forge-muted) 45%, var(--forge-border));
+    transform: translateY(-2px);
+  }
+  .lp-card::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -30%;
+    right: -20%;
+    width: 65%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--forge-accent-primary);
+    opacity: 0.12;
+    filter: blur(60px);
+  }
+
+  .lp-art {
+    color: var(--forge-muted);
+    margin-bottom: 1.25rem;
+  }
+  .lp-art svg { width: 100%; max-width: 7.5rem; height: auto; display: block; }
+  /* El trazo que lleva la idea va en naranja; el resto, apagado. Si todo el
+     dibujo fuera de marca no se vería dónde mirar. */
+  .lp-art :global(.lp-art-hot) { color: var(--forge-accent-primary); stroke: currentColor; }
+
+  .lp-h3 {
+    font-size: clamp(1.15rem, 2vw, 1.4rem);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    color: var(--forge-text);
+    margin: 0.4rem 0 0.6rem;
+  }
+  .lp-card .lp-body { font-size: 0.9rem; max-width: none; }
 
   .lp-end {
     margin-top: var(--lp-gap);
@@ -346,31 +520,72 @@ const sections = [
     border-top: 1px solid var(--forge-border);
   }
 
+  /* ── Pie ────────────────────────────────────────────────────────────── */
   .lp-foot {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 2rem 0 3rem;
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: clamp(2.5rem, 5vw, 3.5rem);
     border-top: 1px solid var(--forge-border);
     font-size: 0.85rem;
     color: var(--forge-muted);
   }
-  .lp-dot { color: var(--forge-border); }
+  .lp-foot-top {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+  @media (min-width: 52rem) {
+    .lp-foot-top { grid-template-columns: 1.2fr 2fr; gap: 4rem; }
+  }
+
+  .lp-foot-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .lp-foot-pitch { margin: 0; line-height: 1.6; max-width: 34ch; }
+  .lp-foot-cta { font-size: 0.85rem; padding: 0.5rem 0.9rem; }
+
+  .lp-foot-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 2rem;
+  }
+  .lp-foot-col { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+  .lp-foot-col h2 {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+    margin: 0 0 0.2rem;
+  }
+  .lp-foot-col .lp-link { font-size: 0.88rem; }
+
+  .lp-foot-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1.25rem 0 3rem;
+    border-top: 1px solid var(--forge-border);
+  }
+  .lp-foot-ver { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; }
+  .lp-foot-note { line-height: 1.6; }
 
   /* ── Movimiento ─────────────────────────────────────────────────────── */
   /* Una sola secuencia, al cargar el hero. Nada de revelados al hacer scroll:
      la página es deliberadamente quieta, y el ruido extra la abarataría. */
+  /* Los retardos iban por `:nth-child` del hero, que ahora tiene dos hijos en
+     vez de cinco: la cascada apuntaba a elementos que ya no existen. Va sobre
+     los hijos de la columna de texto, y la demo entra la última. */
   @media (prefers-reduced-motion: no-preference) {
-    .lp-hero > *, .lp-shot-hero {
+    .lp-hero-text > *, .lp-hero-demo {
       animation: lp-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
     }
-    .lp-hero > :nth-child(1) { animation-delay: 0.02s; }
-    .lp-hero > :nth-child(2) { animation-delay: 0.08s; }
-    .lp-hero > :nth-child(3) { animation-delay: 0.14s; }
-    .lp-hero > :nth-child(4) { animation-delay: 0.2s; }
-    .lp-hero > :nth-child(5) { animation-delay: 0.26s; }
-    .lp-shot-hero { animation-delay: 0.32s; }
+    .lp-hero-text > :nth-child(1) { animation-delay: 0.02s; }
+    .lp-hero-text > :nth-child(2) { animation-delay: 0.08s; }
+    .lp-hero-text > :nth-child(3) { animation-delay: 0.14s; }
+    .lp-hero-text > :nth-child(4) { animation-delay: 0.2s; }
+    .lp-hero-text > :nth-child(5) { animation-delay: 0.26s; }
+    .lp-hero-demo { animation-delay: 0.3s; }
   }
   @keyframes lp-rise {
     from { opacity: 0; transform: translateY(14px); }

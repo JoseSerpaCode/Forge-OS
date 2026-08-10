@@ -1,0 +1,228 @@
+---
+/**
+ * Las capturas, rotando, en un solo sitio.
+ *
+ * Antes había cuatro capturas de pantalla completa repartidas por la página:
+ * una gigante bajo el hero y una por cada sección de características. Eran
+ * cuatro imágenes de 2880px de ancho, todas presentadas igual, y a la tercera
+ * ya no aportaban nada — sobre todo cuando el bento de encima ya enseña el
+ * producto en movimiento.
+ *
+ * Aquí van las cuatro juntas, con pestañas y rotación automática. Se ve más
+ * producto en menos altura de página, y de paso solo se descarga la primera:
+ * las otras tres llevan `loading="lazy"`.
+ */
+import { useTranslations } from '../../i18n/ui';
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+// Siempre la variante `-dark`: esta página no tiene conmutador de tema ni
+// sesión de la que leer una preferencia, así que su fondo es siempre oscuro.
+const views = [
+  { id: 'board', tab: t('show.board.tab'), cap: t('show.board.cap'), alt: t('landing.f1.alt') },
+  { id: 'knowledge-base', tab: t('show.kb.tab'), cap: t('show.kb.cap'), alt: t('landing.f2.alt') },
+  { id: 'metrics', tab: t('show.metrics.tab'), cap: t('show.metrics.cap'), alt: t('landing.f3.alt') },
+  { id: 'dashboard', tab: t('show.dash.tab'), cap: t('show.dash.cap'), alt: t('show.dash.alt') },
+];
+---
+
+<section class="sc" aria-labelledby="sc-title">
+  <h2 id="sc-title" class="sc-title">{t('show.title')}</h2>
+
+  {/*
+    Pestañas de verdad, con el patrón ARIA completo y flechas del teclado. Una
+    fila de <button> sin roles deja fuera a quien navega con teclado o lector,
+    y aquí es la única forma de llegar a tres de las cuatro capturas.
+  */}
+  <div class="sc-tabs" role="tablist" aria-label={t('show.title')}>
+    {views.map((v, i) => (
+      <button
+        type="button"
+        role="tab"
+        id={`sc-tab-${v.id}`}
+        aria-controls={`sc-panel-${v.id}`}
+        aria-selected={i === 0 ? 'true' : 'false'}
+        tabindex={i === 0 ? 0 : -1}
+        class="sc-tab"
+      >
+        <span class="sc-tab-dot"></span>
+        {v.tab}
+      </button>
+    ))}
+  </div>
+
+  <div class="sc-stage">
+    {views.map((v, i) => (
+      <div
+        role="tabpanel"
+        id={`sc-panel-${v.id}`}
+        aria-labelledby={`sc-tab-${v.id}`}
+        class="sc-panel"
+        data-active={i === 0 ? '' : undefined}
+        hidden={i !== 0}
+      >
+        <img
+          src={`/screenshots/${v.id}-dark.png`}
+          alt={v.alt}
+          width="2880"
+          height="1800"
+          loading={i === 0 ? 'eager' : 'lazy'}
+          decoding="async"
+        />
+        <p class="sc-cap">{v.cap}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .sc { margin-top: clamp(5rem, 12vw, 9rem); }
+
+  .sc-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--forge-text);
+    margin: 0 0 1.5rem;
+  }
+
+  .sc-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .sc-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--forge-muted);
+    background: transparent;
+    border: 1px solid var(--forge-border);
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .sc-tab:hover { color: var(--forge-text); }
+  .sc-tab[aria-selected='true'] {
+    color: var(--forge-text);
+    border-color: color-mix(in srgb, var(--forge-accent-primary) 55%, transparent);
+    background: color-mix(in srgb, var(--forge-accent-primary) 10%, transparent);
+  }
+
+  .sc-tab-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--forge-border);
+    transition: background 0.15s;
+  }
+  .sc-tab[aria-selected='true'] .sc-tab-dot { background: var(--forge-accent-primary); }
+
+  .sc-stage {
+    position: relative;
+    border-radius: 0.85rem;
+  }
+
+  .sc-panel img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--forge-border);
+    border-radius: 0.85rem;
+    box-shadow: 0 24px 70px rgb(0 0 0 / 0.45);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .sc-panel[data-active] img { animation: scin 0.4s ease-out; }
+  }
+  @keyframes scin {
+    from { opacity: 0; transform: translateY(8px) scale(0.995); }
+  }
+
+  .sc-cap {
+    margin: 0.9rem 0 0;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+    max-width: 62ch;
+  }
+</style>
+
+<script>
+  const sc = document.querySelector('.sc');
+  if (sc) {
+    const tabs = [...sc.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const panels = [...sc.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const show = (i: number) => {
+      tabs.forEach((tb, n) => {
+        const on = n === i;
+        tb.setAttribute('aria-selected', String(on));
+        tb.tabIndex = on ? 0 : -1;
+      });
+      panels.forEach((p, n) => {
+        p.hidden = n !== i;
+        if (n === i) p.setAttribute('data-active', '');
+        else p.removeAttribute('data-active');
+      });
+    };
+
+    const current = () => tabs.findIndex((tb) => tb.getAttribute('aria-selected') === 'true');
+
+    // Tocar una pestaña detiene la rotación para siempre. Que la imagen cambie
+    // sola justo después de que alguien haya elegido otra le quita el control
+    // de lo que está mirando.
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      timer = undefined;
+    };
+
+    tabs.forEach((tb, i) => {
+      tb.addEventListener('click', () => {
+        stop();
+        show(i);
+      });
+      // Flechas para moverse entre pestañas, como espera el patrón ARIA.
+      tb.addEventListener('keydown', (e) => {
+        const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!step) return;
+        e.preventDefault();
+        stop();
+        const next = (current() + step + tabs.length) % tabs.length;
+        show(next);
+        tabs[next].focus();
+      });
+    });
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce) {
+      // Solo rota mientras se ve, y se para al pasar el ratón por encima: si
+      // alguien se está fijando en una captura, no hay que quitársela.
+      const start = () => {
+        if (!timer) timer = setInterval(() => show((current() + 1) % tabs.length), 4200);
+      };
+      sc.addEventListener('mouseenter', stop);
+      sc.addEventListener('mouseleave', () => {
+        // Solo se reanuda si nunca se ha pulsado nada: `stop()` desde un clic
+        // deja `userPicked` puesto y esto no lo deshace.
+        if (!sc.hasAttribute('data-picked')) start();
+      });
+      tabs.forEach((tb) => tb.addEventListener('click', () => sc.setAttribute('data-picked', '')));
+
+      new IntersectionObserver(
+        ([e]) => {
+          if (e.isIntersecting && !sc.hasAttribute('data-picked')) start();
+          else stop();
+        },
+        { threshold: 0.3 }
+      ).observe(sc);
+    }
+  }
+</script>
