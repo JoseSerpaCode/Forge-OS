@@ -1,27 +1,20 @@
 import { defineMiddleware } from 'astro:middleware';
 import db from './lib/db';
-import { checkRateLimit } from './lib/rateLimit';
-import { getClientIp } from './lib/clientIp';
-
-import crypto from 'crypto';
-
-// Cuántas cuentas de invitado puede generar una misma IP por hora.
-//
-// Una visita anónima crea cuatro filas (usuario, workspace, membresía y sesión)
-// y la sesión dura 30 días, así que la limpieza de invitados caducados no las
-// toca hasta pasado un mes. Un navegador guarda la cookie y solo genera una;
-// un bot no guarda cookies, así que cada petición suya creaba una cuenta nueva.
-// Medido en producción el primer día: ~30 invitados por minuto, unas 43.000 al
-// día, sin que nadie lo pidiera.
-//
-// 10 por hora deja sitio de sobra a personas detrás de una IP compartida
-// (oficina, universidad, NAT móvil) y corta el goteo automatizado.
-const GUEST_LIMIT_PER_HOUR = Number(process.env.GUEST_LIMIT_PER_HOUR) || 10;
-const GUEST_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const sessionId = context.cookies.get('forge_session')?.value;
-  const isPublicRoute = context.url.pathname === '/login' || context.url.pathname === '/register' || context.url.pathname === '/api/auth/login' || context.url.pathname === '/api/auth/register';
+  // `/` es pública: sirve la landing a quien no tiene sesión. Antes exigía
+  // sesión, y no teniéndola el middleware creaba una cuenta de invitado ahí
+  // mismo — cuatro filas por visita anónima.
+  const PUBLIC_ROUTES = new Set([
+    '/',
+    '/login',
+    '/register',
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/guest',
+  ]);
+  const isPublicRoute = PUBLIC_ROUTES.has(context.url.pathname);
 
   if (!sessionId) {
     if (isPublicRoute) {
@@ -34,61 +27,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
 
-    // Auto-login as GUEST for web routes
+    // Sin sesión y en una ruta privada: a la landing, donde puede decidir qué
+    // hacer. Aquí ya NO se crea nada.
     //
-    // Antes de crear nada: una petición anónima NO debería poder generar estado
-    // persistente sin límite. Al superarlo se sirve /login, que no escribe en la
-    // base de datos y deja al visitante iniciar sesión o registrarse.
-    const clientIp = getClientIp(context.request, context.clientAddress);
-    const guestQuota = checkRateLimit(`guest:${clientIp}`, {
-      windowMs: GUEST_LIMIT_WINDOW_MS,
-      max: GUEST_LIMIT_PER_HOUR,
-    });
-    if (!guestQuota.allowed) {
-      return context.redirect('/login');
-    }
-
-    const guestId = crypto.randomUUID();
-    const newSessionId = crypto.randomUUID();
-    
-    // Insert Guest User
-    const guestUsername = `Guest_${guestId.split('-')[0]}_${Math.floor(Math.random() * 1000)}`;
-    const wsId = crypto.randomUUID();
-    const sysTag = `guest-${guestId.split('-')[0]}-${Math.floor(Math.random() * 1000)}`;
-    const expiresAt = Date.now() + 1000 * 60 * 60 * 24 * 30; // 30 days
-    
-    // Wrap all guest creation in a transaction to prevent orphaned data
-    db.transaction(() => {
-      db.prepare(`
-        INSERT INTO users (id, username, password_hash, is_guest) 
-        VALUES (?, ?, ?, 1)
-      `).run(guestId, guestUsername, 'guest');
-      
-      // Create Default Workspace for Guest
-      db.prepare(`
-        INSERT INTO workspaces (id, name, sys_tag, created_by) 
-        VALUES (?, ?, ?, ?)
-      `).run(wsId, 'My Workspace', sysTag, guestId);
-      
-      db.prepare(`
-        INSERT INTO workspace_members (workspace_id, user_id, ws_role) 
-        VALUES (?, ?, 'owner')
-      `).run(wsId, guestId);
-      
-      // Create Session
-      db.prepare(`INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)`).run(newSessionId, guestId, expiresAt);
-    })();
-    
-    // Set Cookie
-    context.cookies.set('forge_session', newSessionId, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30
-    });
-    
-    // Redirect guest to their new workspace
-    return context.redirect(`/w/${sysTag}`);
+    // Antes se le creaba una cuenta de invitado en el acto y se le soltaba
+    // dentro de un espacio de trabajo vacío: confuso para quien llegaba por
+    // primera vez, e imposible de limitar sin castigar a alguien, porque
+    // cualquier petición anónima escribía en la base de datos. Ahora el
+    // invitado se crea desde POST /api/auth/guest, cuando lo pide una persona.
+    return context.redirect('/');
   }
 
   // Validación de Sesión contra Base de Datos Real

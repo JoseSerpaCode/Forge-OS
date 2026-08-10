@@ -1,0 +1,264 @@
+---
+// src/pages/index.astro
+import MainLayout from '../../layouts/MainLayout.astro';
+import db from '../../lib/db';
+import { useTranslations } from '../../i18n/ui';
+import TaskTable from './TaskTable.astro';
+
+const user = Astro.locals.user!;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+const workspacesQuery = user.is_sysadmin === 1 
+  ? `SELECT w.id, w.name, w.sys_tag, w.icon, 'sysadmin' as role,
+      (SELECT json_group_array(json_object('id', u.id, 'username', u.username, 'avatar_url', u.avatar_url))
+       FROM (SELECT u2.id, u2.username, u2.avatar_url FROM workspace_members wm JOIN users u2 ON wm.user_id = u2.id WHERE wm.workspace_id = w.id LIMIT 5) u) as members_json,
+      (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = w.id) as totalMembers
+     FROM workspaces w WHERE w.sys_tag NOT LIKE 'guest-%'`
+  : `SELECT w.id, w.name, w.sys_tag, w.icon, wm.ws_role as role,
+      (SELECT json_group_array(json_object('id', u.id, 'username', u.username, 'avatar_url', u.avatar_url))
+       FROM (SELECT u2.id, u2.username, u2.avatar_url FROM workspace_members wm2 JOIN users u2 ON wm2.user_id = u2.id WHERE wm2.workspace_id = w.id LIMIT 5) u) as members_json,
+      (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = w.id) as totalMembers
+     FROM workspaces w JOIN workspace_members wm ON w.id = wm.workspace_id WHERE wm.user_id = ?`;
+
+const workspaces = user.is_sysadmin === 1 ? db.prepare(workspacesQuery).all() as any[] : db.prepare(workspacesQuery).all(user.id) as any[];
+
+for (const ws of workspaces) {
+  ws.members = JSON.parse(ws.members_json || '[]');
+}
+
+// 2. Obtener Tareas Asignadas a mí (My Tasks)
+const myTasks = db.prepare(`
+  SELECT i.id, i.title, i.status, i.sprint_id, i.type, i.due_date, w.sys_tag, w.icon as workspace_icon, w.name as workspace_name
+  FROM issues i 
+  JOIN workspaces w ON i.workspace_id = w.id 
+  WHERE i.assignee_id = ? AND i.status != 'done'
+  ORDER BY i.updated_at DESC LIMIT 10
+`).all(user.id) as any[];
+---
+
+<MainLayout title={t('hub.title')}>
+  <main class="space-y-8 max-w-5xl mx-auto pb-12">
+    <header class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-extrabold text-forge-text mb-2 tracking-tight">{t('hub.title')}</h1>
+        <p class="text-forge-muted font-medium text-sm">{t('hub.welcome').replace('{user}', user.username)}</p>
+      </div>
+    </header>
+    
+    <div class="space-y-8 mb-10">
+
+                <section>
+          <div class="flex justify-between items-end mb-4 border-b border-forge-border pb-2">
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-bold text-forge-text">{t('hub.workspaces')}</h2>
+              <a href="/settings#workspace-memberships" class="text-forge-muted hover:text-forge-accent-text transition-colors" title="Manage Memberships">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              </a>
+            </div>
+            <!-- Redundant Create button removed from here to reduce clutter -->
+          </div>
+          
+          <div class="max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {workspaces.map(ws => (
+                <div data-href={`/w/${ws.sys_tag}/board`} onclick="if(!event.defaultPrevented) window.location.href=this.getAttribute('data-href')" class="block bg-forge-panel border border-forge-border p-5 rounded-xl hover:border-forge-secondary hover:shadow-[0_4px_20px_rgba(0,229,255,0.1)] transition-all group flex flex-col h-full cursor-pointer relative">
+                  <div class="flex items-start justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                      <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border flex items-center justify-center text-forge-accent-text font-black text-lg shadow-sm shrink-0 overflow-hidden">
+                        {ws.icon && ws.icon.startsWith('data:image') ? (
+                          <img src={ws.icon} class="w-full h-full object-cover" alt={`${ws.name} Icon`} loading="lazy" />
+                        ) : (
+                          ws.icon ? ws.icon : ws.name.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div class="min-w-0">
+                        <h3 class="font-bold text-forge-text group-hover:text-forge-accent-text transition-colors text-base truncate">{ws.name}</h3>
+                        <p class="text-xs text-forge-muted font-mono mt-0.5 truncate">#{ws.sys_tag}</p>
+                      </div>
+                    </div>
+                    
+                    <div class="shrink-0 ml-2">
+                      {ws.role && <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forge-bg border border-forge-border text-forge-muted tracking-wider uppercase">{ws.role}</span>}
+                    </div>
+                  </div>
+                  
+                  <div class="mt-auto pt-4 border-t border-forge-border/50 flex justify-between items-center h-8 relative">
+                    <div class="flex items-center gap-1.5">
+                      {ws.members.map((member: any) => (
+                        <img src={member.avatar_url || '/default-avatar.svg'} class="w-6 h-6 rounded-full border border-forge-border bg-forge-bg object-cover shrink-0 relative z-10" title={member.username} alt={member.username} />
+                      ))}
+                      {ws.totalMembers > 5 && (
+                        <div class="w-6 h-6 rounded-full border border-forge-border bg-forge-bg flex items-center justify-center text-[8px] font-bold text-forge-muted shrink-0 relative z-10" title={`+${ws.totalMembers - 5} more`}>
+                          +{ws.totalMembers - 5}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 bg-forge-panel pl-2 flex gap-1 z-20">
+                      {(ws.role === 'owner' || ws.role === 'sysadmin') && (
+                        <>
+                          <a href={`/w/${ws.sys_tag}/settings`} onclick="event.preventDefault(); event.stopPropagation(); window.location.href=this.href" class="text-xs text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-2 py-1.5 rounded transition-colors flex items-center gap-1 cursor-pointer pointer-events-auto" title="Workspace Settings">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                          </a>
+                          <button class="btn-delete-ws text-xs text-forge-muted hover:text-forge-error hover:bg-red-500/10 px-2 py-1.5 rounded transition-colors flex items-center gap-1 cursor-pointer pointer-events-auto" data-id={ws.id} title="Delete Workspace" onclick="event.preventDefault(); event.stopPropagation();">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <!-- Dotted New Workspace Card -->
+              <button type="button" onclick="document.getElementById('new-ws-modal').showModal()" class="flex flex-col items-center justify-center h-full min-h-[140px] border-2 border-dashed border-forge-border/60 hover:border-forge-secondary/50 rounded-xl hover:bg-forge-secondary/5 transition-all text-forge-muted hover:text-forge-accent-text group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2 group-hover:scale-110 transition-transform"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span class="font-medium text-sm">{t('hub.banner_create_ws')}</span>
+              </button>
+
+              {workspaces.length === 0 && (
+                <div class="col-span-full py-10 flex flex-col items-center justify-center text-center relative overflow-hidden border border-dashed border-forge-border rounded-lg bg-forge-panel/30">
+                  <!-- Constellation nodes -->
+                  <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 20% 30%, var(--forge-muted) 2px, transparent 2px), radial-gradient(circle at 80% 40%, var(--forge-muted) 2px, transparent 2px), radial-gradient(circle at 50% 80%, var(--forge-muted) 2px, transparent 2px); background-size: 100% 100%;">
+                    <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M 20 30 L 80 40 L 50 80 Z" fill="none" stroke="currentColor" class="text-forge-muted" stroke-dasharray="2,2" stroke-width="0.5" /></svg>
+                  </div>
+                  <p class="text-forge-text relative z-10">{t('hub.no_workspaces')}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+        
+        <!-- Pending Tasks Section -->
+        <section>
+          <h2 class="text-xl font-bold text-forge-text mb-4 border-b border-forge-border pb-2">{t('hub.pending_tasks')}</h2>
+          <div class="bg-forge-panel border border-forge-border rounded-lg overflow-hidden max-h-[320px] flex flex-col">
+            <div class="overflow-y-auto custom-scrollbar flex-1">
+              <TaskTable tasks={myTasks} />
+            </div>
+          </div>
+        </section>
+      
+    </div>
+
+    <!-- Welcome / Collaboration Banner -->
+    <div class="mb-10 bg-gradient-to-r from-forge-secondary/10 via-forge-primary/5 to-forge-bg border border-forge-secondary/20 rounded-2xl p-8 relative overflow-hidden group shadow-lg">
+      <div class="absolute right-0 top-0 w-64 h-64 bg-forge-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:bg-forge-secondary/20 transition-colors"></div>
+      
+      <div class="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+        <div class="max-w-2xl">
+          <h2 class="text-2xl font-black text-forge-text mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            {t('hub.banner_title')}
+          </h2>
+          <p class="text-forge-text/80 text-sm leading-relaxed mb-6 font-medium" set:html={t('hub.banner_desc')} />
+          <div class="flex flex-wrap items-center gap-3">
+            <button onclick="document.getElementById('new-ws-modal').showModal()" class="bg-forge-secondary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-forge-secondary/30 hover:shadow-forge-secondary/50 hover:-translate-y-0.5 active:scale-95 transition-all text-sm flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              {t('hub.banner_create_ws')}
+            </button>
+            <button onclick="const s = document.getElementById('global-search'); s.value='/u '; s.focus(); s.dispatchEvent(new Event('input'));" class="bg-forge-panel text-forge-text border border-forge-border font-bold py-2.5 px-6 rounded-xl shadow-sm hover:border-forge-secondary/50 hover:bg-forge-bg transition-all text-sm flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              {t('hub.banner_find_people')}
+            </button>
+          </div>
+        </div>
+        <div class="hidden lg:flex items-center justify-center shrink-0 w-48 h-48 relative">
+          <!-- Fun visual decoration for collaboration -->
+          <div class="absolute inset-0 border-2 border-dashed border-forge-secondary/30 rounded-full animate-[spin_20s_linear_infinite]"></div>
+          <div class="absolute w-12 h-12 bg-forge-bg border-2 border-forge-border rounded-full flex items-center justify-center -top-3 left-1/2 -translate-x-1/2 z-10 shadow-lg shadow-forge-secondary/20 text-forge-accent-text">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <div class="absolute w-12 h-12 bg-forge-bg border-2 border-forge-border rounded-full flex items-center justify-center bottom-2 left-0 z-10 shadow-lg text-forge-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
+          <div class="absolute w-12 h-12 bg-forge-bg border-2 border-forge-border rounded-full flex items-center justify-center bottom-2 right-0 z-10 shadow-lg text-forge-success">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div class="w-20 h-20 bg-gradient-to-br from-forge-secondary to-forge-primary rounded-2xl rotate-12 shadow-[0_0_30px_rgba(255,93,0,0.4)] flex items-center justify-center text-white relative z-0">
+            <span class="font-black text-3xl">F</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <dialog id="new-ws-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
+    <h2 class="text-xl font-bold mb-4">{t('hub.create_workspace').replace('+', '').trim()}</h2>
+    <div class="mb-4">
+      <label for="ws-name" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.title') || 'Name'}</label>
+      <input type="text" id="ws-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="E.g. Project Orion">
+    </div>
+    <div class="mb-4">
+      <label for="ws-tag" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">System Tag (URL)</label>
+      <input type="text" id="ws-tag" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="e.g. project-orion">
+      <p class="text-[10px] text-forge-muted mt-1">Only lowercase letters, numbers, and dashes.</p>
+    </div>
+    <div class="flex justify-end gap-3 mt-6">
+      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-ws-modal').close()">{t('modal.cancel') || 'Cancel'}</button>
+      <button type="button" id="btn-save-ws" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity">{t('modal.create') || 'Create'}</button>
+    </div>
+  </dialog>
+
+  <script>
+    const btnOpen = document.getElementById('btn-create-ws-modal');
+    const modal = document.getElementById('new-ws-modal') as HTMLDialogElement;
+    const btnSave = document.getElementById('btn-save-ws');
+    const nameInput = document.getElementById('ws-name') as HTMLInputElement;
+    const tagInput = document.getElementById('ws-tag') as HTMLInputElement;
+
+    btnOpen?.addEventListener('click', () => modal?.showModal());
+
+    nameInput?.addEventListener('input', () => {
+      if (!tagInput.value || tagInput.value === nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, -1)) {
+        tagInput.value = nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+    });
+
+    btnSave?.addEventListener('click', async () => {
+      if (!nameInput.value || !tagInput.value) {
+        // @ts-ignore
+        return window.showToast('Fill all fields', true);
+      }
+      
+      btnSave.textContent = 'Creating...';
+      btnSave.setAttribute('disabled', 'true');
+      
+      const res = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nameInput.value, sys_tag: tagInput.value })
+      });
+      
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        // @ts-ignore
+        window.showToast(await res.text(), true);
+        btnSave.textContent = 'Create';
+        btnSave.removeAttribute('disabled');
+      }
+    });
+
+    // Delete Workspace
+    document.querySelectorAll('.btn-delete-ws').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
+        // @ts-ignore
+        window.forgeConfirm('DANGER: Are you sure you want to completely delete this workspace and ALL its contents? This cannot be undone.', async () => {
+          const res = await fetch(`/api/workspaces/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            window.location.reload();
+          } else {
+            // @ts-ignore
+            window.showToast('Failed to delete: ' + await res.text(), true);
+          }
+        });
+      });
+    });
+  </script>
+</MainLayout>
