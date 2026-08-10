@@ -1,125 +1,42 @@
 ---
-// src/pages/login.astro
-import '../styles/themes.css';
-
+import PublicLayout from '../layouts/PublicLayout.astro';
+import AuthShell from '../components/auth/AuthShell.astro';
+import AuthForm from '../components/auth/AuthForm.astro';
 import { useTranslations } from '../i18n/ui';
 import db from '../lib/db';
+
 const user = Astro.locals.user;
-if (user && !user.is_guest) {
-  return Astro.redirect('/');
+if (user && !user.is_guest) return Astro.redirect('/');
+
+let guestWorkspaces: { id: string; name: string }[] = [];
+if (user?.is_guest) {
+  guestWorkspaces = db
+    .prepare(
+      `SELECT w.id, w.name FROM workspaces w
+       JOIN workspace_members wm ON w.id = wm.workspace_id
+       WHERE wm.user_id = ?`
+    )
+    .all(user.id) as { id: string; name: string }[];
 }
 
-let guestWorkspaces: any[] = [];
-if (user && user.is_guest) {
-  guestWorkspaces = db.prepare(`SELECT w.id, w.name FROM workspaces w JOIN workspace_members wm ON w.id = wm.workspace_id WHERE wm.user_id = ?`).all(user.id);
-}
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 ---
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-  <meta name="description" content="Login to Forge OS workspace." />
-  <link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
-  <title>Login | Forge OS</title>
-</head>
-<body class="bg-forge-bg text-white font-sans h-screen flex flex-col items-center justify-center">
-  <main class="bg-forge-panel border border-forge-border p-8 rounded-lg w-96">
-    <div class="text-center mb-8">
-      <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-forge-secondary to-forge-primary mx-auto mb-6 flex items-center justify-center">
-        <span class="text-3xl font-black text-white">F</span>
-      </div>
-      <h1 class="text-2xl font-black tracking-wider text-forge-text mb-2">FORGE OS</h1>
-      <p class="text-forge-muted text-sm font-mono">{t('auth.authorized')}</p>
-    </div>
-    <form id="login-form" class="flex flex-col gap-4">
-      <div>
-        <label for="username" class="block text-xs font-mono text-forge-text mb-1 uppercase">{t('auth.username')}</label>
-        <input type="text" id="username" name="username" class="w-full bg-forge-bg border border-forge-border p-2 rounded text-forge-text focus:outline-none focus:border-forge-secondary" required />
-      </div>
-      <div class="mb-6">
-        <label for="password" class="block text-sm font-bold text-forge-muted uppercase tracking-widest mb-1">{t('auth.password')}</label>
-        <input type="password" id="password" name="password" class="w-full bg-forge-bg border border-forge-border p-2 rounded text-forge-text focus:outline-none focus:border-forge-secondary" required />
-      </div>
-      <button type="submit" class="mt-4 bg-forge-primary text-forge-on-accent font-bold uppercase tracking-widest py-2 rounded hover:bg-forge-primary/80 transition-colors">{t('auth.submit')}</button>
-      <p id="error-msg" class="text-forge-error text-sm mt-2 hidden"></p>
-    </form>
-    
-    <div class="mt-6 text-center">
-      <a href="/register" class="text-forge-accent-text text-sm hover:underline">{t('auth.no_account')}</a>
-    </div>
-  </main>
 
-  {guestWorkspaces.length > 0 && (
-    <dialog id="guest-ws-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
-      <h2 class="text-xl font-bold mb-4">Transfer Guest Workspaces</h2>
-      <p class="text-sm text-forge-muted mb-4">You have guest workspaces. Select the ones you want to transfer to your existing account. Unselected ones will be permanently deleted.</p>
-      <div class="flex flex-col gap-2 mb-6">
-        {guestWorkspaces.map(ws => (
-          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-forge-bg rounded border border-forge-border">
-            <input type="checkbox" name="keep_ws" value={ws.id} checked class="accent-forge-primary" />
-            <span class="text-sm font-medium">{ws.name}</span>
-          </label>
-        ))}
-      </div>
-      <div class="flex justify-end gap-3 mt-4">
-        <button type="button" id="btn-discard-all" class="px-4 py-2 text-forge-muted hover:text-forge-error text-sm">Discard All</button>
-        <button type="button" id="btn-confirm-transfer" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity text-sm">Continue Login</button>
-      </div>
-    </dialog>
-  )}
+<PublicLayout title={`${t('auth.login.title')} | Forge OS`} description={t('auth.login.sub')}>
+  <AuthShell heading={t('auth.login.title')} sub={t('auth.login.sub')}>
+    <AuthForm mode="login" guestWorkspaces={guestWorkspaces} />
+    <Fragment slot="swap">
+      <a href="/register" class="au-swap-link">{t('auth.no_account')}</a>
+    </Fragment>
+  </AuthShell>
+</PublicLayout>
 
-  <script define:vars={{ hasGuestWorkspaces: guestWorkspaces.length > 0 }}>
-    const form = document.getElementById('login-form');
-    const modal = document.getElementById('guest-ws-modal');
-    const btnConfirm = document.getElementById('btn-confirm-transfer');
-    const btnDiscard = document.getElementById('btn-discard-all');
-
-    let formDataObj = {};
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      formDataObj = Object.fromEntries(fd);
-      
-      if (hasGuestWorkspaces && modal) {
-        modal.showModal();
-      } else {
-        await submitLogin(formDataObj);
-      }
-    });
-
-    btnConfirm?.addEventListener('click', async () => {
-      const selected = Array.from(document.querySelectorAll('input[name="keep_ws"]:checked')).map(cb => cb.value);
-      formDataObj.keep_workspaces = selected;
-      modal.close();
-      await submitLogin(formDataObj);
-    });
-
-    btnDiscard?.addEventListener('click', async () => {
-      formDataObj.keep_workspaces = [];
-      modal.close();
-      await submitLogin(formDataObj);
-    });
-
-    async function submitLogin(data) {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) {
-        window.location.href = '/';
-      } else {
-        const errorMsg = document.getElementById('error-msg');
-        if (errorMsg) {
-          errorMsg.textContent = 'Invalid credentials';
-          errorMsg.classList.remove('hidden');
-        }
-      }
-    }
-  </script>
-</body>
-</html>
+<style is:global>
+  .au-swap-link {
+    color: var(--forge-accent-text);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .au-swap-link:hover { text-decoration: underline; }
+</style>

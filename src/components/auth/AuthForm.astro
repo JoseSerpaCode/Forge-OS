@@ -1,0 +1,308 @@
+---
+/**
+ * Formulario de credenciales, común a login y registro.
+ *
+ * El script de envío era idéntico palabra por palabra en las dos páginas, con
+ * el diálogo de traspaso de espacios incluido. Unificarlo arregla de una vez
+ * varios fallos que estaban duplicados:
+ *
+ *   - Ni un solo `autocomplete`, así que ningún gestor de contraseñas rellenaba.
+ *   - Los errores se pintaban en inglés fijo aunque `auth.invalid` ya existía
+ *     traducido, y sin `role="alert"`, así que un lector de pantalla no se
+ *     enteraba de que el envío había fallado.
+ *   - El botón no se bloqueaba al enviar: dos clics rápidos eran dos peticiones.
+ */
+import { useTranslations } from '../../i18n/ui';
+
+interface Props {
+  mode: 'login' | 'register';
+  /** Espacios del invitado en curso, si los hay, para ofrecer el traspaso. */
+  guestWorkspaces: { id: string; name: string }[];
+}
+
+const { mode, guestWorkspaces } = Astro.props;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+const isRegister = mode === 'register';
+const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+---
+
+<form id="auth-form" class="af" novalidate>
+  <div class="af-field">
+    <label for="username">{t('auth.username')}</label>
+    <input
+      type="text"
+      id="username"
+      name="username"
+      required
+      minlength={isRegister ? 3 : undefined}
+      autocomplete={isRegister ? 'username' : 'username'}
+      autocapitalize="none"
+      spellcheck="false"
+      autofocus
+    />
+    {isRegister && <p class="af-hint">{t('auth.username.hint')}</p>}
+  </div>
+
+  <div class="af-field">
+    <label for="password">{t('auth.password')}</label>
+    <input
+      type="password"
+      id="password"
+      name="password"
+      required
+      minlength={isRegister ? 6 : undefined}
+      autocomplete={isRegister ? 'new-password' : 'current-password'}
+    />
+    {isRegister && <p class="af-hint">{t('auth.password.hint')}</p>}
+  </div>
+
+  <button type="submit" class="af-submit">
+    <span data-label>{isRegister ? t('auth.signup') : t('auth.submit')}</span>
+  </button>
+
+  {/* `role="alert"` para que el fallo se anuncie: antes solo cambiaba de color. */}
+  <p id="auth-error" class="af-error" role="alert" hidden></p>
+</form>
+
+{
+  guestWorkspaces.length > 0 && (
+    <dialog id="guest-ws-modal" class="af-dialog">
+      {/* Este diálogo estaba en inglés fijo en las dos páginas, en una
+          aplicación con dos idiomas. Y decide qué se borra para siempre, que
+          es lo peor que se puede dejar sin traducir. */}
+      <h2>{t('auth.transfer.title')}</h2>
+      <p>{isRegister ? t('auth.transfer.body.register') : t('auth.transfer.body.login')}</p>
+      <div class="af-ws-list">
+        {guestWorkspaces.map((ws) => (
+          <label class="af-ws">
+            <input type="checkbox" name="keep_ws" value={ws.id} checked />
+            <span>{ws.name}</span>
+          </label>
+        ))}
+      </div>
+      <div class="af-dialog-actions">
+        <button type="button" id="btn-discard-all" class="af-discard">
+          {t('auth.transfer.discard')}
+        </button>
+        <button type="button" id="btn-confirm-transfer" class="af-submit af-inline">
+          {t('auth.transfer.continue')}
+        </button>
+      </div>
+    </dialog>
+  )
+}
+
+<style>
+  .af { display: flex; flex-direction: column; gap: 1.1rem; }
+
+  .af-field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  .af-field label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+  }
+
+  .af-field input {
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    font-size: 0.95rem;
+    color: var(--forge-text);
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.5rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .af-field input:focus {
+    outline: none;
+    border-color: var(--forge-accent-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--forge-accent-primary) 22%, transparent);
+  }
+  /* El estado inválido solo aparece tras un intento de envío: marcar en rojo un
+     campo que aún se está escribiendo regaña al usuario por no haber terminado. */
+  .af.tried .af-field input:invalid { border-color: var(--forge-error); }
+
+  .af-hint {
+    font-size: 0.72rem;
+    color: var(--forge-muted);
+    margin: 0;
+  }
+
+  .af-submit {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--forge-on-accent);
+    background: var(--forge-accent-primary);
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .af-submit:hover { filter: brightness(1.08); }
+  .af-submit[disabled] { cursor: progress; opacity: 0.75; filter: none; }
+
+  .af-error {
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--forge-text);
+    background: color-mix(in srgb, var(--forge-error) 12%, var(--forge-panel));
+    border: 1px solid color-mix(in srgb, var(--forge-error) 45%, transparent);
+    border-left: 3px solid var(--forge-error);
+    border-radius: 0.45rem;
+  }
+
+  /* ── Diálogo de traspaso ──────────────────────────────────────────────── */
+  .af-dialog {
+    width: min(26rem, calc(100vw - 2rem));
+    padding: 1.5rem;
+    color: var(--forge-text);
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.75rem;
+  }
+  .af-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
+  .af-dialog h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .af-dialog > p {
+    margin: 0 0 1.1rem;
+    font-size: 0.87rem;
+    line-height: 1.55;
+    color: var(--forge-muted);
+  }
+  .af-ws-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .af-ws {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.9rem;
+    border: 1px solid var(--forge-border);
+    border-radius: 0.45rem;
+    cursor: pointer;
+  }
+  .af-ws:hover { background: var(--forge-bg); }
+  .af-ws input { accent-color: var(--forge-accent-primary); }
+
+  .af-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  .af-inline { width: auto; padding: 0.55rem 1rem; font-size: 0.87rem; }
+  .af-discard {
+    padding: 0.55rem 0.5rem;
+    font-size: 0.87rem;
+    color: var(--forge-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .af-discard:hover { color: var(--forge-error); }
+</style>
+
+<script
+  define:vars={{
+    endpoint,
+    hasGuestWorkspaces: guestWorkspaces.length > 0,
+    msgInvalid: t('auth.invalid'),
+    msgGeneric: t('auth.error.generic'),
+    msgWorking: isRegister ? t('auth.working.register') : t('auth.working.login'),
+  }}
+>
+  const form = document.getElementById('auth-form');
+  const errorBox = document.getElementById('auth-error');
+  const submitBtn = form?.querySelector('.af-submit');
+  const label = submitBtn?.querySelector('[data-label]');
+  const idleLabel = label?.textContent ?? '';
+  const modal = document.getElementById('guest-ws-modal');
+
+  let payload = {};
+
+  const showError = (msg) => {
+    if (!errorBox) return;
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+  };
+
+  const setBusy = (busy) => {
+    if (!submitBtn || !label) return;
+    submitBtn.disabled = busy;
+    label.textContent = busy ? msgWorking : idleLabel;
+  };
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    // El formulario lleva `novalidate` para poder pintar los errores nosotros,
+    // así que la validación del navegador hay que pedirla a mano. Sin esto, un
+    // campo vacío salía por la red y volvía como un error del servidor.
+    form.classList.add('tried');
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    if (errorBox) errorBox.hidden = true;
+    payload = Object.fromEntries(new FormData(form));
+
+    if (hasGuestWorkspaces && modal) {
+      modal.showModal();
+    } else {
+      send();
+    }
+  });
+
+  document.getElementById('btn-confirm-transfer')?.addEventListener('click', () => {
+    payload.keep_workspaces = Array.from(
+      document.querySelectorAll('input[name="keep_ws"]:checked')
+    ).map((cb) => cb.value);
+    modal?.close();
+    send();
+  });
+
+  document.getElementById('btn-discard-all')?.addEventListener('click', () => {
+    payload.keep_workspaces = [];
+    modal?.close();
+    send();
+  });
+
+  async function send() {
+    setBusy(true);
+    let res;
+    try {
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Sin red no hay respuesta que interpretar, y decir «credenciales
+      // inválidas» sería mentir sobre lo que ha pasado.
+      setBusy(false);
+      showError(msgGeneric);
+      return;
+    }
+
+    if (res.ok) {
+      window.location.href = '/';
+      return;
+    }
+
+    setBusy(false);
+    const data = await res.json().catch(() => ({}));
+    showError(data.error || (res.status === 401 ? msgInvalid : msgGeneric));
+  }
+</script>

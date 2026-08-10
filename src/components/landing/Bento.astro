@@ -1,0 +1,500 @@
+---
+import { useTranslations } from '../../i18n/ui';
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+// Cifras reales, medidas sobre el proyecto. Si dejan de ser ciertas hay que
+// cambiarlas aquí: una landing que exagera se desmonta en cuanto alguien clona
+// el repositorio, y este público clona.
+const TABLES = 31;
+// Todo el JS y el CSS de dist/client/_astro, comprimido con gzip. Vuelve a
+// medirlo si añades dependencias de cliente:
+//   find dist/client/_astro -name '*.js' -o -name '*.css' | xargs cat | gzip -9 | wc -c
+const CLIENT_KB = 199;
+
+const installCmd = 'git clone https://github.com/JoseSerpaCode/Forge-OS.git\ncd Forge-OS && npm install\nnpm run seed && npm run dev';
+---
+
+<section class="bento" aria-labelledby="bento-title">
+  <h2 id="bento-title" class="sr-only">{t('bento.title')}</h2>
+
+  {/*
+    Celda grande: el tablero. No es un adorno — reproduce la interacción
+    central del producto, una tarjeta cambiando de columna. Enseñar el gesto
+    dice más que describirlo, y es lo que el visitante va a hacer nada más
+    entrar.
+  */}
+  <article class="b-cell b-board reveal">
+    <p class="b-eyebrow">{t('bento.board.eyebrow')}</p>
+    <h3 class="b-title">{t('bento.board.title')}</h3>
+    <p class="b-body">{t('bento.board.body')}</p>
+
+    <div class="mini" aria-hidden="true">
+      <div class="mini-col"><span class="mini-h">To Do</span>
+        <i class="mini-card t-story"></i><i class="mini-card t-task"></i><i class="mini-card t-bug"></i>
+      </div>
+      <div class="mini-col"><span class="mini-h">In Progress</span>
+        <i class="mini-card t-epic mini-travel"></i>
+      </div>
+      <div class="mini-col"><span class="mini-h">Review</span>
+        <i class="mini-card t-bug"></i><i class="mini-card t-task"></i>
+      </div>
+      <div class="mini-col"><span class="mini-h">Done</span>
+        <i class="mini-card t-task"></i><i class="mini-card t-story"></i>
+      </div>
+    </div>
+  </article>
+
+  {/* El archivo: la tesis, en datos. */}
+  <article class="b-cell b-file reveal">
+    <p class="b-eyebrow">{t('bento.file.eyebrow')}</p>
+    <p class="b-file-name">forge.db</p>
+    <dl class="b-stats">
+      <div><dt>{t('bento.file.tables')}</dt><dd>{TABLES}</dd></div>
+      <div><dt>{t('bento.file.servers')}</dt><dd>0</dd></div>
+    </dl>
+    <p class="b-body">{t('bento.file.body')}</p>
+  </article>
+
+  {/* El peso del cliente: una cifra que Notion no puede igualar. */}
+  <article class="b-cell b-weight reveal">
+    <p class="b-eyebrow">{t('bento.weight.eyebrow')}</p>
+    <p class="b-big">{CLIENT_KB}<span>KB</span></p>
+    <p class="b-body">{t('bento.weight.body')}</p>
+  </article>
+
+  {/*
+    Los comandos, copiables. Para el público que se autoaloja esto vale más
+    que cualquier ilustración: es la prueba de que arrancarlo cuesta tres
+    líneas, y se la puede llevar de un clic.
+  */}
+  <article class="b-cell b-install reveal">
+    <p class="b-eyebrow">{t('bento.install.eyebrow')}</p>
+    <div class="b-term">
+      {/* El botón vive en una barra propia y no flotando sobre el código: ahí
+          tapaba el final del `git clone`, que es justo la línea que la gente
+          viene a leer. */}
+      <div class="b-term-bar">
+        <span class="b-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <button type="button" class="b-copy" data-copy="install-cmd" aria-label={t('bento.install.copy')}>
+          <span class="b-copy-idle">{t('bento.install.copy')}</span>
+          <span class="b-copy-done" hidden>{t('bento.install.copied')}</span>
+        </button>
+      </div>
+      <pre id="install-cmd"><code>{installCmd}</code></pre>
+    </div>
+    <p class="b-body">{t('bento.install.body')}</p>
+  </article>
+
+  {/* Enlaces bidireccionales: la diferencia real frente a un tablero y un wiki
+      que no se hablan. */}
+  <article class="b-cell b-links reveal">
+    <p class="b-eyebrow">{t('bento.links.eyebrow')}</p>
+    <div class="b-link-viz" aria-hidden="true">
+      <span class="b-node">{t('bento.links.page')}</span>
+      <span class="b-arrows"><i></i><i></i></span>
+      <span class="b-node">{t('bento.links.issue')}</span>
+    </div>
+    <p class="b-body">{t('bento.links.body')}</p>
+  </article>
+</section>
+
+<style>
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .bento {
+    margin-top: clamp(5rem, 12vw, 9rem);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: minmax(0, auto);
+  }
+
+  /* Seis columnas y no cuatro porque con cuatro la rejilla dejaba dos huecos:
+     una celda de una columna no puede acompañar a otra de dos sin que sobre
+     sitio. Con seis, cada fila cierra exacta.
+       fila 1 │ tablero (4) │ archivo (2)
+       fila 2 │ tablero     │ peso (2)
+       fila 3 │ instalación (3) │ enlaces (3)                                */
+  .b-board   { grid-column: span 4; grid-row: span 2; }
+  .b-file    { grid-column: span 2; }
+  .b-weight  { grid-column: span 2; }
+  .b-install { grid-column: span 3; }
+  .b-links   { grid-column: span 3; justify-content: center; }
+
+  /* Una sola columna en móvil: un bento apretado en 390px deja de ser una
+     rejilla y pasa a ser una lista mal maquetada. */
+  @media (max-width: 62rem) {
+    .bento { grid-template-columns: 1fr; }
+    .b-board, .b-file, .b-weight, .b-links, .b-install {
+      grid-column: span 1; grid-row: span 1;
+    }
+  }
+
+  .b-cell {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.9rem;
+    padding: clamp(1.25rem, 2.5vw, 1.75rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    transition: border-color 0.25s, transform 0.25s;
+  }
+  .b-cell:hover {
+    border-color: color-mix(in srgb, var(--forge-muted) 45%, var(--forge-border));
+    transform: translateY(-2px);
+  }
+
+  /* Halo de color detrás de cada celda. Decoración pura: va en z-index -1, muy
+     difuso y a baja opacidad, así que no interfiere con el contraste del texto
+     —comprobado con la auditoría—. Cada celda toma el color de lo que cuenta. */
+  .b-cell::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    width: 60%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.5;
+    top: -25%;
+    right: -15%;
+    transition: opacity 0.35s;
+    pointer-events: none;
+  }
+  .b-cell:hover::before { opacity: 0.75; }
+
+  .b-board::before   { background: var(--forge-accent-primary); opacity: 0.22; }
+  .b-board:hover::before { opacity: 0.34; }
+  .b-file::before    { background: var(--forge-accent-primary); opacity: 0.16; }
+  .b-weight::before  { background: var(--forge-info); opacity: 0.18; }
+  .b-install::before { background: var(--forge-success); opacity: 0.14; }
+  .b-links::before   { background: var(--forge-warning); opacity: 0.16; }
+
+  /* El punto de color va antes del antetítulo y no en el propio texto: pintar
+     el antetítulo de verde o de azul obligaría a revalidar cada tono contra AA
+     a 0.68rem. Un punto es decoración pura y da el color igual. */
+  .b-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    margin-right: 0.55rem;
+    vertical-align: 0.05em;
+    background: currentColor;
+  }
+  .b-board   .b-eyebrow::before { background: var(--forge-accent-primary); }
+  .b-file    .b-eyebrow::before { background: var(--forge-accent-primary); }
+  .b-weight  .b-eyebrow::before { background: var(--forge-info); }
+  .b-install .b-eyebrow::before { background: var(--forge-success); }
+  .b-links   .b-eyebrow::before { background: var(--forge-warning); }
+
+  .b-eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+    margin: 0;
+  }
+  .b-title {
+    font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    font-weight: 800;
+    color: var(--forge-text);
+    margin: 0;
+  }
+  .b-body {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+    margin: 0;
+    max-width: 44ch;
+  }
+
+  /* ── Tablero en miniatura ─────────────────────────────────────────────── */
+  /* `flex: 1` y no `margin-top: auto`: la celda mide dos filas de la rejilla,
+     así que con el margen automático el tablero se pegaba abajo y dejaba un
+     palmo de vacío. Estirándolo, las columnas crecen y llenan la celda. */
+  .mini {
+    flex: 1;
+    max-height: 12.5rem;
+    margin-top: auto;
+    padding-top: 1.25rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    min-height: 160px;
+  }
+  .mini-col {
+    background: var(--forge-bg);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .mini-h {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+    margin-bottom: 0.15rem;
+  }
+  .mini-card {
+    display: block;
+    height: 1.35rem;
+    border-radius: 0.28rem;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-left: 2px solid var(--forge-muted);
+  }
+  /* Los mismos colores por tipo que usa el tablero de verdad: bug en rojo,
+     story en verde, task en azul, epic en el naranja de marca. No son colores
+     de adorno, son los que verá en cuanto entre. */
+  .t-bug   { border-left-color: var(--forge-error);   background: color-mix(in srgb, var(--forge-error) 7%, var(--forge-panel)); }
+  .t-story { border-left-color: var(--forge-success); background: color-mix(in srgb, var(--forge-success) 7%, var(--forge-panel)); }
+  .t-task  { border-left-color: var(--forge-info);    background: color-mix(in srgb, var(--forge-info) 7%, var(--forge-panel)); }
+  .t-epic  { border-left-color: var(--forge-accent-primary); background: color-mix(in srgb, var(--forge-accent-primary) 10%, var(--forge-panel)); }
+
+  .mini-travel { box-shadow: 0 4px 14px color-mix(in srgb, var(--forge-accent-primary) 25%, transparent); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .mini-travel { animation: travel 5.5s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+  }
+  /* Recorrido: In Progress → Review → Done → vuelta. Los reposos largos entre
+     saltos evitan que la celda parpadee sin parar en el rabillo del ojo.
+
+     La cuenta horizontal es la que la tenía descolocada. `100%` en un
+     `translate` es el ancho de **la tarjeta**, pero la distancia entre columnas
+     es el ancho de la **columna**, que además de la tarjeta incluye su relleno:
+     0.5rem a cada lado. Sumando el hueco de 0.5rem entre columnas, el salto son
+     `100% + 1.5rem`, no `100% + 0.5rem`. Con el valor viejo la tarjeta se
+     quedaba a caballo sobre el borde, corrida 1rem a la izquierda.
+
+     El desplazamiento vertical tampoco es decorativo: Review y Done ya tienen
+     dos tarjetas cada una, y una ranura mide 1.7rem (1.35 de alto + 0.35 de
+     hueco). Bajar 3.4rem la deja en la tercera, libre en ambas columnas. */
+  @keyframes travel {
+    0%, 22%   { transform: none; }
+    30%, 52%  { transform: translate(calc(100% + 1.5rem), 3.4rem); }
+    60%, 82%  { transform: translate(calc(200% + 3rem), 3.4rem); }
+    90%, 100% { transform: none; }
+  }
+
+  /* ── Archivo ──────────────────────────────────────────────────────────── */
+  .b-file-name {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--forge-accent-text);
+    margin: 0.25rem 0 0;
+  }
+  .b-stats { display: flex; gap: 2rem; margin: 0.75rem 0 0; }
+  .b-stats dt {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+  }
+  .b-stats dd {
+    margin: 0.2rem 0 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--forge-text);
+  }
+
+  /* ── Peso ─────────────────────────────────────────────────────────────── */
+  .b-big {
+    font-size: clamp(2.6rem, 6vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    margin: 0.25rem 0 0;
+    background: linear-gradient(135deg, var(--forge-text), var(--forge-info));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .b-big span {
+    font-size: 0.35em;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--forge-muted);
+    margin-left: 0.25rem;
+  }
+
+  /* ── Terminal ─────────────────────────────────────────────────────────── */
+  .b-term {
+    position: relative;
+    margin-top: 0.5rem;
+    background: var(--forge-bg);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.55rem;
+    overflow: hidden;
+  }
+  .b-term pre {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.76rem;
+    line-height: 1.75;
+    color: var(--forge-text);
+  }
+  .b-term-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem 0.4rem 0.75rem;
+    background: var(--forge-panel);
+    border-bottom: 1px solid var(--forge-border);
+  }
+  /* Los tres puntos de una ventana de terminal, en los colores de estado que ya
+     usa la app. Son adorno, y por eso van con aria-hidden. */
+  .b-dots { display: flex; gap: 0.3rem; }
+  .b-dots i { width: 0.5rem; height: 0.5rem; border-radius: 50%; display: block; }
+  .b-dots i:nth-child(1) { background: var(--forge-error); }
+  .b-dots i:nth-child(2) { background: var(--forge-warning); }
+  .b-dots i:nth-child(3) { background: var(--forge-success); }
+
+  .b-copy {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.55rem;
+    border-radius: 0.35rem;
+    border: 1px solid var(--forge-border);
+    background: var(--forge-bg);
+    color: var(--forge-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .b-copy:hover { color: var(--forge-text); border-color: var(--forge-muted); }
+
+  /* ── Enlaces bidireccionales ──────────────────────────────────────────── */
+  .b-link-viz {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.75rem 0 0.25rem;
+  }
+  .b-node {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.35rem;
+    border: 1px solid var(--forge-border);
+    background: var(--forge-bg);
+    color: var(--forge-text);
+    white-space: nowrap;
+  }
+  .b-arrows { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 24px; }
+  .b-arrows i {
+    display: block;
+    height: 1px;
+    background: var(--forge-border);
+    position: relative;
+  }
+  .b-arrows i::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    width: 30%;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--forge-accent-primary);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .b-arrows i:nth-child(1)::after { animation: dashR 2.6s ease-in-out infinite; }
+    .b-arrows i:nth-child(2)::after { animation: dashL 2.6s ease-in-out infinite 1.3s; }
+  }
+  @keyframes dashR { 0% { left: 0; opacity: 0; } 25% { opacity: 1; } 100% { left: 70%; opacity: 0; } }
+  @keyframes dashL { 0% { right: 0; left: auto; opacity: 0; } 25% { opacity: 1; } 100% { right: 70%; left: auto; opacity: 0; } }
+
+  /* ── Revelado al entrar en pantalla ───────────────────────────────────── */
+  /* El estado oculto está condicionado a `[data-reveal]`, que pone un script
+     en línea antes de pintar. Si el JS no llega —bloqueado, error, un bot— la
+     marca no aparece, el `opacity: 0` no se aplica y la sección se ve entera.
+     Al revés, un fallo del script dejaría el bento invisible para siempre. */
+  @media (prefers-reduced-motion: no-preference) {
+    :global([data-reveal]) .reveal { opacity: 0; transform: translateY(18px); }
+    :global([data-reveal]) .reveal.in {
+      opacity: 1;
+      transform: none;
+      transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  }
+</style>
+
+{/*
+  Se marca el documento antes de pintar para que el estado oculto del revelado
+  solo exista si hay JS que lo vaya a deshacer. `is:inline` es deliberado: el
+  script del final va diferido y llegaría tarde, con la sección ya pintada
+  visible y un salto al ocultarse.
+*/}
+<script is:inline>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.setAttribute('data-reveal', '');
+  }
+</script>
+
+<script>
+  // Copiar el comando. Sin librerías: clipboard.writeText basta y no requiere
+  // permisos declarados (por eso Permissions-Policy puede seguir negándolo todo).
+  document.querySelectorAll<HTMLButtonElement>('.b-copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const src = document.getElementById(btn.dataset.copy || '');
+      if (!src?.textContent) return;
+      try {
+        await navigator.clipboard.writeText(src.textContent.trim());
+      } catch {
+        return; // Sin portapapeles disponible: no se finge que funcionó.
+      }
+      const idle = btn.querySelector<HTMLElement>('.b-copy-idle');
+      const done = btn.querySelector<HTMLElement>('.b-copy-done');
+      if (!idle || !done) return;
+      idle.hidden = true;
+      done.hidden = false;
+      setTimeout(() => { idle.hidden = false; done.hidden = true; }, 1600);
+    });
+  });
+
+  // Revelado al hacer scroll. Si el usuario pidió menos movimiento, todo queda
+  // visible de entrada y el observador no llega a montarse.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const items = document.querySelectorAll('.reveal');
+  if (reduce) {
+    items.forEach((el) => el.classList.add('in'));
+  } else {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e, i) => {
+          if (!e.isIntersecting) return;
+          // Escalonado corto: las celdas entran en cascada, no en bloque.
+          setTimeout(() => e.target.classList.add('in'), i * 70);
+          io.unobserve(e.target);
+        });
+      },
+      { rootMargin: '0px 0px -12% 0px' }
+    );
+    items.forEach((el) => io.observe(el));
+  }
+</script>

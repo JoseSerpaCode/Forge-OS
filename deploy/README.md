@@ -183,14 +183,41 @@ nunca se ha restaurado no es un backup: es un archivo del que no sabes nada.
 ## Actualizar
 
 ```sh
-cd /opt/forge-os
-sudo -u forge git pull
-sudo -u forge npm ci --omit=dev
-sudo -u forge npm run build
-sudo systemctl restart forge-os
+sudo /opt/forge-os/scripts/deploy.sh
 ```
 
+Eso es todo. El script hace copia de la base, aparta el `dist/` actual, trae los
+cambios, instala, construye, reinicia y **comprueba que la aplicación responde**
+antes de dar el despliegue por bueno. Si algo falla en cualquier punto, vuelve
+solo al commit anterior y deja el servicio corriendo la versión que funcionaba.
+
 Los datos no se tocan: viven en `/var/lib/forge-os`.
+
+### Por qué no la cadena a mano
+
+La secuencia `git pull && npm ci && npm run build && systemctl restart` tiene
+dos agujeros que no se ven hasta que muerden:
+
+- **`npm run build` vacía `dist/` antes de construir.** Un fallo de compilación
+  deja sin ficheros a la instancia que estaba sirviendo bien. El script se lleva
+  una copia de `dist/` antes de empezar y la repone si el build cae.
+- **Que systemd arranque el proceso no significa que la aplicación funcione.**
+  El servicio se da por bueno mientras el proceso no muera, aunque no sirva una
+  sola página. El script consulta `/healthz`, que hace una lectura real contra
+  SQLite, y si no contesta `ok` en 60 segundos deshace el despliegue.
+
+Variables que acepta, por si el entorno no es el de esta guía:
+`APP_DIR`, `APP_USER`, `SERVICE`, `ENV_FILE`, `BACKUP_CMD`, `HEALTH_TIMEOUT`.
+
+### Comprobar la salud a mano
+
+```sh
+curl -s localhost:4321/healthz     # → ok
+```
+
+Devuelve `503` con el motivo si el proceso está en pie pero no puede leer la
+base. Si la base **falta**, el proceso ni siquiera arranca, y eso también lo
+detecta el script (la petición no llega a conectar).
 
 ## Comprobar que salió bien
 

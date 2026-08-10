@@ -1,0 +1,131 @@
+---
+/**
+ * Entrada por proveedor externo.
+ *
+ * El esquema ya está preparado —`users.github_id` y `users.google_id` existen
+ * desde hace tiempo—, pero la fontanería del flujo todavía no. Así que cada
+ * botón se activa **solo si hay credenciales configuradas** para su proveedor:
+ *
+ *   - Con `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` en el entorno → enlace real.
+ *   - Sin ellas → botón deshabilitado y una línea diciendo que falta configurar.
+ *
+ * Es a propósito. Un botón que parece vivo y no lleva a ninguna parte deja al
+ * usuario pensando que la culpa es suya; uno que se declara pendiente, no. Y el
+ * día que registres las aplicaciones en GitHub y Google, se encienden solos sin
+ * tocar una línea de código.
+ *
+ * El flujo será por **redirección completa**, no por popup: el middleware envía
+ * `Cross-Origin-Opener-Policy: same-origin`, que corta la comunicación entre la
+ * ventana emergente y la que la abrió.
+ */
+import { useTranslations } from '../../i18n/ui';
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+const providers = [
+  {
+    id: 'google',
+    label: t('auth.oauth.google'),
+    enabled: Boolean(import.meta.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID),
+  },
+  {
+    id: 'github',
+    label: t('auth.oauth.github'),
+    enabled: Boolean(import.meta.env.GITHUB_CLIENT_ID || process.env.GITHUB_CLIENT_ID),
+  },
+];
+
+const anyPending = providers.some((p) => !p.enabled);
+---
+
+<div class="oa">
+  {
+    providers.map((p) =>
+      p.enabled ? (
+        <a class="oa-btn" href={`/api/auth/oauth/${p.id}`} rel="nofollow">
+          <span class="oa-ico" data-p={p.id} aria-hidden="true" />
+          {p.label}
+        </a>
+      ) : (
+        <button class="oa-btn" type="button" disabled aria-describedby="oa-pending">
+          <span class="oa-ico" data-p={p.id} aria-hidden="true" />
+          {p.label}
+        </button>
+      )
+    )
+  }
+</div>
+
+{anyPending && <p id="oa-pending" class="oa-pending">{t('auth.oauth.pending')}</p>}
+
+<style>
+  .oa {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  @media (max-width: 24rem) {
+    .oa { grid-template-columns: 1fr; }
+  }
+
+  .oa-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--forge-text);
+    text-decoration: none;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .oa-btn:hover:not([disabled]) {
+    border-color: var(--forge-muted);
+  }
+  .oa-btn[disabled] {
+    cursor: not-allowed;
+    color: var(--forge-muted);
+    background: transparent;
+  }
+
+  /* Los logotipos van como máscara sobre `currentColor` en vez de como SVG a
+     color: así se apagan junto al texto cuando el botón está deshabilitado, y
+     no queda un logo a todo color sobre un botón gris. */
+  .oa-ico {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: none;
+    background: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+  .oa-ico[data-p='google'] {
+    --url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 11v3.2h5.3c-.2 1.4-1.6 4-5.3 4-3.2 0-5.8-2.6-5.8-5.9S8.8 6.4 12 6.4c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.6 3.9 14.5 3 12 3 6.9 3 2.8 7.1 2.8 12.2S6.9 21.4 12 21.4c5.3 0 8.8-3.7 8.8-8.9 0-.6-.1-1.1-.2-1.5H12z'/%3E%3C/svg%3E");
+    -webkit-mask-image: var(--url);
+    mask-image: var(--url);
+  }
+  .oa-ico[data-p='github'] {
+    --url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.5 2 2 6.6 2 12.3c0 4.5 2.9 8.3 6.8 9.7.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.4-3.4-1.4-.5-1.2-1.1-1.5-1.1-1.5-.9-.7.1-.7.1-.7 1 .1 1.5 1.1 1.5 1.1.9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.2-4.6-5.1 0-1.1.4-2 1-2.8-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1.1a9 9 0 0 1 5 0c1.9-1.4 2.7-1.1 2.7-1.1.5 1.4.2 2.4.1 2.7.6.8 1 1.7 1 2.8 0 3.9-2.3 4.8-4.6 5.1.4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.3 10.3 0 0 0 22 12.3C22 6.6 17.5 2 12 2z'/%3E%3C/svg%3E");
+    -webkit-mask-image: var(--url);
+    mask-image: var(--url);
+  }
+
+  .oa-pending {
+    margin: 0.6rem 0 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.66rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+  }
+</style>
