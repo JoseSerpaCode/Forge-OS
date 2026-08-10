@@ -152,3 +152,92 @@
   .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--forge-border); border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--forge-muted); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Móvil: suelos de legibilidad y de área táctil
+   ═══════════════════════════════════════════════════════════════════════════
+
+   La interfaz está diseñada para escritorio, donde una etiqueta de 10px junto
+   a un icono se lee sin esfuerzo. En un teléfono no: medido sobre las diez
+   pantallas de la aplicación a 390px hay 164 elementos con `text-[10px]`, 37
+   con `text-[11px]`, 15 con `text-[9px]` y uno con 8px.
+
+   Cambiarlos uno a uno serían 216 ediciones y perdería la densidad en
+   escritorio, que es donde esta aplicación se usa de verdad. Así que el ajuste
+   va aquí, en un solo bloque y **solo por debajo de 48rem**: en pantalla grande
+   nada cambia.
+
+   `@layer utilities` es lo que hace que esto gane a las utilidades de Tailwind
+   sin recurrir a `!important` ni a selectores inflados: dentro de la misma
+   capa, gana el que llega después, y este archivo se importa tras Tailwind. */
+@layer utilities {
+  @media (max-width: 48rem) {
+    /* 12px es el suelo por debajo del cual el texto de interfaz deja de leerse
+       cómodamente en un móvil sostenido a distancia normal. */
+    .text-\[8px\],
+    .text-\[9px\],
+    .text-\[10px\] {
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+    .text-\[11px\] {
+      font-size: 0.8125rem;
+      line-height: 1.45;
+    }
+
+    /* Área táctil.
+
+       WCAG 2.5.8 pide 24×24 CSS px como mínimo, y las guías de Apple y Google
+       recomiendan 44. Aquí se sube el área **sin tocar el tamaño visual**: solo
+       crece el relleno, así que el icono se ve igual y el dedo acierta.
+
+       No se aplica a los `input` ocultos de los interruptores (`.sr-only`),
+       cuyo objetivo real es la etiqueta hermana. */
+    a:not(.sr-only),
+    button:not(.sr-only) {
+      min-height: 2.75rem;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* Los enlaces dentro de un párrafo o de una lista corrida son texto, no
+       botones: forzarles 44px de alto rompe el interlineado. Se les da el área
+       con relleno vertical, que sí respeta el flujo. */
+    p a,
+    li a,
+    .prose a {
+      min-height: 0;
+      display: inline;
+      padding-block: 0.35rem;
+    }
+
+    /* El pie de la aplicación es el peor caso: 36 enlaces seguidos, todos de
+       una línea, todos por debajo del área mínima. */
+    .footer-link {
+      min-height: 2.75rem;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* Botones de solo icono.
+
+       Tras subir la altura quedaban 74 objetivos por debajo del mínimo, y
+       todos por lo mismo: 44 de alto pero 16–36 de ancho. Son los botones que
+       llevan únicamente un SVG —cerrar, borrar, marcar como leído—, los más
+       fáciles de fallar con el pulgar y los que más molesta fallar.
+
+       `:has(> svg:only-child)` los distingue con exactitud, sin ensanchar los
+       enlaces de texto que van dentro de un párrafo. Donde no esté soportado no
+       pasa nada: se queda como estaba. */
+    a:has(> svg:only-child),
+    button:has(> svg:only-child) {
+      min-width: 2.75rem;
+      justify-content: center;
+    }
+
+    /* Los desplegables nativos se quedaban en 28–33px de alto. */
+    select {
+      min-height: 2.75rem;
+    }
+  }
+}

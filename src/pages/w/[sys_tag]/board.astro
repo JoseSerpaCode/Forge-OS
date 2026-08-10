@@ -30,6 +30,23 @@ if (!Astro.url.search.includes('sprint=')) {
   }
 }
 
+// Sin sprint en la URL ni cookie, se abre el **sprint activo**, no el backlog.
+//
+// Antes caía en el backlog, que en un espacio bien llevado está casi siempre
+// vacío: la primera visita a un tablero con un sprint en marcha y doce issues
+// dentro mostraba «Tu tablero kanban está vacío». Es la peor primera impresión
+// posible, y además invitaba a crear un issue suelto fuera del sprint.
+//
+// Solo se aplica cuando no hay elección previa: si alguien pide el backlog a
+// propósito —o eligió otro sprint y quedó en la cookie— se respeta.
+let defaultSprintId: string | null = null;
+if (!Astro.url.search.includes('sprint=')) {
+  const active = db
+    .prepare("SELECT id FROM sprints WHERE workspace_id = ? AND status = 'active' ORDER BY rowid DESC LIMIT 1")
+    .get(workspace.id) as { id: string } | undefined;
+  if (active) defaultSprintId = active.id;
+}
+
 // IDOR Protection: Validate requested sprint belongs to this workspace
 if (requestedSprintId && requestedSprintId !== 'backlog') {
   const sprintCheck = db.prepare('SELECT workspace_id, status FROM sprints WHERE id = ?').get(requestedSprintId) as any;
@@ -38,6 +55,11 @@ if (requestedSprintId && requestedSprintId !== 'backlog') {
   }
   activeSprintId = requestedSprintId;
   currentSprintObj = sprintCheck;
+} else if (defaultSprintId) {
+  activeSprintId = defaultSprintId;
+  currentSprintObj = db
+    .prepare('SELECT workspace_id, status FROM sprints WHERE id = ?')
+    .get(defaultSprintId) as any;
 }
 
 // Fetch all sprints for the dropdown
@@ -50,7 +72,8 @@ let issuesQuery = `
          u1.avatar_url as reporter_avatar,
          u2.username as assignee_username,
          u2.avatar_url as assignee_avatar,
-         (SELECT started_at FROM time_tracking_sessions WHERE issue_id = i.id AND user_id = ?) as active_session_start
+         (SELECT started_at FROM time_tracking_sessions WHERE issue_id = i.id AND user_id = ?) as active_session_start,
+         ROW_NUMBER() OVER (PARTITION BY i.status ORDER BY i.position ASC, i.id ASC) AS rn
   FROM issues i
   LEFT JOIN users u1 ON i.reporter_id = u1.id
   LEFT JOIN users u2 ON i.assignee_id = u2.id
@@ -65,8 +88,45 @@ if (activeSprintId) {
   issuesQuery += ' AND i.sprint_id IS NULL';
 }
 
-issuesQuery += ' ORDER BY i.position ASC, i.id ASC';
-const issues = db.prepare(issuesQuery).all(...queryParams) as any[];
+/**
+ * Tope por columna.
+ *
+ * La consulta no tenía ninguno: pintaba **todos** los issues del sprint. Medido
+ * en local, un backlog de 2.000 issues genera 5 MB de HTML en una sola carga —y
+ * la tarjeta escribe la descripción dos veces, visible y en `data-description`,
+ * de donde la lee el modal—. En la `e2-micro` de producción eso son dos
+ * problemas: el proceso renderiza 5 MB con 1 GB de RAM y un núcleo compartido,
+ * y el tier gratuito da **1 GB de egress al mes**, así que doscientas aperturas
+ * del tablero se lo comen entero. Cloudflare no puede ayudar: es HTML privado
+ * por usuario, no cacheable.
+ *
+ * El tope va **por columna** y no sobre el total: con un tope global, 300
+ * issues en «Por hacer» dejarían «Hecho» vacío y el tablero mentiría sobre el
+ * estado del sprint. `ROW_NUMBER() OVER (PARTITION BY status)` reparte el
+ * presupuesto entre las cuatro, así que el techo real son 4 × COLUMN_LIMIT.
+ *
+ * Lo que se corta se cuenta y se dice, más abajo, en cada cabecera de columna:
+ * un tablero que esconde trabajo sin avisar es peor que uno lento.
+ */
+const COLUMN_LIMIT = 100;
+
+// Cuántos hay de verdad en cada columna, para poder decir «100 de 743».
+const countsQuery = issuesQuery.replace(
+  /SELECT[\s\S]*?FROM issues i/,
+  'SELECT i.status, COUNT(*) as n FROM issues i'
+) + ' GROUP BY i.status';
+const statusCounts = Object.fromEntries(
+  (db.prepare(countsQuery).all(...queryParams.slice(1)) as { status: string; n: number }[])
+    .map((r) => [r.status, r.n])
+);
+
+const pagedQuery = `
+  SELECT * FROM (
+    ${issuesQuery}
+  ) WHERE rn <= ${COLUMN_LIMIT}
+  ORDER BY position ASC, id ASC
+`;
+const issues = db.prepare(pagedQuery).all(...queryParams) as any[];
 
 const activeSprintName = activeSprintId ? sprints.find(s => s.id === activeSprintId)?.name : 'Backlog';
 
@@ -157,7 +217,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={access.role} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={access.role} statusCounts={statusCounts} />
     </div>
   </div>
 

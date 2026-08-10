@@ -16,7 +16,7 @@
 self-hosted workspace.** Built on Astro SSR with a synchronous SQLite core — no
 virtual DOM, no client-side framework, no external services.
 
-[Report a bug](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Request a feature](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Changelog](./CHANGELOG.md)
+[Live instance](https://forge-os.online) · [Report a bug](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Request a feature](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Changelog](./CHANGELOG.md)
 
 **English** · [Español](./README.es.md)
 
@@ -36,6 +36,7 @@ virtual DOM, no client-side framework, no external services.
   - [Install](#install)
   - [Scripts](#scripts)
 - [Tech stack](#tech-stack)
+- [Deployment](#deployment)
 - [Security](#security)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
@@ -108,9 +109,11 @@ links between pages and issues.
 
 ### Requirements
 
-**Node.js 22.12 or newer.** CI runs on Node 26. `better-sqlite3` compiles a
-native module on install, so a working C++ toolchain is required — on most
-systems it is already present.
+**Node.js 22.12 or newer.** CI runs on Node 26.
+
+Nothing else. `better-sqlite3` ships prebuilt binaries for linux-x64,
+linux-arm64, macOS and Windows, so there is no compiler step — an earlier
+version of this page asked for a C++ toolchain that is not actually needed.
 
 ### Install
 
@@ -167,6 +170,38 @@ seed password (`LocalDevPass123!` by default; override it by exporting
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## Deployment
+
+Full walkthrough in **[deploy/README.md](./deploy/README.md)** — a VM with a
+persistent disk, Caddy in front and systemd keeping the process alive. It is
+what runs [forge-os.online](https://forge-os.online) on a free-tier `e2-micro`.
+
+Three things worth knowing before you open it:
+
+- **Data lives outside the checkout** (`/var/lib/forge-os`, via `DATABASE_URL`
+  and `STORAGE_DIR`), so a deploy that wipes the directory cannot take the
+  database or the uploads with it.
+- **`PUBLIC_SITE_URL` is required in production.** Without it the app
+  advertises itself as `localhost:4321` in the canonical URL and the OpenGraph
+  tags, even while serving a real domain.
+- **Never `cp forge.db`.** The database runs in WAL mode, so copying the file
+  gives you an incomplete or corrupt snapshot. Use `scripts/backup.sh`, which
+  goes through `sqlite3 .backup` and verifies the result with
+  `integrity_check`.
+
+Once installed, updates are one command:
+
+```sh
+sudo /opt/forge-os/scripts/deploy.sh
+```
+
+It backs up the database, sets `dist/` aside, builds, restarts, and waits for
+`/healthz` — which does a real read against SQLite — before calling the deploy
+good. If any step fails it returns to the previous commit and leaves the
+service running the version that worked.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Security
 
 - **RBAC** — owner, editor, commenter and viewer roles, enforced server-side.
@@ -174,7 +209,20 @@ seed password (`LocalDevPass123!` by default; override it by exporting
   traversal in attachment handling, behind a strict CSP.
 - **Uploads** — 10 MB ceiling, MIME type verification, UUIDv4 identifiers.
 - **Rate limiting** — persistent across restarts, applied to auth and public
-  endpoints.
+  endpoints, keyed on `CF-Connecting-IP` so it cannot be bypassed by forging
+  `X-Forwarded-For`.
+- **Registration** — usernames are checked against reserved and abusive names
+  (with leetspeak and separator evasion folded in), and a signed arithmetic
+  challenge keeps generic bots out. The challenge is served by this app: no
+  third-party captcha widget, because the product promises no third-party
+  scripts.
+- **No third parties, literally** — no analytics, no trackers, no external
+  fonts on app pages, and no remote avatar service. The CSP allows `'self'`
+  only.
+- **Guest accounts are socially inert** — they can read the app, but cannot
+  send friend requests, block anyone, or be the target of either. They are also
+  kept out of search suggestions, so the user directory does not become a
+  visitor log.
 
 Found something? See [SECURITY.md](./SECURITY.md).
 
@@ -188,8 +236,13 @@ Found something? See [SECURITY.md](./SECURITY.md).
 - [x] Dashboard — cross-workspace summary and global notifications
 - [x] UI/UX and command palette — global shortcuts, modals, toast feedback
 - [x] Dynamic databases (phase 1) — Airtable-style tables from the UI
+- [x] Public landing page and guest accounts created on request
+- [x] Production deployment with automated rollback and verified backups
 - [ ] Dynamic databases (phase 2) — relations, formulas and saved views
 - [ ] Full-text search across pages and issues
+- [ ] Sign in with Google and GitHub — schema and buttons are in place, the
+      redirect flow is not
+- [ ] Responsive pass over the in-app screens
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

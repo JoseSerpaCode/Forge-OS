@@ -1,13 +1,12 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
 import crypto from 'crypto';
+import { canInteractSocially, socialBlockReason, SOCIAL_DENIED } from '../../../lib/social';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const user = locals.user;
     if (!user) return new Response('Unauthorized', { status: 401 });
-    if (user.is_guest === 1) return new Response('Guest accounts cannot send friend requests', { status: 403 });
-
     const { target_username } = await request.json();
     if (!target_username) return new Response('Bad Request', { status: 400 });
 
@@ -17,7 +16,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const targetUser = db.prepare('SELECT id, is_guest FROM users WHERE username = ?').get(target_username) as {id: string, is_guest: number} | undefined;
     if (!targetUser) return new Response('User not found', { status: 404 });
-    if (targetUser.is_guest === 1) return new Response('Cannot send friend request to a guest account', { status: 403 });
+    if (!canInteractSocially(user, targetUser)) {
+      const reason = socialBlockReason(user, targetUser)!;
+      return new Response(SOCIAL_DENIED[reason], { status: 403 });
+    }
 
     // Check for block
     const isBlocked = db.prepare(`

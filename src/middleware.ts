@@ -8,13 +8,27 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // mismo — cuatro filas por visita anónima.
   const PUBLIC_ROUTES = new Set([
     '/',
+    '/welcome',
+    // Los dos archivos que un buscador pide antes que ninguna página. Sin
+    // ellos aquí, el middleware los redirigía y Google recibía un 302 en vez
+    // del sitemap.
+    '/robots.txt',
+    '/sitemap.xml',
     '/login',
     '/register',
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/guest',
   ]);
-  const isPublicRoute = PUBLIC_ROUTES.has(context.url.pathname);
+
+  // Las rutas de OAuth son dinámicas —`/api/auth/oauth/<proveedor>` y su
+  // `/callback`— así que no caben en un Set de comparación exacta. Y tienen que
+  // ser públicas por definición: quien vuelve de Google todavía no tiene sesión,
+  // y sin esta excepción el middleware lo mandaría al login justo en el paso que
+  // iba a crearla.
+  const isPublicRoute =
+    PUBLIC_ROUTES.has(context.url.pathname) ||
+    context.url.pathname.startsWith('/api/auth/oauth/');
 
   if (!sessionId) {
     if (isPublicRoute) {
@@ -118,7 +132,7 @@ function applySecurityHeaders(response: Response): Response {
   // HSTS
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
-  // No filtrar la ruta completa a terceros: los avatares de dicebear y las
+  // No filtrar la ruta completa a terceros: las
   // fuentes de Google reciben la URL de origen en cada petición.
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
@@ -144,8 +158,8 @@ function applySecurityHeaders(response: Response): Response {
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https://api.dicebear.com",
-    "connect-src 'self' ws: wss: https://api.dicebear.com",
+    "img-src 'self' data: blob:",
+    "connect-src 'self' ws: wss:",
     "frame-ancestors 'none'"
   ].join('; ');
   

@@ -68,29 +68,42 @@ test.describe('Forge OS - Full System Omnibus Validation', () => {
     await expect(issueModal).toHaveClass(/translate-x-full/);
 
     // === V12: Settings y DB Update ===
-    // Navegar a settings
-    await page.click('#btn-user-settings');
-    await page.waitForURL('**/settings');
-    
-    await expect(page.locator('#username-input')).toHaveValue('jose');
-    
-    // Cambiar nombre
-    await page.fill('#username-input', 'jose_admin');
-    
-    const settingsPromise = page.waitForRequest(req => req.url().includes('/settings') && req.method() === 'POST');
-    await page.click('#btn-save-settings');
-    
+    //
+    // Se hace sobre 'rename_me', un usuario que existe solo para esto, y en una
+    // pestaña aparte. Renombrar a 'jose' —que usan otros seis specs— y
+    // deshacerlo al final dejaba una ventana en la que ese usuario no existía;
+    // con los tests en paralelo, el que cayera dentro moría por timeout de
+    // login. Fallaba uno distinto en cada corrida y pasaba al aislarlo.
+    // Contexto nuevo, no una pestaña más: las pestañas comparten cookies, así
+    // que /login redirigía a la sesión de 'jose' ya iniciada y no había
+    // formulario que rellenar.
+    const settingsContext = await page.context().browser()!.newContext();
+    const settingsPage = await settingsContext.newPage();
+    await settingsPage.goto('/login');
+    await settingsPage.fill('input[name="username"]', 'rename_me');
+    await settingsPage.fill('input[name="password"]', (process.env.TEST_PASSWORD || 'LocalDevPass123!'));
+    await settingsPage.click('button[type="submit"]');
+    await settingsPage.waitForURL('**/');
+
+    await settingsPage.goto('/settings');
+    await expect(settingsPage.locator('#username-input')).toHaveValue('rename_me');
+
+    await settingsPage.fill('#username-input', 'renamed_ok');
+
+    const settingsPromise = settingsPage.waitForRequest(req => req.url().includes('/settings') && req.method() === 'POST');
+    await settingsPage.click('#btn-save-settings');
+
     const settingsReq = await settingsPromise;
     expect((await settingsReq.response())?.status()).toBe(200);
-    
+
     // Validación SQLite
     const db = getTestDb();
-    const user = db.prepare('SELECT username FROM users WHERE username = ?').get('jose_admin') as any;
+    const user = db.prepare('SELECT username FROM users WHERE username = ?').get('renamed_ok') as any;
     expect(user).toBeDefined();
-    expect(user.username).toBe('jose_admin');
+    expect(user.username).toBe('renamed_ok');
 
-    // Cleanup DB (Rollback)
-    db.prepare('UPDATE users SET username = ? WHERE username = ?').run('jose', 'jose_admin');
+    db.prepare('UPDATE users SET username = ? WHERE username = ?').run('rename_me', 'renamed_ok');
     db.close();
+    await settingsContext.close();
   });
 });

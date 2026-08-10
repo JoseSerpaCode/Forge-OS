@@ -1,4 +1,5 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { registerViaForm } from './helpers/register';
 
 test.describe('Metrics API Security', () => {
   let outsiderContext: BrowserContext;
@@ -9,13 +10,13 @@ test.describe('Metrics API Security', () => {
     outsiderContext = await browser.newContext();
     outsiderPage = await outsiderContext.newPage();
     
-    // Register the outsider
-    const username = 'outsider_metrics_' + Date.now();
-    await outsiderPage.goto('/register');
-    await outsiderPage.fill('input[name="username"]', username);
-    await outsiderPage.fill('input[name="password"]', 'outsider123');
-    await outsiderPage.click('button[type="submit"]');
-    await outsiderPage.waitForURL('**/');
+    // Register the outsider. Va por el ayudante porque el formulario pide
+    // ahora correo y una suma; hacerlo a mano aquí se quedaba colgado sin
+    // decir por qué.
+    await registerViaForm(outsiderPage, {
+      username: 'outsider_metrics_' + Date.now(),
+      password: 'outsider123',
+    });
   });
 
   test.afterAll(async () => {

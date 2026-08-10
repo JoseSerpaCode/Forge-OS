@@ -10,13 +10,15 @@ interface Props {
   currentSprintId?: string | null;
   workspaceMembers?: any[];
   userRole?: string;
+  /** Total real por estado, para poder avisar de lo que no se pinta. */
+  statusCounts?: Record<string, number>;
 }
 
 import { useTranslations } from '../../i18n/ui';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
-const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer' } = Astro.props;
+const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer', statusCounts = {} } = Astro.props;
 const canEdit = userRole === 'owner' || userRole === 'editor';
 
 const columns = [
@@ -35,7 +37,12 @@ function getInitials(username: string) {
 <div class="h-full flex flex-col relative">
   <div class="flex gap-4 h-full overflow-x-auto pb-4 kanban-container" data-workspace={workspaceId} data-can-edit={canEdit.toString()}>
     {columns.map(col => (
-      <BoardColumn title={col.title} status={col.id}>
+      <BoardColumn
+        title={col.title}
+        status={col.id}
+        total={statusCounts[col.id] ?? issues.filter(i => i.status === col.id).length}
+        shown={issues.filter(i => i.status === col.id).length}
+      >
         {issues.filter(i => i.status === col.id).map(issue => (
           <IssueCard issue={{
             id: issue.id,
@@ -86,9 +93,21 @@ function getInitials(username: string) {
   const canEdit = container?.getAttribute('data-can-edit') === 'true';
 
   // Inicializar conteos
+  //
+  // El contador cuenta las tarjetas del DOM, pero el tablero solo pinta las
+  // primeras 100 de cada columna. Recontar a secas escribía «100» sobre una
+  // columna de 1.995 y contradecía al aviso de justo debajo.
+  //
+  // Se parte del total que ha calculado el servidor y se le suma la diferencia
+  // entre lo que hay ahora y lo que había al cargar: así arrastrar una tarjeta
+  // mueve los dos contadores en uno, como debe, sin fingir que se conoce lo que
+  // no se ha traído.
   const updateCounts = () => {
     columns.forEach(col => {
-      const count = col.querySelectorAll('.issue-card').length;
+      const shownNow = col.querySelectorAll('.issue-card').length;
+      const total = Number(col.getAttribute('data-total') ?? shownNow);
+      const shownAtLoad = Number(col.getAttribute('data-shown') ?? shownNow);
+      const count = total - shownAtLoad + shownNow;
       const countBadge = col.querySelector('.issue-count');
       if (countBadge) countBadge.textContent = count.toString();
     });

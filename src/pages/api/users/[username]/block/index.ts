@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
+import { canInteractSocially, socialBlockReason, SOCIAL_DENIED } from '../../../../../lib/social';
 
 export const POST: APIRoute = async ({ request, params, locals }) => {
   try {
@@ -13,9 +14,18 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
        return new Response('Cannot block yourself', { status: 400 });
     }
 
-    const targetUser = db.prepare('SELECT id FROM users WHERE username = ?').get(targetUsername) as {id: string} | undefined;
+    const targetUser = db.prepare('SELECT id, is_guest FROM users WHERE username = ?').get(targetUsername) as {id: string, is_guest: number} | undefined;
     
     if (!targetUser) return new Response('User not found', { status: 404 });
+
+    // Bloquear es una acción social, y era la única que se había quedado sin
+    // esta comprobación. Un invitado no puede bloquear (la cuenta es
+    // desechable: bloquear y fabricarse otra no protege de nada) y a un
+    // invitado no se le bloquea, porque no puede dirigirte nada que bloquear.
+    if (!canInteractSocially(user, targetUser)) {
+      const reason = socialBlockReason(user, targetUser)!;
+      return new Response(SOCIAL_DENIED[reason], { status: 403 });
+    }
 
     const blockId = crypto.randomUUID();
 

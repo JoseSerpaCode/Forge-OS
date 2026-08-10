@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
 import bcrypt from 'bcryptjs';
+import { validateUsername } from '../../../lib/accountValidation';
 
 // ── Shared validation helpers ────────────────────────────────────────────────
 // Centralised here so both /api/user/settings (main) and /api/users/profile
@@ -60,23 +61,36 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // ── Username ────────────────────────────────────────────────────────────
+    //
+    // Las mismas reglas que el registro, y por el mismo módulo.
+    //
+    // Antes esta rama solo comprobaba longitud y juego de caracteres, así que
+    // todo lo que el registro impide se conseguía en dos pasos: registrarse
+    // como `bob` y renombrarse después a `admin`, a `support` o a
+    // `Guest_ab12_9` —que además esconde la cuenta de las sugerencias de
+    // búsqueda—. Una regla que solo se aplica en la puerta de entrada no es
+    // una regla.
     if (username && typeof username === 'string') {
-      if (username.length < 3) {
-        return new Response('Username must be at least 3 characters', { status: 400 });
+      const problem = validateUsername(username);
+      if (problem) {
+        return new Response(JSON.stringify({ error_field: 'username', error_code: problem }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
-      if (username.length > 32) {
-        return new Response('Username cannot exceed 32 characters', { status: 400 });
-      }
-      // Restrict to safe characters — prevents XSS payloads in usernames
-      if (!/^[a-zA-Z0-9._\-]+$/.test(username)) {
-        return new Response('Username can only contain letters, numbers, dots, hyphens and underscores', { status: 400 });
-      }
-      const existing = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username, user.id);
+      // `COLLATE NOCASE`: `Avery` y `avery` son la misma persona a la vista, y
+      // dejar coexistir las dos es la base de cualquier suplantación.
+      const existing = db
+        .prepare('SELECT id FROM users WHERE username = ? COLLATE NOCASE AND id != ?')
+        .get(username.trim(), user.id);
       if (existing) {
-        return new Response('Username is already taken', { status: 400 });
+        return new Response(JSON.stringify({ error_field: 'username', error_code: 'taken' }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
       updateFields.push('username = ?');
-      values.push(username);
+      values.push(username.trim());
     }
 
     // ── Avatar ──────────────────────────────────────────────────────────────

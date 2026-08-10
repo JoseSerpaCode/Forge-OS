@@ -17,7 +17,7 @@ Notion en un único espacio de trabajo autoalojado.** Construido sobre Astro SSR
 con un núcleo SQLite síncrono: sin virtual DOM, sin framework en el cliente, sin
 servicios externos.
 
-[Reportar un bug](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Sugerir una funcionalidad](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Changelog](./CHANGELOG.md)
+[Instancia en producción](https://forge-os.online) · [Reportar un bug](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Sugerir una funcionalidad](https://github.com/JoseSerpaCode/Forge-OS/issues) · [Changelog](./CHANGELOG.md)
 
 [English](./README.md) · **Español**
 
@@ -37,6 +37,7 @@ servicios externos.
   - [Instalación](#instalación)
   - [Scripts](#scripts)
 - [Stack tecnológico](#stack-tecnológico)
+- [Despliegue](#despliegue)
 - [Seguridad](#seguridad)
 - [Roadmap](#roadmap)
 - [Contribuir](#contribuir)
@@ -111,9 +112,11 @@ bidireccionales entre páginas e issues.
 
 ### Requisitos
 
-**Node.js 22.12 o superior.** CI corre sobre Node 26. `better-sqlite3` compila un
-módulo nativo durante la instalación, así que hace falta un toolchain de C++ —
-en la mayoría de sistemas ya está presente.
+**Node.js 22.12 o superior.** CI corre sobre Node 26.
+
+Nada más. `better-sqlite3` trae binarios precompilados para linux-x64,
+linux-arm64, macOS y Windows, así que no hay paso de compilación — una versión
+anterior de esta página pedía un toolchain de C++ que en realidad no hace falta.
 
 ### Instalación
 
@@ -170,6 +173,39 @@ contraseña del seed (`LocalDevPass123!` por defecto; cámbiala exportando
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
+## Despliegue
+
+Guía completa en **[deploy/README.md](./deploy/README.md)**: una VM con disco
+persistente, Caddy delante y systemd manteniendo el proceso. Es lo que hace
+funcionar a [forge-os.online](https://forge-os.online) sobre una `e2-micro` del
+tier gratuito.
+
+Tres cosas que conviene saber antes de abrirla:
+
+- **Los datos viven fuera del checkout** (`/var/lib/forge-os`, vía
+  `DATABASE_URL` y `STORAGE_DIR`), así que un despliegue que limpie el
+  directorio no puede llevarse por delante la base de datos ni los archivos
+  subidos.
+- **`PUBLIC_SITE_URL` es obligatoria en producción.** Sin ella la aplicación se
+  anuncia como `localhost:4321` en la URL canónica y en las etiquetas
+  OpenGraph, aunque esté sirviendo un dominio real.
+- **Nunca `cp forge.db`.** La base está en WAL, así que copiar el archivo da una
+  copia incompleta o corrupta. Usa `scripts/backup.sh`, que va por
+  `sqlite3 .backup` y verifica el resultado con `integrity_check`.
+
+Una vez instalado, actualizar es un solo comando:
+
+```sh
+sudo /opt/forge-os/scripts/deploy.sh
+```
+
+Hace copia de la base, aparta el `dist/`, construye, reinicia y espera a que
+`/healthz` —que hace una lectura real contra SQLite— conteste antes de dar el
+despliegue por bueno. Si algo falla, vuelve al commit anterior y deja el
+servicio corriendo la versión que funcionaba.
+
+<p align="right">(<a href="#readme-top">volver arriba</a>)</p>
+
 ## Seguridad
 
 - **RBAC**: roles owner, editor, commenter y viewer, aplicados en servidor.
@@ -177,7 +213,20 @@ contraseña del seed (`LocalDevPass123!` por defecto; cámbiala exportando
   y path traversal en el manejo de adjuntos, tras una CSP estricta.
 - **Subidas**: límite de 10 MB, verificación de tipo MIME, identificadores UUIDv4.
 - **Rate limiting**: persistente entre reinicios, aplicado a autenticación y
-  endpoints públicos.
+  endpoints públicos, sobre `CF-Connecting-IP` para que no se esquive falseando
+  `X-Forwarded-For`.
+- **Registro**: los nombres se comprueban contra listas de reservados e
+  inapropiados (contemplando el leetspeak y los separadores como evasión), y una
+  suma firmada deja fuera a los bots genéricos. El reto lo sirve la propia
+  aplicación: nada de widgets de captcha de terceros, porque el producto promete
+  no cargar scripts ajenos.
+- **Sin terceros, literalmente**: sin analíticas, sin rastreadores, sin fuentes
+  externas en las páginas de la aplicación y sin servicio remoto de avatares. La
+  CSP solo permite `'self'`.
+- **Los invitados están aislados socialmente**: pueden leer la aplicación, pero
+  no enviar solicitudes de amistad, ni bloquear a nadie, ni ser objeto de
+  ninguna de las dos cosas. Tampoco salen en las sugerencias de búsqueda, para
+  que el directorio de usuarios no acabe siendo el registro de visitas.
 
 ¿Has encontrado algo? Consulta [SECURITY.md](./SECURITY.md).
 
@@ -191,8 +240,13 @@ contraseña del seed (`LocalDevPass123!` por defecto; cámbiala exportando
 - [x] Dashboard: resumen entre espacios de trabajo y notificaciones globales
 - [x] UI/UX y paleta de comandos: atajos globales, modales, feedback con toasts
 - [x] Bases de datos dinámicas (fase 1): tablas tipo Airtable desde la interfaz
+- [x] Portada pública y cuentas de invitado creadas solo a petición
+- [x] Despliegue en producción con vuelta atrás automática y copias verificadas
 - [ ] Bases de datos dinámicas (fase 2): relaciones, fórmulas y vistas guardadas
 - [ ] Búsqueda de texto completo sobre páginas e issues
+- [ ] Entrar con Google y GitHub: el esquema y los botones están, falta el flujo
+      de redirección
+- [ ] Pasada de responsive sobre las pantallas de la aplicación
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 

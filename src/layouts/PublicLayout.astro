@@ -4,9 +4,13 @@ import '../styles/themes.css';
 interface Props {
   title: string;
   description?: string;
+  /** Canónica distinta de la ruta actual, para páginas que duplican contenido. */
+  canonicalPath?: string;
+  /** Deja la página fuera de los buscadores. */
+  noindex?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, canonicalPath, noindex = false } = Astro.props;
 const metaDesc =
   description ||
   'Forge OS — Kanban, knowledge base and dynamic databases in one self-hosted workspace. One Node process over a single SQLite file.';
@@ -15,11 +19,43 @@ const metaDesc =
 // sobre `Astro.url`, para que no dependa de que la cadena de proxies esté bien
 // montada. Ver la nota en MainLayout.astro.
 const canonicalUrl = Astro.site
-  ? new URL(Astro.url.pathname, Astro.site).href
-  : Astro.url.href;
+  ? new URL(canonicalPath ?? Astro.url.pathname, Astro.site).href
+  : new URL(canonicalPath ?? Astro.url.pathname, Astro.url).href;
 const ogImage = Astro.site
   ? new URL('/screenshots/board-dark.png', Astro.site).href
-  : '/screenshots/board-dark.png';
+  : new URL('/screenshots/board-dark.png', Astro.url).href;
+
+/**
+ * Datos estructurados.
+ *
+ * Sin esto, un buscador ve una página de texto y tiene que adivinar qué es. Con
+ * `SoftwareApplication` sabe que hay un producto, que es gratuito y con qué
+ * licencia — y eso es lo que habilita los resultados enriquecidos.
+ *
+ * Todo lo que se declara aquí es comprobable en la propia página: precio cero,
+ * licencia MIT, categoría. Inventar valoraciones o número de usuarios daría un
+ * resultado más vistoso y es exactamente por lo que Google penaliza.
+ */
+const siteBase = (Astro.site ?? new URL(Astro.url.origin)).href.replace(/\/$/, '');
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Forge OS',
+  url: siteBase,
+  applicationCategory: 'BusinessApplication',
+  applicationSubCategory: 'Project Management',
+  operatingSystem: 'Linux, macOS, Windows',
+  description: metaDesc,
+  image: ogImage,
+  license: 'https://opensource.org/licenses/MIT',
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+  softwareHelp: 'https://github.com/JoseSerpaCode/Forge-OS#readme',
+  codeRepository: 'https://github.com/JoseSerpaCode/Forge-OS',
+};
 ---
 
 <!doctype html>
@@ -37,6 +73,7 @@ const ogImage = Astro.site
 
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
 
     <meta property="og:type" content="website" />
@@ -48,6 +85,13 @@ const ogImage = Astro.site
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={metaDesc} />
     <meta name="twitter:image" content={ogImage} />
+    <meta property="og:site_name" content="Forge OS" />
+    <meta property="og:locale" content={Astro.locals.lang === 'es' ? 'es_ES' : 'en_US'} />
+    <meta name="twitter:image:alt" content="Forge OS kanban board" />
+
+    {/* `set:html` con JSON.stringify: el contenido es un objeto que construimos
+        nosotros, no entrada del usuario, y Astro escaparía las comillas. */}
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

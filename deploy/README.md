@@ -130,7 +130,108 @@ Los assets de `/_astro/*` llevan hash en el nombre y se sirven con
 `max-age=31536000, immutable`: Cloudflare los cachea y dejan de contar como
 egress de Google.
 
-## 7. Backups
+## 7. Cerrar el paso directo a la VM
+
+Con Cloudflare delante, la IP pública de la VM **sigue aceptando tráfico**. Y esa
+IP no es un secreto: sale en los registros públicos de certificados, en el DNS
+histórico del dominio y en cualquier escaneo de rangos de GCP.
+
+Quien la conozca se salta el CDN entero: el WAF, la caché y —lo que más
+importa— el límite por IP, que va sobre `CF-Connecting-IP`. Sin esa cabecera el
+limitador mete a todo el mundo en la misma clave. También puede pedir el sitio
+por HTTP plano contra la IP y esquivar la redirección a HTTPS.
+
+```sh
+sudo apt-get install -y ufw
+sudo cp scripts/cloudflare-firewall.sh /usr/local/bin/forge-cf-firewall
+sudo chmod +x /usr/local/bin/forge-cf-firewall
+
+sudo forge-cf-firewall --check   # enseña qué haría, sin tocar nada
+sudo forge-cf-firewall           # aplica
+```
+
+**Abre SSH lo primero**, antes que ninguna otra regla, y se niega a aplicar nada
+si la descarga de rangos viene truncada o no parece una lista de CIDR. Quedarse
+fuera de la propia máquina en un proveedor sin consola serie significa
+reinstalar, así que prefiere no hacer nada a hacer algo a medias.
+
+Cloudflare cambia sus rangos de vez en cuando. Un temporizador semanal los
+mantiene al día:
+
+```sh
+sudo tee /etc/systemd/system/forge-cf-firewall.service > /dev/null <<'EOF'
+[Unit]
+Description=Sincronizar el cortafuegos con los rangos de Cloudflare
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/forge-cf-firewall
+EOF
+
+sudo tee /etc/systemd/system/forge-cf-firewall.timer > /dev/null <<'EOF'
+[Unit]
+Description=Sincronizacion semanal de los rangos de Cloudflare
+[Timer]
+OnCalendar=weekly
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl enable --now forge-cf-firewall.timer
+```
+
+Comprueba desde fuera de la VM que la puerta quedó cerrada:
+
+```sh
+curl -sS --max-time 5 -o /dev/null -w '%{http_code}\n' http://<IP-DE-LA-VM>/    # debe agotar el tiempo
+curl -sS --max-time 5 -o /dev/null -w '%{http_code}\n' https://forge-os.online/  # debe dar 200
+```
+
+> Si el dominio deja de responder, es que el proxy de Cloudflare (la nube
+> naranja) no está activo en el registro A: el tráfico llega directo desde el
+> visitante y ya no está permitido. Actívalo, o vuelve a abrir con
+> `sudo ufw allow 80/tcp && sudo ufw allow 443/tcp`.
+
+## 8. Entrar con Google y GitHub (opcional)
+
+Los botones ya están en el formulario, pero **cada proveedor se activa solo si
+tiene credenciales**. Sin ellas su ruta responde 404 y el botón sale
+deshabilitado diciéndolo, así que puedes dejarlo para más adelante sin que nada
+se rompa.
+
+Registra la aplicación en cada consola y apunta el retorno **exactamente** a:
+
+```
+https://forge-os.online/api/auth/oauth/google/callback
+https://forge-os.online/api/auth/oauth/github/callback
+```
+
+- Google → https://console.cloud.google.com/apis/credentials
+  (Credenciales → Crear → ID de cliente de OAuth → Aplicación web)
+- GitHub → https://github.com/settings/developers
+  (New OAuth App → Authorization callback URL)
+
+Los proveedores comparan esa URI carácter a carácter con la que envía la app,
+que se construye sobre `PUBLIC_SITE_URL`. Si no coinciden —una barra de más, un
+`www` de menos— rechazan la petición con `redirect_uri_mismatch`.
+
+```sh
+sudo tee -a /etc/forge-os.env > /dev/null <<'EOF'
+SESSION_SECRET=PEGA_AQUI_EL_RESULTADO_DE_openssl_rand_hex_32
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+EOF
+sudo systemctl restart forge-os
+```
+
+`SESSION_SECRET` firma el `state` de OAuth y el captcha del registro. Sin ella
+se genera una clave nueva en cada arranque, y eso invalida los inicios de sesión
+a medias y los formularios abiertos cada vez que reinicias el servicio.
+
+## 9. Backups
 
 ```sh
 sudo cp scripts/backup.sh /usr/local/bin/forge-backup

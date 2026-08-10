@@ -2,11 +2,24 @@
 interface Props {
   title: string;
   status: string;
+  /** Cuántos hay de verdad en esta columna, contados en la base. */
+  total?: number;
+  /** Cuántos se han pintado. Si es menor que `total`, se avisa. */
+  shown?: number;
 }
 
-const { title, status } = Astro.props;
+import { useTranslations } from '../../i18n/ui';
+
+const { title, status, total, shown } = Astro.props;
+const t = useTranslations(Astro.locals.lang || 'en');
+
+// El contador del encabezado lo pisa el JavaScript al arrastrar tarjetas, pero
+// tiene que salir bien ya en el HTML: si no, quien llega con la conexión lenta
+// —o con el JS bloqueado— ve un 0 sobre una columna llena.
+const headerCount = typeof total === 'number' ? total : 0;
+const truncated = typeof total === 'number' && typeof shown === 'number' && total > shown;
 ---
-<div class="board-column flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden min-w-[320px] shadow-sm relative group/boardcol" data-status={status}>
+<div class="board-column flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden min-w-[320px] shadow-sm relative group/boardcol" data-status={status} data-total={headerCount} data-shown={shown ?? 0}>
   <!-- Subtle top accent line for column -->
   <div class="h-1 w-full bg-gradient-to-r from-forge-secondary/10 via-forge-secondary/40 to-forge-secondary/10 opacity-0 group-hover/boardcol:opacity-100 transition-opacity"></div>
   <div class="bg-forge-panel/70 backdrop-blur-sm border-b border-forge-border/40 p-4 font-bold text-[13px] tracking-wide text-forge-text uppercase flex items-center justify-between">
@@ -14,7 +27,7 @@ const { title, status } = Astro.props;
       <div class="w-2 h-2 rounded-full bg-forge-secondary shadow-[0_0_8px_var(--forge-accent-secondary)]"></div>
       {title}
     </div>
-    <span class="text-xs bg-forge-bg/80 px-2 py-0.5 rounded-md text-forge-muted font-mono border border-forge-border/50 issue-count shadow-inner">0</span>
+    <span class="text-xs bg-forge-bg/80 px-2 py-0.5 rounded-md text-forge-muted font-mono border border-forge-border/50 issue-count shadow-inner">{headerCount}</span>
   </div>
   <div class="flex-1 p-3 space-y-3 overflow-y-auto min-h-[200px] transition-colors column-content relative group/col">
     <div class="empty-state absolute inset-3 flex-col items-center justify-center text-center p-4 border-2 border-dashed border-forge-border/30 rounded-xl bg-forge-panel/20 pointer-events-none hidden group-has-[.issue-card]/col:hidden">
@@ -24,6 +37,14 @@ const { title, status } = Astro.props;
       <p class="text-forge-muted font-mono text-[10px] relative z-10 opacity-60">DROP ZONE</p>
     </div>
     <slot />
+
+    {/* Esconder trabajo sin decirlo es peor que ir lento: si la columna se ha
+        recortado, se dice cuánto queda fuera y dónde verlo. */}
+    {truncated && (
+      <p class="text-[11px] text-forge-muted font-mono text-center py-3 border-t border-forge-border/40 mt-2">
+        {shown} / {total} · {t('board.truncated')}
+      </p>
+    )}
   </div>
 </div>
 

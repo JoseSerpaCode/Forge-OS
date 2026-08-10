@@ -40,6 +40,18 @@ export default function resetDb() {
     VALUES (?, ?, ?, ?)
   `).run('test-user-jose', 'jose', pwHash, 1);
 
+  // Usuario dedicado para la prueba de renombrado en Settings.
+  //
+  // Antes esa prueba renombraba a 'jose' y lo deshacía al terminar. Como media
+  // docena de specs inician sesión como 'jose' y Playwright los corre en
+  // paralelo, cualquiera que cayera dentro de esa ventana fallaba con un
+  // timeout de login — un fallo distinto en cada corrida, imposible de
+  // reproducir aislando el test.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-rename', 'rename_me', pwHash, 0);
+
   db.prepare(`
     INSERT INTO workspaces (id, name, sys_tag, created_by)
     VALUES (?, ?, ?, ?)

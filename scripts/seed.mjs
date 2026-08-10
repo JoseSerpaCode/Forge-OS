@@ -267,6 +267,24 @@ function seed() {
   return created;
 }
 
+// Nunca en producción con la contraseña por defecto.
+//
+// El seed crea `avery` con una contraseña que está escrita en el README, en el
+// .env.example y en este archivo. En una instancia local eso es comodidad; en
+// una expuesta a internet es una cuenta de administrador con la contraseña
+// publicada. Y `--force` además borra todas las tablas, que es lo último que
+// uno quiere teclear por costumbre contra la base de producción.
+if (process.env.NODE_ENV === 'production' && !process.env.TEST_PASSWORD) {
+  console.error(
+    `\nRefusing to seed with NODE_ENV=production.\n\n` +
+    `The demo account's password is published in the README, so seeding a\n` +
+    `public instance hands out an account to anyone who read it.\n\n` +
+    `If you really mean to seed production, set your own password first:\n\n` +
+    `  TEST_PASSWORD='...' npm run seed\n`
+  );
+  process.exit(1);
+}
+
 const rows = existingRows();
 if (rows > 0 && !FORCE) {
   console.error(

@@ -1,0 +1,30 @@
+---
+/**
+ * La portada, siempre, tengas sesión o no.
+ *
+ * `/` decide por sesión: con cuenta muestra el hub, sin ella la portada. El
+ * efecto secundario es que una vez dentro —con cuenta o como invitado— **no
+ * había ninguna forma de volver a verla**. Ni para enseñársela a alguien, ni
+ * para releer qué prometía, ni para copiar los comandos de instalación.
+ *
+ * Esta ruta existe solo para eso. No es un objetivo de búsqueda: lleva
+ * `noindex` y su canónica apunta a `/`, porque servir el mismo contenido en dos
+ * URL indexables es contenido duplicado, y Google reparte el crédito entre las
+ * dos en vez de dárselo a la que importa.
+ */
+import Landing from '../components/landing/Landing.astro';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { useTranslations } from '../i18n/ui';
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+---
+
+<PublicLayout
+  title={t('landing.meta.title')}
+  description={t('landing.meta.desc')}
+  canonicalPath="/"
+  noindex
+>
+  <Landing />
+</PublicLayout>
