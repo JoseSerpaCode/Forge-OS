@@ -1,0 +1,82 @@
+---
+import '../styles/themes.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const metaDesc =
+  description ||
+  'Forge OS — Kanban, knowledge base and dynamic databases in one self-hosted workspace. One Node process over a single SQLite file.';
+
+// Igual que en MainLayout: la canónica se construye sobre `Astro.site`, no
+// sobre `Astro.url`, para que no dependa de que la cadena de proxies esté bien
+// montada. Ver la nota en MainLayout.astro.
+const canonicalUrl = Astro.site
+  ? new URL(Astro.url.pathname, Astro.site).href
+  : Astro.url.href;
+const ogImage = Astro.site
+  ? new URL('/screenshots/board-dark.png', Astro.site).href
+  : '/screenshots/board-dark.png';
+---
+
+<!doctype html>
+{/*
+  Sin `data-theme`: esta página la ve gente sin sesión, así que no hay
+  preferencia guardada que respetar. Los tokens de :root son los del tema
+  oscuro y el `color-scheme` deja que el navegador pinte los controles a juego.
+*/}
+<html lang={Astro.locals.lang || 'en'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={metaDesc} />
+    <meta name="theme-color" content="#0D0B0A" />
+
+    <title>{title}</title>
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={metaDesc} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={metaDesc} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  body {
+    margin: 0;
+    background: var(--forge-bg);
+    color: var(--forge-text);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Estos estilos los daba global.css, que resultó no estar importado por
+     nadie y se movió a themes.css. Aquí se repite el foco por si el orden de
+     capas de Tailwind lo pisara en una página sin las utilidades cargadas. */
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--forge-accent-secondary);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+</style>

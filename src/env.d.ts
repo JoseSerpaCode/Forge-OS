@@ -15,6 +15,10 @@ declare namespace App {
       public_email?: string;
       github_id?: string;
       google_id?: string;
+      /** Caducidad de la sesión en ms. El middleware la selecciona junto al
+          usuario; la interfaz la necesita para avisar al invitado antes de que
+          pierda su espacio de trabajo. */
+      expires_at?: number;
     } | null;
     lang: 'en' | 'es';
   }

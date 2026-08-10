@@ -257,6 +257,56 @@ export const ui = {
     'footer.legal.security': 'Security',
     'footer.built_by': '© 2026 Forge. Built by JoseSerpaCode.',
 
+    // ── Landing (visitante sin sesión) ──────────────────────────────────────
+    'landing.meta.title': 'Forge OS — your team\'s workspace, in one file you own',
+    'landing.meta.desc': 'Kanban boards, a Notion-style knowledge base and dynamic databases. One Node process over a single SQLite file. Self-hosted, MIT licensed.',
+    'landing.eyebrow': 'SELF-HOSTED · SQLITE · MIT',
+    'landing.h1.before': 'Your team\'s entire workspace fits in',
+    'landing.sub': 'Kanban boards, a Notion-style knowledge base and dynamic databases — running as one Node process over a single SQLite file. No database server, no queue, no third parties reading your work.',
+    'landing.try': 'Try it without an account',
+    'landing.try.caveat': 'Creates a temporary workspace. It expires after 30 days, and you can move everything to a real account whenever you want — nothing is lost when you sign up.',
+    'landing.signin': 'Sign in',
+    'landing.signup': 'Create account',
+    'landing.hero.alt': 'Kanban board with sprint columns and issue cards',
+
+    'landing.fact1.k': 'Runs on',
+    'landing.fact1.v': 'One Node process',
+    'landing.fact2.k': 'Stores in',
+    'landing.fact2.v': 'One SQLite file',
+    'landing.fact3.k': 'External services',
+    'landing.fact3.v': 'None',
+    'landing.fact4.k': 'Licence',
+
+    'landing.f1.eyebrow': 'PLAN',
+    'landing.f1.title': 'Sprints that track themselves.',
+    'landing.f1.body': 'Epics, stories, tasks and bugs across four columns with drag & drop that sticks. The timer runs server-side and stops on its own when an issue reaches Done, so logged hours match what actually happened.',
+    'landing.f1.alt': 'Kanban board with four columns and a sprint time counter',
+
+    'landing.f2.eyebrow': 'WRITE',
+    'landing.f2.title': 'Docs that know what they belong to.',
+    'landing.f2.body': 'A block editor with tables, code and undo. Link a page to an issue and the page lists every issue that references it — the connection works in both directions, without maintaining it by hand.',
+    'landing.f2.alt': 'Knowledge base editor with a page tree',
+
+    'landing.f3.eyebrow': 'MEASURE',
+    'landing.f3.title': 'Velocity from real work logs.',
+    'landing.f3.body': 'Burndown, velocity, workload distribution and estimation accuracy — all computed from the hours your team logged, not from guesses typed into a planning meeting.',
+    'landing.f3.alt': 'Sprint metrics with burndown and velocity charts',
+
+    'landing.end.title': 'Clone it, run two commands, own it.',
+    'landing.end.body': 'Forge OS is MIT licensed and runs on hardware you control. There is no plan to upgrade to and no company that can read your workspace.',
+
+    // ── Cuenta de invitado: decir lo que es, no esconderlo ──────────────────
+    'guest.banner.label': 'Guest account status',
+    'guest.tag': 'GUEST',
+    'guest.info': 'This is a temporary workspace. Create an account to keep it — everything you have made moves with you.',
+    'guest.expiring': 'This workspace expires in {days} days.',
+    'guest.expiring.one': 'This workspace expires tomorrow.',
+    'guest.expiring.today': 'This workspace expires today.',
+    'guest.expiring.detail': 'Create an account to keep it. Everything you have made moves with you.',
+    'guest.cta': 'Keep my work',
+
+
+
     'modal.create_issue': 'Create Issue',
     'modal.title': 'Title',
     'modal.title_placeholder': 'What needs to be done?',
@@ -615,6 +665,56 @@ export const ui = {
     'footer.legal.contributing': 'Contribuir',
     'footer.legal.security': 'Seguridad',
     'footer.built_by': '© 2026 Forge. Construido por JoseSerpaCode.',
+
+    // ── Landing (visitante sin sesión) ──────────────────────────────────────
+    'landing.meta.title': 'Forge OS — el espacio de tu equipo, en un archivo que es tuyo',
+    'landing.meta.desc': 'Tableros Kanban, base de conocimiento tipo Notion y bases de datos dinámicas. Un proceso de Node sobre un único archivo SQLite. Autoalojado, licencia MIT.',
+    'landing.eyebrow': 'AUTOALOJADO · SQLITE · MIT',
+    'landing.h1.before': 'Todo el trabajo de tu equipo cabe en',
+    'landing.sub': 'Tableros Kanban, base de conocimiento tipo Notion y bases de datos dinámicas — en un solo proceso de Node sobre un único archivo SQLite. Sin servidor de base de datos, sin colas y sin terceros leyendo tu trabajo.',
+    'landing.try': 'Pruébalo sin cuenta',
+    'landing.try.caveat': 'Crea un espacio temporal. Caduca a los 30 días, y puedes pasarlo todo a una cuenta real cuando quieras — al registrarte no se pierde nada.',
+    'landing.signin': 'Iniciar sesión',
+    'landing.signup': 'Crear cuenta',
+    'landing.hero.alt': 'Tablero Kanban con columnas de sprint y tarjetas de issues',
+
+    'landing.fact1.k': 'Corre en',
+    'landing.fact1.v': 'Un proceso de Node',
+    'landing.fact2.k': 'Guarda en',
+    'landing.fact2.v': 'Un archivo SQLite',
+    'landing.fact3.k': 'Servicios externos',
+    'landing.fact3.v': 'Ninguno',
+    'landing.fact4.k': 'Licencia',
+
+    'landing.f1.eyebrow': 'PLANIFICA',
+    'landing.f1.title': 'Sprints que se miden solos.',
+    'landing.f1.body': 'Épicas, historias, tareas y bugs en cuatro columnas, con drag & drop que se queda donde lo dejas. El temporizador corre en el servidor y se detiene solo al llegar a Done, así que las horas registradas coinciden con lo que pasó de verdad.',
+    'landing.f1.alt': 'Tablero Kanban con cuatro columnas y contador de tiempo del sprint',
+
+    'landing.f2.eyebrow': 'DOCUMENTA',
+    'landing.f2.title': 'Documentos que saben a qué pertenecen.',
+    'landing.f2.body': 'Un editor por bloques con tablas, código y deshacer. Enlaza una página a un issue y la página lista todos los issues que la referencian — la conexión funciona en los dos sentidos, sin mantenerla a mano.',
+    'landing.f2.alt': 'Editor de la base de conocimiento con árbol de páginas',
+
+    'landing.f3.eyebrow': 'MIDE',
+    'landing.f3.title': 'Velocity a partir del trabajo real.',
+    'landing.f3.body': 'Burndown, velocity, distribución de carga y precisión de estimación — calculados con las horas que registró tu equipo, no con lo que alguien improvisó en una reunión de planificación.',
+    'landing.f3.alt': 'Métricas de sprint con gráficas de burndown y velocity',
+
+    'landing.end.title': 'Clónalo, dos comandos, y es tuyo.',
+    'landing.end.body': 'Forge OS es MIT y corre en hardware que controlas tú. No hay plan al que subir ni empresa que pueda leer tu espacio de trabajo.',
+
+    // ── Cuenta de invitado: decir lo que es, no esconderlo ──────────────────
+    'guest.banner.label': 'Estado de la cuenta de invitado',
+    'guest.tag': 'INVITADO',
+    'guest.info': 'Este espacio es temporal. Crea una cuenta para conservarlo — todo lo que has hecho se va contigo.',
+    'guest.expiring': 'Este espacio caduca en {days} días.',
+    'guest.expiring.one': 'Este espacio caduca mañana.',
+    'guest.expiring.today': 'Este espacio caduca hoy.',
+    'guest.expiring.detail': 'Crea una cuenta para conservarlo. Todo lo que has hecho se va contigo.',
+    'guest.cta': 'Conservar mi trabajo',
+
+
 
     'modal.create_issue': 'Crear Issue',
     'modal.title': 'Título',

@@ -1,0 +1,104 @@
+---
+import { useTranslations } from '../../i18n/ui';
+import { guestDaysLeft } from '../../lib/guest';
+
+const user = Astro.locals.user;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+// Solo para invitados. Una cuenta real nunca ve esto.
+const isGuest = user?.is_guest === 1;
+const daysLeft = isGuest && user?.expires_at ? guestDaysLeft(user.expires_at) : null;
+
+// La urgencia sube conforme se acerca el final. Un aviso que grita desde el
+// primer día se ignora el segundo; uno que nunca cambia de tono no avisa de
+// nada. `critical` a 2 días o menos, `warning` a 7.
+const level = daysLeft === null ? 'info' : daysLeft <= 2 ? 'critical' : daysLeft <= 7 ? 'warning' : 'info';
+
+// «caduca en 1 días» delata que nadie miró la pantalla. Cuando queda poco, la
+// cuenta atrás en números tampoco aporta: lo que importa es «ya».
+const expiringText =
+  daysLeft === null ? ''
+  : daysLeft === 0 ? t('guest.expiring.today')
+  : daysLeft === 1 ? t('guest.expiring.one')
+  : t('guest.expiring').replace('{days}', String(daysLeft));
+---
+
+{
+  isGuest && (
+    <aside class:list={['gb', `gb-${level}`]} aria-label={t('guest.banner.label')}>
+      <p class="gb-text">
+        <span class="gb-tag">{t('guest.tag')}</span>
+        {level === 'info' ? (
+          <span>{t('guest.info')}</span>
+        ) : (
+          <span>
+            <strong>{expiringText}</strong>{' '}
+            {t('guest.expiring.detail')}
+          </span>
+        )}
+      </p>
+      <a href="/register" class="gb-cta">{t('guest.cta')}</a>
+    </aside>
+  )
+}
+
+<style>
+  .gb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--forge-border);
+    border-radius: 0.6rem;
+    background: var(--forge-panel);
+  }
+
+  /* En el estado normal el aviso está, pero no compite con el contenido:
+     el usuario vino a trabajar, no a leer avisos. */
+  .gb-info { border-color: var(--forge-border); }
+  .gb-warning { border-color: color-mix(in srgb, var(--forge-warning) 45%, var(--forge-border)); }
+  .gb-critical { border-color: color-mix(in srgb, var(--forge-error) 55%, var(--forge-border)); }
+
+  .gb-text {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--forge-muted);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .gb-text strong { color: var(--forge-text); font-weight: 700; }
+
+  .gb-tag {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.3rem;
+    border: 1px solid var(--forge-border);
+    color: var(--forge-muted);
+    white-space: nowrap;
+  }
+  .gb-warning .gb-tag { color: var(--forge-warning); border-color: color-mix(in srgb, var(--forge-warning) 45%, transparent); }
+  .gb-critical .gb-tag { color: var(--forge-error); border-color: color-mix(in srgb, var(--forge-error) 55%, transparent); }
+
+  .gb-cta {
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.45rem 0.9rem;
+    border-radius: 0.45rem;
+    text-decoration: none;
+    background: var(--forge-primary, var(--forge-accent-primary));
+    color: var(--forge-on-accent);
+    transition: opacity 0.15s;
+  }
+  .gb-cta:hover { opacity: 0.9; }
+</style>

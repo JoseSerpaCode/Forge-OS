@@ -1,0 +1,379 @@
+---
+import { useTranslations } from '../../i18n/ui';
+import pkg from '../../../package.json';
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+const version = pkg.version;
+
+// Las capturas ya existen en public/screenshots/, generadas con `npm run
+// screenshots` sobre datos de `npm run seed`.
+const sections = [
+  {
+    eyebrow: t('landing.f1.eyebrow'),
+    title: t('landing.f1.title'),
+    body: t('landing.f1.body'),
+    shot: 'board',
+    alt: t('landing.f1.alt'),
+  },
+  {
+    eyebrow: t('landing.f2.eyebrow'),
+    title: t('landing.f2.title'),
+    body: t('landing.f2.body'),
+    shot: 'knowledge-base',
+    alt: t('landing.f2.alt'),
+  },
+  {
+    eyebrow: t('landing.f3.eyebrow'),
+    title: t('landing.f3.title'),
+    body: t('landing.f3.body'),
+    shot: 'metrics',
+    alt: t('landing.f3.alt'),
+  },
+];
+---
+
+<header class="lp-nav">
+  <a href="/" class="lp-brand">
+    <img src="/forge-icon.svg" alt="" width="28" height="28" />
+    <span>Forge OS</span>
+  </a>
+  <nav class="lp-nav-actions">
+    <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">GitHub</a>
+    <a href="/login" class="lp-link">{t('landing.signin')}</a>
+    <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
+  </nav>
+</header>
+
+<main class="lp">
+  <section class="lp-hero">
+    <p class="lp-eyebrow">{t('landing.eyebrow')}</p>
+
+    {/*
+      El elemento memorable de la página: el titular no describe el producto,
+      LO ES. La tesis de Forge OS es que todo el trabajo cabe en un archivo que
+      controlas tú, así que el archivo aparece dentro del titular, en mono,
+      chocando con la Inter enorme. Notion resalta una palabra con una píldora
+      azul; aquí es un artefacto monoespaciado sobre casi negro.
+    */}
+    <h1 class="lp-h1">
+      {t('landing.h1.before')}
+      <span class="lp-file">forge.db</span>
+    </h1>
+
+    <p class="lp-sub">{t('landing.sub')}</p>
+
+    <div class="lp-cta">
+      <form method="POST" action="/api/auth/guest">
+        <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
+      </form>
+      <a href="/login" class="lp-btn lp-btn-ghost">{t('landing.signin')}</a>
+    </div>
+
+    {/*
+      La advertencia va pegada al botón, no escondida tras el registro: una
+      cuenta temporal que caduca sin avisar y se lleva el trabajo por delante
+      es una trampa, por barata que salga la conversión.
+    */}
+    <p class="lp-caveat">{t('landing.try.caveat')}</p>
+  </section>
+
+  <section class="lp-shot lp-shot-hero">
+    {/*
+      Siempre la variante oscura: esta página no tiene conmutador de tema ni
+      sesión de la que leer una preferencia, así que su fondo es siempre
+      oscuro. Seguir `prefers-color-scheme` aquí servía capturas claras sobre
+      fondo oscuro.
+    */}
+    <img src="/screenshots/board-dark.png" alt={t('landing.hero.alt')} width="2880" height="1800" loading="eager" />
+  </section>
+
+  <section class="lp-facts">
+    <dl>
+      <div><dt>{t('landing.fact1.k')}</dt><dd>{t('landing.fact1.v')}</dd></div>
+      <div><dt>{t('landing.fact2.k')}</dt><dd>{t('landing.fact2.v')}</dd></div>
+      <div><dt>{t('landing.fact3.k')}</dt><dd>{t('landing.fact3.v')}</dd></div>
+      <div><dt>{t('landing.fact4.k')}</dt><dd>MIT</dd></div>
+    </dl>
+  </section>
+
+  {sections.map((s) => (
+    <section class="lp-feature">
+      <div class="lp-feature-text">
+        <p class="lp-eyebrow">{s.eyebrow}</p>
+        <h2 class="lp-h2">{s.title}</h2>
+        <p class="lp-body">{s.body}</p>
+      </div>
+      <div class="lp-shot">
+        <img src={`/screenshots/${s.shot}-dark.png`} alt={s.alt} width="2880" height="1800" loading="lazy" />
+      </div>
+    </section>
+  ))}
+
+  <section class="lp-end">
+    <h2 class="lp-h2">{t('landing.end.title')}</h2>
+    <p class="lp-body">{t('landing.end.body')}</p>
+    <div class="lp-cta">
+      <form method="POST" action="/api/auth/guest">
+        <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
+      </form>
+      <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
+    </div>
+    <p class="lp-caveat">{t('landing.try.caveat')}</p>
+  </section>
+
+  <footer class="lp-foot">
+    <span>Forge OS v{version}</span>
+    <span class="lp-dot">·</span>
+    <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">GitHub</a>
+    <span class="lp-dot">·</span>
+    <a href="https://github.com/JoseSerpaCode/Forge-OS/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="lp-link">MIT</a>
+  </footer>
+</main>
+
+<style>
+  /* Todo sale de los tokens de themes.css. La paleta está calibrada a cero
+     fallos WCAG AA y hay reglas sobre qué token es texto y cuál es marca
+     (ver CLAUDE.md): --forge-accent-text para naranja sobre fondo, y
+     --forge-on-accent para texto encima del naranja. */
+
+  .lp {
+    --lp-max: 1120px;
+    --lp-gap: clamp(5rem, 12vw, 9rem);
+    max-width: var(--lp-max);
+    margin: 0 auto;
+    padding: 0 clamp(1.25rem, 5vw, 2rem);
+  }
+
+  /* ── Navegación ─────────────────────────────────────────────────────── */
+  .lp-nav {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 1.5rem clamp(1.25rem, 5vw, 2rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .lp-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--forge-text);
+    text-decoration: none;
+  }
+  .lp-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    white-space: nowrap;
+  }
+  .lp-brand span { white-space: nowrap; }
+
+  /* En pantallas estrechas no cabe todo sin partir palabras. GitHub sale del
+     encabezado: sigue en el pie y en los datos, así que no se pierde. */
+  @media (max-width: 30rem) {
+    .lp-nav { padding-inline: 1.25rem; gap: 0.75rem; }
+    .lp-nav-actions { gap: 0.9rem; }
+    .lp-nav-actions .lp-link:first-child { display: none; }
+    .lp-btn { padding: 0.7rem 1rem; font-size: 0.9rem; }
+  }
+
+  /* ── Tipografía ─────────────────────────────────────────────────────── */
+  /* La mono no decora: es la voz de los artefactos del producto —rutas,
+     tamaños, licencias—. Por eso lleva los antetítulos y los datos. */
+  .lp-eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+    margin: 0 0 1.25rem;
+  }
+
+  .lp-h1 {
+    font-size: clamp(2.75rem, 8.5vw, 6rem);
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    font-weight: 800;
+    color: var(--forge-text);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .lp-h2 {
+    font-size: clamp(1.9rem, 4.5vw, 3.1rem);
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+    color: var(--forge-text);
+    margin: 0 0 1rem;
+    text-wrap: balance;
+  }
+
+  /* El chip del archivo. Va a 0.62em del titular para que quepa en móvil
+     sin desbordar, y como inline-block para que envuelva entero en vez de
+     partirse por la mitad. */
+  .lp-file {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.62em;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--forge-accent-text);
+    background: color-mix(in srgb, var(--forge-accent-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
+    border-radius: 0.5rem;
+    padding: 0.12em 0.4em;
+    display: inline-block;
+    white-space: nowrap;
+    /* El chip es 0.62em del titular; sin este empuje su caja se cuelga por
+       debajo de la línea base de la Inter y el conjunto parece descolgado. */
+    transform: translateY(-0.06em);
+  }
+
+  .lp-sub, .lp-body {
+    font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+    line-height: 1.6;
+    color: var(--forge-muted);
+    margin: 1.75rem 0 0;
+    max-width: 46ch;
+  }
+  .lp-body { margin-top: 0; }
+
+  /* ── Hero ───────────────────────────────────────────────────────────── */
+  .lp-hero { padding: clamp(3rem, 9vw, 6rem) 0 0; }
+
+  .lp-cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2.25rem;
+  }
+
+  .lp-caveat {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+    margin: 1rem 0 0;
+    max-width: 52ch;
+  }
+
+  /* ── Botones ────────────────────────────────────────────────────────── */
+  .lp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1.4rem;
+    border-radius: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+  }
+  /* El naranja aparece exactamente aquí y en el chip del archivo. Nada más.
+     Un acento repartido por toda la página deja de ser un acento. */
+  .lp-btn-primary {
+    background: var(--forge-accent-primary);
+    color: var(--forge-on-accent);
+  }
+  .lp-btn-primary:hover { background: var(--forge-accent-primary-hover); }
+  .lp-btn-ghost {
+    background: transparent;
+    color: var(--forge-text);
+    border-color: var(--forge-border);
+  }
+  .lp-btn-ghost:hover { border-color: var(--forge-muted); }
+  .lp-btn:active { transform: translateY(1px); }
+
+  .lp-link {
+    color: var(--forge-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.15s;
+  }
+  .lp-link:hover { color: var(--forge-text); }
+
+  /* ── Capturas ───────────────────────────────────────────────────────── */
+  .lp-shot { margin-top: clamp(3rem, 7vw, 5rem); }
+  .lp-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 0.9rem;
+    border: 1px solid var(--forge-border);
+  }
+  .lp-shot-hero img { box-shadow: 0 24px 70px rgb(0 0 0 / 0.45); }
+
+  /* ── Datos ──────────────────────────────────────────────────────────── */
+  .lp-facts { margin-top: var(--lp-gap); }
+  .lp-facts dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 2rem;
+    margin: 0;
+    padding: 2rem 0;
+    border-top: 1px solid var(--forge-border);
+    border-bottom: 1px solid var(--forge-border);
+  }
+  .lp-facts dt {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+    margin-bottom: 0.5rem;
+  }
+  .lp-facts dd {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--forge-text);
+  }
+
+  /* ── Secciones ──────────────────────────────────────────────────────── */
+  .lp-feature { margin-top: var(--lp-gap); }
+  .lp-feature-text { max-width: 46ch; }
+
+  .lp-end {
+    margin-top: var(--lp-gap);
+    padding: clamp(3rem, 7vw, 5rem) 0;
+    border-top: 1px solid var(--forge-border);
+  }
+
+  .lp-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 2rem 0 3rem;
+    border-top: 1px solid var(--forge-border);
+    font-size: 0.85rem;
+    color: var(--forge-muted);
+  }
+  .lp-dot { color: var(--forge-border); }
+
+  /* ── Movimiento ─────────────────────────────────────────────────────── */
+  /* Una sola secuencia, al cargar el hero. Nada de revelados al hacer scroll:
+     la página es deliberadamente quieta, y el ruido extra la abarataría. */
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-hero > *, .lp-shot-hero {
+      animation: lp-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
+    .lp-hero > :nth-child(1) { animation-delay: 0.02s; }
+    .lp-hero > :nth-child(2) { animation-delay: 0.08s; }
+    .lp-hero > :nth-child(3) { animation-delay: 0.14s; }
+    .lp-hero > :nth-child(4) { animation-delay: 0.2s; }
+    .lp-hero > :nth-child(5) { animation-delay: 0.26s; }
+    .lp-shot-hero { animation-delay: 0.32s; }
+  }
+  @keyframes lp-rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+</style>
