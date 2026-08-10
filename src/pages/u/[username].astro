@@ -2,6 +2,7 @@
 import MainLayout from '../../layouts/MainLayout.astro';
 import db from '../../lib/db';
 import { useTranslations, defaultLang } from '../../i18n/ui';
+import { canInteractSocially, socialBlockReason } from '../../lib/social';
 
 const { username } = Astro.params;
 const currentUser = Astro.locals.user;
@@ -9,7 +10,7 @@ const lang = Astro.cookies.get('lang')?.value || defaultLang;
 const t = useTranslations(lang as any);
 
 // Get user profile
-const profile = db.prepare('SELECT id, username, avatar_url, banner_url, bio, created_at FROM users WHERE username = ?').get(username) as any;
+const profile = db.prepare('SELECT id, username, avatar_url, banner_url, bio, created_at, is_guest FROM users WHERE username = ?').get(username) as any;
 
 let isBlockedByProfile = false;
 let isProfileBlockedByMe = false;
@@ -38,6 +39,14 @@ if (profile && currentUser) {
         }
     }
 }
+
+// El perfil se ve siempre; lo que se cierra es la interacción. Y se decide
+// aquí, en el servidor: antes los botones solo se atenuaban con una clase
+// cuando el visitante era invitado —el propio botón seguía en el HTML, y la
+// mitad viceversa ni se contemplaba: nada impedía mandarle una solicitud a un
+// invitado desde su perfil.
+const canInteract = canInteractSocially(currentUser, profile);
+const noInteractReason = currentUser && profile ? socialBlockReason(currentUser, profile) : null;
 
 // Anti-enumeration: if no profile OR I am blocked by them, show 404
 if (!profile || isBlockedByProfile) {
@@ -99,7 +108,19 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                 <!-- Actions (Top Right) -->
                 <div class="flex justify-end pt-4 h-16">
                     <div class="flex items-center gap-3">
-                        {!isOwnProfile && currentUser && (
+                        {!isOwnProfile && currentUser && !canInteract && (
+                            <p class="text-sm text-forge-muted max-w-xs text-right leading-relaxed">
+                                {noInteractReason === 'actor_is_guest' ? (
+                                    <>
+                                        {t('profile.guest_self')}{' '}
+                                        <a href="/register" class="text-forge-accent-text font-semibold hover:underline">{t('profile.guest_self_cta')}</a>
+                                    </>
+                                ) : (
+                                    t('profile.guest_target')
+                                )}
+                            </p>
+                        )}
+                        {!isOwnProfile && currentUser && canInteract && (
                             <div class="flex items-center gap-2">
                                 {isProfileBlockedByMe ? (
                                     <button id="unblock-btn" class="px-5 py-2.5 bg-red-500/10 text-forge-error border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-red-500/10">
@@ -108,7 +129,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                                 ) : (
                                     <>
                                         {(!friendshipStatus || friendshipStatus.status === 'ended' || friendshipStatus.status === 'rejected') && (
-                                            <button id="add-friend-btn" class={`px-5 py-2.5 bg-forge-primary text-forge-on-accent hover:opacity-90 rounded-xl transition-all font-bold text-sm shadow-lg hover:shadow-forge-primary/30 flex items-center gap-2 hover:-translate-y-0.5 ${currentUser?.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={currentUser?.is_guest ? 'true' : 'false'} data-guest-msg="Create an account to send friend requests.">
+                                            <button id="add-friend-btn" class={`px-5 py-2.5 bg-forge-primary text-forge-on-accent hover:opacity-90 rounded-xl transition-all font-bold text-sm shadow-lg hover:shadow-forge-primary/30 flex items-center gap-2 hover:-translate-y-0.5`}>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                                                 {t('profile.add_friend')}
                                             </button>

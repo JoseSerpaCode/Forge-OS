@@ -13,6 +13,7 @@
  *   - El botón no se bloqueaba al enviar: dos clics rápidos eran dos peticiones.
  */
 import { useTranslations } from '../../i18n/ui';
+import { createChallenge } from '../../lib/captcha';
 
 interface Props {
   mode: 'login' | 'register';
@@ -26,6 +27,11 @@ const t = useTranslations(lang);
 
 const isRegister = mode === 'register';
 const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+
+// Un reto nuevo en cada carga de la página. Solo en el registro: pedírselo a
+// quien ya tiene cuenta es cobrarle un peaje por volver, y el login ya está
+// protegido por el límite de intentos.
+const captcha = isRegister ? createChallenge() : null;
 ---
 
 <form id="auth-form" class="af" novalidate>
@@ -45,6 +51,22 @@ const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
     {isRegister && <p class="af-hint">{t('auth.username.hint')}</p>}
   </div>
 
+  {isRegister && (
+    <div class="af-field">
+      <label for="email">{t('auth.email.label')}</label>
+      <input
+        type="email"
+        id="email"
+        name="email"
+        required
+        autocomplete="email"
+        autocapitalize="none"
+        spellcheck="false"
+      />
+      <p class="af-hint">{t('auth.email.hint')}</p>
+    </div>
+  )}
+
   <div class="af-field">
     <label for="password">{t('auth.password')}</label>
     <input
@@ -57,6 +79,26 @@ const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
     />
     {isRegister && <p class="af-hint">{t('auth.password.hint')}</p>}
   </div>
+
+  {captcha && (
+    <div class="af-field af-captcha">
+      {/* `t()` no interpola, así que el enunciado se compone aquí. Las dos
+          traducciones están escritas para encajar con este orden, incluida la
+          apertura de interrogación del español. */}
+      <label for="captcha">{t('auth.captcha.label')} <span class="af-sum">{captcha.question}</span>?</label>
+      <input
+        type="text"
+        id="captcha"
+        name="captcha_answer"
+        required
+        inputmode="numeric"
+        autocomplete="off"
+        maxlength="3"
+      />
+      <input type="hidden" name="captcha_token" value={captcha.token} />
+      <p class="af-hint">{t('auth.captcha.hint')}</p>
+    </div>
+  )}
 
   <button type="submit" class="af-submit">
     <span data-label>{isRegister ? t('auth.signup') : t('auth.submit')}</span>
@@ -125,6 +167,15 @@ const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
   /* El estado inválido solo aparece tras un intento de envío: marcar en rojo un
      campo que aún se está escribiendo regaña al usuario por no haber terminado. */
   .af.tried .af-field input:invalid { border-color: var(--forge-error); }
+
+  /* Estrecho a propósito: es una suma de un dígito, y un campo de ancho
+     completo sugiere que se espera una frase. */
+  .af-captcha input { max-width: 7rem; }
+  .af-sum {
+    color: var(--forge-text);
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+  }
 
   .af-hint {
     font-size: 0.72rem;
@@ -220,6 +271,19 @@ const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
     hasGuestWorkspaces: guestWorkspaces.length > 0,
     msgInvalid: t('auth.invalid'),
     msgGeneric: t('auth.error.generic'),
+    // El servidor devuelve códigos, no frases: así el mensaje sale en el idioma
+    // del usuario en vez de en el del programador.
+    errors: Object.fromEntries(
+      [
+        'username.required','username.too_short','username.too_long','username.charset',
+        'username.edge_punctuation','username.reserved','username.inappropriate',
+        'username.looks_like_guest','username.taken',
+        'email.required','email.invalid','email.too_long','email.taken',
+        'password.too_short','password.too_long',
+        'captcha.missing','captcha.wrong','captcha.expired','captcha.malformed',
+        'form.rate_limited','form.server',
+      ].map((k) => [k, t(`err.${k}` as any)])
+    ),
     msgWorking: isRegister ? t('auth.working.register') : t('auth.working.login'),
   }}
 >
@@ -303,6 +367,30 @@ const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
 
     setBusy(false);
     const data = await res.json().catch(() => ({}));
+
+    // Si el servidor manda un reto nuevo, se cambia en el sitio: el usuario ve
+    // otra suma y no tiene que recargar la página para volver a intentarlo.
+    if (data.captcha) {
+      const tokenField = form?.querySelector('input[name="captcha_token"]');
+      const sum = form?.querySelector('.af-sum');
+      const answer = form?.querySelector('#captcha');
+      if (tokenField) tokenField.value = data.captcha.token;
+      if (sum) sum.textContent = data.captcha.question;
+      if (answer) answer.value = '';
+    }
+
+    if (data.error_field && data.error_code) {
+      showError(errors[`${data.error_field}.${data.error_code}`] || msgGeneric);
+      // Llevar el foco al campo que falla ahorra buscarlo, y en un formulario
+      // de cinco campos con un solo mensaje arriba no es evidente cuál es.
+      const field = form?.querySelector(
+        data.error_field === 'captcha' ? '#captcha' : `#${data.error_field}`
+      );
+      field?.focus();
+      field?.select?.();
+      return;
+    }
+
     showError(data.error || (res.status === 401 ? msgInvalid : msgGeneric));
   }
 </script>

@@ -55,6 +55,10 @@ PORT="$(grep -E '^PORT=' "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d '"'"'"' ')
 PORT="${PORT:-4321}"
 HEALTH_URL="http://127.0.0.1:${PORT}/healthz"
 
+# PUBLIC_SITE_URL hay que pasarsela explicitamente al build (ver mas abajo).
+PUBLIC_SITE_URL="$(grep -E '^PUBLIC_SITE_URL=' "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d "\"' ")"
+[[ -n $PUBLIC_SITE_URL ]] || die "Falta PUBLIC_SITE_URL en $ENV_FILE. Sin ella la aplicacion se anuncia como localhost."
+
 cd "$APP_DIR"
 
 run_as_app() { sudo -u "$APP_USER" "$@"; }
@@ -126,7 +130,27 @@ log "Instalando dependencias…"
 run_as_app npm ci
 
 log "Construyendo…"
-run_as_app npm run build
+# El build se hace **con el fichero de entorno cargado**, no sin el.
+#
+# Astro hornea `site` --de donde salen la URL canonica y las etiquetas
+# OpenGraph-- en tiempo de compilacion, leyendo PUBLIC_SITE_URL. `sudo -u forge`
+# arranca un entorno limpio que no incluye /etc/forge-os.env, asi que sin esto
+# el build se quedaba con el valor por defecto y produccion servia
+# `<link rel="canonical" href="http://localhost:4321/">`. Los buscadores
+# descartan una canonica que apunta a un host que no existe, y con ella se va la
+# indexacion entera del sitio.
+run_as_app env "PUBLIC_SITE_URL=$PUBLIC_SITE_URL" NODE_ENV=production npm run build
+
+# Comprobacion de que ha servido: si el bundle todavia menciona localhost como
+# origen, la canonica saldra mal, y es mejor enterarse aqui que en Search
+# Console tres semanas despues.
+if grep -rqs 'createAstro("http://localhost' "$APP_DIR/dist/server/"; then
+    # `rollback` y no `die`: `die` hace `exit`, que no dispara la trampa ERR, y
+    # dejaria el dist/ nuevo en disco con el servicio corriendo el codigo viejo
+    # --justo el escenario que la copia de dist/ existe para evitar.
+    printf '\033[1;31m!\033[0m %s\n' "El build ha quedado con localhost como sitio publico. Revisa PUBLIC_SITE_URL en $ENV_FILE." >&2
+    rollback
+fi
 
 log "Reiniciando el servicio…"
 systemctl restart "$SERVICE"

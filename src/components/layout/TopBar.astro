@@ -289,6 +289,17 @@ const currentUrl = Astro.url.pathname;
   const searchResults = document.getElementById('search-results');
 
   // [C-1 FIX] HTML escape helper — prevents XSS via user-controlled titles/messages
+  /**
+   * Solo rutas internas en los `href` que construimos.
+   *
+   * `esc` impide romper el atributo, pero no impide `javascript:alert(1)`:
+   * escapado sigue siendo un esquema ejecutable. Todos los enlaces que genera
+   * esta barra apuntan dentro de la aplicación, así que exigir que empiecen por
+   * una sola barra es a la vez suficiente y exacto.
+   */
+  const safeHref = (u: any) =>
+    typeof u === 'string' && u.startsWith('/') && !u.startsWith('//') ? u : '#';
+
   const esc = (s: any) => String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -451,7 +462,7 @@ const currentUrl = Astro.url.pathname;
 
             notifList.innerHTML += `
               <li class="relative group/notif p-3 border-b border-forge-border transition-colors ${n.is_read ? 'opacity-60' : 'bg-forge-bg'} ${n.type !== 'invite' ? 'hover:bg-forge-panel' : ''}">
-                <a href="${n.type !== 'invite' ? esc(n.link_url || '#') : '#'}" data-id="${n.id}" class="btn-notif-link block ${n.type !== 'invite' ? 'pr-6' : ''}">
+                <a href="${n.type !== 'invite' ? esc(safeHref(n.link_url)) : '#'}" data-id="${esc(n.id)}" class="btn-notif-link block ${n.type !== 'invite' ? 'pr-6' : ''}">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="w-2 h-2 rounded-full shrink-0 ${colorClass}"></span>
                     <span class="text-xs font-bold text-forge-text">${esc(n.title)}</span>
@@ -577,14 +588,25 @@ const currentUrl = Astro.url.pathname;
       const li = document.createElement('li');
       li.className = 'p-3 border-b border-forge-border/40 transition-colors bg-forge-secondary/5';
       const colorClass = data.type === 'assign' ? 'bg-forge-info' : data.type === 'mention' ? 'bg-forge-warning' : data.type === 'system' ? 'bg-forge-error' : 'bg-forge-primary';
+      // Escapado, como el resto de la barra.
+      //
+      // El texto de una notificación lo compone el servidor a partir de datos
+      // de otras personas —hoy el nombre de quien te asigna, mañana el título
+      // de un issue—. Iba directo a innerHTML sin pasar por `esc`, que ya
+      // existía dos funciones más arriba y se usa en los resultados de
+      // búsqueda. No es explotable ahora mismo porque el nombre de usuario está
+      // restringido a [A-Za-z0-9._-], pero eso es una defensa a un cambio de
+      // distancia, y esto es donde el ataque aterrizaría.
+      //
+      // `link_url` pasa por `safeHref`: escapar no sirve contra `javascript:`.
       li.innerHTML = `
-        <a href="${data.link_url || '#'}" class="block" data-notif-id="${data.id}">
+        <a href="${esc(safeHref(data.link_url))}" class="block" data-notif-id="${esc(String(data.id ?? ''))}">
           <div class="flex items-center gap-2 mb-1">
             <span class="w-2 h-2 rounded-full shrink-0 ${colorClass}"></span>
-            <span class="text-xs font-bold text-forge-text">${data.title}</span>
+            <span class="text-xs font-bold text-forge-text">${esc(String(data.title ?? ''))}</span>
           </div>
-          <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">${data.message}</p>
-          <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">${new Date(data.created_at).toLocaleString()}</p>
+          <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">${esc(String(data.message ?? ''))}</p>
+          <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">${esc(new Date(data.created_at).toLocaleString())}</p>
         </a>
       `;
       list.prepend(li);

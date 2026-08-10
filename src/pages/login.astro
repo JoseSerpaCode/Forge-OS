@@ -21,10 +21,23 @@ if (user?.is_guest) {
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+
+// La vuelta de un proveedor que falla aterriza aquí con `?error=`. Sin leerlo,
+// el usuario volvía al formulario sin ninguna explicación de por qué no ha
+// entrado — y con los tres botones intactos, invitándole a repetir lo mismo.
+const OAUTH_ERRORS: Record<string, string> = {
+  oauth_state: t('err.oauth.state'),
+  oauth_no_code: t('err.oauth.failed'),
+  oauth_token: t('err.oauth.failed'),
+  oauth_profile: t('err.oauth.profile'),
+  oauth_failed: t('err.oauth.failed'),
+};
+const oauthError = OAUTH_ERRORS[Astro.url.searchParams.get('error') ?? ''] ?? null;
 ---
 
 <PublicLayout title={`${t('auth.login.title')} | Forge OS`} description={t('auth.login.sub')}>
   <AuthShell heading={t('auth.login.title')} sub={t('auth.login.sub')}>
+    {oauthError && <p slot="notice" class="au-oauth-error">{oauthError}</p>}
     <AuthForm mode="login" guestWorkspaces={guestWorkspaces} />
     <Fragment slot="swap">
       <a href="/register" class="au-swap-link">{t('auth.no_account')}</a>
@@ -39,4 +52,16 @@ const t = useTranslations(lang);
     font-weight: 600;
   }
   .au-swap-link:hover { text-decoration: underline; }
+
+  .au-oauth-error {
+    margin: 0 0 1.25rem;
+    padding: 0.7rem 0.85rem;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--forge-text);
+    background: color-mix(in srgb, var(--forge-error) 12%, var(--forge-panel));
+    border: 1px solid color-mix(in srgb, var(--forge-error) 40%, transparent);
+    border-left: 3px solid var(--forge-error);
+    border-radius: 0.45rem;
+  }
 </style>

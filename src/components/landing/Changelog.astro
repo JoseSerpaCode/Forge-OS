@@ -1,0 +1,292 @@
+---
+/**
+ * Las últimas novedades, sacadas del changelog de verdad.
+ *
+ * `?raw` incrusta el archivo en tiempo de compilación. Leerlo del disco en cada
+ * petición obligaría a que `CHANGELOG.md` viajara al servidor de producción y
+ * estuviera donde la aplicación espera; así viaja dentro del bundle y no hay
+ * nada que salga mal en el despliegue.
+ */
+import raw from '../../../CHANGELOG.md?raw';
+import { parseChangelog, type ChangeKind } from '../../lib/changelog';
+import { useTranslations } from '../../i18n/ui';
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+const releases = parseChangelog(raw, 3);
+
+// Cuántas entradas se enseñan de cada versión. La última se lleva más sitio
+// porque es la que la gente viene a leer; las anteriores están de contexto.
+const SHOWN = [6, 3, 3];
+
+const KIND_LABEL: Record<ChangeKind, string> = {
+  added: t('news.kind.added'),
+  changed: t('news.kind.changed'),
+  fixed: t('news.kind.fixed'),
+  removed: t('news.kind.removed'),
+  security: t('news.kind.security'),
+  other: t('news.kind.other'),
+};
+---
+
+<section class="cl" aria-labelledby="cl-title">
+  <header class="cl-head">
+    <p class="cl-eyebrow">{t('news.eyebrow')}</p>
+    <h2 id="cl-title" class="cl-title">{t('news.title')}</h2>
+    <p class="cl-sub">{t('news.sub')}</p>
+  </header>
+
+  <ol class="cl-list">
+    {
+      releases.map((release, ri) => (
+        <li class="cl-release">
+          <div class="cl-marker" aria-hidden="true">
+            <span class="cl-dot" data-latest={ri === 0 ? '' : undefined} />
+          </div>
+
+          <div class="cl-body">
+            <div class="cl-version-row">
+              <span class="cl-version" data-latest={ri === 0 ? '' : undefined}>v{release.version}</span>
+              <time class="cl-date" datetime={release.date}>{release.date}</time>
+              {ri === 0 && <span class="cl-badge">{t('news.latest')}</span>}
+            </div>
+
+            <ul class="cl-items">
+              {release.items.slice(0, SHOWN[ri] ?? 3).map((item) => (
+                <li class="cl-item" data-kind={item.kind}>
+                  <span class="cl-kind">{KIND_LABEL[item.kind]}</span>
+                  <p class="cl-item-title">{item.title}</p>
+                  {item.body && <p class="cl-item-body">{item.body}</p>}
+                </li>
+              ))}
+            </ul>
+
+            {release.items.length > (SHOWN[ri] ?? 3) && (
+              <p class="cl-more">
+                {t('news.more.a')} {release.items.length - (SHOWN[ri] ?? 3)} {t('news.more.b')}
+              </p>
+            )}
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+
+  <a
+    href="https://github.com/JoseSerpaCode/Forge-OS/blob/main/CHANGELOG.md"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="cl-all"
+  >
+    {t('news.all')}
+  </a>
+</section>
+
+<style>
+  .cl { margin-top: clamp(5rem, 12vw, 9rem); }
+
+  .cl-head { max-width: 46ch; margin-bottom: clamp(2rem, 4vw, 3rem); }
+
+  .cl-eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+    margin: 0 0 0.75rem;
+  }
+  .cl-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    margin-right: 0.55rem;
+    vertical-align: 0.05em;
+    background: var(--forge-success);
+  }
+
+  .cl-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--forge-text);
+    margin: 0 0 0.6rem;
+  }
+  .cl-sub {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+    margin: 0;
+  }
+
+  /* ── Línea de tiempo ──────────────────────────────────────────────────── */
+  .cl-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cl-release {
+    display: grid;
+    grid-template-columns: 1.75rem 1fr;
+    gap: 0.5rem;
+    padding-bottom: 2.5rem;
+  }
+  .cl-release:last-child { padding-bottom: 0; }
+
+  /* El hilo que une las versiones. Va en el marcador y no como borde del
+     elemento para poder cortarlo en la última sin un selector extra. */
+  .cl-marker {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding-top: 0.45rem;
+  }
+  .cl-marker::before {
+    content: '';
+    position: absolute;
+    top: 1.5rem;
+    bottom: -2.5rem;
+    width: 1px;
+    background: var(--forge-border);
+  }
+  .cl-release:last-child .cl-marker::before { display: none; }
+
+  .cl-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    background: var(--forge-border);
+    border: 2px solid var(--forge-bg);
+    box-shadow: 0 0 0 1px var(--forge-border);
+    z-index: 1;
+  }
+  .cl-dot[data-latest] {
+    background: var(--forge-accent-primary);
+    box-shadow: 0 0 0 1px var(--forge-accent-primary), 0 0 14px color-mix(in srgb, var(--forge-accent-primary) 60%, transparent);
+  }
+
+  .cl-body { min-width: 0; }
+
+  .cl-version-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+  }
+  .cl-version {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--forge-muted);
+  }
+  .cl-version[data-latest] { color: var(--forge-accent-text); }
+  .cl-date {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--forge-muted);
+  }
+  .cl-badge {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.45rem;
+    border-radius: 0.3rem;
+    color: var(--forge-on-accent);
+    background: var(--forge-accent-primary);
+  }
+
+  /* ── Entradas ─────────────────────────────────────────────────────────── */
+  .cl-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+  @media (min-width: 52rem) {
+    .cl-items { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .cl-item {
+    position: relative;
+    padding: 0.9rem 1rem 0.9rem 1.1rem;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-left: 3px solid var(--forge-border);
+    border-radius: 0.55rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .cl-item:hover { transform: translateY(-2px); }
+
+  /* Un color por tipo de cambio, los mismos que usa el tablero. Se lee de un
+     vistazo qué proporción de la versión fue arreglar y qué fue añadir. */
+  .cl-item[data-kind='added'] { border-left-color: var(--forge-success); }
+  .cl-item[data-kind='fixed'] { border-left-color: var(--forge-error); }
+  .cl-item[data-kind='changed'] { border-left-color: var(--forge-info); }
+  .cl-item[data-kind='removed'] { border-left-color: var(--forge-muted); }
+  .cl-item[data-kind='security'] { border-left-color: var(--forge-accent-primary); }
+
+  .cl-kind {
+    display: inline-block;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--forge-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .cl-item-title {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    color: var(--forge-text);
+  }
+  .cl-item-body {
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--forge-muted);
+    /* Tres líneas y corta: la entrada completa está en el changelog, esto es un
+       resumen y las tarjetas tienen que quedar a la misma altura. */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .cl-more {
+    margin: 0.75rem 0 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: var(--forge-muted);
+  }
+
+  .cl-all {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 0.6rem 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--forge-text);
+    text-decoration: none;
+    background: transparent;
+    border: 1px solid var(--forge-border);
+    border-radius: 0.5rem;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .cl-all:hover {
+    border-color: var(--forge-muted);
+    background: var(--forge-panel);
+  }
+</style>

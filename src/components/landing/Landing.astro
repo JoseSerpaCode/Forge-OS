@@ -2,12 +2,22 @@
 import { useTranslations } from '../../i18n/ui';
 import pkg from '../../../package.json';
 import Bento from './Bento.astro';
+import Logo from '../brand/Logo.astro';
 import TypeDemo from './TypeDemo.astro';
 import Showcase from './Showcase.astro';
+import Changelog from './Changelog.astro';
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 const version = pkg.version;
+
+// La portada también se ve **con sesión iniciada**, desde /welcome. Ofrecerle
+// «Crear cuenta» y «Probar sin cuenta» a alguien que ya está dentro es, en el
+// mejor caso, ruido; en el peor, un botón que le crea una cuenta de invitado y
+// le tira de la suya.
+const user = Astro.locals.user;
+const signedIn = Boolean(user);
+const isGuest = user?.is_guest === 1;
 
 // Las tres ideas del producto. Ya no llevan captura propia —las cuatro
 // capturas están juntas en el carrusel de arriba, donde se comparan mejor y no
@@ -36,14 +46,17 @@ const sections = [
 ---
 
 <header class="lp-nav">
-  <a href="/" class="lp-brand">
-    <img src="/forge-icon.svg" alt="" width="28" height="28" />
-    <span>Forge OS</span>
-  </a>
+  <Logo href="/" size="md" />
   <nav class="lp-nav-actions">
     <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">GitHub</a>
-    <a href="/login" class="lp-link">{t('landing.signin')}</a>
-    <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
+    {signedIn ? (
+      <a href="/" class="lp-btn lp-btn-primary">{t('landing.open')}</a>
+    ) : (
+      <>
+        <a href="/login" class="lp-link">{t('landing.signin')}</a>
+        <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
+      </>
+    )}
   </nav>
 </header>
 
@@ -67,10 +80,19 @@ const sections = [
     <p class="lp-sub">{t('landing.sub')}</p>
 
     <div class="lp-cta">
-      <form method="POST" action="/api/auth/guest">
-        <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
-      </form>
-      <a href="/login" class="lp-btn lp-btn-ghost">{t('landing.signin')}</a>
+      {signedIn ? (
+        <>
+          <a href="/" class="lp-btn lp-btn-primary">{t('landing.open')}</a>
+          {isGuest && <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.keep')}</a>}
+        </>
+      ) : (
+        <>
+          <form method="POST" action="/api/auth/guest">
+            <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
+          </form>
+          <a href="/login" class="lp-btn lp-btn-ghost">{t('landing.signin')}</a>
+        </>
+      )}
     </div>
 
     {/*
@@ -78,7 +100,8 @@ const sections = [
       cuenta temporal que caduca sin avisar y se lleva el trabajo por delante
       es una trampa, por barata que salga la conversión.
     */}
-    <p class="lp-caveat">{t('landing.try.caveat')}</p>
+    {!signedIn && <p class="lp-caveat">{t('landing.try.caveat')}</p>}
+    {isGuest && <p class="lp-caveat">{t('landing.guest.caveat')}</p>}
    </div>
 
    {/*
@@ -155,16 +178,24 @@ const sections = [
     ))}
   </div>
 
+  <Changelog />
+
   <section class="lp-end">
     <h2 class="lp-h2">{t('landing.end.title')}</h2>
     <p class="lp-body">{t('landing.end.body')}</p>
     <div class="lp-cta">
-      <form method="POST" action="/api/auth/guest">
-        <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
-      </form>
-      <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
+      {signedIn ? (
+        <a href="/" class="lp-btn lp-btn-primary">{t('landing.open')}</a>
+      ) : (
+        <>
+          <form method="POST" action="/api/auth/guest">
+            <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
+          </form>
+          <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
+        </>
+      )}
     </div>
-    <p class="lp-caveat">{t('landing.try.caveat')}</p>
+    {!signedIn && <p class="lp-caveat">{t('landing.try.caveat')}</p>}
   </section>
 
   {/*
@@ -176,21 +207,28 @@ const sections = [
   <footer class="lp-foot">
     <div class="lp-foot-top">
       <div class="lp-foot-brand">
-        <a href="/" class="lp-brand">
-          <img src="/forge-icon.svg" alt="" width="28" height="28" />
-          <span>Forge OS</span>
-        </a>
+        <Logo href="/" size="md" />
         <p class="lp-foot-pitch">{t('foot.pitch')}</p>
-        <form method="POST" action="/api/auth/guest">
-          <button type="submit" class="lp-btn lp-btn-ghost lp-foot-cta">{t('landing.try')}</button>
-        </form>
+        {signedIn ? (
+          <a href="/" class="lp-btn lp-btn-ghost lp-foot-cta">{t('landing.open')}</a>
+        ) : (
+          <form method="POST" action="/api/auth/guest">
+            <button type="submit" class="lp-btn lp-btn-ghost lp-foot-cta">{t('landing.try')}</button>
+          </form>
+        )}
       </div>
 
       <nav class="lp-foot-cols" aria-label={t('foot.nav')}>
         <div class="lp-foot-col">
           <h2>{t('foot.product')}</h2>
-          <a href="/register" class="lp-link">{t('landing.signup')}</a>
-          <a href="/login" class="lp-link">{t('landing.signin')}</a>
+          {signedIn ? (
+            <a href="/" class="lp-link">{t('landing.open')}</a>
+          ) : (
+            <>
+              <a href="/register" class="lp-link">{t('landing.signup')}</a>
+              <a href="/login" class="lp-link">{t('landing.signin')}</a>
+            </>
+          )}
           <a href="#sc-title" class="lp-link">{t('foot.screens')}</a>
         </div>
         <div class="lp-foot-col">
@@ -238,22 +276,12 @@ const sections = [
     justify-content: space-between;
     gap: 1rem;
   }
-  .lp-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: var(--forge-text);
-    text-decoration: none;
-  }
   .lp-nav-actions {
     display: flex;
     align-items: center;
     gap: 1.25rem;
     white-space: nowrap;
   }
-  .lp-brand span { white-space: nowrap; }
 
   /* En pantallas estrechas no cabe todo sin partir palabras. GitHub sale del
      encabezado: sigue en el pie y en los datos, así que no se pierde. */

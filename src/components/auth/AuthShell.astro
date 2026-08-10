@@ -10,6 +10,7 @@
  */
 import { useTranslations } from '../../i18n/ui';
 import OAuthButtons from './OAuthButtons.astro';
+import Logo from '../brand/Logo.astro';
 
 interface Props {
   /** Título grande sobre el formulario. */
@@ -32,7 +33,7 @@ const t = useTranslations(lang);
   */}
   <aside class="au-brand" aria-hidden="true">
     <div class="au-glow"></div>
-    <p class="au-mark">FORGE OS</p>
+    <Logo size="md" class="au-logo" />
     <p class="au-claim">
       {t('auth.side.claim')}
       <span class="au-chip">forge.db</span>
@@ -118,14 +119,6 @@ const t = useTranslations(lang);
     background: var(--forge-accent-primary);
     opacity: 0.2;
     filter: blur(90px);
-  }
-
-  .au-mark {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.24em;
-    color: var(--forge-muted);
-    margin: 0;
   }
 
   .au-claim {

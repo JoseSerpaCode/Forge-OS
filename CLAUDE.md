@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.5.0, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.7.0, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -82,6 +82,58 @@ fallos). Tres reglas que se rompen con facilidad:
 La variante `dark:` de Tailwind está atada a `[data-theme]` con
 `@custom-variant`, no a `prefers-color-scheme`. Sin eso, `dark:prose-invert` no
 se activa con el conmutador de la app.
+
+## Reglas de cuentas: no las repartas por los endpoints
+
+Tres módulos concentran reglas que antes estaban copiadas en varios sitios con
+redacciones distintas. Si necesitas una de ellas, **impórtala; no la reescribas**.
+
+- **`src/lib/social.ts`** — `canInteractSocially(a, b)` decide si dos cuentas
+  pueden dirigirse una acción social. Es falso si cualquiera de las dos es
+  invitado, **en los dos sentidos**: un invitado no manda solicitudes ni
+  bloquea, y tampoco se le puede mandar ni bloquear a él. Ver perfiles no pasa
+  por aquí — mirar no es interactuar. La regla estaba escrita tres veces y la
+  cuarta acción (bloquear) se había quedado sin ella.
+
+- **`src/lib/accountValidation.ts`** — nombres y correos. La lista negra va en
+  **dos** listas a propósito: `BANNED_ANYWHERE` (subcadena libre) y
+  `BANNED_TOKEN` (solo en límite de palabra). Unificarlas en una sola con
+  búsqueda de subcadena rechaza «Scunthorpe», «disputa» y «analyst». Hay tests
+  que lo comprueban; si añades un término, decide en cuál va.
+
+- **`src/lib/captcha.ts`** — suma firmada con HMAC, **sin estado en servidor**.
+  No lo cambies por reCAPTCHA ni hCaptcha: la portada promete «sin scripts de
+  terceros» y el registro es justo donde más se notaría el desmentido.
+
+Los invitados tampoco salen en las sugerencias de búsqueda
+(`src/pages/api/sys/state.ts`): la consulta esconde `is_guest = 1` del `LIKE`
+pero deja pasar la coincidencia **exacta**, para que dos invitados del mismo
+espacio puedan llegar a su perfil. Si tocas ese SQL, mira
+`tests/guest-search.test.ts`.
+
+## La marca va en un solo componente
+
+`src/components/brand/Logo.astro`. Había cuatro dibujos distintos de la misma F
+—barra lateral, pie, hub y el SVG— con cuatro proporciones y dos letras, porque
+`public/forge-icon.svg` usaba `<text font-family="Arial">` y un SVG no incrusta
+fuentes: el favicon cambiaba de forma según la máquina. Ahora la F es un
+trazado, duplicado a propósito en el componente y en el archivo SVG. **Si
+cambias uno, cambia el otro.**
+
+El nombre se escribe **«Forge OS»**, nunca «FORGE OS».
+
+## Registro: el formulario y el servidor tienen que decir lo mismo
+
+El formulario anunciaba contraseñas de 6 caracteres y el servidor exigía 8.
+Ahora el mínimo está en `PASSWORD_MIN` (`src/pages/api/auth/register.ts`) y en
+`auth.password.hint`; si mueves uno, mueve el otro.
+
+El endpoint devuelve `{ error_field, error_code }`, no frases: la traducción la
+pone el cliente desde las claves `err.*`. Y ante un captcha fallido devuelve
+**un reto nuevo**, porque el mensaje dice «prueba con la suma nueva».
+
+Los tests e2e que se registran usan `tests/e2e/helpers/register.ts`, que
+resuelve la suma leyendo la página. No se puentea el captcha en pruebas.
 
 ## Tablas reservadas: no están rotas, están sin construir
 

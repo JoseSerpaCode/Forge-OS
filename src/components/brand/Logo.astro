@@ -1,0 +1,103 @@
+---
+/**
+ * La marca, en un solo sitio.
+ *
+ * Había cuatro dibujos distintos de lo mismo repartidos por la aplicación:
+ *
+ *   - `public/forge-icon.svg` — cuadrado naranja con la F en Arial.
+ *   - La barra lateral — un `<div>` con gradiente y la letra F en la fuente
+ *     de la interfaz, 7×7 y `rounded-lg`.
+ *   - El pie — el mismo `<div>` a 10×10 y `rounded-xl`, con otra sombra.
+ *   - El hub — otro más, 20×20, girado 12 grados.
+ *
+ * Cuatro proporciones, cuatro radios de esquina y dos letras diferentes (la del
+ * SVG dependía de las fuentes del sistema). Y el nombre se escribía «FORGE OS»
+ * en dos sitios y «Forge OS» en otros dos.
+ *
+ * Aquí queda una sola pieza. El trazado es el mismo que el del archivo SVG; va
+ * en línea para que herede el tamaño del texto y no dependa de una petición
+ * aparte que puede fallar.
+ */
+interface Props {
+  /** Tamaño del emblema. El texto acompaña en proporción. */
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Mostrar el nombre junto al emblema. */
+  wordmark?: boolean;
+  /** Envolver en un enlace a la portada. */
+  href?: string;
+  class?: string;
+}
+
+const { size = 'md', wordmark = true, href, class: className = '' } = Astro.props;
+
+const PX = { sm: 22, md: 28, lg: 36, xl: 72 } as const;
+const px = PX[size];
+
+const Tag = href ? 'a' : 'span';
+---
+
+<Tag
+  {...href ? { href } : {}}
+  class:list={['brand', `brand-${size}`, className]}
+  aria-label={wordmark ? undefined : 'Forge OS'}
+>
+  <svg
+    class="brand-mark"
+    width={px}
+    height={px}
+    viewBox="0 0 100 100"
+    aria-hidden="true"
+    focusable="false"
+  >
+    {/*
+      El id del gradiente lleva el tamaño porque puede haber varias marcas en la
+      misma página —barra lateral y pie— y dos `<defs>` con el mismo id hacen
+      que la segunda gane en algunos navegadores.
+    */}
+    <defs>
+      <linearGradient id={`forgeGrad-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="var(--forge-accent-primary)" />
+        <stop offset="100%" stop-color="var(--forge-accent-secondary)" />
+      </linearGradient>
+    </defs>
+    <rect width="100" height="100" rx="22" fill={`url(#forgeGrad-${size})`} />
+    <path d="M32 22 H70 V36 H46 V44 H64 V58 H46 V78 H32 Z" fill="var(--forge-on-accent)" />
+  </svg>
+
+  {/*
+    «Forge OS», siempre así. El producto se llama así en el README, en el
+    package.json y en el título de todas las páginas; escribirlo «FORGE OS» en
+    la mitad de la interfaz solo hacía dudar de cuál era el nombre.
+  */}
+  {wordmark && <span class="brand-word">Forge OS</span>}
+</Tag>
+
+<style>
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--forge-text);
+    text-decoration: none;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .brand-mark {
+    flex: none;
+    border-radius: 22%;
+    /* El resplandor es lo único que varía con el tamaño, y varía poco: en el
+       emblema de 22px una sombra de 15px lo emborrona. */
+    box-shadow: 0 0 12px color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
+    transition: transform 0.2s;
+  }
+  a.brand:hover .brand-mark { transform: scale(1.06); }
+
+  .brand-sm .brand-word { font-size: 0.9rem; }
+  .brand-md .brand-word { font-size: 1.05rem; }
+  .brand-lg .brand-word { font-size: 1.35rem; }
+  .brand-xl { gap: 1rem; }
+  .brand-xl .brand-word { font-size: 2rem; }
+  .brand-xl .brand-mark { box-shadow: 0 0 30px color-mix(in srgb, var(--forge-accent-primary) 40%, transparent); }
+</style>

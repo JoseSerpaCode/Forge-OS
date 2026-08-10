@@ -573,6 +573,36 @@ const MIGRATIONS: Migration[] = [
       }
     }
   },
+  {
+    version: 28,
+    description: 'users: add email',
+    run: () => {
+      // Sin NOT NULL: hay cuentas creadas antes de que el registro pidiera
+      // correo, y los invitados no tienen ninguno que dar. La obligatoriedad la
+      // aplica el endpoint de registro, que es quien sabe si está creando una
+      // cuenta de verdad.
+      if (!hasColumn('users', 'email')) db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+      // Índice único parcial: SQLite trata cada NULL como distinto, así que los
+      // NULL conviven sin chocar, pero dos cuentas no pueden compartir correo.
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL');
+    }
+  },
+  {
+    version: 29,
+    description: 'users: replace third-party avatar URLs with the local default',
+    run: () => {
+      // El registro asignaba `https://api.dicebear.com/...?seed=<username>` como
+      // avatar. Cada visita a un perfil mandaba entonces el nombre de usuario y
+      // la IP del visitante a un servidor ajeno — en un producto cuya portada
+      // promete «sin terceros» y «sin scripts de terceros».
+      //
+      // Solo toca las URL de dicebear: los avatares subidos por el usuario
+      // viven en /api/storage/ y no se tocan.
+      db.prepare(
+        "UPDATE users SET avatar_url = '/default-avatar.svg' WHERE avatar_url LIKE '%dicebear.com%'"
+      ).run();
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

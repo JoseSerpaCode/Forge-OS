@@ -54,7 +54,29 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     // Search Users
     if (filter === 'all' || filter === 'user') {
-      const users = db.prepare(`SELECT username as title, 'user' as type, '/u/' || username as url FROM users WHERE username LIKE ? AND id != 'system' AND (is_public = 1 OR id = ?) LIMIT 5`).all(query, user.id);
+      // Los invitados no salen entre las sugerencias, pero sí aparecen si se
+      // escribe su nombre entero.
+      //
+      // Son cuentas anónimas y desechables que se crean con un clic: dejarlas
+      // en el autocompletado llenaría la búsqueda de `Guest_a3f9c210_447` y
+      // convertiría el listado de usuarios en el registro de visitas de la web.
+      // Esconderlas del todo, en cambio, rompería un enlace legítimo — dos
+      // invitados que comparten un espacio de trabajo se ven entre ellos y
+      // tienen que poder llegar al perfil del otro.
+      //
+      // La coincidencia exacta es la línea entre las dos cosas: se les
+      // encuentra sabiendo el nombre, no explorando.
+      const users = db.prepare(`
+        SELECT username as title, 'user' as type, '/u/' || username as url
+        FROM users
+        WHERE id != 'system'
+          AND (is_public = 1 OR id = ?)
+          AND (
+            (is_guest = 0 AND username LIKE ?)
+            OR username = ?
+          )
+        LIMIT 5
+      `).all(user.id, query, searchQuery);
       results = results.concat(users);
     }
 

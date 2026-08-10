@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="forgeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff5d00" /><stop offset="100%" stop-color="#e64a19" /></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#forgeGrad)"/><text x="50" y="75" font-family="Arial, sans-serif" font-size="75" font-weight="900" fill="#ffffff" text-anchor="middle">F</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Forge OS">
+  <!--
+    La F va como trazado, no como <text>.
+
+    La versión anterior dibujaba la letra con font-family="Arial, sans-serif".
+    Un SVG no incrusta fuentes: cada máquina lo componía con la que tuviera a
+    mano, así que el favicon y la imagen de OpenGraph salían con una letra
+    distinta en Linux, en macOS y en Windows — y en un servidor sin fuentes de
+    escritorio, con la de reserva que hubiera. Un logotipo que cambia de forma
+    según quién lo mira no es un logotipo.
+
+    Este archivo es la referencia de la marca. Si cambia, hay que cambiar el
+    mismo trazado en src/components/brand/Logo.astro, que lo lleva en línea.
+  -->
+  <defs>
+    <linearGradient id="forgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5D00" />
+      <stop offset="100%" stop-color="#E64A19" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#forgeGrad)" />
+  <path d="M32 22 H70 V36 H46 V44 H64 V58 H46 V78 H32 Z" fill="#FFFFFF" />
+</svg>

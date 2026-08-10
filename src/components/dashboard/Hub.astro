@@ -1,4 +1,5 @@
 ---
+import Logo from '../brand/Logo.astro';
 // src/pages/index.astro
 import MainLayout from '../../layouts/MainLayout.astro';
 import db from '../../lib/db';
@@ -176,8 +177,8 @@ const myTasks = db.prepare(`
           <div class="absolute w-12 h-12 bg-forge-bg border-2 border-forge-border rounded-full flex items-center justify-center bottom-2 right-0 z-10 shadow-lg text-forge-success">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
           </div>
-          <div class="w-20 h-20 bg-gradient-to-br from-forge-secondary to-forge-primary rounded-2xl rotate-12 shadow-[0_0_30px_rgba(255,93,0,0.4)] flex items-center justify-center text-white relative z-0">
-            <span class="font-black text-3xl">F</span>
+          <div class="rotate-12 relative z-0">
+            <Logo size="xl" wordmark={false} />
           </div>
         </div>
       </div>

@@ -35,3 +35,8 @@ pnpm-debug.log*
 *.db.bak
 cookies.txt
 .data/
+
+# Scripts de usar y tirar (auditorías, capturas, sondeos). Se escriben en la
+# raíz para tener node_modules a mano y no deben acabar en el repositorio.
+*.tmp.mjs
+*.tmp.ts
