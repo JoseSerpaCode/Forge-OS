@@ -11,6 +11,7 @@
 import { useTranslations } from '../../i18n/ui';
 import OAuthButtons from './OAuthButtons.astro';
 import Logo from '../brand/Logo.astro';
+import LangSwitch from '../i18n/LangSwitch.astro';
 
 interface Props {
   /** Título grande sobre el formulario. */
@@ -79,6 +80,19 @@ const t = useTranslations(lang);
 
       <p class="au-swap"><slot name="swap" /></p>
     </div>
+
+    {/*
+      El conmutador va **después** del formulario en el DOM, aunque se vea
+      arriba a la derecha (está posicionado en absoluto).
+
+      Esta página ya tenía dos formularios —credenciales e invitado— y el de
+      credenciales era el primero. Poner aquí un tercero, por delante de los
+      otros, convertía el primer `button[type="submit"]` de la página en el de
+      cambiar de idioma: pulsar «entrar» enviaba /api/lang y se quedaba en el
+      login. Rompió 34 pruebas de una vez, y a una persona le habría hecho lo
+      mismo si pulsaba Enter en el campo equivocado.
+    */}
+    <LangSwitch class="au-lang" />
   </main>
 </div>
 
@@ -195,6 +209,13 @@ const t = useTranslations(lang);
   }
   .au-back::before { content: '← '; }
   .au-back:hover { color: var(--forge-text); }
+
+  /* Arriba a la derecha, en espejo con el enlace de volver. */
+  .au-lang {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+  }
 
   .au-card { width: 100%; max-width: 23rem; }
 

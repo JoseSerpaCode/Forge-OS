@@ -1,0 +1,54 @@
+---
+/**
+ * Conmutador de idioma para las páginas públicas.
+ *
+ * El que existía vivía en `TopBar.astro` y en `settings.astro`, los dos detrás
+ * de una sesión. Un visitante nuevo —el único que todavía no ha decidido nada—
+ * no tenía ninguna forma de cambiar de idioma.
+ *
+ * Va como `<form>` y no como enlace porque `/api/lang` escribe una cookie: eso
+ * es un POST, no una navegación que un prefetch del navegador pueda disparar
+ * por su cuenta.
+ */
+interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+const lang = Astro.locals.lang || 'en';
+
+// Se vuelve a la misma página, no a la portada: cambiar de idioma en el
+// registro y aparecer en la raíz sería perder lo que se estuviera haciendo.
+const currentPath = Astro.url.pathname + Astro.url.search;
+---
+
+<form method="POST" action="/api/lang" class:list={['ls', className]}>
+  <input type="hidden" name="current_path" value={currentPath} />
+  <input type="hidden" name="lang" value={lang === 'es' ? 'en' : 'es'} />
+  <button type="submit" aria-label={lang === 'es' ? 'Switch to English' : 'Cambiar a español'}>
+    <span aria-hidden="true">{lang === 'es' ? '🇬🇧' : '🇪🇸'}</span>
+    {lang === 'es' ? 'EN' : 'ES'}
+  </button>
+</form>
+
+<style>
+  .ls button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--forge-muted);
+    background: transparent;
+    border: 1px solid var(--forge-border);
+    border-radius: 0.4rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .ls button:hover {
+    color: var(--forge-text);
+    border-color: var(--forge-muted);
+  }
+</style>

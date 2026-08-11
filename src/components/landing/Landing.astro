@@ -3,6 +3,7 @@ import { useTranslations } from '../../i18n/ui';
 import pkg from '../../../package.json';
 import Bento from './Bento.astro';
 import Logo from '../brand/Logo.astro';
+import LangSwitch from '../i18n/LangSwitch.astro';
 import TypeDemo from './TypeDemo.astro';
 import Showcase from './Showcase.astro';
 import Changelog from './Changelog.astro';
@@ -248,6 +249,7 @@ const sections = [
     <div class="lp-foot-bottom">
       <span class="lp-foot-ver">Forge OS v{version}</span>
       <span class="lp-foot-note">{t('foot.built')}</span>
+      <LangSwitch />
     </div>
   </footer>
 </main>

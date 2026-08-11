@@ -245,14 +245,26 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
         )}
     </main>
 
-    <script is:inline define:vars={{ targetUsername: profile.username, friendshipId }}>
+    <script is:inline define:vars={{
+        targetUsername: profile.username,
+        friendshipId,
+        errFriend: t('err.friend.not_possible'),
+        errGeneric: t('auth.error.generic'),
+    }}>
         async function req(endpoint, method = 'POST', body = {}) {
             try {
                 const res = await fetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-                if (res.ok) window.location.reload();
-                else alert(await res.text());
+                if (res.ok) { window.location.reload(); return; }
+
+                // El servidor manda códigos; la frase la pone el cliente en el
+                // idioma del usuario. Antes se hacía `alert(await res.text())`,
+                // que escupía en pantalla lo que respondiera el servidor —en
+                // español fijo para todo el mundo, en el caso de amistades—.
+                const data = await res.json().catch(() => ({}));
+                const messages = { friend_not_possible: errFriend };
+                window.showToast?.(messages[data.error_code] || errGeneric, true);
             } catch (e) {
-                alert('An error occurred');
+                window.showToast?.(errGeneric, true);
             }
         }
 

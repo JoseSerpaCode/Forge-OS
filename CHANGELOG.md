@@ -6,6 +6,21 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.8.0] - 2026-08-11
+
+### Fixed
+
+- **La base de conocimiento destruía contenido en cada guardado, en silencio.** Cuatro pérdidas distintas en el mismo camino: cada ítem de lista se guardaba como cadena vacía —el texto y el anidamiento— porque el sanitizador daba por hecho el formato v1 de `@editorjs/list` y el paquete instalado es v2, que devuelve objetos; los bloques `table` se descartaban enteros por no estar contemplados; los bloques de código se re-escapaban en cada autoguardado, acumulando `&amp;lt;` una vez por segundo; y el subrayado y los saltos suaves se borraban del texto. El servidor respondía 200 y el indicador decía «Saved»: solo se descubría al recargar.
+- **Un JSON ilegible sobrescribía el documento.** El editor caía a un contenido vacío y la primera tecla lo guardaba encima. Ahora se niega a guardar: un documento ilegible se recupera, uno sobrescrito no.
+- **El idioma no funcionaba para quien no ha entrado.** El middleware fijaba el idioma después de atender a los visitantes anónimos en rutas públicas, así que la portada, el login y el registro salían siempre en inglés, sin importar el navegador ni la cookie. Y el conmutador solo existía dentro de la aplicación.
+- **Métricas mostraba dos idiomas a la vez**: la etiqueta de «sin asignar» venía escrita en el SQL, en español en una gráfica y en inglés en la de al lado.
+- **El endpoint de solicitudes de amistad respondía prosa en español a todo el mundo**, y el perfil la enseñaba cruda con un `alert()`.
+
+### Added
+
+- Conmutador de idioma en la portada, el login y el registro.
+- Test unitario del sanitizador —no existía ninguno— alimentado con la salida real de cada plugin de Editor.js, y pruebas de extremo a extremo que comprueban la fila de SQLite en vez de la pantalla, porque la pérdida era invisible desde la interfaz.
+
 ## [1.7.0] - 2026-08-10
 
 ### Added
