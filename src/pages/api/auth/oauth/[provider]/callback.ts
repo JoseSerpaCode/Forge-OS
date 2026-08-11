@@ -18,7 +18,7 @@ import {
  * del usuario tras salir de Google o GitHub, y lo que espera es una página.
  */
 
-export const GET: APIRoute = async ({ params, url, cookies, redirect }) => {
+export const GET: APIRoute = async ({ params, url, cookies, redirect, locals }) => {
   const provider = params.provider;
   if (!isProviderId(provider)) return new Response('Not Found', { status: 404 });
 
@@ -80,13 +80,39 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect }) => {
     const profile = normalizeProfile(provider, await profileRes.json());
     if (!profile) return redirect('/login?error=oauth_profile', 302);
 
-    // ── Vincular o crear ─────────────────────────────────────────────────────
+    const col = cfg.column;
+
+    // ── Caso 1: ya hay sesión → esto es «conectar», no «entrar» ───────────────
+    //
+    // Es el botón de Ajustes. Sin esta rama, quien pulsara «Conectar» acababa
+    // dentro de **otra** cuenta —la que el proveedor tuviera vinculada, o una
+    // recién creada— en lugar de enlazar la suya. Silenciosamente, y con su
+    // trabajo aparentemente desaparecido.
+    const current = locals.user;
+    if (current && current.is_guest !== 1) {
+      const taken = db
+        .prepare(`SELECT id FROM users WHERE ${col} = ?`)
+        .get(profile.providerUserId) as { id: string } | undefined;
+
+      // Ese proveedor ya es de otra cuenta. Reasignarlo dejaría a la otra
+      // persona sin su método de entrada, así que se rechaza.
+      if (taken && taken.id !== current.id) {
+        return redirect('/settings?error=oauth_taken', 302);
+      }
+
+      db.prepare(`UPDATE users SET ${col} = ? WHERE id = ?`).run(
+        profile.providerUserId,
+        current.id
+      );
+      return redirect('/settings?connected=' + provider, 302);
+    }
+
+    // ── Caso 2: sin sesión → entrar, vinculando o creando ────────────────────
     //
     // La búsqueda va por el identificador del proveedor y **no por el correo**.
     // Un correo se cambia, se libera y se reasigna; el `sub` de Google y el `id`
     // de GitHub no. Emparejar por correo permitiría que alguien que se hace con
     // una dirección caducada entre en una cuenta ajena.
-    const col = cfg.column;
     let user = db
       .prepare(`SELECT id, is_guest FROM users WHERE ${col} = ?`)
       .get(profile.providerUserId) as { id: string; is_guest: number } | undefined;

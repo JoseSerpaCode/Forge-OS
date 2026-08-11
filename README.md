@@ -240,8 +240,8 @@ Found something? See [SECURITY.md](./SECURITY.md).
 - [x] Production deployment with automated rollback and verified backups
 - [ ] Dynamic databases (phase 2) — relations, formulas and saved views
 - [ ] Full-text search across pages and issues
-- [ ] Sign in with Google and GitHub — schema and buttons are in place, the
-      redirect flow is not
+- [x] Sign in with Google and GitHub — full-redirect flow with a signed state;
+      each provider activates only when its credentials are configured
 - [ ] Responsive pass over the in-app screens
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

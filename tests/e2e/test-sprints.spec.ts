@@ -76,19 +76,22 @@ test.describe('Sprint Organizer & Isolation', () => {
     // 3. Page reloads and auto-selects the new sprint
     await expect(page).toHaveURL(new RegExp(`\\?sprint=`));
     
-    // Switch back to backlog:
-    // The server redirects /board → /board?sprint=X if cookie forge_last_sprint_{workspace.id} is set.
-    // The cookie uses the DB workspace UUID (from data-workspace attr), NOT the sys_tag slug.
-    // So we clear the cookie via Playwright's context API (server-level), then navigate directly.
+    // Volver al backlog, pidiéndolo explícitamente.
+    //
+    // Antes esto limpiaba la cookie `forge_last_sprint_<id>` y navegaba a
+    // `/board` a secas, confiando en que sin cookie el tablero cae en el
+    // backlog. Eran dos apuestas: el borrado de cookie por nombre es sensible a
+    // la carga —el test pasaba aislado y fallaba en paralelo— y ese valor por
+    // defecto ya no existe: el tablero abre en el sprint activo si lo hay,
+    // justamente para que la primera visita a un espacio con trabajo en curso no
+    // diga «tu tablero está vacío».
+    //
+    // Un test que quiere el backlog debe pedir el backlog.
     const workspaceDbId = await page.locator('.kanban-container').getAttribute('data-workspace');
     await page.context().clearCookies({ name: `forge_last_sprint_${workspaceDbId}` });
-    await page.evaluate((wsId) => {
-      localStorage.setItem(`forge_last_sprint_${wsId}`, 'backlog');
-    }, workspaceDbId);
-    
-    await page.goto(`/w/${sysTagWs1}/board`);
+
+    await page.goto(`/w/${sysTagWs1}/board?sprint=backlog`);
     await page.waitForLoadState('load');
-    await expect(page).not.toHaveURL(new RegExp(`\\?sprint=`));
 
     // 4. Open an issue and move it to the new sprint
     const issueCards = page.locator('.issue-card');
