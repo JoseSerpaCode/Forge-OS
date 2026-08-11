@@ -14,6 +14,13 @@ const memberships = db.prepare(`
 `).all(user.id) as any[];
 
 const userProfile = db.prepare('SELECT bio, pronouns, public_email, is_public, github_id, google_id, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
+
+// Una cuenta creada por un proveedor guarda la cadena `oauth` como hash, que no
+// es bcrypt válido. A quien está en esa situación no se le puede pedir «la
+// contraseña actual»: no tiene ninguna, y pedírsela era lo que la dejaba sin
+// poder ponerse una.
+const pwRow = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id) as any;
+const hasPassword = typeof pwRow?.password_hash === 'string' && pwRow.password_hash.startsWith('$2');
 import { useTranslations } from '../i18n/ui';
 import { credentialsFor } from '../lib/oauth';
 const lang = Astro.locals.lang || 'en';
@@ -178,7 +185,11 @@ const oauthNotice =
               <div class="space-y-4">
                 <h3 class="font-semibold text-forge-text text-sm">{t('user.settings.change_password')}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <input type="password" id="current-password" placeholder={t('user.settings.old_password') || "Old password"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
+                  {hasPassword ? (
+                    <input type="password" id="current-password" placeholder={t('user.settings.old_password') || "Old password"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
+                  ) : (
+                    <input type="hidden" id="current-password" value="" />
+                  )}
                   <input type="password" id="new-password" placeholder={t('user.settings.new_password') || "New password"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
                   <input type="password" id="confirm-password" placeholder={t('user.settings.confirm_password') || "Confirm new"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
                 </div>
@@ -586,9 +597,12 @@ const oauthNotice =
     if (newAvatarUrl) {
       payload.avatar_url = newAvatarUrl;
     }
-    if (currentPassword && newPassword) {
-      payload.current_password = currentPassword;
+    // `current_password` va solo si se ha escrito. Quien entró por un
+    // proveedor no tiene ninguna que dar, y exigirla aquí dejaba el campo
+    // nuevo sin enviar: el servidor distingue los dos casos.
+    if (newPassword) {
       payload.new_password = newPassword;
+      if (currentPassword) payload.current_password = currentPassword;
     }
 
     await handleSave(btn, '/api/user/settings', payload, 'Settings updated successfully!', () => {
