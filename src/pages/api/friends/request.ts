@@ -3,6 +3,25 @@ import db from '../../../lib/db';
 import crypto from 'crypto';
 import { canInteractSocially, socialBlockReason, SOCIAL_DENIED } from '../../../lib/social';
 
+/**
+ * Respuestas por código, no por frase.
+ *
+ * Este endpoint era el único del repositorio que devolvía prosa en español
+ * —«No es posible enviar una solicitud a este usuario en este momento»— y
+ * `u/[username].astro` la enseñaba cruda con `alert(await res.text())`. Un
+ * usuario en inglés recibía español, y uno en español recibía inglés en todos
+ * los demás errores del mismo botón.
+ *
+ * El mensaje deliberadamente vago se conserva: decir «te ha bloqueado» o «te
+ * rechazó hace dos semanas» filtra a un desconocido información sobre alguien
+ * que no quiere tratar con él.
+ */
+const deny = (code: string, status = 400) =>
+  new Response(JSON.stringify({ error_code: code }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const user = locals.user;
@@ -29,7 +48,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (isBlocked) {
         // Opacity: return generic generic error or 404 behavior as per spec
-        return new Response('No es posible enviar una solicitud a este usuario en este momento', { status: 400 });
+        return deny('friend_not_possible');
     }
 
     const userA = user.id < targetUser.id ? user.id : targetUser.id;
@@ -43,7 +62,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return new Response('Request already pending or accepted', { status: 400 });
         }
         if (existing.status === 'blocked') {
-             return new Response('No es posible enviar una solicitud a este usuario en este momento', { status: 400 });
+             return deny('friend_not_possible');
         }
         
         // Cooldown check for rejected or ended
@@ -52,7 +71,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const diffDays = (now.getTime() - updatedDate.getTime()) / (1000 * 3600 * 24);
         
         if (diffDays < 30) {
-            return new Response('No es posible enviar una solicitud a este usuario en este momento', { status: 400 });
+            return deny('friend_not_possible');
         }
 
         // UPDATE

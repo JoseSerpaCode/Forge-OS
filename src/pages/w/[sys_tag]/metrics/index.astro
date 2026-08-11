@@ -117,14 +117,20 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
     tInProgress: t('metrics.in_progress'),
     tDone: t('metrics.done'),
     tEstimated: t('metrics.estimated_h'),
-    tLogged: t('metrics.logged_h')
+    tLogged: t('metrics.logged_h'),
+    // Las gráficas de distribución y precisión traían cada una su propia
+    // etiqueta de «sin asignar» desde el SQL, en idiomas distintos, en la misma
+    // pantalla. Ahora el servidor devuelve NULL y la palabra se pone aquí, una
+    // sola vez y en el idioma del usuario.
+    tUnassigned: t('modal.unassigned')
   }}>
     window.metricsLabels = {
       todo: tTodo,
       in_progress: tInProgress,
       done: tDone,
       estimated: tEstimated,
-      logged: tLogged
+      logged: tLogged,
+      unassigned: tUnassigned
     };
   </script>
 
@@ -177,7 +183,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       chartContainer?.classList.remove('hidden');
 
       // Process 2D data: Group by assignee, stack by status
-      const assignees = [...new Set(data.map((d: any) => d.assignee))];
+      const assignees = [...new Set(data.map((d: any) => d.assignee ?? (window as any).metricsLabels.unassigned))];
       const statuses = ['todo', 'in_progress', 'done'];
       
       const datasets = statuses.map(status => {
@@ -188,7 +194,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
         return {
           label: (window as any).metricsLabels[status] || status.replace('_', ' ').toUpperCase(),
           data: assignees.map(a => {
-            const row = data.find((d: any) => d.assignee === a && d.status === status);
+            const row = data.find((d: any) => (d.assignee ?? (window as any).metricsLabels.unassigned) === a && d.status === status);
             return row ? row.count : 0;
           }),
           backgroundColor: color,
@@ -391,7 +397,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       precChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: data.map((d: any) => d.assignee),
+          labels: data.map((d: any) => d.assignee ?? (window as any).metricsLabels.unassigned),
           datasets: [
             {
               label: (window as any).metricsLabels.estimated,

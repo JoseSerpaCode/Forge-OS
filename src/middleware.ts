@@ -1,8 +1,31 @@
 import { defineMiddleware } from 'astro:middleware';
 import db from './lib/db';
 
+/**
+ * Idioma de la petición: cookie primero, y si no, lo que pida el navegador.
+ *
+ * Vive fuera del cuerpo del middleware porque hay que aplicarlo **en los dos
+ * caminos**, y antes estaba solo en uno.
+ */
+function resolveLang(context: Parameters<Parameters<typeof defineMiddleware>[0]>[0]): 'es' | 'en' {
+  const cookie = context.cookies.get('forge_lang')?.value;
+  if (cookie === 'es' || cookie === 'en') return cookie;
+  const accept = context.request.headers.get('accept-language') || '';
+  return accept.toLowerCase().startsWith('es') ? 'es' : 'en';
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const sessionId = context.cookies.get('forge_session')?.value;
+
+  // El idioma se fija lo primero, para **todas** las peticiones.
+  //
+  // Antes se resolvía más abajo, después del `return` que atiende a los
+  // visitantes sin sesión en rutas públicas. Resultado: la portada, el login y
+  // el registro —justo lo que ve quien llega por primera vez— caían siempre al
+  // `|| 'en'` de los componentes, sin importar la cookie ni el idioma del
+  // navegador. Y el conmutador solo existe dentro de la aplicación, así que no
+  // había forma de cambiarlo. La mitad española del producto era inalcanzable.
+  context.locals.lang = resolveLang(context);
   // `/` es pública: sirve la landing a quien no tiene sesión. Antes exigía
   // sesión, y no teniéndola el middleware creaba una cuenta de invitado ahí
   // mismo — cuatro filas por visita anónima.
@@ -19,6 +42,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/guest',
+    // El conmutador de idioma de la portada y del login lo usa quien **aún no
+    // tiene sesión**: es justo el visitante que todavía no ha elegido idioma.
+    // Sin esto devolvía 401 y el botón no hacía nada.
+    '/api/lang',
   ]);
 
   // Las rutas de OAuth son dinámicas —`/api/auth/oauth/<proveedor>` y su
@@ -98,14 +125,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
       }
     }
   }
-
-  // Parse language from cookie or auto-detect from browser
-  let langPref = context.cookies.get('forge_lang')?.value;
-  if (!langPref) {
-    const acceptLang = context.request.headers.get('accept-language') || '';
-    langPref = acceptLang.toLowerCase().startsWith('es') ? 'es' : 'en';
-  }
-  context.locals.lang = (langPref === 'es') ? 'es' : 'en';
 
   // Inject user to locals for APIs and Astro components
   context.locals.user = sessionData;

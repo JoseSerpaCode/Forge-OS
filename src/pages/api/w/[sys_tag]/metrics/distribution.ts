@@ -25,7 +25,13 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
     let distributionData;
     if (sprintId) {
       distributionData = db.prepare(`
-        SELECT COALESCE(u.username, 'Unassigned') as assignee, i.status, COUNT(i.id) as count
+        SELECT -- La etiqueta de «sin asignar» NO se pone aquí.
+        -- Estas dos gráficas viven en la misma pantalla y cada una traía la
+        -- suya: 'Unassigned' en distribución y 'Sin asignar' en precisión, así
+        -- que Métricas enseñaba los dos idiomas a la vez, fuera cual fuera el
+        -- del usuario. El servidor devuelve NULL y el cliente resuelve la
+        -- palabra con la clave i18n que ya existe.
+        u.username as assignee, i.status, COUNT(i.id) as count
         FROM issues i
         LEFT JOIN users u ON i.assignee_id = u.id
         WHERE i.workspace_id = ? AND i.sprint_id = ?
@@ -33,7 +39,7 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
       `).all(workspace.id, sprintId);
     } else {
       distributionData = db.prepare(`
-        SELECT COALESCE(u.username, 'Unassigned') as assignee, i.status, COUNT(i.id) as count
+        SELECT u.username as assignee, i.status, COUNT(i.id) as count
         FROM issues i
         LEFT JOIN users u ON i.assignee_id = u.id
         WHERE i.workspace_id = ?

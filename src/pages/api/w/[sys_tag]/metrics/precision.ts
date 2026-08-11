@@ -26,7 +26,13 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
     if (sprintId) {
       precisionDist = db.prepare(`
         SELECT 
-          COALESCE(u.username, 'Sin asignar') as assignee, 
+          -- La etiqueta de «sin asignar» NO se pone aquí.
+        -- Estas dos gráficas viven en la misma pantalla y cada una traía la
+        -- suya: 'Unassigned' en distribución y 'Sin asignar' en precisión, así
+        -- que Métricas enseñaba los dos idiomas a la vez, fuera cual fuera el
+        -- del usuario. El servidor devuelve NULL y el cliente resuelve la
+        -- palabra con la clave i18n que ya existe.
+        u.username as assignee, 
           COALESCE(SUM(i.estimated_hours), 0) as estimated_hours, 
           COALESCE(SUM(i.logged_hours), 0) as logged_hours
         FROM issues i
@@ -37,7 +43,7 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
     } else {
       precisionDist = db.prepare(`
         SELECT 
-          COALESCE(u.username, 'Sin asignar') as assignee, 
+          u.username as assignee, 
           COALESCE(SUM(i.estimated_hours), 0) as estimated_hours, 
           COALESCE(SUM(i.logged_hours), 0) as logged_hours
         FROM issues i
