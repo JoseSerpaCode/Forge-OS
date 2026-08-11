@@ -3,6 +3,7 @@ import EventEmitter from 'events';
 import dns from 'dns/promises';
 import { Agent, fetch as undiciFetch } from 'undici';
 import db from './db';
+import crypto from 'crypto';
 
 function isBlockedIP(ip: string): boolean {
   if (ip === '::1') return true;
@@ -34,17 +35,73 @@ function isBlockedIP(ip: string): boolean {
 
 export const ForgeEvents = new EventEmitter();
 
-ForgeEvents.on('issue.status_changed', async ({ issueId, workspaceId, oldStatus, newStatus }) => {
+/**
+ * Nombre canónico del único disparador que existe.
+ *
+ * Se exporta para que el endpoint y el formulario usen exactamente esta cadena.
+ * El desacuerdo entre las tres partes es lo que hacía que ninguna regla llegara
+ * nunca a ejecutarse: el formulario ofrecía `issue.moved`, el motor consultaba
+ * `issue_status_changed`, y no había forma de que coincidieran.
+ */
+export const TRIGGER_ISSUE_STATUS_CHANGED = 'issue_status_changed';
+
+/** Única acción implementada. `assign.user` y `add.label` nunca lo estuvieron. */
+export const ACTION_WEBHOOK = 'webhook';
+
+ForgeEvents.on('issue.status_changed', async ({ issueId, workspaceId, newStatus, userId }) => {
   // 1. Buscar reglas activas en el workspace
-  const rules = db.prepare('SELECT * FROM automations WHERE workspace_id = ? AND trigger_type = ? AND is_active = 1').all(workspaceId, 'issue_status_changed') as any[];
-  
+  const rules = db
+    .prepare('SELECT * FROM automations WHERE workspace_id = ? AND trigger_type = ? AND is_active = 1')
+    .all(workspaceId, TRIGGER_ISSUE_STATUS_CHANGED) as any[];
+
   for (const rule of rules) {
-    const condition = JSON.parse(rule.trigger_condition);
+    // Una regla con la condición corrupta no puede tumbar el manejador entero:
+    // se salta esa y las demás siguen.
+    let condition: any;
+    try {
+      condition = JSON.parse(rule.trigger_condition);
+    } catch {
+      console.error('[SYS.AUTOMATION] Condición ilegible en la regla', rule.id);
+      continue;
+    }
+
     // 2. Evaluar Condición (ej. {"to_status": "done"})
-    if (condition.to_status === newStatus) {
+    if (condition?.to_status === newStatus) {
+      // Queda constancia de que la regla se ha disparado, **antes** de intentar
+      // la acción.
+      //
+      // «¿Se ejecutó mi automatización?» es una pregunta que el usuario se hace
+      // y que hasta ahora solo podía responder mirando los logs del servidor,
+      // a los que no tiene acceso. El registro de actividad del espacio ya
+      // existe y es donde lo va a buscar.
+      try {
+        db.prepare(
+          'INSERT INTO audit_logs (id, workspace_id, user_id, action, entity_type, entity_id, details_json) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).run(
+          crypto.randomUUID(),
+          workspaceId,
+          // Quien movió el issue, no 'system': una automatización no ocurre
+          // sola, la provoca una acción de alguien, y el registro de actividad
+          // sirve para reconstruir qué pasó y por quién.
+          userId,
+          'AUTOMATION_FIRED',
+          'automation',
+          rule.id,
+          JSON.stringify({ name: rule.name, issueId, newStatus })
+        );
+      } catch (err) {
+        console.error('[SYS.AUTOMATION] No se pudo registrar el disparo', err);
+      }
+
       // 3. Ejecutar Acción
-      if (rule.action_type === 'webhook') {
-        const payloadConfig = JSON.parse(rule.action_payload);
+      if (rule.action_type === ACTION_WEBHOOK) {
+        let payloadConfig: any;
+        try {
+          payloadConfig = JSON.parse(rule.action_payload);
+        } catch {
+          console.error('[SYS.AUTOMATION] Carga ilegible en la regla', rule.id);
+          continue;
+        }
         // [M-5 FIX] Validate webhook URL to prevent SSRF attacks
         let webhookUrl: URL;
         try {

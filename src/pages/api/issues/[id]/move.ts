@@ -101,7 +101,17 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       finalizeIssueSessions(issueId, 'Auto-registrado al completar');
     }
 
-    ForgeEvents.emit('issue.status_changed', { issue_id: issueId, workspace_id: oldIssue.workspace_id, old_status: oldIssue.status, new_status: status });
+    // camelCase, que es lo que desestructura el oyente en `lib/automations.ts`.
+    // Se emitía en snake_case, así que `workspaceId` llegaba como `undefined` y
+    // better-sqlite3 rechazaba el binding: ninguna automatización llegó nunca a
+    // consultarse siquiera.
+    ForgeEvents.emit('issue.status_changed', {
+      issueId,
+      workspaceId: oldIssue.workspace_id,
+      oldStatus: oldIssue.status,
+      newStatus: status,
+      userId: user.id,
+    });
     
     db.prepare('INSERT INTO audit_logs (id, workspace_id, user_id, action, entity_type, entity_id, details_json) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
       crypto.randomUUID(), oldIssue.workspace_id, user.id, 'ISSUE_MOVED', 'issue', issueId, JSON.stringify({ oldStatus: oldIssue.status, newStatus: status, oldPosition: oldIssue.position, newPosition: finalPosition })
