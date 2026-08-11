@@ -72,6 +72,11 @@ export default function resetDb() {
   `).run('test-user-autom', 'autom_user', pwHash, 0);
 
   db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-invit', 'invit_user', pwHash, 0);
+
+  db.prepare(`
     INSERT INTO workspaces (id, name, sys_tag, created_by)
     VALUES (?, ?, ?, ?)
   `).run('ws-jose-test', 'Test Workspace', 'test-workspace', 'test-user-jose');

@@ -10,12 +10,18 @@ const user = Astro.locals.user!;
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
+// La rama de sysadmin lee todos los espacios de la instancia. Va acotada: el
+// hub es una portada, no un panel de administración, y sin tope el coste de
+// abrirlo crece con el producto entero. Los 100 más recientes son de sobra para
+// lo que esta pantalla hace; enumerarlos todos es trabajo de una vista de
+// administración, que no existe todavía.
 const workspacesQuery = user.is_sysadmin === 1 
   ? `SELECT w.id, w.name, w.sys_tag, w.icon, 'sysadmin' as role,
       (SELECT json_group_array(json_object('id', u.id, 'username', u.username, 'avatar_url', u.avatar_url))
        FROM (SELECT u2.id, u2.username, u2.avatar_url FROM workspace_members wm JOIN users u2 ON wm.user_id = u2.id WHERE wm.workspace_id = w.id LIMIT 5) u) as members_json,
       (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = w.id) as totalMembers
-     FROM workspaces w WHERE w.sys_tag NOT LIKE 'guest-%'`
+     FROM workspaces w WHERE w.sys_tag NOT LIKE 'guest-%'
+     ORDER BY w.created_at DESC LIMIT 100`
   : `SELECT w.id, w.name, w.sys_tag, w.icon, wm.ws_role as role,
       (SELECT json_group_array(json_object('id', u.id, 'username', u.username, 'avatar_url', u.avatar_url))
        FROM (SELECT u2.id, u2.username, u2.avatar_url FROM workspace_members wm2 JOIN users u2 ON wm2.user_id = u2.id WHERE wm2.workspace_id = w.id LIMIT 5) u) as members_json,

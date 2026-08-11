@@ -47,29 +47,33 @@ const automations = db.prepare(`
   WHERE workspace_id = ?
 `).all(ws.id) as any[];
 
-const pendingInvites = db.prepare(`
-  SELECT n.id, n.link_url, n.created_at, u.username, u.avatar_url
+// El filtro por espacio va **en el SQL**, no en JavaScript.
+//
+// Antes esta consulta se traía *todas* las invitaciones pendientes de la
+// instancia entera —de cualquier espacio y de cualquier persona— para quedarse
+// con las de este espacio parseando el JSON de cada fila en el servidor. El
+// coste de abrir los ajustes de un espacio crecía con el uso global del
+// producto: con mil espacios activos, mirar los tuyos leía las invitaciones de
+// los novecientos noventa y nueve restantes.
+//
+// `json_valid` va antes que `json_extract` a propósito: `link_url` es una
+// columna de texto libre y `json_extract` sobre algo que no es JSON aborta la
+// consulta entera. SQLite evalúa el AND en orden, así que una fila con basura
+// se descarta en vez de tumbar la página.
+const wsPendingInvites = (db.prepare(`
+  SELECT n.id, n.link_url, n.created_at, u.username, u.avatar_url,
+         COALESCE(json_extract(n.link_url, '$.role'), 'viewer') AS role
   FROM notifications n
   JOIN users u ON n.user_id = u.id
   WHERE n.type = 'invite'
-`).all() as any[];
-
-const wsPendingInvites = pendingInvites.filter(n => {
-  try {
-    const payload = JSON.parse(n.link_url);
-    return payload.ws_id === ws.id;
-  } catch { return false; }
-}).map(n => {
-  let role = 'viewer';
-  try {
-    const payload = JSON.parse(n.link_url);
-    role = payload.role || 'viewer';
-  } catch {}
-  
+    AND json_valid(n.link_url)
+    AND json_extract(n.link_url, '$.ws_id') = ?
+  ORDER BY n.created_at DESC
+`).all(ws.id) as any[]).map(n => {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
   const isExpired = (Date.now() - new Date(n.created_at + 'Z').getTime()) > SEVEN_DAYS_MS;
 
-  return { ...n, role, isExpired };
+  return { ...n, isExpired };
 });
 ---
 
