@@ -15,8 +15,30 @@ const memberships = db.prepare(`
 
 const userProfile = db.prepare('SELECT bio, pronouns, public_email, is_public, github_id, google_id, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
 import { useTranslations } from '../i18n/ui';
+import { credentialsFor } from '../lib/oauth';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+
+// Un botón «Conectar» que lleva a un 404 es peor que no ofrecerlo: quien lo
+// pulsa cree que la aplicación está rota. Si el proveedor no tiene
+// credenciales, se dice que no está configurado y se acabó.
+const oauthAvailable = {
+  google: Boolean(credentialsFor('google')),
+  github: Boolean(credentialsFor('github')),
+};
+
+// Avisos de vuelta del proveedor.
+const params = Astro.url.searchParams;
+const oauthNotice =
+  params.get('error') === 'oauth_taken'
+    ? { kind: 'error' as const, text: t('user.settings.oauth_taken') }
+    : params.get('error') === 'oauth_last_method'
+      ? { kind: 'error' as const, text: t('user.settings.oauth_last_method') }
+      : params.get('connected')
+        ? { kind: 'ok' as const, text: t('user.settings.oauth_connected') }
+        : params.get('disconnected')
+          ? { kind: 'ok' as const, text: t('user.settings.oauth_disconnected') }
+          : null;
 ---
 
 <MainLayout title={t('user.settings.title')}>
@@ -173,6 +195,20 @@ const t = useTranslations(lang);
           <!-- Connected Services -->
           <div class="bg-forge-panel border border-forge-border/60 rounded-xl shadow-sm overflow-hidden p-6">
             <h3 class="font-semibold text-forge-text text-sm mb-4">{t('user.settings.connected')}</h3>
+
+            {oauthNotice && (
+              <p
+                class:list={[
+                  'text-xs leading-relaxed mb-4 px-3 py-2 rounded-md border',
+                  oauthNotice.kind === 'error'
+                    ? 'text-forge-text bg-red-500/10 border-red-500/40'
+                    : 'text-forge-text bg-green-500/10 border-green-500/40',
+                ]}
+                role="status"
+              >
+                {oauthNotice.text}
+              </p>
+            )}
             <div class="space-y-3">
               <!-- Google -->
               <div class="flex items-center justify-between p-3 border border-forge-border/60 rounded-md bg-forge-bg shadow-sm">
@@ -182,12 +218,22 @@ const t = useTranslations(lang);
                   </div>
                   <div>
                     <h4 class="font-semibold text-forge-text text-sm leading-tight">{t('user.settings.google')}</h4>
-                    <p class="text-[11px] text-forge-muted">{userProfile.google_id ? t('user.settings.connected') : t('user.settings.disconnect')}</p>
+                    <p class="text-[11px] text-forge-muted">{userProfile.google_id ? t('user.settings.linked') : t('user.settings.not_linked')}</p>
                   </div>
                 </div>
-                <button onclick="window.showToast('Google OAuth integration coming soon!')" class="text-xs font-semibold px-4 py-1.5 rounded bg-forge-panel border border-forge-border/60 hover:bg-forge-border/40 transition-colors text-forge-text">
-                  {userProfile.google_id ? t('user.settings.disconnect') : t('user.settings.connect')}
-                </button>
+                {userProfile.google_id ? (
+                  <form method="POST" action="/api/auth/oauth/google/unlink">
+                    <button type="submit" class="text-xs font-semibold px-4 py-1.5 rounded bg-forge-panel border border-forge-border/60 hover:border-forge-error/50 hover:text-forge-error transition-colors text-forge-text">
+                      {t('user.settings.disconnect')}
+                    </button>
+                  </form>
+                ) : oauthAvailable.google ? (
+                  <a href="/api/auth/oauth/google" rel="nofollow" class="text-xs font-semibold px-4 py-1.5 rounded bg-forge-panel border border-forge-border/60 hover:bg-forge-border/40 transition-colors text-forge-text">
+                    {t('user.settings.connect')}
+                  </a>
+                ) : (
+                  <span class="text-[11px] text-forge-muted italic">{t('user.settings.unconfigured')}</span>
+                )}
               </div>
               
               <!-- GitHub -->
@@ -198,12 +244,22 @@ const t = useTranslations(lang);
                   </div>
                   <div>
                     <h4 class="font-semibold text-forge-text text-sm leading-tight">{t('user.settings.github')}</h4>
-                    <p class="text-[11px] text-forge-muted">{userProfile.github_id ? t('user.settings.connected') : t('user.settings.disconnect')}</p>
+                    <p class="text-[11px] text-forge-muted">{userProfile.github_id ? t('user.settings.linked') : t('user.settings.not_linked')}</p>
                   </div>
                 </div>
-                <button onclick="window.showToast('GitHub OAuth integration coming soon!')" class="text-xs font-semibold px-4 py-1.5 rounded bg-forge-panel border border-forge-border/60 hover:bg-forge-border/40 transition-colors text-forge-text">
-                  {userProfile.github_id ? t('user.settings.disconnect') : t('user.settings.connect')}
-                </button>
+                {userProfile.github_id ? (
+                  <form method="POST" action="/api/auth/oauth/github/unlink">
+                    <button type="submit" class="text-xs font-semibold px-4 py-1.5 rounded bg-forge-panel border border-forge-border/60 hover:border-forge-error/50 hover:text-forge-error transition-colors text-forge-text">
+                      {t('user.settings.disconnect')}
+                    </button>
+                  </form>
+                ) : oauthAvailable.github ? (
+                  <a href="/api/auth/oauth/github" rel="nofollow" class="text-xs font-semibold px-4 py-1.5 rounded bg-forge-panel border border-forge-border/60 hover:bg-forge-border/40 transition-colors text-forge-text">
+                    {t('user.settings.connect')}
+                  </a>
+                ) : (
+                  <span class="text-[11px] text-forge-muted italic">{t('user.settings.unconfigured')}</span>
+                )}
               </div>
             </div>
           </div>

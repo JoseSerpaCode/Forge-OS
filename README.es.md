@@ -244,8 +244,8 @@ servicio corriendo la versión que funcionaba.
 - [x] Despliegue en producción con vuelta atrás automática y copias verificadas
 - [ ] Bases de datos dinámicas (fase 2): relaciones, fórmulas y vistas guardadas
 - [ ] Búsqueda de texto completo sobre páginas e issues
-- [ ] Entrar con Google y GitHub: el esquema y los botones están, falta el flujo
-      de redirección
+- [x] Entrar con Google y GitHub: flujo por redirección completa con `state`
+      firmado; cada proveedor se activa solo si tiene sus credenciales
 - [ ] Pasada de responsive sobre las pantallas de la aplicación
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>

@@ -2,9 +2,9 @@
 /**
  * Entrada por proveedor externo.
  *
- * El esquema ya está preparado —`users.github_id` y `users.google_id` existen
- * desde hace tiempo—, pero la fontanería del flujo todavía no. Así que cada
- * botón se activa **solo si hay credenciales configuradas** para su proveedor:
+ * El flujo está completo (`src/lib/oauth.ts` y `api/auth/oauth/[provider]/`).
+ * Cada botón se activa **solo si hay credenciales configuradas** para su
+ * proveedor:
  *
  *   - Con `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` en el entorno → enlace real.
  *   - Sin ellas → botón deshabilitado y una línea diciendo que falta configurar.
