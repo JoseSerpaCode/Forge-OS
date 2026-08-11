@@ -153,12 +153,21 @@ function formatDate(dateStr: string | undefined) {
     const pageId = editorDiv.dataset.pageId;
     const canEdit = editorDiv.dataset.canEdit === 'true';
     let initialData: any = { blocks: [] };
+
+    // Si el contenido guardado no se puede leer, **no se edita**.
+    //
+    // Antes se caía a `{blocks: []}` y se seguía adelante: el editor arrancaba
+    // vacío y la primera tecla —incluso en el título— disparaba el autoguardado
+    // y sobrescribía el documento entero con nada. Un documento ilegible es
+    // recuperable; uno sobrescrito, no.
+    let loadFailed = false;
     try {
       if (editorDiv.dataset.initialContent && editorDiv.dataset.initialContent !== 'null') {
         initialData = JSON.parse(editorDiv.dataset.initialContent);
       }
     } catch (e) {
       console.error('Failed to parse initial content', e);
+      loadFailed = true;
     }
 
     let saveTimeout: any;
@@ -226,6 +235,13 @@ function formatDate(dateStr: string | undefined) {
 
     async function save() {
       if (!canEdit) return;
+
+      // Ver arriba: con la carga rota, guardar es destruir.
+      if (loadFailed) {
+        if (statusSpan) statusSpan.textContent = 'No se ha guardado';
+        return;
+      }
+
       if (statusSpan) statusSpan.textContent = 'Saving...';
       try {
         const outputData = await editor.save();
@@ -242,6 +258,20 @@ function formatDate(dateStr: string | undefined) {
            const err = await res.json();
            throw new Error(err.error || 'Save failed');
         }
+
+        // El servidor dice qué bloques ha descartado. Decir «Saved» cuando se
+        // ha perdido algo es exactamente cómo desaparecían las tablas sin que
+        // nadie se enterara hasta recargar.
+        const body = await res.json().catch(() => ({}));
+        if (Array.isArray(body.dropped) && body.dropped.length) {
+          if (statusSpan) statusSpan.textContent = 'Guardado, con bloques descartados';
+          window.showToast?.(
+            `No se han podido guardar estos bloques: ${body.dropped.join(', ')}`,
+            true
+          );
+          return;
+        }
+
         if (statusSpan) statusSpan.textContent = 'Saved';
       } catch (e: any) {
         if (statusSpan) statusSpan.textContent = 'Error saving';

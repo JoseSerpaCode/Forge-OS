@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
-import { sanitizeEditorBlocks } from '../../../lib/sanitizer';
+import { sanitizeEditorBlocksDetailed } from '../../../lib/sanitizer';
 
 // Helper to resolve workspace and check permissions
 function authorize(user: any, requiredRole: 'owner' | 'editor' | 'viewer', pageId: string) {
@@ -41,6 +41,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     const data = await request.json();
     
     let finalContentJson = undefined;
+    let droppedBlocks: string[] = [];
     
     if (data.content_json !== undefined) {
       let parsed;
@@ -55,14 +56,22 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       }
 
       const blocks = Array.isArray(parsed.blocks) ? parsed.blocks : [];
-      const safeBlocks = sanitizeEditorBlocks(blocks);
-      
+      const { blocks: safeBlocks, dropped } = sanitizeEditorBlocksDetailed(blocks);
+
       if (blocks.length > 0 && safeBlocks.length === 0) {
         return new Response(JSON.stringify({ error: 'El contenido fue rechazado porque contiene únicamente bloques no soportados o maliciosos' }), { status: 400 });
       }
-      
+
       parsed.blocks = safeBlocks;
       finalContentJson = JSON.stringify(parsed);
+
+      // Lo que se ha descartado viaja en la respuesta.
+      //
+      // Antes se descartaba en silencio y se contestaba `{success:true}`: las
+      // tablas desaparecían del documento mientras el editor mostraba «Saved».
+      // Un guardado que pierde contenido no es un guardado correcto, y quien
+      // escribe tiene derecho a enterarse en ese momento y no al recargar.
+      droppedBlocks = dropped;
     }
 
     // Explicit IDOR mitigation: AND workspace_id = ?
@@ -80,7 +89,10 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         auth.workspaceId
       );
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response(
+      JSON.stringify(droppedBlocks.length ? { success: true, dropped: droppedBlocks } : { success: true }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (err: any) {
     console.error('[pages/[id] PUT] Unhandled error:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
