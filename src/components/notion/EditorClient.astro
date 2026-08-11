@@ -1,4 +1,6 @@
 ---
+import { useTranslations } from '../../i18n/ui';
+
 interface Props {
   pageId: string;
   initialTitle: string;
@@ -13,6 +15,9 @@ interface Props {
   sysTag: string;
 }
 const { pageId, initialTitle, initialContent, canEdit, authorName, authorAvatar, updatedAt, parentTitle, parentId, sysTag } = Astro.props;
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
 
 // Date formatter
 function formatDate(dateStr: string | undefined) {
@@ -56,7 +61,7 @@ function formatDate(dateStr: string | undefined) {
 
     <!-- Title & Delete -->
     <div class="flex items-center justify-between mb-4 group relative">
-      <input type="text" id="editor-title" 
+      <input type="text" id="editor-title" aria-label={t('a11y.page_title')} 
         value={initialTitle}
         readonly={!canEdit}
         class="text-4xl font-bold bg-transparent text-forge-text focus:outline-none focus:border-b focus:border-forge-secondary border-b border-transparent w-full transition-colors pb-1"

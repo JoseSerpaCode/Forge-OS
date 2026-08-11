@@ -97,7 +97,7 @@ const oauthNotice =
                 <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all z-10 text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 </div>
-                <input type="file" id="avatar-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-20" title="Upload new avatar" />
+                <input type="file" id="avatar-file-input" accept="image/*" aria-label={t('user.settings.upload_avatar')} class="absolute inset-0 opacity-0 cursor-pointer z-20" title={t('user.settings.upload_avatar')} />
               </div>
               <div>
                 <h3 class="font-semibold text-forge-text text-sm mb-1">{t('user.settings.picture')}</h3>
@@ -110,7 +110,7 @@ const oauthNotice =
             <!-- Form -->
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-semibold text-forge-text mb-2">{t('user.settings.bio')}</label>
+                <label class="block text-sm font-semibold text-forge-text mb-2" for="profile-bio">{t('user.settings.bio')}</label>
                 <textarea id="profile-bio" rows="3" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm transition-all resize-y placeholder:text-forge-muted" placeholder={t('user.settings.bio_placeholder') || "Tell us a little bit about yourself..."}>{userProfile.bio || ''}</textarea>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -188,11 +188,11 @@ const oauthNotice =
             <div class="p-6 space-y-6 flex-1">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-semibold text-forge-text mb-2">Username</label>
+                  <label class="block text-sm font-semibold text-forge-text mb-2" for="username-input">Username</label>
                   <input type="text" id="username-input" value={user.username} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm" />
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-forge-text mb-2">{t('user.settings.theme')}</label>
+                  <label class="block text-sm font-semibold text-forge-text mb-2" for="theme-selector">{t('user.settings.theme')}</label>
                   <select id="theme-selector" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm cursor-pointer">
                     <option value="dark" selected={userProfile.theme_preference === 'dark'}>{t('user.settings.dark')}</option>
                     <option value="light" selected={userProfile.theme_preference === 'light'}>{t('user.settings.light')}</option>
@@ -200,10 +200,10 @@ const oauthNotice =
                 </div>
                 
                 <div class="mb-4">
-                  <label class="block text-sm font-semibold text-forge-text mb-2">{t('user.settings.language')}</label>
+                  <label class="block text-sm font-semibold text-forge-text mb-2" for="lang-selector">{t('user.settings.language')}</label>
                   <form method="post" action="/api/lang">
                     <input type="hidden" name="current_path" value="/settings" />
-                    <select name="lang" onchange="this.form.submit()" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm cursor-pointer">
+                    <select id="lang-selector" name="lang" onchange="this.form.submit()" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm cursor-pointer">
                       <option value="en" selected={lang === 'en'}>🇬🇧 English</option>
                       <option value="es" selected={lang === 'es'}>🇪🇸 Español</option>
                     </select>
@@ -217,12 +217,12 @@ const oauthNotice =
                 <h3 class="font-semibold text-forge-text text-sm">{t('user.settings.change_password')}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {hasPassword ? (
-                    <input type="password" id="current-password" placeholder={t('user.settings.old_password') || "Old password"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
+                    <input type="password" id="current-password" aria-label={t('user.settings.old_password')} placeholder={t('user.settings.old_password') || "Old password"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
                   ) : (
                     <input type="hidden" id="current-password" value="" />
                   )}
-                  <input type="password" id="new-password" placeholder={t('user.settings.new_password') || "New password"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
-                  <input type="password" id="confirm-password" placeholder={t('user.settings.confirm_password') || "Confirm new"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
+                  <input type="password" id="new-password" aria-label={t('user.settings.new_password')} placeholder={t('user.settings.new_password') || "New password"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
+                  <input type="password" id="confirm-password" aria-label={t('user.settings.confirm_password')} placeholder={t('user.settings.confirm_password') || "Confirm new"} class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary shadow-sm" />
                 </div>
               </div>
             </div>

@@ -2,9 +2,12 @@
 import MainLayout from '../../../../layouts/MainLayout.astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
+import { useTranslations } from '../../../../i18n/ui';
 
 const { sys_tag, id } = Astro.params;
 const user = Astro.locals.user!;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
 
 if (!user) return Astro.redirect('/login');
 if (user.is_guest) return Astro.redirect('/register');
@@ -150,7 +153,7 @@ if (view?.visibleColumnsJson) {
           </div>
           Add New Row
         </h2>
-        <button type="button" class="text-forge-muted hover:text-forge-text p-2 hover:bg-forge-bg rounded-lg transition-colors" onclick="document.getElementById('new-row-modal').close()">
+        <button type="button" aria-label={t('common.close')} class="text-forge-muted hover:text-forge-text p-2 hover:bg-forge-bg rounded-lg transition-colors" onclick="document.getElementById('new-row-modal').close()">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -158,21 +161,21 @@ if (view?.visibleColumnsJson) {
       <form id="new-row-form" class="p-6 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
         {columns.map((col: any) => (
           <div>
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-2 flex items-center gap-1.5">
+            <label for={`row-field-${col.id}`} class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-2 flex items-center gap-1.5">
               {col.name}
               {col.type === 'number' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">NUMBER</span>}
               {col.type === 'select' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">SELECT</span>}
             </label>
             
             {col.type === 'select' ? (
-              <select name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm">
+              <select id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm">
                 <option value="">-- Leave Empty --</option>
                 {(col.options || []).map((opt: any) => <option value={opt}>{opt}</option>)}
               </select>
             ) : col.type === 'number' ? (
-              <input type="number" step="any" name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder="Enter a number">
+              <input type="number" step="any" id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder="Enter a number">
             ) : (
-              <input type="text" name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder="Enter text">
+              <input type="text" id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder="Enter text">
             )}
           </div>
         ))}

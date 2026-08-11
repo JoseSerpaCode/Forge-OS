@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.8.4, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.9.0, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -78,6 +78,19 @@ fallos). Tres reglas que se rompen con facilidad:
   ilegible.
 - **Texto sobre fondo naranja va con `text-forge-on-accent`**, nunca
   `text-forge-bg`: ese se invierte con el tema y el naranja no.
+
+**Todo control lleva nombre accesible**: 89 de 89 en las nueve pantallas
+principales, comprobado en el navegador. Al enlazar las etiquetas en bloque
+salió el fallo que hay que evitar repetir: cuando un `<label>` **envuelve** su
+control ya está asociado, y añadirle un `for` que apunte a otro sitio hace que
+el navegador **ignore** el control que envuelve. Las casillas de notificaciones
+quedaron una fila desplazadas —pulsar «silenciar asignaciones» cambiaba
+«menciones»— y eso es peor que no tener etiqueta, porque falla en silencio. Lo
+fija `tests/e2e/a11y-etiquetas.spec.ts`.
+
+Los controles que se **repiten** (columnas de una base dinámica, rol de cada
+miembro) van con `aria-label`, nunca con `id` fijo: dos elementos con el mismo
+id rompen `for` igual, y gana el primero.
 
 La variante `dark:` de Tailwind está atada a `[data-theme]` con
 `@custom-variant`, no a `prefers-color-scheme`. Sin eso, `dark:prose-invert` no

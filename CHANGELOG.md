@@ -6,6 +6,19 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.9.0] - 2026-08-11
+
+### Fixed
+
+- **49 de 62 etiquetas de formulario no estaban asociadas a su campo**: ni las anunciaba un lector de pantalla ni funcionaba pulsar el texto para enfocar. Ahora **89 de 89 controles** de las nueve pantallas principales tienen nombre accesible.
+- **Los avisos emergentes eran mudos.** Son el canal principal de respuesta de la aplicación —cada «guardado» y cada error pasan por ahí— y no tenían `aria-live`, así que quien no ve la pantalla no se enteraba de nada.
+- Tres botones de solo icono sin nombre («cerrar» dos veces y «quitar columna»), dos imágenes decorativas sin `alt`, y el campo de la paleta de comandos —que sale en **todas** las pantallas— sin etiqueta ninguna.
+- «Adjuntos», en el detalle de un ticket, era un `<label>` que no etiquetaba ningún campo. Un lector de pantalla lo anunciaba como el nombre de un control inexistente; ahora es un `<span>`.
+
+### Changed
+
+- Los controles que se repiten —las columnas de una base de datos dinámica, el rol de cada miembro— llevan `aria-label` en vez de `id`, porque un `id` fijo se duplicaría en cada fila y un id repetido rompe la asociación igual que no tenerla.
+
 ## [1.8.4] - 2026-08-11
 
 ### Added
