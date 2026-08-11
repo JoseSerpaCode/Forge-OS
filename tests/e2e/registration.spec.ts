@@ -31,7 +31,11 @@ test('sin resolver la suma no se registra a nadie', async ({ page }) => {
 test('una suma mal resuelta muestra el error y trae una suma nueva', async ({ page }) => {
   await page.context().clearCookies();
   await page.goto('/register');
-  const before = await page.locator('.af-sum').textContent();
+  // Se guarda el **token firmado**, no la suma que se ve. Los sumandos van de 1
+  // a 9, así que un reto nuevo sale igual que el anterior una de cada 81 veces
+  // y la prueba fallaba sola de vez en cuando. El token lleva caducidad dentro:
+  // siempre cambia.
+  const tokenAntes = await page.locator('input[name="captcha_token"]').inputValue();
 
   await page.fill('input[name="username"]', 'reg_bad_' + Date.now());
   await page.fill('input[name="email"]', 'bad@example.test');
@@ -41,7 +45,7 @@ test('una suma mal resuelta muestra el error y trae una suma nueva', async ({ pa
 
   await expect(page.locator('#auth-error')).toBeVisible();
   // El mensaje dice «prueba con la suma nueva»; tiene que haber una.
-  await expect(page.locator('.af-sum')).not.toHaveText(before ?? '');
+  await expect(page.locator('input[name="captcha_token"]')).not.toHaveValue(tokenAntes);
   await expect(page.locator('input[name="captcha_answer"]')).toHaveValue('');
 });
 

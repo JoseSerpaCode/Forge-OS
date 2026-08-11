@@ -100,7 +100,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                     {isOwnProfile && (
                         <div class="absolute inset-0 bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity rounded-2xl flex items-center justify-center cursor-pointer" onclick="document.getElementById('avatar-upload').click()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            <input type="file" class="hidden" id="avatar-upload" accept="image/*" />
+                            <input type="file" class="hidden" id="avatar-upload" aria-label={t('user.settings.upload_avatar')} accept="image/*" />
                         </div>
                     )}
                 </div>
@@ -179,7 +179,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                 <div class="mt-6 relative group/bio">
                     <div class="bg-forge-bg/50 border border-forge-border/40 rounded-xl p-5 shadow-inner min-h-[80px]">
                         {isOwnProfile ? (
-                            <textarea id="profile-bio-input" class="w-full bg-transparent text-forge-text resize-y focus:outline-none placeholder:text-forge-muted" placeholder="Write something about yourself...">{profile.bio || ''}</textarea>
+                            <textarea id="profile-bio-input" aria-label={t('a11y.bio')} class="w-full bg-transparent text-forge-text resize-y focus:outline-none placeholder:text-forge-muted" placeholder="Write something about yourself...">{profile.bio || ''}</textarea>
                         ) : (
                             <p class="text-forge-text leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
                         )}
@@ -217,7 +217,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                             <div class="flex items-center gap-3">
                                 {ws.icon ? (
                                     <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center text-lg shadow-sm shrink-0">
-                                        {ws.icon.startsWith('data:image') ? <img src={ws.icon} class="w-full h-full object-cover rounded-lg" /> : ws.icon}
+                                        {ws.icon.startsWith('data:image') ? <img src={ws.icon} alt="" class="w-full h-full object-cover rounded-lg" /> : ws.icon}
                                     </div>
                                 ) : (
                                     <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center font-bold text-forge-accent-text shadow-sm shrink-0">
