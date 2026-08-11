@@ -400,33 +400,39 @@ const wsPendingInvites = pendingInvites.filter(n => {
         <input type="text" id="auto-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="E.g., Auto-assign to QA">
       </div>
       
+      {/*
+        Un disparador y una acción, que son los que existen.
+
+        El desplegable ofrecía cuatro disparadores y tres acciones; solo la
+        combinación «issue movido → webhook» tenía motor detrás, y ni esa
+        funcionaba porque los valores no coincidían con los que consulta.
+        Ofrecer opciones que no hacen nada es la misma enfermedad que decir
+        «Guardado» mientras se pierde contenido.
+
+        Y los dos campos libres pedían JSON —lo parseaban al enviar— con
+        marcadores que sugerían texto plano («e.g. In Progress»). Ahora se
+        pregunta lo que de verdad hace falta y el JSON lo compone el cliente.
+      */}
       <div class="p-4 rounded border border-forge-border bg-forge-bg/30">
-        <label class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_trigger')}</label>
-        <select id="auto-trigger" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
-          <option value="issue.created">Issue Created</option>
-          <option value="issue.moved">Issue Moved to Status</option>
-          <option value="sprint.started">Sprint Started</option>
-          <option value="sprint.completed">Sprint Completed</option>
+        <p class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_trigger')}</p>
+        <p class="text-sm text-forge-text mb-3">{t('ws.settings.trigger_desc')}</p>
+
+        <label for="auto-trigger-cond" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('ws.settings.target_status')}</label>
+        <select id="auto-trigger-cond" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
+          <option value="todo">{t('metrics.todo')}</option>
+          <option value="in_progress">{t('metrics.in_progress')}</option>
+          <option value="review">{t('ws.settings.status_review')}</option>
+          <option value="done" selected>{t('metrics.done')}</option>
         </select>
-        
-        <div id="trigger-condition-container" class="mt-3 hidden">
-          <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">Target Status</label>
-          <input type="text" id="auto-trigger-cond" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="e.g. In Progress">
-        </div>
       </div>
-      
+
       <div class="p-4 rounded border border-forge-border bg-forge-bg/30">
-        <label class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_action')}</label>
-        <select id="auto-action" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
-          <option value="assign.user">Assign to User</option>
-          <option value="add.label">Add Label</option>
-          <option value="webhook">Send Webhook (POST)</option>
-        </select>
-        
-        <div class="mt-3">
-          <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">Action Payload</label>
-          <input type="text" id="auto-action-payload" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="e.g. username, or https://...">
-        </div>
+        <p class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_action')}</p>
+        <p class="text-sm text-forge-text mb-3">{t('ws.settings.action_desc')}</p>
+
+        <label for="auto-action-payload" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('ws.settings.webhook_url')}</label>
+        <input type="url" id="auto-action-payload" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="https://ejemplo.com/hook" />
+        <p class="text-xs text-forge-muted mt-1">{t('ws.settings.webhook_hint')}</p>
       </div>
     </div>
     
@@ -442,7 +448,10 @@ const wsPendingInvites = pendingInvites.filter(n => {
   input:checked + div + .dot { transform: translateX(12px); background-color: var(--forge-bg); }
 </style>
 
-<script is:inline>
+<script is:inline define:vars={{
+  autoNeedName: t('ws.settings.auto_need_name'),
+  autoNeedUrl: t('ws.settings.auto_need_url'),
+}}>
   const wsId = document.getElementById('btn-save-general')?.getAttribute('data-ws-id');
   let newIconUrl = null;
   const iconInput = document.getElementById('ws-icon-file-input');
@@ -725,24 +734,30 @@ const wsPendingInvites = pendingInvites.filter(n => {
 
   document.getElementById('btn-save-automation')?.addEventListener('click', async (e) => {
     const wsId = e.currentTarget.getAttribute('data-ws-id');
-    const name = document.getElementById('auto-name').value;
-    const trigger_type = document.getElementById('auto-trigger-type').value;
-    const trigger_condition = document.getElementById('auto-trigger-cond').value;
-    const action_type = document.getElementById('auto-action-type').value;
-    const action_payload = document.getElementById('auto-action-payload').value;
+    const name = document.getElementById('auto-name').value.trim();
+    const toStatus = document.getElementById('auto-trigger-cond').value;
+    const url = document.getElementById('auto-action-payload').value.trim();
 
-    try {
-      // validate JSON
-      JSON.parse(trigger_condition);
-      JSON.parse(action_payload);
-    } catch (e) {
-      return window.showToast('Invalid JSON in Condition or Payload', true);
-    }
+    // Los ids que se leían aquí —`auto-trigger-type` y `auto-action-type`— no
+    // existían: los `<select>` eran `auto-trigger` y `auto-action`. `null.value`
+    // lanzaba una excepción y el manejador moría antes del fetch, así que el
+    // botón «Guardar regla» no hacía absolutamente nada.
+    if (!name) return window.showToast(autoNeedName, true);
+    if (!url) return window.showToast(autoNeedUrl, true);
 
+    // El JSON lo compone el cliente. Antes se pedía al usuario que lo
+    // escribiera a mano en dos campos cuyos marcadores sugerían texto plano.
     const res = await fetch(`/api/automations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workspaceId: wsId, name, trigger_type, trigger_condition, action_type, action_payload })
+      body: JSON.stringify({
+        workspaceId: wsId,
+        name,
+        trigger_type: 'issue_status_changed',
+        trigger_condition: JSON.stringify({ to_status: toStatus }),
+        action_type: 'webhook',
+        action_payload: JSON.stringify({ url }),
+      })
     });
 
     if (res.ok) {

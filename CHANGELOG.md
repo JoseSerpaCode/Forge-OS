@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.8.1] - 2026-08-11
+
+### Fixed
+
+- **Las automatizaciones no habían funcionado nunca.** Cuatro fallos independientes, cada uno suficiente por sí solo: el script leía los ids `auto-trigger-type` y `auto-action-type`, que no existían —los `<select>` eran `auto-trigger` y `auto-action`—, así que el botón «Guardar regla» lanzaba una excepción y moría antes de enviar nada; el campo de condición nacía `hidden` y nada se lo quitaba; el formulario ofrecía `issue.moved` mientras el motor consultaba `issue_status_changed`; y el evento se emitía en snake_case y el oyente lo leía en camelCase, así que `workspaceId` llegaba como `undefined` y ninguna regla llegaba siquiera a consultarse.
+- Los dos campos libres pedían **JSON escrito a mano** con marcadores que sugerían texto plano («e.g. In Progress»). Ahora se pregunta el estado y la URL, y el JSON lo compone la aplicación.
+
+### Changed
+
+- El formulario ofrece **un disparador y una acción**, que son los que existen. Ofrecía cuatro y tres, y de las doce combinaciones solo una tenía motor detrás.
+- **Un disparo de automatización queda en el registro de actividad**, con quién lo provocó. «¿Se ejecutó mi regla?» solo podía responderse mirando los logs del servidor.
+
 ## [1.8.0] - 2026-08-11
 
 ### Fixed
