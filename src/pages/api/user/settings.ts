@@ -44,11 +44,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const values: any[] = [];
 
     // ── Password ────────────────────────────────────────────────────────────
-    if (current_password && new_password) {
+    //
+    // Quien entró por Google o GitHub **no tiene** contraseña actual: su cuenta
+    // guarda la cadena literal `oauth`, que no es un hash de bcrypt válido y no
+    // coincide con nada. Exigirle la actual la dejaba sin poder ponerse una
+    // nunca, y por tanto sin poder desvincular su único proveedor —la guarda de
+    // `unlink` se lo impide, con razón—. Quedaba atada al proveedor para
+    // siempre.
+    //
+    // Así que aquí se distingue **poner la primera** de **cambiar la que hay**.
+    // Poner la primera no necesita nada más que la sesión, que ya está validada
+    // por el middleware: no hay ningún secreto anterior que proteger.
+    if (new_password) {
       const dbUser = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id) as any;
-      if (!dbUser || !bcrypt.compareSync(current_password, dbUser.password_hash)) {
-        return new Response('Invalid current password', { status: 403 });
+      if (!dbUser) return new Response('Not Found', { status: 404 });
+
+      // Un hash real de bcrypt siempre empieza por `$2`. Cualquier otra cosa
+      // —`oauth`, o vacío— significa que esta cuenta aún no tiene contraseña.
+      const hasPassword = typeof dbUser.password_hash === 'string' && dbUser.password_hash.startsWith('$2');
+
+      if (hasPassword) {
+        if (!current_password || !bcrypt.compareSync(current_password, dbUser.password_hash)) {
+          return new Response('Invalid current password', { status: 403 });
+        }
       }
+
       if (new_password.length < 8) {
         return new Response('New password must be at least 8 characters', { status: 400 });
       }
