@@ -26,8 +26,10 @@ function validateImageUrl(value: unknown, fieldName: string, maxLen = 2048): str
   return value.trim();
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals, cookies }) => {
   const user = locals.user!;
+
+  let passwordCambiada = false;
 
   try {
     const data = await request.json();
@@ -78,6 +80,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
       updateFields.push('password_hash = ?');
       values.push(bcrypt.hashSync(new_password, 10));
+      passwordCambiada = true;
     }
 
     // ── Username ────────────────────────────────────────────────────────────
@@ -186,6 +189,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (updateFields.length > 0) {
       values.push(user.id);
       db.prepare(`UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`).run(...values);
+    }
+
+    // Cambiar la contraseña echa a las **demás** sesiones.
+    //
+    // Sin esto, cambiarla no servía de nada frente a quien ya está dentro: si
+    // alguien te roba la sesión, cambiar la contraseña es la reacción natural
+    // y la que todo el mundo da por buena, pero la cookie del intruso seguía
+    // siendo válida los treinta días de su `Max-Age`. Peor que no hacer nada,
+    // porque da por resuelto lo que sigue abierto.
+    //
+    // La sesión desde la que se hace el cambio se conserva: cerrarla también
+    // obligaría a volver a entrar justo después de escribir la contraseña
+    // nueva, y eso empuja a la gente a no cambiarla.
+    if (passwordCambiada) {
+      const sesionActual = cookies.get('forge_session')?.value ?? '';
+      db.prepare('DELETE FROM sessions WHERE user_id = ? AND id != ?').run(user.id, sesionActual);
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });

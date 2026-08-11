@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.9.0, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.9.1, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -178,6 +178,28 @@ escribir la migración dos veces cuando llegue la feature.
 
 Antes de dar por muerta cualquiera de ellas, comprueba si su feature sigue en el
 roadmap.
+
+## Lo que ya está auditado (y cómo se comprobó)
+
+`tests/e2e/seguridad.spec.ts` fija permisos por rol, IDOR, escalada de
+privilegios, sesiones e inyección. Dos cosas que conviene saber antes de
+ampliarlo:
+
+- **Un 404 no demuestra que algo esté denegado.** Probando «¿puede un extraño
+  mover este ticket?» salía 404 y parecía correcto; la ruta que se estaba
+  llamando no existía —es `PATCH` y pide `position`—, así que la prueba habría
+  pasado igual sin ninguna comprobación detrás. Cada caso lleva su **control**:
+  la misma petición desde quien sí tiene permiso.
+- **El modo cambia las defensas.** `checkRateLimit` se desactiva solo con
+  `NODE_ENV=test`, que es el modo de la suite e2e: allí veinte intentos
+  fallidos pasan sin bloqueo y parece que no hay protección. La hay, y se
+  comprueba en `tests/rate-limit.test.ts` forzando `NODE_ENV=production`.
+
+Comprobado y correcto: cookie `SameSite=Lax` + `HttpOnly` (bloquea CSRF en
+métodos que escriben) y **ningún GET que modifique estado** salvo el callback de
+OAuth, que va firmado con HMAC. La biografía se pinta dentro de
+`<meta content="...">` y Astro escapa las comillas, así que no se puede salir
+del atributo.
 
 ## Despliegue
 

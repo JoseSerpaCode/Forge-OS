@@ -6,6 +6,21 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.9.1] - 2026-08-11
+
+### Security
+
+- **Cambiar la contraseña no echaba a las demás sesiones.** Si alguien te robaba la sesión, cambiar la contraseña —que es la reacción natural y la que todo el mundo da por buena— no servía de nada: la cookie del intruso seguía siendo válida los treinta días de su `Max-Age`. Peor que no hacer nada, porque daba por resuelto lo que seguía abierto. Ahora se revocan todas menos la sesión desde la que se hace el cambio.
+
+### Added
+
+- **Suite de auditoría** (`tests/e2e/seguridad.spec.ts`): permisos por rol con su control, IDOR sobre tickets y páginas, escalada de privilegios, revocación de sesiones e inyección por el editor y por el perfil.
+- **Prueba del limitador de intentos en modo producción.** Se desactiva solo con `NODE_ENV=test`, que es el modo de la suite e2e, así que allí veinte intentos fallidos pasan sin bloqueo y parece que no hay protección. La hay —bloquea en el intento 16, por IP—, pero no había nada que lo demostrara.
+
+### Fixed
+
+- La prueba del captcha comparaba la **suma visible** para verificar que llegaba un reto nuevo. Los sumandos van de 1 a 9, así que una de cada 81 veces salía la misma y la prueba fallaba sola. Ahora compara el token firmado, que lleva caducidad dentro.
+
 ## [1.9.0] - 2026-08-11
 
 ### Fixed
