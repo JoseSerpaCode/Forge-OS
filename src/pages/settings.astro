@@ -13,7 +13,7 @@ const memberships = db.prepare(`
   WHERE wm.user_id = ?
 `).all(user.id) as any[];
 
-const userProfile = db.prepare('SELECT bio, pronouns, public_email, is_public, github_id, google_id, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
+const userProfile = db.prepare('SELECT bio, pronouns, public_email, email, is_public, github_id, google_id, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
 
 // Una cuenta creada por un proveedor guarda la cadena `oauth` como hash, que no
 // es bcrypt válido. A quien está en esa situación no se le puede pedir «la
@@ -60,6 +60,17 @@ const oauthNotice =
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         {t('user.settings.signout')}
       </button>
+      {/*
+        `logout-all` existía desde hace tiempo —revoca **todas** las sesiones
+        del usuario— y no lo llamaba nadie: era una función de seguridad
+        inalcanzable. Es lo que se necesita cuando sospechas que alguien tiene
+        tu contraseña, o cuando cerraste sesión en un ordenador ajeno y no te
+        acuerdas.
+      */}
+      <button id="btn-logout-all" class="bg-forge-panel border border-forge-border/60 hover:border-red-500/50 hover:bg-red-500/10 text-forge-muted hover:text-forge-error font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 text-sm shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        {t('user.settings.signout_all')}
+      </button>
     </div>
 
     <div class="space-y-10">
@@ -103,7 +114,7 @@ const oauthNotice =
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-semibold text-forge-text mb-2">Pronouns</label>
+                  <label for="profile-pronouns" class="block text-sm font-semibold text-forge-text mb-2">{t('user.settings.pronouns')}</label>
                   <select id="profile-pronouns" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm transition-all cursor-pointer">
                     <option value="" selected={!userProfile.pronouns}>{t('user.settings.dont_specify')}</option>
                     <option value="they/them" selected={userProfile.pronouns === 'they/them'}>{t('user.settings.they_them')}</option>
@@ -113,12 +124,31 @@ const oauthNotice =
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-semibold text-forge-text mb-2">Public email</label>
-                  <select class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm transition-all cursor-pointer">
-                    <option value="">Select a verified email...</option>
-                    <option value={userProfile.public_email} selected={!!userProfile.public_email}>{userProfile.public_email || 'No email added'}</option>
-                  </select>
-                  <input type="hidden" id="profile-email" value={userProfile.public_email || ''} />
+                  {/*
+                    Antes esto era un `<select>` sin `id` ni listener, y lo que
+                    se guardaba era un `<input type="hidden">` que nunca
+                    cambiaba: elegir en el desplegable no hacía absolutamente
+                    nada. Además ofrecía «elige un correo verificado» y una sola
+                    opción, que ya era el valor actual — un menú de una entrada
+                    sobre un concepto, el de correos verificados, que no existe.
+
+                    La elección real es binaria: enseñar el correo de la cuenta
+                    en el perfil público, o no enseñar ninguno.
+                  */}
+                  <label for="profile-email" class="block text-sm font-semibold text-forge-text mb-2">{t('user.settings.public_email')}</label>
+                  {userProfile.email ? (
+                    <select id="profile-email" class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary shadow-sm transition-all cursor-pointer">
+                      <option value="" selected={!userProfile.public_email}>{t('user.settings.email_hidden')}</option>
+                      <option value={userProfile.email} selected={userProfile.public_email === userProfile.email}>{userProfile.email}</option>
+                    </select>
+                  ) : (
+                    <>
+                      <select id="profile-email" disabled class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-muted shadow-sm">
+                        <option value="">{t('user.settings.no_email')}</option>
+                      </select>
+                      <p class="text-xs text-forge-muted mt-1">{t('user.settings.no_email_hint')}</p>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -405,7 +435,9 @@ const oauthNotice =
     </div>
 </MainLayout>
 
-<script is:inline>
+<script is:inline define:vars={{
+  confirmSignOutAll: t('user.settings.signout_all_confirm'),
+}}>
   const userId = document.getElementById('avatar-preview-container')?.getAttribute('data-user-id');
   const themeSelector = document.getElementById('theme-selector');
   if (themeSelector) {
@@ -562,9 +594,30 @@ const oauthNotice =
         pronouns: document.getElementById('profile-pronouns').value,
         public_email: document.getElementById('profile-email').value,
         is_public: document.getElementById('profile-is-public').checked,
-        avatar_url: newAvatarUrl
       };
+
+      // El avatar solo viaja si se ha elegido uno nuevo.
+      //
+      // Antes se mandaba siempre, y valía `null` cuando no se había tocado la
+      // foto. El servidor distingue tres cosas —ausente = no tocar, `''` =
+      // borrar, una cadena = ponerla— y `null` no es ninguna: `validateImageUrl`
+      // lo rechazaba con «Invalid Avatar format». Es decir, **guardar el perfil
+      // fallaba siempre** salvo que subieras una foto nueva en ese mismo
+      // momento. La biografía, los pronombres y el correo no se guardaban nunca.
+      if (newAvatarUrl) payload.avatar_url = newAvatarUrl;
+
       await handleSave(btnSaveProfile, '/api/user/settings', payload, 'Profile updated successfully!');
+    });
+
+    document.getElementById('btn-logout-all')?.addEventListener('click', () => {
+      window.forgeConfirm?.(confirmSignOutAll, async () => {
+        try {
+          const res = await fetch('/api/auth/logout-all', { method: 'POST' });
+          if (res.ok) window.location.href = '/login';
+        } catch (e) {
+          console.error(e);
+        }
+      });
     });
 
     const btnLogout = document.getElementById('btn-logout');

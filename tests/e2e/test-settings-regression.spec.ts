@@ -19,9 +19,16 @@ test('Settings regression: Sidebar handles missing workspace and navigates succe
 
   // Change username and save
   await page.fill('#username-input', 'TestUserSettings2');
-  await page.click('#btn-save-settings');
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1000); // wait for reload
+
+  // Se espera a que la recarga **termine**, no un tiempo fijo. Al guardar,
+  // `settings.astro` programa `window.location.reload()` a los 1200 ms; este
+  // test esperaba 1000. Pulsaba el enlace del lateral y, 200 ms después, la
+  // recarga pendiente lo devolvía a /settings y la comprobación final fallaba.
+  // Pasaba solo cuando la navegación ganaba la carrera.
+  await Promise.all([
+    page.waitForURL('**/settings', { waitUntil: 'load' }),
+    page.click('#btn-save-settings'),
+  ]);
   
   // Now click a link in the sidebar
   const sidebarLink = page.locator('nav a').first();

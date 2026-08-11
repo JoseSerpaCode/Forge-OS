@@ -231,7 +231,9 @@ Found something? See [SECURITY.md](./SECURITY.md).
 ## Roadmap
 
 - [x] Identity and workspaces — login, sessions, multi-tenant isolation
-- [x] Knowledge base — documents, safe Markdown parsing, bidirectional links
+- [x] Knowledge base — documents, safe Markdown parsing, block editor
+- [ ] Bidirectional links between pages and issues — the API is there
+      (`linked-pages`, `backlinks`), the interface is not
 - [x] Kanban and sprints — drag & drop, velocity/distribution/precision metrics, time tracking
 - [x] Dashboard — cross-workspace summary and global notifications
 - [x] UI/UX and command palette — global shortcuts, modals, toast feedback

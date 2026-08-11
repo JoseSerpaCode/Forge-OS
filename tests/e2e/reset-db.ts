@@ -52,6 +52,25 @@ export default function resetDb() {
     VALUES (?, ?, ?, ?)
   `).run('test-user-rename', 'rename_me', pwHash, 0);
 
+  // Usuario propio para las pruebas de Ajustes.
+  //
+  // Guardar el perfil escribe **todos** los campos a la vez, así que hacerlo
+  // sobre 'jose' —que usan otros diez specs— le cambiaba la biografía y el
+  // correo por debajo mientras otro test miraba su nombre de usuario. Falla uno
+  // distinto en cada corrida y pasa al aislarlo, que es el síntoma de siempre.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, email, is_sysadmin)
+    VALUES (?, ?, ?, ?, ?)
+  `).run('test-user-profile', 'profile_user', pwHash, 'profile@example.test', 0);
+
+  // Y otro para las automatizaciones, que crean espacios de trabajo propios.
+  // Hacerlo con 'jose' le cambiaba el `last_workspace_id` por debajo a los
+  // specs que dependen de dónde está parado.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-autom', 'autom_user', pwHash, 0);
+
   db.prepare(`
     INSERT INTO workspaces (id, name, sys_tag, created_by)
     VALUES (?, ?, ?, ?)

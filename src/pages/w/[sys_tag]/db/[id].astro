@@ -39,8 +39,12 @@ const view = orm.select().from(dynamicViews)
   .where(eq(dynamicViews.databaseId, database.id))
   .get() as any;
 let visibleColumns = columns.map((c: any) => c.id);
-if (view && view.visible_columns_json) {
-  try { visibleColumns = JSON.parse(view.visible_columns_json); } catch(e){}
+// `visibleColumnsJson`, no `visible_columns_json`: la fila viene de Drizzle,
+// cuyas claves son las del esquema en camelCase, no las de la columna SQL. La
+// condición era siempre falsa, así que la configuración de columnas visibles
+// que el usuario guardaba no se aplicaba nunca.
+if (view?.visibleColumnsJson) {
+  try { visibleColumns = JSON.parse(view.visibleColumnsJson); } catch(e){}
 }
 ---
 

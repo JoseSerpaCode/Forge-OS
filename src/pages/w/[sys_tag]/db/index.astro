@@ -79,7 +79,9 @@ const canEdit = access.role !== 'viewer';
                   <div class="flex items-center gap-2 mt-1">
                     <span class="inline-flex items-center gap-1 text-[10px] uppercase font-bold text-forge-muted tracking-wider bg-forge-bg px-2 py-0.5 rounded-md border border-forge-border/50">
                       <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                      {(() => { try { return JSON.parse(database.schema_json || '{}').columns?.length || 0; } catch(e) { return 0; } })()} {t('db.columns')}
+                      {/* `schemaJson` por lo mismo: en snake_case daba undefined y el contador
+                          marcaba 0 columnas en todas las tablas, siempre. */}
+                      {(() => { try { return JSON.parse(database.schemaJson || '{}').columns?.length || 0; } catch(e) { return 0; } })()} {t('db.columns')}
                     </span>
                   </div>
                 </div>

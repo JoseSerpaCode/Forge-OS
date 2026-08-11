@@ -235,7 +235,9 @@ servicio corriendo la versión que funcionaba.
 ## Roadmap
 
 - [x] Identidad y espacios de trabajo: login, sesiones, aislamiento multi-inquilino
-- [x] Base de conocimiento: documentos, parseo seguro de Markdown, enlaces bidireccionales
+- [x] Base de conocimiento: documentos, parseo seguro de Markdown, editor por bloques
+- [ ] Enlaces bidireccionales entre páginas e issues: la API existe
+      (`linked-pages`, `backlinks`), la interfaz no
 - [x] Kanban y sprints: drag & drop, métricas de velocity/distribución/precisión, control de tiempo
 - [x] Dashboard: resumen entre espacios de trabajo y notificaciones globales
 - [x] UI/UX y paleta de comandos: atajos globales, modales, feedback con toasts
