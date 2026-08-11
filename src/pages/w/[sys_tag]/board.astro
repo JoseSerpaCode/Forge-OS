@@ -179,7 +179,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       </div>
 
       <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto">
-        <select id="sprint-selector" class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
+        <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
           <option value="backlog" selected={!activeSprintId}>Backlog</option>
           {sprints.map(s => (
             <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? '(Active)' : s.status === 'completed' ? '(Completed)' : ''}</option>
@@ -225,7 +225,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
   <dialog id="new-sprint-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
     <h2 class="text-xl font-bold mb-4">Create Sprint</h2>
     <div class="mb-4">
-      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">Name</label>
+      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="sprint-name">Name</label>
       <input type="text" id="sprint-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" placeholder="E.g. Sprint 4">
     </div>
     <div class="flex justify-end gap-3 mt-6">
@@ -239,11 +239,11 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     <h2 class="text-xl font-bold mb-4">{t('modal.create_issue')}</h2>
     <div class="space-y-4">
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.title')}</label>
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-title">{t('modal.title')}</label>
         <input type="text" id="new-issue-title" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none" placeholder={t('modal.title_placeholder') as string}>
       </div>
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.type')}</label>
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-type">{t('modal.type')}</label>
         <select id="new-issue-type" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
           <option value="task">Task</option>
           <option value="bug">Bug</option>
@@ -251,7 +251,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         </select>
       </div>
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.sprint')}</label>
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-sprint">{t('modal.sprint')}</label>
         <select id="new-issue-sprint" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
           <option value="">{t('modal.backlog')}</option>
           {sprints.map(s => (
@@ -260,7 +260,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         </select>
       </div>
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.assignee') || 'Assignee'}</label>
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-assignee">{t('modal.assignee') || 'Assignee'}</label>
         <select id="new-issue-assignee" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
           <option value="">Unassigned</option>
           {workspaceMembers.map(m => (
@@ -269,11 +269,11 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         </select>
       </div>
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.due_date') || 'Due Date'}</label>
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-due-date">{t('modal.due_date') || 'Due Date'}</label>
         <input type="date" id="new-issue-due-date" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none font-mono" />
       </div>
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.description') || 'Description'}</label>
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-desc">{t('modal.description') || 'Description'}</label>
         <textarea id="new-issue-desc" rows="3" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-sm text-forge-text focus:border-forge-secondary outline-none placeholder:text-forge-muted" placeholder={t('modal.desc_placeholder') as string}></textarea>
       </div>
     </div>

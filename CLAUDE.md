@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.8.4, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.9.1, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -78,6 +78,19 @@ fallos). Tres reglas que se rompen con facilidad:
   ilegible.
 - **Texto sobre fondo naranja va con `text-forge-on-accent`**, nunca
   `text-forge-bg`: ese se invierte con el tema y el naranja no.
+
+**Todo control lleva nombre accesible**: 89 de 89 en las nueve pantallas
+principales, comprobado en el navegador. Al enlazar las etiquetas en bloque
+salió el fallo que hay que evitar repetir: cuando un `<label>` **envuelve** su
+control ya está asociado, y añadirle un `for` que apunte a otro sitio hace que
+el navegador **ignore** el control que envuelve. Las casillas de notificaciones
+quedaron una fila desplazadas —pulsar «silenciar asignaciones» cambiaba
+«menciones»— y eso es peor que no tener etiqueta, porque falla en silencio. Lo
+fija `tests/e2e/a11y-etiquetas.spec.ts`.
+
+Los controles que se **repiten** (columnas de una base dinámica, rol de cada
+miembro) van con `aria-label`, nunca con `id` fijo: dos elementos con el mismo
+id rompen `for` igual, y gana el primero.
 
 La variante `dark:` de Tailwind está atada a `[data-theme]` con
 `@custom-variant`, no a `prefers-color-scheme`. Sin eso, `dark:prose-invert` no
@@ -165,6 +178,28 @@ escribir la migración dos veces cuando llegue la feature.
 
 Antes de dar por muerta cualquiera de ellas, comprueba si su feature sigue en el
 roadmap.
+
+## Lo que ya está auditado (y cómo se comprobó)
+
+`tests/e2e/seguridad.spec.ts` fija permisos por rol, IDOR, escalada de
+privilegios, sesiones e inyección. Dos cosas que conviene saber antes de
+ampliarlo:
+
+- **Un 404 no demuestra que algo esté denegado.** Probando «¿puede un extraño
+  mover este ticket?» salía 404 y parecía correcto; la ruta que se estaba
+  llamando no existía —es `PATCH` y pide `position`—, así que la prueba habría
+  pasado igual sin ninguna comprobación detrás. Cada caso lleva su **control**:
+  la misma petición desde quien sí tiene permiso.
+- **El modo cambia las defensas.** `checkRateLimit` se desactiva solo con
+  `NODE_ENV=test`, que es el modo de la suite e2e: allí veinte intentos
+  fallidos pasan sin bloqueo y parece que no hay protección. La hay, y se
+  comprueba en `tests/rate-limit.test.ts` forzando `NODE_ENV=production`.
+
+Comprobado y correcto: cookie `SameSite=Lax` + `HttpOnly` (bloquea CSRF en
+métodos que escriben) y **ningún GET que modifique estado** salvo el callback de
+OAuth, que va firmado con HMAC. La biografía se pinta dentro de
+`<meta content="...">` y Astro escapa las comillas, así que no se puede salir
+del atributo.
 
 ## Despliegue
 

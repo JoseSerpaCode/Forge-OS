@@ -4,6 +4,7 @@ import TopBar from '../components/layout/TopBar.astro';
 import Sidebar from '../components/layout/Sidebar.astro';
 import Footer from '../components/layout/Footer.astro';
 import GuestBanner from '../components/layout/GuestBanner.astro';
+import { useTranslations } from '../i18n/ui';
 
 interface Props {
   title: string;
@@ -14,6 +15,9 @@ interface Props {
 }
 
 const { title, workspaceId, description, ogImage, hideFooter = false } = Astro.props;
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
 const user = Astro.locals.user!;
 
 import db from '../lib/db';
@@ -117,8 +121,8 @@ Astro.response.headers.set('Pragma', 'no-cache');
     </div>
     
     <!-- Global UI Components -->
-    <div id="forge-toast" class="fixed bottom-6 right-6 bg-forge-panel/95 backdrop-blur-md border border-forge-border/50 text-forge-text px-6 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] transform translate-y-20 opacity-0 transition-all duration-400 ease-out z-[100] flex items-center gap-4">
-      <span id="forge-toast-icon" class="text-forge-accent-text flex-shrink-0 bg-forge-secondary/10 p-1.5 rounded-full">
+    <div id="forge-toast" role="status" aria-live="polite" aria-atomic="true" class="fixed bottom-6 right-6 bg-forge-panel/95 backdrop-blur-md border border-forge-border/50 text-forge-text px-6 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] transform translate-y-20 opacity-0 transition-all duration-400 ease-out z-[100] flex items-center gap-4">
+      <span id="forge-toast-icon" aria-hidden="true" class="text-forge-accent-text flex-shrink-0 bg-forge-secondary/10 p-1.5 rounded-full">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
       </span>
       <span id="forge-toast-msg" class="text-sm font-semibold tracking-wide"></span>
@@ -142,7 +146,7 @@ Astro.response.headers.set('Pragma', 'no-cache');
     <dialog id="cmd-k-palette" class="bg-forge-panel/95 backdrop-blur-md border border-forge-border rounded-xl p-0 w-full max-w-[550px] text-forge-text shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[200] overflow-hidden m-auto mb-auto mt-[15vh] transition-all open:animate-in open:fade-in open:zoom-in-95 backdrop:bg-black/40 backdrop:backdrop-blur-sm">
       <div class="flex items-center px-4 py-4 border-b border-forge-border/50 bg-forge-bg/30">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text mr-3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="cmd-k-input" class="w-full bg-transparent border-none text-forge-text text-lg focus:outline-none placeholder-forge-muted/70 font-medium" placeholder="Search commands, workspaces, jump to..." autocomplete="off">
+        <input type="text" id="cmd-k-input" aria-label={t('cmd.palette.label')} class="w-full bg-transparent border-none text-forge-text text-lg focus:outline-none placeholder-forge-muted/70 font-medium" placeholder="Search commands, workspaces, jump to..." autocomplete="off">
         <span class="text-[10px] font-mono text-forge-muted bg-forge-bg px-2 py-1 rounded border border-forge-border ml-2 font-bold tracking-widest shadow-sm">ESC</span>
       </div>
       <div class="max-h-[350px] overflow-y-auto p-2" id="cmd-k-results">

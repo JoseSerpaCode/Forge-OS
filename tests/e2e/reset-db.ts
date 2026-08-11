@@ -83,6 +83,39 @@ export default function resetDb() {
     VALUES (?, ?, ?, ?)
   `).run('test-user-del', 'del_user', pwHash, 0);
 
+  // Cuatro cuentas con los cuatro papeles posibles frente a un mismo espacio,
+  // para la auditoría de permisos. Se montan aquí y no en el propio spec
+  // porque son el escenario, no el sujeto: si cada prueba las creara, el
+  // escenario formaría parte de lo que se está midiendo.
+  for (const [id, nombre] of [
+    ['aud-owner', 'aud_owner'],
+    ['aud-editor', 'aud_editor'],
+    ['aud-viewer', 'aud_viewer'],
+    ['aud-fuera', 'aud_fuera'],
+    // Propia para la prueba de sesiones: esa cambia la contraseña, y hacerlo
+    // sobre una cuenta compartida le rompe el login a los demás casos.
+    ['aud-pass', 'aud_pass'],
+  ] as const) {
+    db.prepare('INSERT INTO users (id, username, password_hash, is_sysadmin) VALUES (?, ?, ?, 0)')
+      .run(id, nombre, pwHash);
+  }
+
+  db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, ?, ?, ?)')
+    .run('ws-auditoria', 'Auditoria', 'auditoria-ws', 'aud-owner');
+  for (const [uid, rol] of [['aud-owner', 'owner'], ['aud-editor', 'editor'], ['aud-viewer', 'viewer']] as const) {
+    db.prepare('INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)')
+      .run('ws-auditoria', uid, rol);
+  }
+  db.prepare(`INSERT INTO issues (id, workspace_id, title, type, reporter_id, status)
+              VALUES ('i-auditoria', 'ws-auditoria', 'Ticket privado', 'task', 'aud-owner', 'todo')`).run();
+  db.prepare(`INSERT INTO pages (id, workspace_id, title, created_by)
+              VALUES ('p-auditoria', 'ws-auditoria', 'Pagina privada', 'aud-owner')`).run();
+  // Una segunda página para la prueba de inyección: comparte espacio con la
+  // anterior pero no contenido, porque las dos escriben y en paralelo se
+  // pisaban.
+  db.prepare(`INSERT INTO pages (id, workspace_id, title, created_by)
+              VALUES ('p-inyeccion', 'ws-auditoria', 'Pagina de inyeccion', 'aud-owner')`).run();
+
   db.prepare(`
     INSERT INTO workspaces (id, name, sys_tag, created_by)
     VALUES (?, ?, ?, ?)
