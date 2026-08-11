@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.8.3, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.8.4, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -104,6 +104,19 @@ redacciones distintas. Si necesitas una de ellas, **impórtala; no la reescribas
 - **`src/lib/captcha.ts`** — suma firmada con HMAC, **sin estado en servidor**.
   No lo cambies por reCAPTCHA ni hCaptcha: la portada promete «sin scripts de
   terceros» y el registro es justo donde más se notaría el desmentido.
+
+- **`src/lib/accountDeletion.ts`** — el borrado permanente. `DELETE FROM users`
+  a secas **no funciona**: ocho tablas apuntan a `users` con `NO ACTION`, así
+  que con `foreign_keys` activo revienta para cualquier cuenta que haya
+  trabajado algo. La solución no es poner CASCADE en todas —eso borra los
+  tickets y las páginas del equipo cuando alguien se va—, sino reatribuirlos a
+  la cuenta lápida `deleted-user`. Tres reglas que no se ven en el código:
+  el `assignee_id` va a **NULL** y no a la lápida (sin asignar se ve en los
+  filtros, asignado a un fantasma no); la lápida nace con `is_public = 0`
+  porque el valor por defecto de la columna es 1 y saldría en la búsqueda de
+  personas; y si la cuenta es la **única propietaria** de un espacio con más
+  gente dentro, el borrado se detiene, porque un espacio sin dueño no lo puede
+  administrar ni borrar nadie.
 
 Los invitados tampoco salen en las sugerencias de búsqueda
 (`src/pages/api/sys/state.ts`): la consulta esconde `is_guest = 1` del `LIKE`

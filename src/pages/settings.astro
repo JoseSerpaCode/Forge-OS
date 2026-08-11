@@ -13,7 +13,8 @@ const memberships = db.prepare(`
   WHERE wm.user_id = ?
 `).all(user.id) as any[];
 
-const userProfile = db.prepare('SELECT bio, pronouns, public_email, email, is_public, github_id, google_id, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
+const tienePassword = (h: unknown) => typeof h === 'string' && h.startsWith('$2');
+const userProfile = db.prepare('SELECT bio, pronouns, public_email, email, is_public, github_id, google_id, password_hash, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
 
 // Una cuenta creada por un proveedor guarda la cadena `oauth` como hash, que no
 // es bcrypt válido. A quien está en esa situación no se le puede pedir «la
@@ -432,11 +433,79 @@ const oauthNotice =
         )}
         </div>
       </section>
+
+      {/*
+        Zona de peligro.
+
+        Va al final, separada y en rojo, y **no** se abre sola: hay que pulsar
+        para desplegarla. Lo importante es que las consecuencias no son un texto
+        genérico de «esto no se puede deshacer», sino cifras que se piden al
+        servidor al abrir: cuántos espacios se borran enteros, cuáles impiden el
+        borrado y qué trabajo se queda con el equipo. Eso es lo que cambia la
+        decisión.
+      */}
+      <section class="bg-forge-panel border border-red-500/40 rounded-xl p-5 sm:p-6 shadow-sm">
+        <div class="mb-4">
+          <h2 class="text-lg font-bold text-red-500">{t('account.delete.title')}</h2>
+          <p class="text-sm text-forge-muted mt-1">{t('account.delete.lead')}</p>
+        </div>
+
+        <button id="btn-open-delete" class="text-sm font-semibold px-4 py-2 rounded-md border border-red-500/50 text-red-500 hover:bg-red-500/10 transition-colors">
+          {t('account.delete.open')}
+        </button>
+
+        <div id="delete-panel" class="hidden mt-5 space-y-4">
+          <div id="delete-consequences" class="space-y-4 text-sm" aria-live="polite"></div>
+
+          <div id="delete-form" class="space-y-3">
+            <div>
+              <label for="delete-confirm-username" class="block text-sm font-semibold text-forge-text mb-1.5">
+                {t('account.delete.confirm_label')}
+              </label>
+              <input id="delete-confirm-username" type="text" autocomplete="off"
+                class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" />
+            </div>
+            {/* Una cuenta de OAuth no tiene contraseña que pedir: su marcador
+                no es un hash de bcrypt. Pedirla sería un campo imposible de
+                rellenar delante de un botón que no llegaría a funcionar. */}
+            <div id="delete-password-row" class={tienePassword(userProfile.password_hash) ? '' : 'hidden'}>
+              <label for="delete-password" class="block text-sm font-semibold text-forge-text mb-1.5">
+                {t('account.delete.password_label')}
+              </label>
+              <input id="delete-password" type="password" autocomplete="current-password"
+                class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" />
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button id="btn-confirm-delete" class="text-sm font-bold px-4 py-2.5 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+                {t('account.delete.button')}
+              </button>
+              <button id="btn-cancel-delete" class="text-sm font-semibold px-4 py-2.5 rounded-md border border-forge-border/60 text-forge-text hover:bg-forge-border/40 transition-colors">
+                {t('account.delete.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 </MainLayout>
 
 <script is:inline define:vars={{
   confirmSignOutAll: t('user.settings.signout_all_confirm'),
+  delTxt: {
+    keeps: t('account.delete.keeps'),
+    keepsNote: t('account.delete.keeps_note'),
+    goes: t('account.delete.goes'),
+    goesNote: t('account.delete.goes_note'),
+    blocked: t('account.delete.blocked'),
+    blockedNote: t('account.delete.blocked_note'),
+    wsDeleted: t('account.delete.ws_deleted'),
+    errMismatch: t('err.confirm_mismatch'),
+    errPassword: t('err.bad_password'),
+    errOwnership: t('err.workspace_ownership'),
+    nIssues: t('account.delete.n_issues'),
+    nPages: t('account.delete.n_pages'),
+    nLogs: t('account.delete.n_logs'),
+  },
 }}>
   const userId = document.getElementById('avatar-preview-container')?.getAttribute('data-user-id');
   const themeSelector = document.getElementById('theme-selector');
@@ -728,4 +797,119 @@ const oauthNotice =
       });
     });
   });
+
+  // ── Borrado permanente de la cuenta ────────────────────────────────────────
+  (function () {
+    const abrir = document.getElementById('btn-open-delete');
+    const panel = document.getElementById('delete-panel');
+    const cajaConsecuencias = document.getElementById('delete-consequences');
+    const formulario = document.getElementById('delete-form');
+    const campoNombre = document.getElementById('delete-confirm-username');
+    const campoPassword = document.getElementById('delete-password');
+    const botonBorrar = document.getElementById('btn-confirm-delete');
+    const botonCancelar = document.getElementById('btn-cancel-delete');
+    if (!abrir || !panel) return;
+
+    const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    function pintar(p) {
+      const bloqueado = p.blocking && p.blocking.length > 0;
+      let html = '';
+
+      if (bloqueado) {
+        html += '<div class="rounded-lg border border-red-500/50 bg-red-500/10 p-3">' +
+          '<p class="font-bold text-red-500">' + esc(delTxt.blocked) + '</p>' +
+          '<p class="text-forge-text mt-1">' + esc(delTxt.blockedNote) + '</p>' +
+          '<ul class="mt-2 list-disc list-inside text-forge-text">' +
+          p.blocking.map((w) => '<li>' + esc(w.name) + '</li>').join('') +
+          '</ul></div>';
+      }
+
+      if (p.workspacesDeleted && p.workspacesDeleted.length) {
+        html += '<div class="rounded-lg border border-forge-border/60 p-3">' +
+          '<p class="font-bold text-forge-text">' + esc(delTxt.goes) + '</p>' +
+          '<p class="text-forge-muted mt-1">' + esc(delTxt.goesNote) + '</p>' +
+          '<p class="text-forge-text mt-2 font-semibold">' + esc(delTxt.wsDeleted) + '</p>' +
+          '<ul class="mt-1 list-disc list-inside text-forge-text">' +
+          p.workspacesDeleted.map((w) => '<li>' + esc(w.name) + '</li>').join('') +
+          '</ul></div>';
+      } else {
+        html += '<div class="rounded-lg border border-forge-border/60 p-3">' +
+          '<p class="font-bold text-forge-text">' + esc(delTxt.goes) + '</p>' +
+          '<p class="text-forge-muted mt-1">' + esc(delTxt.goesNote) + '</p></div>';
+      }
+
+      const conservado = (p.issuesReported || 0) + (p.pagesCreated || 0) + (p.workLogs || 0);
+      if (conservado > 0) {
+        html += '<div class="rounded-lg border border-forge-border/60 p-3">' +
+          '<p class="font-bold text-forge-text">' + esc(delTxt.keeps) + '</p>' +
+          '<p class="text-forge-muted mt-1">' + esc(delTxt.keepsNote) + '</p>' +
+          // Con etiqueta. Tres números sueltos separados por puntos no dicen
+          // qué se está contando, y esta es justo la pantalla donde hace falta
+          // entenderlo a la primera.
+          '<ul class="mt-2 text-forge-text list-disc list-inside">' +
+          '<li>' + p.issuesReported + ' ' + esc(delTxt.nIssues) + '</li>' +
+          '<li>' + p.pagesCreated + ' ' + esc(delTxt.nPages) + '</li>' +
+          '<li>' + p.workLogs + ' ' + esc(delTxt.nLogs) + '</li>' +
+          '</ul></div>';
+      }
+
+      cajaConsecuencias.innerHTML = html;
+      // Sin salida posible, el formulario sobra: enseñarlo invita a pelearse
+      // con un botón que no va a funcionar.
+      formulario.classList.toggle('hidden', bloqueado);
+    }
+
+    abrir.addEventListener('click', async () => {
+      panel.classList.remove('hidden');
+      abrir.classList.add('hidden');
+      try {
+        const res = await fetch('/api/user/account');
+        if (res.ok) pintar(await res.json());
+      } catch (e) {
+        console.error('[ACCOUNT]', e);
+      }
+    });
+
+    botonCancelar?.addEventListener('click', () => {
+      panel.classList.add('hidden');
+      abrir.classList.remove('hidden');
+      if (campoNombre) campoNombre.value = '';
+      if (campoPassword) campoPassword.value = '';
+    });
+
+    botonBorrar?.addEventListener('click', async () => {
+      botonBorrar.disabled = true;
+      try {
+        const res = await fetch('/api/user/account', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            confirm_username: campoNombre?.value || '',
+            password: campoPassword?.value || '',
+          }),
+        });
+
+        if (res.ok) {
+          // A la portada, que es lo único que queda accesible sin cuenta.
+          window.location.href = '/';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        const mensajes = {
+          confirm_mismatch: delTxt.errMismatch,
+          bad_password: delTxt.errPassword,
+          workspace_ownership: delTxt.errOwnership,
+        };
+        window.showToast?.(mensajes[data.error_code] || 'Error', true);
+        if (data.error_code === 'workspace_ownership' && data.preview) pintar(data.preview);
+      } catch (e) {
+        window.showToast?.(String(e), true);
+      } finally {
+        botonBorrar.disabled = false;
+      }
+    });
+
+  })();
 </script>

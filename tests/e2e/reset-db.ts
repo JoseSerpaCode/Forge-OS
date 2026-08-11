@@ -76,6 +76,13 @@ export default function resetDb() {
     VALUES (?, ?, ?, ?)
   `).run('test-user-invit', 'invit_user', pwHash, 0);
 
+  // Para el borrado de cuenta. Se recrea en cada corrida justo porque la
+  // prueba lo destruye: es su objeto de estudio.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-del', 'del_user', pwHash, 0);
+
   db.prepare(`
     INSERT INTO workspaces (id, name, sys_tag, created_by)
     VALUES (?, ?, ?, ?)

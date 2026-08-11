@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.8.4] - 2026-08-11
+
+### Added
+
+- **Eliminar la cuenta de forma permanente**, desde Ajustes. Pide escribir el nombre de usuario y la contraseña —un «¿estás seguro?» se pulsa dos veces sin leer—, y antes de preguntar enseña las consecuencias **con cifras reales** pedidas al servidor: qué espacios se borran enteros, cuáles impiden el borrado y cuánto trabajo se queda con el equipo.
+- El borrado **se detiene** si la cuenta es la única propietaria de un espacio en el que queda más gente, y dice cuál. Un espacio sin propietario no lo puede administrar ni borrar nadie.
+
+### Changed
+
+- El trabajo compartido **no se destruye** al borrar la cuenta: los tickets reportados, las páginas escritas y las horas registradas se quedan en sus espacios a nombre de una cuenta eliminada. Poner CASCADE en todo habría sido más corto, pero significa que quien se va de un equipo se lleva por delante la historia de los demás. Los espacios donde no queda nadie sí se borran enteros.
+- Los tickets que tuviera asignados quedan **sin asignar**, no asignados a la cuenta lápida: sin asignar se ven en los filtros de trabajo huérfano, a nombre de un fantasma no.
+
 ## [1.8.3] - 2026-08-11
 
 ### Fixed
