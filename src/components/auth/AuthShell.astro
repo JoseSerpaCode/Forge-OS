@@ -91,8 +91,16 @@ const t = useTranslations(lang);
       cambiar de idioma: pulsar «entrar» enviaba /api/lang y se quedaba en el
       login. Rompió 34 pruebas de una vez, y a una persona le habría hecho lo
       mismo si pulsaba Enter en el campo equivocado.
+
+      Va **envuelto en un div** y no con `class` sobre el componente. Los
+      estilos de este archivo tienen ámbito de componente: se compilan a
+      `.au-lang[data-astro-cid-…]`, y ese atributo no llega al elemento raíz de
+      LangSwitch, que lleva el suyo propio. Con la clase puesta directamente
+      sobre el componente, la regla no casaba con nada y el conmutador salía
+      abajo del todo, en el flujo, debajo del enlace de registro — se veía en
+      pantalla, pero no donde dice el diseño.
     */}
-    <LangSwitch class="au-lang" />
+    <div class="au-lang"><LangSwitch /></div>
   </main>
 </div>
 

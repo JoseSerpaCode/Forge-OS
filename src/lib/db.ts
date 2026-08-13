@@ -256,6 +256,12 @@ CREATE TABLE IF NOT EXISTS pages (
  FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
+-- El árbol de páginas (PageTree.astro) lee todas las páginas del espacio en
+-- cada renderizado del lateral: es la consulta que más veces se ejecuta de todo
+-- el producto, y la tabla pages no tenía ningun indice. Sin esto, cada pintado del
+-- lateral era un recorrido completo de la tabla.
+CREATE INDEX IF NOT EXISTS idx_pages_workspace ON pages(workspace_id, parent_page_id);
+
 CREATE TABLE IF NOT EXISTS document_chunks (
  id TEXT PRIMARY KEY,
  entity_id TEXT NOT NULL,
@@ -397,6 +403,14 @@ CREATE TABLE IF NOT EXISTS notifications (
  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- notifications tampoco tenía índice, y se consulta por destinatario en cada
+-- carga de la campana, y por tipo desde los ajustes del espacio.
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, type, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
+
+CREATE INDEX IF NOT EXISTS idx_join_requests_user ON workspace_join_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_join_requests_ws ON workspace_join_requests(workspace_id);
 `);
 
 // Insert SYSTEM user for automated messages

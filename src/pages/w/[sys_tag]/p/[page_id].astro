@@ -1,4 +1,5 @@
 ---
+import { useTranslations } from '../../../../i18n/ui';
 import MainLayout from '../../../../layouts/MainLayout.astro';
 import PageTree from '../../../../components/notion/PageTree.astro';
 import EditorClient from '../../../../components/notion/EditorClient.astro';
@@ -6,6 +7,7 @@ import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
 
 const user = Astro.locals.user!;
+const t = useTranslations(Astro.locals.lang || 'en');
 if (!user) return Astro.redirect('/login');
 
 const { sys_tag, page_id } = Astro.params;
@@ -41,7 +43,7 @@ if (page.parent_page_id) {
 }
 ---
 
-<MainLayout hideFooter={true} title={`${page.title} | Knowledge Base`} workspaceId={ws.id}>
+<MainLayout hideFooter={true} title={`${page.title} | ${t('sidebar.knowledge')}`} workspaceId={ws.id}>
   <div class="flex h-full overflow-hidden">
     <PageTree workspaceId={ws.id} sysTag={sys_tag!} currentPageId={page.id} />
     

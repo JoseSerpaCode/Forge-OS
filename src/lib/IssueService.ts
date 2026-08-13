@@ -26,7 +26,9 @@ export class IssueService {
     isSysadmin: number,
     username: string
   ) {
-    const issue = db.prepare('SELECT id, workspace_id FROM issues WHERE id = ?').get(issueId) as Pick<Issue, 'id' | 'workspace_id'> | undefined;
+    // El título entra en la consulta porque lo usa el aviso de asignación: sin
+    // él, el mensaje solo podía enseñar un trozo del identificador.
+    const issue = db.prepare('SELECT id, workspace_id, title FROM issues WHERE id = ?').get(issueId) as Pick<Issue, 'id' | 'workspace_id' | 'title'> | undefined;
     if (!issue) throw new ApiError(404, 'Issue Not Found');
 
     const access = checkWorkspaceAccess(userId, isSysadmin, issue.workspace_id, 'editor');
@@ -67,11 +69,14 @@ export class IssueService {
     if (data.assignee_id !== undefined && data.assignee_id !== null && data.assignee_id !== userId) {
       const ws = db.prepare('SELECT sys_tag FROM workspaces WHERE id = ?').get(issue.workspace_id) as any;
       if (ws) {
+        // El título, no ocho caracteres del identificador: «te han asignado
+        // 3f2a1b9c» no dice qué hay que hacer, y obliga a abrir el enlace solo
+        // para saber si importa.
         NotificationService.notify(
           data.assignee_id,
           'assign',
-          'Task Assigned',
-          `${username} assigned you to issue ${issueId.substring(0,8)}`,
+          'Te han asignado un ticket',
+          `${username}: ${data.title ?? issue.title ?? ''}`,
           `/w/${ws.sys_tag}/board?issue=${issueId}`
         );
       }
@@ -125,6 +130,26 @@ export class IssueService {
       INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, description)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position, data.assignee_id || null, data.due_date || null, data.description || null);
+
+    // Avisar a quien queda asignado **al crear**, no solo al editar después.
+    //
+    // Este hueco explicaba por sí solo el «no me llega nunca nada»: crear el
+    // ticket ya asignado es el camino normal —está en el propio formulario de
+    // nuevo ticket—, y era el único que no avisaba. Había que crearlo sin
+    // asignar y asignarlo en un segundo paso para que saliera la notificación.
+    if (data.assignee_id && data.assignee_id !== userId) {
+      const ws = db.prepare('SELECT sys_tag FROM workspaces WHERE id = ?').get(data.workspace_id) as any;
+      const quien = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as any;
+      if (ws) {
+        NotificationService.notify(
+          data.assignee_id,
+          'assign',
+          'Te han asignado un ticket',
+          `${quien?.username ?? 'Alguien'}: ${data.title}`,
+          `/w/${ws.sys_tag}/board?issue=${issueId}`
+        );
+      }
+    }
 
     const generalChannel = db.prepare("SELECT id FROM channels WHERE workspace_id = ? AND name = 'general'").get(data.workspace_id) as any;
     if (generalChannel) {

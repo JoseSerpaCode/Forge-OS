@@ -52,6 +52,89 @@ export default function resetDb() {
     VALUES (?, ?, ?, ?)
   `).run('test-user-rename', 'rename_me', pwHash, 0);
 
+  // Usuario propio para las pruebas de Ajustes.
+  //
+  // Guardar el perfil escribe **todos** los campos a la vez, así que hacerlo
+  // sobre 'jose' —que usan otros diez specs— le cambiaba la biografía y el
+  // correo por debajo mientras otro test miraba su nombre de usuario. Falla uno
+  // distinto en cada corrida y pasa al aislarlo, que es el síntoma de siempre.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, email, is_sysadmin)
+    VALUES (?, ?, ?, ?, ?)
+  `).run('test-user-profile', 'profile_user', pwHash, 'profile@example.test', 0);
+
+  // Y otro para las automatizaciones, que crean espacios de trabajo propios.
+  // Hacerlo con 'jose' le cambiaba el `last_workspace_id` por debajo a los
+  // specs que dependen de dónde está parado.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-autom', 'autom_user', pwHash, 0);
+
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-invit', 'invit_user', pwHash, 0);
+
+  // Para el borrado de cuenta. Se recrea en cada corrida justo porque la
+  // prueba lo destruye: es su objeto de estudio.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-del', 'del_user', pwHash, 0);
+
+  // El ómnibus renombra una cuenta y la devuelve a su nombre al terminar. Tenía
+  // que compartir `rename_me` con `username-rules.spec.ts`, y como la suite
+  // corre en paralelo, la limpieza de una carrera deshacía el renombrado de la
+  // otra: el ómnibus fallaba una de cada cuatro veces con un «Received:
+  // undefined» que parecía un fallo del guardado. No lo era — el UPDATE se
+  // ejecutaba siempre y afectaba a su fila.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-omnibus', 'omnibus_user', pwHash, 0);
+
+  // Para la prueba de silenciado de notificaciones. Aparte a propósito: ese
+  // caso apaga una categoría, y compartir cuenta con el caso de «sí llega»
+  // hacía que uno silenciara al otro en las corridas en paralelo.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-mute', 'mute_user', pwHash, 0);
+
+  // Cuatro cuentas con los cuatro papeles posibles frente a un mismo espacio,
+  // para la auditoría de permisos. Se montan aquí y no en el propio spec
+  // porque son el escenario, no el sujeto: si cada prueba las creara, el
+  // escenario formaría parte de lo que se está midiendo.
+  for (const [id, nombre] of [
+    ['aud-owner', 'aud_owner'],
+    ['aud-editor', 'aud_editor'],
+    ['aud-viewer', 'aud_viewer'],
+    ['aud-fuera', 'aud_fuera'],
+    // Propia para la prueba de sesiones: esa cambia la contraseña, y hacerlo
+    // sobre una cuenta compartida le rompe el login a los demás casos.
+    ['aud-pass', 'aud_pass'],
+  ] as const) {
+    db.prepare('INSERT INTO users (id, username, password_hash, is_sysadmin) VALUES (?, ?, ?, 0)')
+      .run(id, nombre, pwHash);
+  }
+
+  db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, ?, ?, ?)')
+    .run('ws-auditoria', 'Auditoria', 'auditoria-ws', 'aud-owner');
+  for (const [uid, rol] of [['aud-owner', 'owner'], ['aud-editor', 'editor'], ['aud-viewer', 'viewer']] as const) {
+    db.prepare('INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)')
+      .run('ws-auditoria', uid, rol);
+  }
+  db.prepare(`INSERT INTO issues (id, workspace_id, title, type, reporter_id, status)
+              VALUES ('i-auditoria', 'ws-auditoria', 'Ticket privado', 'task', 'aud-owner', 'todo')`).run();
+  db.prepare(`INSERT INTO pages (id, workspace_id, title, created_by)
+              VALUES ('p-auditoria', 'ws-auditoria', 'Pagina privada', 'aud-owner')`).run();
+  // Una segunda página para la prueba de inyección: comparte espacio con la
+  // anterior pero no contenido, porque las dos escriben y en paralelo se
+  // pisaban.
+  db.prepare(`INSERT INTO pages (id, workspace_id, title, created_by)
+              VALUES ('p-inyeccion', 'ws-auditoria', 'Pagina de inyeccion', 'aud-owner')`).run();
+
   db.prepare(`
     INSERT INTO workspaces (id, name, sys_tag, created_by)
     VALUES (?, ?, ?, ?)

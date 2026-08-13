@@ -47,29 +47,33 @@ const automations = db.prepare(`
   WHERE workspace_id = ?
 `).all(ws.id) as any[];
 
-const pendingInvites = db.prepare(`
-  SELECT n.id, n.link_url, n.created_at, u.username, u.avatar_url
+// El filtro por espacio va **en el SQL**, no en JavaScript.
+//
+// Antes esta consulta se traía *todas* las invitaciones pendientes de la
+// instancia entera —de cualquier espacio y de cualquier persona— para quedarse
+// con las de este espacio parseando el JSON de cada fila en el servidor. El
+// coste de abrir los ajustes de un espacio crecía con el uso global del
+// producto: con mil espacios activos, mirar los tuyos leía las invitaciones de
+// los novecientos noventa y nueve restantes.
+//
+// `json_valid` va antes que `json_extract` a propósito: `link_url` es una
+// columna de texto libre y `json_extract` sobre algo que no es JSON aborta la
+// consulta entera. SQLite evalúa el AND en orden, así que una fila con basura
+// se descarta en vez de tumbar la página.
+const wsPendingInvites = (db.prepare(`
+  SELECT n.id, n.link_url, n.created_at, u.username, u.avatar_url,
+         COALESCE(json_extract(n.link_url, '$.role'), 'viewer') AS role
   FROM notifications n
   JOIN users u ON n.user_id = u.id
   WHERE n.type = 'invite'
-`).all() as any[];
-
-const wsPendingInvites = pendingInvites.filter(n => {
-  try {
-    const payload = JSON.parse(n.link_url);
-    return payload.ws_id === ws.id;
-  } catch { return false; }
-}).map(n => {
-  let role = 'viewer';
-  try {
-    const payload = JSON.parse(n.link_url);
-    role = payload.role || 'viewer';
-  } catch {}
-  
+    AND json_valid(n.link_url)
+    AND json_extract(n.link_url, '$.ws_id') = ?
+  ORDER BY n.created_at DESC
+`).all(ws.id) as any[]).map(n => {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
   const isExpired = (Date.now() - new Date(n.created_at + 'Z').getTime()) > SEVEN_DAYS_MS;
 
-  return { ...n, role, isExpired };
+  return { ...n, isExpired };
 });
 ---
 
@@ -95,32 +99,32 @@ const wsPendingInvites = pendingInvites.filter(n => {
           <div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center transition-all z-10 flex-col">
             <span class="text-[10px] font-bold text-white uppercase tracking-widest text-center px-2">{t('ws.settings.upload')}</span>
           </div>
-          <input type="file" id="ws-icon-file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-20" title="Upload image icon" />
+          <input type="file" id="ws-icon-file-input" aria-label={t('a11y.ws_icon')} accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-20" title="Upload image icon" />
         </div>
         
         <div class="flex-1 space-y-4">
           <div>
-            <label class="block text-sm font-bold text-forge-muted uppercase mb-1">{t('ws.settings.name')}</label>
+            <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-name-input">{t('ws.settings.name')}</label>
             <input type="text" id="ws-name-input" value={ws.name} class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" />
           </div>
           <div>
-            <label class="block text-sm font-bold text-forge-muted uppercase mb-1">{t('ws.settings.tag')}</label>
+            <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-tag-input">{t('ws.settings.tag')}</label>
             <input type="text" id="ws-tag-input" value={ws.sys_tag} class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" />
           </div>
           <div>
-            <label class="block text-sm font-bold text-forge-muted uppercase mb-1">{t('ws.settings.desc')}</label>
+            <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-desc-input">{t('ws.settings.desc')}</label>
             <textarea id="ws-desc-input" rows="2" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary">{ws.description || ''}</textarea>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-bold text-forge-muted uppercase mb-1">{t('ws.settings.visibility')}</label>
+              <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-public-input">{t('ws.settings.visibility')}</label>
               <select id="ws-public-input" class={`w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg="Create an account to change project visibility.">
                 <option value="0" selected={ws.is_public === 0}>{t('ws.settings.private')}</option>
                 <option value="1" selected={ws.is_public === 1}>{t('ws.settings.public')}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-bold text-forge-muted uppercase mb-1">{t('ws.settings.join_policy')}</label>
+              <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-join-policy-input">{t('ws.settings.join_policy')}</label>
               <select id="ws-join-policy-input" class={`w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg="Create an account to change join policy.">
                 <option value="disabled" selected={ws.join_policy === 'disabled'}>{t('ws.settings.policy_disabled')}</option>
                 <option value="friends_only" selected={ws.join_policy === 'friends_only'}>{t('ws.settings.policy_friends')}</option>
@@ -159,7 +163,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
             </div>
             
             <div class="flex items-center gap-3">
-              <select class="role-select bg-forge-panel border border-forge-border text-forge-muted text-sm rounded p-1 focus:outline-none focus:border-forge-secondary" data-user-id={m.id} data-ws-id={ws.id}>
+              <select aria-label={t('a11y.member_role')} class="role-select bg-forge-panel border border-forge-border text-forge-muted text-sm rounded p-1 focus:outline-none focus:border-forge-secondary" data-user-id={m.id} data-ws-id={ws.id}>
                 <option value="owner" selected={m.ws_role === 'owner'}>{t('ws.settings.role_owner')}</option>
                 <option value="editor" selected={m.ws_role === 'editor'}>{t('ws.settings.role_editor')}</option>
 
@@ -288,14 +292,14 @@ const wsPendingInvites = pendingInvites.filter(n => {
       </div>
       
       <div class="mb-4 flex flex-wrap gap-3 p-3 bg-forge-bg rounded-lg border border-forge-border">
-        <input type="text" id="audit-filter-user" placeholder="Filter by user..." class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
-        <select id="audit-filter-action" class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary">
+        <input type="text" id="audit-filter-user" aria-label={t('a11y.filter_user')} placeholder="Filter by user..." class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
+        <select id="audit-filter-action" aria-label={t('a11y.filter_action')} class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary">
           <option value="">All Actions</option>
           {[...new Set(auditLogs.map((l: any) => l.action))].map(action => (
             <option value={action}>{action}</option>
           ))}
         </select>
-        <input type="date" id="audit-filter-date" class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
+        <input type="date" id="audit-filter-date" aria-label={t('a11y.filter_date')} class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
       </div>
 
       <div class="overflow-y-auto pr-2 -mr-2 space-y-2 flex-1" id="audit-logs-container">
@@ -359,7 +363,7 @@ const wsPendingInvites = pendingInvites.filter(n => {
     <h2 class="text-xl font-bold mb-4 text-forge-error">Delete Workspace</h2>
     <p class="mb-4 text-sm text-forge-muted">This action cannot be undone. Please type <span class="font-bold text-forge-text">{ws.name}</span> to confirm.</p>
     <div class="mb-4">
-      <input type="text" id="delete-workspace-confirm-input" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-red-500 focus:outline-none" placeholder={ws.name}>
+      <input type="text" id="delete-workspace-confirm-input" aria-label={t('a11y.confirm_ws_name')} class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-red-500 focus:outline-none" placeholder={ws.name}>
     </div>
     <div class="flex justify-end gap-3 mt-6">
       <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('delete-workspace-modal').close()">Cancel</button>
@@ -370,11 +374,11 @@ const wsPendingInvites = pendingInvites.filter(n => {
   <dialog id="add-member-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
     <h2 class="text-xl font-bold mb-4">{t('ws.settings.modal_add_member')}</h2>
     <div class="mb-4">
-      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('ws.settings.modal_username')}</label>
+      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="add-member-username">{t('ws.settings.modal_username')}</label>
       <input type="text" id="add-member-username" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder={t('ws.settings.modal_username_ph')}>
     </div>
     <div class="mb-4">
-      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('ws.settings.modal_role')}</label>
+      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="add-member-role">{t('ws.settings.modal_role')}</label>
       <select id="add-member-role" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
         <option value="viewer">{t('ws.settings.role_viewer')}</option>
 
@@ -396,8 +400,12 @@ const wsPendingInvites = pendingInvites.filter(n => {
     </h2>
     <div class="space-y-4">
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('ws.settings.name')}</label>
-        <input type="text" id="auto-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="E.g., Auto-assign to QA">
+        {/* Decía «Nombre del workspace»: reutilizaba la clave del nombre del
+            espacio, que es otro campo de esta misma pantalla. Con la etiqueta
+            ya asociada al campo, un lector de pantalla lo anunciaba así con
+            toda seguridad. */}
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="auto-name">{t('ws.settings.rule_name')}</label>
+        <input type="text" id="auto-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder={t('ws.settings.rule_name_ph')}>
       </div>
       
       {/*

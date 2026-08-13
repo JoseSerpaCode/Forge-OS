@@ -20,13 +20,13 @@ const sysTag = match ? match[1] : null;
 const workspaceDashboardUrl = sysTag ? `/w/${sysTag}` : '#';
 const currentUrl = Astro.url.pathname;
 ---
-<header class="h-16 bg-forge-panel/80 backdrop-blur-xl border-b border-forge-border/60 flex items-center justify-between px-6 shrink-0 relative z-40 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
+<header class="h-16 bg-forge-panel/80 backdrop-blur-xl max-md:backdrop-blur-none border-b border-forge-border/60 flex items-center justify-between px-6 shrink-0 relative z-40 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
   {user?.is_sysadmin === 1 && (
-    <div class="absolute top-0 left-0 w-full h-1 bg-forge-primary animate-pulse shadow-[0_0_10px_var(--forge-accent-primary)]" title="Privacy Mode (Sysadmin Bypass Active)"></div>
+    <div class="absolute top-0 left-0 w-full h-1 bg-forge-primary animate-pulse shadow-[0_0_10px_var(--forge-accent-primary)]" title={t('a11y.privacy_mode')}></div>
   )}
   <div class="flex items-center gap-4 flex-1">
     <div class="flex items-center gap-2">
-      <button id="sidebar-toggle" class="text-forge-muted hover:text-forge-accent-text transition-all p-2 rounded-lg hover:bg-forge-secondary/10 hover:scale-105 active:scale-95" title="Toggle Sidebar (Cmd+B)" aria-label="Toggle Sidebar">
+      <button id="sidebar-toggle" class="text-forge-muted hover:text-forge-accent-text transition-all p-2 rounded-lg hover:bg-forge-secondary/10 hover:scale-105 active:scale-95" title={t('a11y.toggle_sidebar')} aria-label={t('a11y.toggle_sidebar')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
       
@@ -43,15 +43,15 @@ const currentUrl = Astro.url.pathname;
       )}
     </div>
     <div class="relative w-full max-w-md hidden md:block">
-      <label for="global-search" class="sr-only">Global Search</label>
+      <label for="global-search" class="sr-only">{t('a11y.global_search')}</label>
       <svg class="absolute left-3 top-2 w-4 h-4 text-forge-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
-      <input type="text" id="global-search" aria-label="Global Search" placeholder={t('hub.search_placeholder') || "Search across Forge (Press '/')" } class="w-full bg-forge-bg/50 border border-forge-border rounded-lg text-sm pl-9 pr-12 py-1.5 focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 text-forge-text placeholder:text-forge-muted transition-all" />
+      <input type="text" id="global-search" aria-label={t('a11y.global_search')} placeholder={t('hub.search_placeholder') || "Search across Forge (Press '/')" } class="w-full bg-forge-bg/50 border border-forge-border rounded-lg text-sm pl-9 pr-12 py-1.5 focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 text-forge-text placeholder:text-forge-muted transition-all" />
       <span class="absolute right-2 top-1.5 text-[10px] text-forge-muted font-mono border border-forge-border rounded px-1.5 py-0.5 bg-forge-panel" aria-hidden="true">/</span>
       
       <!-- Search Dropdown -->
-      <div id="search-dropdown" class="hidden absolute top-full left-0 mt-3 w-full bg-forge-panel/95 backdrop-blur-xl border border-forge-border/50 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-50">
+      <div id="search-dropdown" class="hidden absolute top-full left-0 mt-3 w-full bg-forge-panel/95 backdrop-blur-xl max-md:backdrop-blur-none border border-forge-border/50 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-50">
         <ul id="search-results" class="max-h-64 overflow-y-auto p-2">
            <!-- Dynamic results -->
         </ul>
@@ -75,7 +75,7 @@ const currentUrl = Astro.url.pathname;
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
     </button>
 
-    <button id="btn-toggle-theme" class="text-forge-muted hover:text-forge-accent-text transition-colors p-1.5 rounded hover:bg-forge-bg hidden sm:block" title="Toggle Theme" aria-label="Toggle Theme">
+    <button id="btn-toggle-theme" class="text-forge-muted hover:text-forge-accent-text transition-colors p-1.5 rounded hover:bg-forge-bg hidden sm:block" title={t('a11y.toggle_theme')} aria-label={t('a11y.toggle_theme')}>
       <svg id="theme-icon-light" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       <svg id="theme-icon-dark" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
@@ -87,7 +87,7 @@ const currentUrl = Astro.url.pathname;
         <span id="notif-badge" class={`${unreadCount > 0 ? '' : 'hidden'} absolute top-1 right-1 w-2 h-2 bg-forge-primary rounded-full animate-ping`}></span>
       </button>
       
-      <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-3 w-80 bg-forge-panel/95 backdrop-blur-xl border border-forge-border/50 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden">
+      <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-3 w-80 bg-forge-panel/95 backdrop-blur-xl max-md:backdrop-blur-none border border-forge-border/50 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden">
         <div class="p-3 border-b border-forge-border flex justify-between items-center bg-forge-bg/50">
           <span class="text-xs font-bold uppercase tracking-widest text-forge-text">{t('sidebar.notifications') || 'Notifications'}</span>
           <button id="btn-mark-all-read" class="text-[10px] text-forge-accent-text hover:underline">{t('notifications.markAllRead') || 'Mark all as read'}</button>
@@ -106,7 +106,7 @@ const currentUrl = Astro.url.pathname;
             </li>
           ))}
           {notifications.length === 0 && (
-            <li class="p-6 text-center text-forge-muted text-sm" id="empty-notifs">No notifications yet.</li>
+            <li class="p-6 text-center text-forge-muted text-sm" id="empty-notifs">{t('notifications.empty')}</li>
           )}
         </ul>
         <div class="p-2 border-t border-forge-border bg-forge-bg/80 text-center">
@@ -174,7 +174,7 @@ const currentUrl = Astro.url.pathname;
             <kbd class="px-2 py-1 bg-forge-panel border border-forge-border shadow-sm rounded text-[10px] text-forge-muted font-mono font-bold">C</kbd>
           </div>
           <div class="flex items-center justify-between p-2.5 bg-forge-bg rounded-lg border border-forge-border hover:border-forge-secondary/30 transition-colors">
-            <span class="text-xs font-bold text-forge-text">Toggle Sidebar</span>
+            <span class="text-xs font-bold text-forge-text">{t('a11y.toggle_sidebar')}</span>
             <kbd class="px-2 py-1 bg-forge-panel border border-forge-border shadow-sm rounded text-[10px] text-forge-muted font-mono font-bold">⌘/Ctrl + B</kbd>
           </div>
           <div class="flex items-center justify-between p-2.5 bg-forge-bg rounded-lg border border-forge-border hover:border-forge-secondary/30 transition-colors">
@@ -565,6 +565,15 @@ const currentUrl = Astro.url.pathname;
     fetchNotifications();
   });
 
+  // Cerrar al pulsar fuera.
+  //
+  // Ojo con quién puede abrir esto: el botón «Buscar personas» del hub rellena
+  // el campo y dispara `input` desde su propio `onclick`. Ese clic seguía
+  // subiendo hasta aquí, y como el botón no está dentro del buscador ni del
+  // desplegable, esta misma función cerraba lo que se acababa de abrir. Se veía
+  // como que las sugerencias «no salían» hasta escribir y reescribir a mano.
+  // El botón corta la propagación; esto queda documentado para que quien añada
+  // otro atajo sepa que tiene que hacer lo mismo.
   document.addEventListener('click', (e: any) => {
     if (!globalSearch?.contains(e.target) && !searchDropdown?.contains(e.target)) {
       searchDropdown?.classList.add('hidden');

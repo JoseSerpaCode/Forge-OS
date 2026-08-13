@@ -1,4 +1,6 @@
 ---
+import { useTranslations } from '../../i18n/ui';
+
 interface Props {
   pageId: string;
   initialTitle: string;
@@ -14,6 +16,9 @@ interface Props {
 }
 const { pageId, initialTitle, initialContent, canEdit, authorName, authorAvatar, updatedAt, parentTitle, parentId, sysTag } = Astro.props;
 
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
 // Date formatter
 function formatDate(dateStr: string | undefined) {
   if (!dateStr) return '';
@@ -25,20 +30,22 @@ function formatDate(dateStr: string | undefined) {
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffMins < 120) return `1 hour ago`;
+  if (diffMins < 1) return t('date.just_now');
+  if (diffMins < 60) return `${diffMins} ${t('date.min_ago')}`;
+  if (diffMins < 120) return t('date.hour_ago');
   
   const isToday = date.toDateString() === now.toDateString();
-  const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  
-  if (isToday) return `today at ${timeStr}`;
+  // El formato de hora sigue al idioma: «3:47 PM» en inglés, «15:47» en español.
+  const localeFecha = lang === 'es' ? 'es-ES' : 'en-US';
+  const timeStr = date.toLocaleTimeString(localeFecha, { hour: 'numeric', minute: '2-digit' });
+
+  if (isToday) return `${t('date.today_at')} ${timeStr}`;
   
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return `yesterday at ${timeStr}`;
+  if (date.toDateString() === yesterday.toDateString()) return `${t('date.yesterday_at')} ${timeStr}`;
   
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(localeFecha, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 ---
 
@@ -56,7 +63,7 @@ function formatDate(dateStr: string | undefined) {
 
     <!-- Title & Delete -->
     <div class="flex items-center justify-between mb-4 group relative">
-      <input type="text" id="editor-title" 
+      <input type="text" id="editor-title" aria-label={t('a11y.page_title')} 
         value={initialTitle}
         readonly={!canEdit}
         class="text-4xl font-bold bg-transparent text-forge-text focus:outline-none focus:border-b focus:border-forge-secondary border-b border-transparent w-full transition-colors pb-1"
@@ -72,9 +79,9 @@ function formatDate(dateStr: string | undefined) {
     <div class="flex items-center gap-3 mb-10 pb-4 border-b border-forge-border/50">
       <img src={authorAvatar || '/default-avatar.svg'} class="w-6 h-6 rounded-full border border-forge-border bg-forge-panel" alt="Author" />
       <div class="flex items-center gap-2 text-xs font-mono text-forge-muted">
-        <span>Forged by <span class="text-forge-text font-bold">{authorName || 'Unknown'}</span></span>
+        <span>{t('kb.forged_by')} <span class="text-forge-text font-bold">{authorName || '—'}</span></span>
         <span class="text-forge-border">•</span>
-        <span>Updated {formatDate(updatedAt)}</span>
+        <span>{t('kb.updated')} {formatDate(updatedAt)}</span>
         {initialContent === 'null' || !initialContent ? (
           <>
             <span class="text-forge-border">•</span>
@@ -102,7 +109,7 @@ function formatDate(dateStr: string | undefined) {
 
         <button id="btn-share-page" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1" title="Copy Link to Page">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-          Share
+          {t('kb.share')}
         </button>
       </div>
     </div>
@@ -118,7 +125,7 @@ function formatDate(dateStr: string | undefined) {
 
 
     <div class="fixed bottom-4 right-8 flex items-center gap-2 text-xs font-mono text-forge-muted">
-      <span id="save-status">Saved</span>
+      <span id="save-status">{t('kb.saved')}</span>
     </div>
   </div>
 </div>
@@ -414,6 +421,58 @@ function formatDate(dateStr: string | undefined) {
     padding: 0.1rem 0.3rem;
     border-radius: 4px;
     font-size: 0.9em;
+  }
+
+  /* ── Tabla y código: los plugins traen su propia paleta, y es clara ─────
+     `@editorjs/table` define sus colores en variables sobre `.tc-wrap`
+     (`--color-background: #f9f9fb`) y `@editorjs/code` pinta su `textarea`
+     en blanco. En tema oscuro eso deja una tabla blanca con texto claro
+     encima: medido, **1.17:1** de contraste, es decir ilegible.
+
+     No se había visto nunca porque el sanitizador borraba los bloques `table`
+     enteros antes de guardarlos; al arreglar aquella pérdida de datos, las
+     tablas empezaron a aparecer y el fallo de estilo salió con ellas.
+
+     Se reasignan las variables del plugin en vez de pelearse con sus reglas
+     una a una: así hereda el tema entero, incluidos bordes y la barra de
+     herramientas de fila y columna. */
+  .editor-js-container .tc-wrap {
+    --color-background: var(--forge-panel);
+    --color-text-secondary: var(--forge-muted);
+    --color-border: var(--forge-border);
+    color: var(--forge-text);
+  }
+  .editor-js-container .tc-table,
+  .editor-js-container .tc-row,
+  .editor-js-container .tc-cell {
+    border-color: var(--forge-border);
+  }
+  .editor-js-container .tc-cell {
+    color: var(--forge-text);
+    background: transparent;
+  }
+  /* La fila de cabecera se distingue por peso y fondo, no por color de texto:
+     bajarle el color la sacaría del umbral de contraste. */
+  .editor-js-container .tc-row--heading .tc-cell {
+    background: var(--forge-panel);
+    font-weight: 700;
+  }
+  .editor-js-container .tc-add-row,
+  .editor-js-container .tc-add-column {
+    color: var(--forge-muted);
+  }
+  .editor-js-container .tc-add-row:hover,
+  .editor-js-container .tc-add-column:hover {
+    background: color-mix(in srgb, var(--forge-accent-primary) 12%, transparent);
+    color: var(--forge-text);
+  }
+
+  .editor-js-container .ce-code__textarea {
+    background: var(--forge-bg);
+    color: var(--forge-text);
+    border: 1px solid var(--forge-border);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
 
   .codex-editor__redactor {

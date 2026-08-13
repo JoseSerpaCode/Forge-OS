@@ -6,6 +6,112 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.11.0] - 2026-08-13
+
+### Fixed
+
+- **Se acabó el inglés a medias.** El diálogo de confirmación global, la barra superior, la campana, la base de conocimiento («Escrita por», «Actualizada», «Guardado») y el perfil público estaban escritos a mano en inglés sobre una interfaz en español. Las fechas relativas también: ahora «hoy a las 15:47» en vez de «today at 3:47 PM».
+- **La ficha de usuario del lateral y los formularios de Ajustes iban apretados.** Más aire entre campos, entre grupos y alrededor del avatar.
+
+### Changed
+
+- **El desenfoque de fondo se apaga por debajo de 768px.** `backdrop-filter` obliga a rehacer el desenfoque de la zona en cada fotograma: en una barra fija eso es durante todo el scroll, y en el tablero se multiplica por cada columna. Se conserva intacto en escritorio, y los fondos translúcidos que dependían de él pasan a opacos para no perder contraste.
+- Quien pide **menos movimiento** en su sistema ya no ve las animaciones que laten sin parar.
+
+## [1.10.0] - 2026-08-13
+
+### Fixed
+
+- **Las notificaciones no llegaban nunca, y con razón.** En todo el producto había **un solo** punto que creaba una: asignar un ticket a otra persona *al editarlo*. Crear el ticket ya asignado —que es el camino normal, el formulario tiene el campo— no avisaba a nadie, y quien trabaja solo no tenía ningún camino posible porque el aviso se salta cuando te asignas a ti mismo. Ahora avisa también al crear, y el mensaje lleva el **título** del ticket en vez de ocho caracteres del identificador.
+- **Los sprints ya avisan al equipo** cuando arrancan y cuando se cierran. Ajustes ofrecía «silenciar actualizaciones de sprint» desde el principio, pero no había nada que silenciar.
+- **Los errores salían en crudo**: el aviso enseñaba `Failed: {"error_field":"username","error_code":"charset"}`. Las traducciones ya existían —las usa el registro—; Ajustes simplemente no las llamaba.
+- **Al crear un espacio, la etiqueta de URL solo seguía a lo primero que se escribía.** Se adivinaba comparando la etiqueta con el nombre *menos su última letra*, así que solo acertaba tecleando al final: al pegar, borrar o editar por el medio se congelaba sin manera de reengancharla. Y su error salía como aviso flotante en la esquina opuesta; ahora se ve junto al campo, en vivo.
+- **«Buscar personas» no mostraba sugerencias.** El botón abría el desplegable y el mismo clic, al seguir subiendo hasta `document`, lo cerraba: había que escribir y reescribir a mano para que reapareciera.
+- **La tabla y el bloque de código del editor se pintaban sobre fondo blanco en tema oscuro** — contraste medido de **1.17:1**, texto ilegible. No se había visto nunca porque el sanitizador borraba los bloques `table` antes de guardarlos; al arreglar aquella pérdida de datos, las tablas aparecieron y el fallo de estilo salió con ellas.
+- **El conmutador de idioma del login se dibujaba abajo del todo**, no arriba a la derecha: la regla que lo posiciona tiene ámbito de componente y no alcanzaba al elemento de otro componente.
+- En automatizaciones, el campo del nombre de la regla estaba etiquetado **«Nombre del workspace»**.
+
+### Security
+
+- **OAuth: emparejar por correo exigía que el proveedor lo diera por verificado.** Quien entra sin sesión y sin proveedor vinculado se empareja con una cuenta existente por su correo, y ese emparejamiento entrega la cuenta sin pedir contraseña. Google devuelve `email_verified` y no se estaba mirando; GitHub no lo dice en `/user`, así que ahora se consulta `/user/emails`. Sin verificación se crea una cuenta nueva, que es recuperable; una cuenta entregada, no.
+
+### Changed
+
+- **«Silenciar menciones» sale de Ajustes.** No hay tabla de comentarios, así que nada puede crear una notificación de mención: la casilla ofrecía apagar algo que no existe.
+- El borrado de cuenta: singular cuando toca («1 ticket reportado», no «1 tickets»), el nombre a teclear se enseña en pantalla, y el botón rojo nace apagado hasta que el nombre coincide exactamente.
+
+## [1.9.1] - 2026-08-11
+
+### Security
+
+- **Cambiar la contraseña no echaba a las demás sesiones.** Si alguien te robaba la sesión, cambiar la contraseña —que es la reacción natural y la que todo el mundo da por buena— no servía de nada: la cookie del intruso seguía siendo válida los treinta días de su `Max-Age`. Peor que no hacer nada, porque daba por resuelto lo que seguía abierto. Ahora se revocan todas menos la sesión desde la que se hace el cambio.
+
+### Added
+
+- **Suite de auditoría** (`tests/e2e/seguridad.spec.ts`): permisos por rol con su control, IDOR sobre tickets y páginas, escalada de privilegios, revocación de sesiones e inyección por el editor y por el perfil.
+- **Prueba del limitador de intentos en modo producción.** Se desactiva solo con `NODE_ENV=test`, que es el modo de la suite e2e, así que allí veinte intentos fallidos pasan sin bloqueo y parece que no hay protección. La hay —bloquea en el intento 16, por IP—, pero no había nada que lo demostrara.
+
+### Fixed
+
+- La prueba del captcha comparaba la **suma visible** para verificar que llegaba un reto nuevo. Los sumandos van de 1 a 9, así que una de cada 81 veces salía la misma y la prueba fallaba sola. Ahora compara el token firmado, que lleva caducidad dentro.
+
+## [1.9.0] - 2026-08-11
+
+### Fixed
+
+- **49 de 62 etiquetas de formulario no estaban asociadas a su campo**: ni las anunciaba un lector de pantalla ni funcionaba pulsar el texto para enfocar. Ahora **89 de 89 controles** de las nueve pantallas principales tienen nombre accesible.
+- **Los avisos emergentes eran mudos.** Son el canal principal de respuesta de la aplicación —cada «guardado» y cada error pasan por ahí— y no tenían `aria-live`, así que quien no ve la pantalla no se enteraba de nada.
+- Tres botones de solo icono sin nombre («cerrar» dos veces y «quitar columna»), dos imágenes decorativas sin `alt`, y el campo de la paleta de comandos —que sale en **todas** las pantallas— sin etiqueta ninguna.
+- «Adjuntos», en el detalle de un ticket, era un `<label>` que no etiquetaba ningún campo. Un lector de pantalla lo anunciaba como el nombre de un control inexistente; ahora es un `<span>`.
+
+### Changed
+
+- Los controles que se repiten —las columnas de una base de datos dinámica, el rol de cada miembro— llevan `aria-label` en vez de `id`, porque un `id` fijo se duplicaría en cada fila y un id repetido rompe la asociación igual que no tenerla.
+
+## [1.8.4] - 2026-08-11
+
+### Added
+
+- **Eliminar la cuenta de forma permanente**, desde Ajustes. Pide escribir el nombre de usuario y la contraseña —un «¿estás seguro?» se pulsa dos veces sin leer—, y antes de preguntar enseña las consecuencias **con cifras reales** pedidas al servidor: qué espacios se borran enteros, cuáles impiden el borrado y cuánto trabajo se queda con el equipo.
+- El borrado **se detiene** si la cuenta es la única propietaria de un espacio en el que queda más gente, y dice cuál. Un espacio sin propietario no lo puede administrar ni borrar nadie.
+
+### Changed
+
+- El trabajo compartido **no se destruye** al borrar la cuenta: los tickets reportados, las páginas escritas y las horas registradas se quedan en sus espacios a nombre de una cuenta eliminada. Poner CASCADE en todo habría sido más corto, pero significa que quien se va de un equipo se lleva por delante la historia de los demás. Los espacios donde no queda nadie sí se borran enteros.
+- Los tickets que tuviera asignados quedan **sin asignar**, no asignados a la cuenta lápida: sin asignar se ven en los filtros de trabajo huérfano, a nombre de un fantasma no.
+
+## [1.8.3] - 2026-08-11
+
+### Fixed
+
+- **Los ajustes de un espacio leían todas las invitaciones pendientes de la instancia entera** —de cualquier espacio y de cualquier persona— para quedarse con las suyas parseando el JSON de cada fila en el servidor. El coste de abrir tus ajustes crecía con el uso global del producto. Ahora el filtro va en el SQL.
+- Al llevar ese filtro a SQL apareció un fallo peor de lo que se arreglaba: `link_url` es una columna de texto libre, y `json_extract` sobre algo que no es JSON **aborta la consulta entera**. Una sola notificación de tipo `invite` con una ruta normal en esa columna dejaba los ajustes del espacio dando 500. La guarda `json_valid` va delante, y hay una prueba que lo fija.
+
+### Added
+
+- **Índices que no existían.** `pages` no tenía ninguno, y el árbol del lateral lee todas las páginas del espacio en cada renderizado: es la consulta que más veces se ejecuta de todo el producto, y hasta ahora recorría la tabla completa. Igual `notifications`, que se consulta en cada carga de la campana, y `workspace_join_requests`.
+
+### Changed
+
+- El hub de un sysadmin enumeraba **todos** los espacios de la instancia sin límite. Acotado a los 100 más recientes: es una portada, no un panel de administración.
+
+## [1.8.2] - 2026-08-11
+
+### Fixed
+
+- **El perfil no se guardaba nunca.** La biografía, los pronombres y el correo público se enviaban junto a `avatar_url: null` cuando no se había subido una foto nueva, y el servidor rechaza la petición entera porque `null` no es una URL válida. El único guardado que funcionaba era el que incluía una imagen nueva; en cualquier otro caso el formulario decía que sí y no se escribía nada.
+- **El correo público no se podía cambiar.** El `<select>` no tenía `id` ni oyente: era un adorno. Ahora ofrece de verdad la elección entre enseñar el correo de la cuenta y ocultarlo.
+- **Las columnas visibles de una vista guardada no se aplicaban jamás**, y el contador de columnas de una base de datos dinámica marcaba siempre 0. Los dos leían `visible_columns_json` y `schema_json` de objetos que Drizzle devuelve en camelCase (`visibleColumnsJson`, `schemaJson`), así que obtenían `undefined` y caían al valor por defecto.
+
+### Added
+
+- **Cerrar la sesión en todos los dispositivos**, desde Ajustes. El endpoint que revoca todas las sesiones existía desde hacía versiones y no lo llamaba nadie: quien perdiera un portátil no tenía forma de echar a esa sesión.
+
+### Changed
+
+- El README decía que los enlaces bidireccionales estaban terminados. El servidor lo está —`linked-pages.ts` y `backlinks.ts`—, pero ninguna pantalla los llama todavía. Corregido para que no prometa lo que no hay.
+- Tres pruebas de extremo a extremo fallaban de forma intermitente, una distinta en cada corrida, y pasaban al aislarlas. Ninguna era un fallo del producto: dos esperaban un tiempo fijo más corto que la recarga que la propia aplicación programa, y la tercera compartía usuario y espacio de trabajo con media docena de specs más. Ahora esperan al suceso, no al reloj, y cada grupo tiene su usuario y su espacio.
+
 ## [1.8.1] - 2026-08-11
 
 ### Fixed

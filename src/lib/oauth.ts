@@ -131,6 +131,18 @@ export type OAuthProfile = {
   /** Identificador estable del proveedor. Nunca el correo: los correos cambian. */
   providerUserId: string;
   email: string | null;
+  /**
+   * ¿El proveedor **afirma haber comprobado** que ese correo es de quien entra?
+   *
+   * No es un detalle: quien entra sin sesión y sin proveedor vinculado se
+   * empareja con una cuenta existente **por el correo**, y ese emparejamiento
+   * entrega la cuenta entera. Si se acepta un correo sin verificar, cualquiera
+   * que pueda declarar `victima@ejemplo.com` en su propio proveedor —con un
+   * dominio de Workspace propio, por ejemplo— entra en la cuenta de la víctima
+   * sin saber su contraseña. Es el «pre-account takeover» clásico de «entrar
+   * con Google», y la defensa es justo esta bandera.
+   */
+  emailVerified: boolean;
   suggestedUsername: string;
   avatarUrl: string | null;
 };
@@ -141,6 +153,9 @@ export function normalizeProfile(id: ProviderId, raw: any): OAuthProfile | null 
     return {
       providerUserId: String(raw.sub),
       email: raw.email ? String(raw.email) : null,
+      // `userinfo` de Google devuelve `email_verified`, y puede ser falso.
+      // Se exige el booleano exacto: una cadena "false" es cierta en JS.
+      emailVerified: raw.email_verified === true || raw.email_verified === 'true',
       suggestedUsername: String(raw.email || raw.name || 'user').split('@')[0],
       avatarUrl: null,
     };
@@ -149,9 +164,43 @@ export function normalizeProfile(id: ProviderId, raw: any): OAuthProfile | null 
   return {
     providerUserId: String(raw.id),
     email: raw.email ? String(raw.email) : null,
+    // `/user` de GitHub no dice nada sobre verificación. La respuesta la tiene
+    // `/user/emails`, que se consulta aparte (ver `fetchGithubVerifiedEmail`).
+    // Mientras no se confirme allí, este correo no vale para emparejar.
+    emailVerified: false,
     suggestedUsername: String(raw.login || 'user'),
     avatarUrl: null,
   };
+}
+
+/**
+ * El correo primario **verificado** de una cuenta de GitHub.
+ *
+ * `/user` devuelve el correo público del perfil, sin decir si está verificado.
+ * La lista completa con su estado vive en `/user/emails`, que el ámbito
+ * `user:email` —ya solicitado— permite leer. Si la llamada falla se devuelve
+ * `null`: ante la duda, ese correo no sirve para emparejar con una cuenta que
+ * ya existe.
+ */
+export async function fetchGithubVerifiedEmail(accessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'Forge-OS',
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const lista = (await res.json()) as Array<{ email?: string; primary?: boolean; verified?: boolean }>;
+    if (!Array.isArray(lista)) return null;
+    const elegido = lista.find((e) => e?.primary === true && e?.verified === true)
+      ?? lista.find((e) => e?.verified === true);
+    return elegido?.email ? String(elegido.email) : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
