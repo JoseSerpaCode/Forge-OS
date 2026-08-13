@@ -617,6 +617,85 @@ const MIGRATIONS: Migration[] = [
       ).run();
     }
   },
+  {
+    version: 30,
+    description: 'sprints: add completed_at, created_by, created_at, updated_at',
+    run: () => {
+      // Sin `DEFAULT CURRENT_TIMESTAMP` en el ALTER: SQLite lo rechaza con
+      // «Cannot add a column with non-constant default». La columna se añade
+      // vacía y se rellena después con un UPDATE, que sí lo admite.
+      //
+      // Hay migraciones anteriores con este mismo patrón (v21, v25) que nunca
+      // han dado problemas porque esas columnas ya están en el esquema base:
+      // `hasColumn` devuelve cierto y el ALTER no llega a ejecutarse. Aquí no
+      // era el caso.
+      if (!hasColumn('sprints', 'completed_at')) db.exec('ALTER TABLE sprints ADD COLUMN completed_at DATETIME');
+      if (!hasColumn('sprints', 'created_by')) db.exec('ALTER TABLE sprints ADD COLUMN created_by TEXT');
+      if (!hasColumn('sprints', 'created_at')) {
+        db.exec('ALTER TABLE sprints ADD COLUMN created_at DATETIME');
+        db.exec('UPDATE sprints SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL');
+      }
+      if (!hasColumn('sprints', 'updated_at')) {
+        db.exec('ALTER TABLE sprints ADD COLUMN updated_at DATETIME');
+        db.exec('UPDATE sprints SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL');
+      }
+    }
+  },
+  {
+    version: 31,
+    description: 'sprints: enforce a single active sprint per workspace',
+    run: () => {
+      // La regla «un solo sprint activo por espacio» vivía solo en la
+      // aplicación, y una regla que solo vive en el código se salta con una
+      // petición concurrente: dos personas activando dos sprints a la vez
+      // pasan las dos comprobaciones antes de que ninguna escriba.
+      //
+      // Antes de poner el índice hay que dejar los datos en paz consigo mismos:
+      // si ya hay dos activos, el CREATE INDEX falla y con él toda la
+      // migración. Se conserva el más reciente —el que se activó al final es el
+      // que la gente cree que está corriendo— y los demás vuelven a
+      // 'planned'. No se tocan los completados.
+      db.exec(`
+        UPDATE sprints SET status = 'planned'
+        WHERE status = 'active'
+          AND id NOT IN (
+            SELECT id FROM (
+              SELECT id, ROW_NUMBER() OVER (
+                PARTITION BY workspace_id ORDER BY COALESCE(start_date, created_at, '') DESC, rowid DESC
+              ) AS n
+              FROM sprints WHERE status = 'active'
+            ) WHERE n = 1
+          )
+      `);
+      db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_sprints_one_active ON sprints(workspace_id) WHERE status = 'active'");
+    }
+  },
+  {
+    version: 32,
+    description: 'sprint_snapshots: daily burndown points',
+    run: () => {
+      // El burndown se recalculaba al vuelo desde los work_logs en cada carga
+      // de Métricas. Además de costar, es **irreproducible**: si un ticket
+      // cambia de puntos o se mueve de sprint, la gráfica de ayer cambia hoy.
+      // Una foto diaria congela lo que de verdad pasó.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS sprint_snapshots (
+          id TEXT PRIMARY KEY,
+          sprint_id TEXT NOT NULL,
+          taken_on DATE NOT NULL,
+          points_total INTEGER NOT NULL DEFAULT 0,
+          points_done INTEGER NOT NULL DEFAULT 0,
+          issues_total INTEGER NOT NULL DEFAULT 0,
+          issues_done INTEGER NOT NULL DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE CASCADE
+        )
+      `);
+      // Una foto por sprint y día: si el proceso se repite, actualiza en vez de
+      // duplicar.
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_sprint_snapshots_day ON sprint_snapshots(sprint_id, taken_on)');
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.
