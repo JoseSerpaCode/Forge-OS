@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.11.0] - 2026-08-13
+
+### Fixed
+
+- **Se acabó el inglés a medias.** El diálogo de confirmación global, la barra superior, la campana, la base de conocimiento («Escrita por», «Actualizada», «Guardado») y el perfil público estaban escritos a mano en inglés sobre una interfaz en español. Las fechas relativas también: ahora «hoy a las 15:47» en vez de «today at 3:47 PM».
+- **La ficha de usuario del lateral y los formularios de Ajustes iban apretados.** Más aire entre campos, entre grupos y alrededor del avatar.
+
+### Changed
+
+- **El desenfoque de fondo se apaga por debajo de 768px.** `backdrop-filter` obliga a rehacer el desenfoque de la zona en cada fotograma: en una barra fija eso es durante todo el scroll, y en el tablero se multiplica por cada columna. Se conserva intacto en escritorio, y los fondos translúcidos que dependían de él pasan a opacos para no perder contraste.
+- Quien pide **menos movimiento** en su sistema ya no ve las animaciones que laten sin parar.
+
 ## [1.10.0] - 2026-08-13
 
 ### Fixed

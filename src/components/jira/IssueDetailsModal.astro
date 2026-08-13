@@ -11,10 +11,10 @@ const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 ---
 <!-- Drawer backdrop -->
-<div id="issue-details-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[100] transition-opacity"></div>
+<div id="issue-details-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm max-md:backdrop-blur-none hidden z-[100] transition-opacity"></div>
 
 <!-- Drawer container -->
-<div id="issue-details-modal" class="fixed top-0 right-0 w-[550px] max-w-full h-full bg-forge-bg/95 backdrop-blur-md border-l border-forge-border/40 z-[110] transform translate-x-full transition-transform duration-300 ease-out shadow-2xl shadow-black/50 overflow-y-auto flex flex-col">
+<div id="issue-details-modal" class="fixed top-0 right-0 w-[550px] max-w-full h-full bg-forge-bg/95 backdrop-blur-md max-md:backdrop-blur-none border-l border-forge-border/40 z-[110] transform translate-x-full transition-transform duration-300 ease-out shadow-2xl shadow-black/50 overflow-y-auto flex flex-col">
   
   <!-- Header -->
   <div class="px-6 py-4 border-b border-forge-border/30 flex justify-between items-center bg-gradient-to-r from-forge-panel to-forge-bg sticky top-0 z-10">

@@ -30,20 +30,22 @@ function formatDate(dateStr: string | undefined) {
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffMins < 120) return `1 hour ago`;
+  if (diffMins < 1) return t('date.just_now');
+  if (diffMins < 60) return `${diffMins} ${t('date.min_ago')}`;
+  if (diffMins < 120) return t('date.hour_ago');
   
   const isToday = date.toDateString() === now.toDateString();
-  const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  
-  if (isToday) return `today at ${timeStr}`;
+  // El formato de hora sigue al idioma: «3:47 PM» en inglés, «15:47» en español.
+  const localeFecha = lang === 'es' ? 'es-ES' : 'en-US';
+  const timeStr = date.toLocaleTimeString(localeFecha, { hour: 'numeric', minute: '2-digit' });
+
+  if (isToday) return `${t('date.today_at')} ${timeStr}`;
   
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return `yesterday at ${timeStr}`;
+  if (date.toDateString() === yesterday.toDateString()) return `${t('date.yesterday_at')} ${timeStr}`;
   
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(localeFecha, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 ---
 
@@ -77,9 +79,9 @@ function formatDate(dateStr: string | undefined) {
     <div class="flex items-center gap-3 mb-10 pb-4 border-b border-forge-border/50">
       <img src={authorAvatar || '/default-avatar.svg'} class="w-6 h-6 rounded-full border border-forge-border bg-forge-panel" alt="Author" />
       <div class="flex items-center gap-2 text-xs font-mono text-forge-muted">
-        <span>Forged by <span class="text-forge-text font-bold">{authorName || 'Unknown'}</span></span>
+        <span>{t('kb.forged_by')} <span class="text-forge-text font-bold">{authorName || '—'}</span></span>
         <span class="text-forge-border">•</span>
-        <span>Updated {formatDate(updatedAt)}</span>
+        <span>{t('kb.updated')} {formatDate(updatedAt)}</span>
         {initialContent === 'null' || !initialContent ? (
           <>
             <span class="text-forge-border">•</span>
@@ -107,7 +109,7 @@ function formatDate(dateStr: string | undefined) {
 
         <button id="btn-share-page" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1" title="Copy Link to Page">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-          Share
+          {t('kb.share')}
         </button>
       </div>
     </div>
@@ -123,7 +125,7 @@ function formatDate(dateStr: string | undefined) {
 
 
     <div class="fixed bottom-4 right-8 flex items-center gap-2 text-xs font-mono text-forge-muted">
-      <span id="save-status">Saved</span>
+      <span id="save-status">{t('kb.saved')}</span>
     </div>
   </div>
 </div>

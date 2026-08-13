@@ -96,7 +96,7 @@ const canEdit = access.role !== 'viewer';
 
   <!-- New DB Modal -->
   {canEdit && (
-    <dialog id="new-db-modal" class="bg-forge-panel border border-forge-border/60 rounded-3xl p-0 w-full max-w-[700px] text-forge-text shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop:bg-black/70 backdrop:backdrop-blur-md">
+    <dialog id="new-db-modal" class="bg-forge-panel border border-forge-border/60 rounded-3xl p-0 w-full max-w-[700px] text-forge-text shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop:bg-black/70 backdrop:backdrop-blur-md max-md:backdrop-blur-none">
       <div class="px-8 py-6 border-b border-forge-border/40 flex justify-between items-start sticky top-0 bg-forge-panel/95 backdrop-blur z-20 rounded-t-3xl">
         <div>
           <h2 class="text-2xl font-bold text-forge-text flex items-center gap-3">

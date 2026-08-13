@@ -241,3 +241,45 @@
     }
   }
 }
+
+
+/* ── Rendimiento en pantallas pequeñas ─────────────────────────────────────
+   `backdrop-filter` obliga al navegador a **rehacer el desenfoque de la zona
+   en cada fotograma**. En la barra superior, que va fija, eso significa
+   recalcularlo durante todo el scroll; y en el tablero se multiplica por cada
+   columna. En un portátil no se nota; en un móvil es justo el tirón que se
+   siente al arrastrar el dedo.
+
+   Se desactiva por debajo de 768px y se compensa subiendo la opacidad del
+   fondo: sin desenfoque, un panel al 70% deja leer el contenido de debajo y el
+   texto pierde contraste. El efecto se conserva intacto en escritorio. */
+@media (max-width: 767px) {
+  .backdrop-blur-sm,
+  .backdrop-blur,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Los fondos translúcidos que dependían del desenfoque pasan a opacos. */
+  .bg-forge-panel\/70,
+  .bg-forge-panel\/80,
+  .bg-forge-panel\/90,
+  .bg-forge-panel\/95 {
+    background-color: var(--forge-panel) !important;
+  }
+}
+
+/* Quien pide menos movimiento no debería ver animaciones perpetuas: la barra
+   del modo privacidad y los indicadores de carga laten sin parar. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

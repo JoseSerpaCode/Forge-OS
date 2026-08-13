@@ -22,7 +22,7 @@ const truncated = typeof total === 'number' && typeof shown === 'number' && tota
 <div class="board-column flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden min-w-[320px] shadow-sm relative group/boardcol" data-status={status} data-total={headerCount} data-shown={shown ?? 0}>
   <!-- Subtle top accent line for column -->
   <div class="h-1 w-full bg-gradient-to-r from-forge-secondary/10 via-forge-secondary/40 to-forge-secondary/10 opacity-0 group-hover/boardcol:opacity-100 transition-opacity"></div>
-  <div class="bg-forge-panel/70 backdrop-blur-sm border-b border-forge-border/40 p-4 font-bold text-[13px] tracking-wide text-forge-text uppercase flex items-center justify-between">
+  <div class="bg-forge-panel/70 backdrop-blur-sm max-md:backdrop-blur-none border-b border-forge-border/40 p-4 font-bold text-[13px] tracking-wide text-forge-text uppercase flex items-center justify-between">
     <div class="flex items-center gap-2">
       <div class="w-2 h-2 rounded-full bg-forge-secondary shadow-[0_0_8px_var(--forge-accent-secondary)]"></div>
       {title}
