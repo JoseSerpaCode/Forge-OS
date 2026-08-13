@@ -165,7 +165,7 @@ const myTasks = db.prepare(`
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               {t('hub.banner_create_ws')}
             </button>
-            <button onclick="const s = document.getElementById('global-search'); s.value='/u '; s.focus(); s.dispatchEvent(new Event('input'));" class="bg-forge-panel text-forge-text border border-forge-border font-bold py-2.5 px-6 rounded-xl shadow-sm hover:border-forge-secondary/50 hover:bg-forge-bg transition-all text-sm flex items-center gap-2">
+            <button onclick="event.stopPropagation(); const s = document.getElementById('global-search'); s.value='/u '; s.focus(); s.dispatchEvent(new Event('input'));" class="bg-forge-panel text-forge-text border border-forge-border font-bold py-2.5 px-6 rounded-xl shadow-sm hover:border-forge-secondary/50 hover:bg-forge-bg transition-all text-sm flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               {t('hub.banner_find_people')}
             </button>
@@ -192,16 +192,26 @@ const myTasks = db.prepare(`
 
   </main>
 
-  <dialog id="new-ws-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
+  <dialog id="new-ws-modal"
+    data-t-help={t('err.sys_tag')}
+    data-t-error={t('err.sys_tag')}
+    data-t-taken={t('err.ws_tag_taken')}
+    data-t-creating={t('hub.creating')}
+    data-t-fields={t('err.fill_fields')}
+    class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
     <h2 class="text-xl font-bold mb-4">{t('hub.create_workspace').replace('+', '').trim()}</h2>
     <div class="mb-4">
       <label for="ws-name" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('modal.title') || 'Name'}</label>
-      <input type="text" id="ws-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="E.g. Project Orion">
+      <input type="text" id="ws-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder={t('hub.ws_name_ph')}>
     </div>
     <div class="mb-4">
-      <label for="ws-tag" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">System Tag (URL)</label>
+      <label for="ws-tag" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('hub.ws_tag')}</label>
       <input type="text" id="ws-tag" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="e.g. project-orion">
-      <p class="text-[10px] text-forge-muted mt-1">Only lowercase letters, numbers, and dashes.</p>
+      {/* Doble uso: la ayuda de siempre y, cuando el valor no vale, el error
+          en rojo aquí mismo. Un aviso flotante en la esquina opuesta de la
+          pantalla obliga a mirar a otro lado para saber qué campo está mal, y
+          se va solo antes de que dé tiempo a corregirlo. */}
+      <p id="ws-tag-help" class="text-[10px] text-forge-muted mt-1" aria-live="polite">{t('err.sys_tag')}</p>
     </div>
     <div class="flex justify-end gap-3 mt-6">
       <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-ws-modal').close()">{t('modal.cancel') || 'Cancel'}</button>
@@ -218,33 +228,90 @@ const myTasks = db.prepare(`
 
     btnOpen?.addEventListener('click', () => modal?.showModal());
 
+    const ayuda = document.getElementById('ws-tag-help');
+    const txtAyudaTag = modal?.dataset.tHelp || '';
+    const txtErrorTag = modal?.dataset.tError || '';
+    const txtTagOcupado = modal?.dataset.tTaken || '';
+    const txtCreando = modal?.dataset.tCreating || '...';
+    const txtFaltanCampos = modal?.dataset.tFields || '';
+    const aTag = (v: string) => v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+    // ¿Ha tocado la persona el tag a mano? Mientras no lo haga, sigue al
+    // título; en cuanto lo edita, deja de pisársele.
+    //
+    // Antes esto se adivinaba comparando el tag con el slug del nombre **menos
+    // su última letra**, para detectar «esto es lo que generé en la pulsación
+    // anterior». Solo acertaba escribiendo letra a letra y al final del campo:
+    // al pegar texto, al borrar o al editar por el medio, la comparación
+    // fallaba y el tag se quedaba congelado con lo primero que se hubiera
+    // escrito, sin manera de volver a engancharlo.
+    let tagEditadoAMano = false;
+    tagInput?.addEventListener('input', () => {
+      tagEditadoAMano = true;
+      validarTag();
+    });
+
     nameInput?.addEventListener('input', () => {
-      if (!tagInput.value || tagInput.value === nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, -1)) {
-        tagInput.value = nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (!tagEditadoAMano) {
+        tagInput.value = aTag(nameInput.value);
+        validarTag();
       }
     });
+
+    function validarTag() {
+      if (!ayuda) return true;
+      const v = tagInput.value;
+      const vale = v === '' || /^[a-z0-9]+(-[a-z0-9]+)*$/.test(v);
+      ayuda.textContent = vale ? txtAyudaTag : txtErrorTag;
+      ayuda.className = vale
+        ? 'text-[10px] text-forge-muted mt-1'
+        : 'text-[10px] text-forge-error mt-1 font-semibold';
+      tagInput.classList.toggle('border-forge-error', !vale);
+      return vale;
+    }
 
     btnSave?.addEventListener('click', async () => {
       if (!nameInput.value || !tagInput.value) {
         // @ts-ignore
-        return window.showToast('Fill all fields', true);
+        return window.showToast(txtFaltanCampos, true);
       }
-      
-      btnSave.textContent = 'Creating...';
+      // El formato se comprueba aquí antes de salir a la red: el error se ve
+      // junto al campo en vez de volver del servidor como un aviso suelto.
+      if (!validarTag()) {
+        tagInput.focus();
+        return;
+      }
+
+      // El texto original se guarda en vez de escribirse a mano: antes se
+      // reponía con la palabra «Create» fija, así que tras un error el botón
+      // se quedaba en inglés en medio de una pantalla en español.
+      const textoOriginal = btnSave.textContent;
+      btnSave.textContent = txtCreando;
       btnSave.setAttribute('disabled', 'true');
-      
+
       const res = await fetch('/api/workspaces', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: nameInput.value, sys_tag: tagInput.value })
       });
-      
+
       if (res.ok) {
         window.location.reload();
       } else {
-        // @ts-ignore
-        window.showToast(await res.text(), true);
-        btnSave.textContent = 'Create';
+        // El servidor puede rechazar por formato o porque el tag ya existe.
+        // Ambos son cosas del campo, así que se cuentan en el campo.
+        const cuerpo = await res.text();
+        if (ayuda) {
+          ayuda.textContent = res.status === 409 ? txtTagOcupado : txtErrorTag;
+          ayuda.className = 'text-[10px] text-forge-error mt-1 font-semibold';
+          tagInput.classList.add('border-forge-error');
+          tagInput.focus();
+        } else {
+          // @ts-ignore
+          window.showToast(cuerpo, true);
+        }
+        btnSave.textContent = textoOriginal;
         btnSave.removeAttribute('disabled');
       }
     });

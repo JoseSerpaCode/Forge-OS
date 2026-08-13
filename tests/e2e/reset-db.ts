@@ -83,6 +83,25 @@ export default function resetDb() {
     VALUES (?, ?, ?, ?)
   `).run('test-user-del', 'del_user', pwHash, 0);
 
+  // El ómnibus renombra una cuenta y la devuelve a su nombre al terminar. Tenía
+  // que compartir `rename_me` con `username-rules.spec.ts`, y como la suite
+  // corre en paralelo, la limpieza de una carrera deshacía el renombrado de la
+  // otra: el ómnibus fallaba una de cada cuatro veces con un «Received:
+  // undefined» que parecía un fallo del guardado. No lo era — el UPDATE se
+  // ejecutaba siempre y afectaba a su fila.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-omnibus', 'omnibus_user', pwHash, 0);
+
+  // Para la prueba de silenciado de notificaciones. Aparte a propósito: ese
+  // caso apaga una categoría, y compartir cuenta con el caso de «sí llega»
+  // hacía que uno silenciara al otro en las corridas en paralelo.
+  db.prepare(`
+    INSERT INTO users (id, username, password_hash, is_sysadmin)
+    VALUES (?, ?, ?, ?)
+  `).run('test-user-mute', 'mute_user', pwHash, 0);
+
   // Cuatro cuentas con los cuatro papeles posibles frente a un mismo espacio,
   // para la auditoría de permisos. Se montan aquí y no en el propio spec
   // porque son el escenario, no el sujeto: si cada prueba las creara, el

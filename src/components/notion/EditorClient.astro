@@ -421,6 +421,58 @@ function formatDate(dateStr: string | undefined) {
     font-size: 0.9em;
   }
 
+  /* ── Tabla y código: los plugins traen su propia paleta, y es clara ─────
+     `@editorjs/table` define sus colores en variables sobre `.tc-wrap`
+     (`--color-background: #f9f9fb`) y `@editorjs/code` pinta su `textarea`
+     en blanco. En tema oscuro eso deja una tabla blanca con texto claro
+     encima: medido, **1.17:1** de contraste, es decir ilegible.
+
+     No se había visto nunca porque el sanitizador borraba los bloques `table`
+     enteros antes de guardarlos; al arreglar aquella pérdida de datos, las
+     tablas empezaron a aparecer y el fallo de estilo salió con ellas.
+
+     Se reasignan las variables del plugin en vez de pelearse con sus reglas
+     una a una: así hereda el tema entero, incluidos bordes y la barra de
+     herramientas de fila y columna. */
+  .editor-js-container .tc-wrap {
+    --color-background: var(--forge-panel);
+    --color-text-secondary: var(--forge-muted);
+    --color-border: var(--forge-border);
+    color: var(--forge-text);
+  }
+  .editor-js-container .tc-table,
+  .editor-js-container .tc-row,
+  .editor-js-container .tc-cell {
+    border-color: var(--forge-border);
+  }
+  .editor-js-container .tc-cell {
+    color: var(--forge-text);
+    background: transparent;
+  }
+  /* La fila de cabecera se distingue por peso y fondo, no por color de texto:
+     bajarle el color la sacaría del umbral de contraste. */
+  .editor-js-container .tc-row--heading .tc-cell {
+    background: var(--forge-panel);
+    font-weight: 700;
+  }
+  .editor-js-container .tc-add-row,
+  .editor-js-container .tc-add-column {
+    color: var(--forge-muted);
+  }
+  .editor-js-container .tc-add-row:hover,
+  .editor-js-container .tc-add-column:hover {
+    background: color-mix(in srgb, var(--forge-accent-primary) 12%, transparent);
+    color: var(--forge-text);
+  }
+
+  .editor-js-container .ce-code__textarea {
+    background: var(--forge-bg);
+    color: var(--forge-text);
+    border: 1px solid var(--forge-border);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
   .codex-editor__redactor {
     padding-bottom: 100px !important;
   }

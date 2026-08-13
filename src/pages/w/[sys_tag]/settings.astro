@@ -400,8 +400,12 @@ const wsPendingInvites = (db.prepare(`
     </h2>
     <div class="space-y-4">
       <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="auto-name">{t('ws.settings.name')}</label>
-        <input type="text" id="auto-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="E.g., Auto-assign to QA">
+        {/* Decía «Nombre del workspace»: reutilizaba la clave del nombre del
+            espacio, que es otro campo de esta misma pantalla. Con la etiqueta
+            ya asociada al campo, un lector de pantalla lo anunciaba así con
+            toda seguridad. */}
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="auto-name">{t('ws.settings.rule_name')}</label>
+        <input type="text" id="auto-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder={t('ws.settings.rule_name_ph')}>
       </div>
       
       {/*

@@ -8,6 +8,7 @@ import {
   redirectUri,
   verifyState,
   normalizeProfile,
+  fetchGithubVerifiedEmail,
   deriveUsername,
 } from '../../../../../lib/oauth';
 
@@ -80,6 +81,17 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect, locals }) 
     const profile = normalizeProfile(provider, await profileRes.json());
     if (!profile) return redirect('/login?error=oauth_profile', 302);
 
+    // GitHub no dice en `/user` si el correo está verificado; hay que
+    // preguntárselo a `/user/emails`. Solo se hace falta cuando ese correo
+    // podría emparejar con una cuenta ya existente.
+    if (provider === 'github') {
+      const verificado = await fetchGithubVerifiedEmail(token.access_token);
+      if (verificado) {
+        profile.email = verificado;
+        profile.emailVerified = true;
+      }
+    }
+
     const col = cfg.column;
 
     // ── Caso 1: ya hay sesión → esto es «conectar», no «entrar» ───────────────
@@ -120,7 +132,14 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect, locals }) 
     if (!user) {
       // Si ya hay una cuenta con ese correo, se vincula en vez de duplicar: es
       // la misma persona entrando por otra puerta.
-      const byEmail = profile.email
+      //
+      // **Solo si el proveedor lo da por verificado.** Este emparejamiento
+      // entrega la cuenta entera sin pedir contraseña, así que aceptar un
+      // correo sin comprobar convierte «entrar con Google» en una puerta
+      // trasera: basta con declarar el correo de la víctima en un proveedor
+      // propio. Sin verificación se sigue de largo y se crea una cuenta nueva,
+      // que es recuperable; una cuenta entregada, no.
+      const byEmail = profile.email && profile.emailVerified
         ? (db.prepare('SELECT id FROM users WHERE email = ?').get(profile.email.toLowerCase()) as
             | { id: string }
             | undefined)

@@ -6,6 +6,28 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.10.0] - 2026-08-13
+
+### Fixed
+
+- **Las notificaciones no llegaban nunca, y con razón.** En todo el producto había **un solo** punto que creaba una: asignar un ticket a otra persona *al editarlo*. Crear el ticket ya asignado —que es el camino normal, el formulario tiene el campo— no avisaba a nadie, y quien trabaja solo no tenía ningún camino posible porque el aviso se salta cuando te asignas a ti mismo. Ahora avisa también al crear, y el mensaje lleva el **título** del ticket en vez de ocho caracteres del identificador.
+- **Los sprints ya avisan al equipo** cuando arrancan y cuando se cierran. Ajustes ofrecía «silenciar actualizaciones de sprint» desde el principio, pero no había nada que silenciar.
+- **Los errores salían en crudo**: el aviso enseñaba `Failed: {"error_field":"username","error_code":"charset"}`. Las traducciones ya existían —las usa el registro—; Ajustes simplemente no las llamaba.
+- **Al crear un espacio, la etiqueta de URL solo seguía a lo primero que se escribía.** Se adivinaba comparando la etiqueta con el nombre *menos su última letra*, así que solo acertaba tecleando al final: al pegar, borrar o editar por el medio se congelaba sin manera de reengancharla. Y su error salía como aviso flotante en la esquina opuesta; ahora se ve junto al campo, en vivo.
+- **«Buscar personas» no mostraba sugerencias.** El botón abría el desplegable y el mismo clic, al seguir subiendo hasta `document`, lo cerraba: había que escribir y reescribir a mano para que reapareciera.
+- **La tabla y el bloque de código del editor se pintaban sobre fondo blanco en tema oscuro** — contraste medido de **1.17:1**, texto ilegible. No se había visto nunca porque el sanitizador borraba los bloques `table` antes de guardarlos; al arreglar aquella pérdida de datos, las tablas aparecieron y el fallo de estilo salió con ellas.
+- **El conmutador de idioma del login se dibujaba abajo del todo**, no arriba a la derecha: la regla que lo posiciona tiene ámbito de componente y no alcanzaba al elemento de otro componente.
+- En automatizaciones, el campo del nombre de la regla estaba etiquetado **«Nombre del workspace»**.
+
+### Security
+
+- **OAuth: emparejar por correo exigía que el proveedor lo diera por verificado.** Quien entra sin sesión y sin proveedor vinculado se empareja con una cuenta existente por su correo, y ese emparejamiento entrega la cuenta sin pedir contraseña. Google devuelve `email_verified` y no se estaba mirando; GitHub no lo dice en `/user`, así que ahora se consulta `/user/emails`. Sin verificación se crea una cuenta nueva, que es recuperable; una cuenta entregada, no.
+
+### Changed
+
+- **«Silenciar menciones» sale de Ajustes.** No hay tabla de comentarios, así que nada puede crear una notificación de mención: la casilla ofrecía apagar algo que no existe.
+- El borrado de cuenta: singular cuando toca («1 ticket reportado», no «1 tickets»), el nombre a teclear se enseña en pantalla, y el botón rojo nace apagado hasta que el nombre coincide exactamente.
+
 ## [1.9.1] - 2026-08-11
 
 ### Security

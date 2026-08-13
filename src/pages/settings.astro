@@ -344,16 +344,16 @@ const oauthNotice =
                 </div>
               </label>
               
-              <label class="flex items-center justify-between cursor-pointer group">
-                <div>
-                  <span class="text-sm font-medium text-forge-text block mb-0.5">{t('user.settings.mute_mention')}</span>
-                  <p class="text-xs text-forge-muted">{t('user.settings.mute_mention_desc')}</p>
-                </div>
-                <div class="relative inline-flex items-center">
-                  <input type="checkbox" id="notif-mute-mention" class="sr-only peer" checked={!!userProfile.notif_mute_mention} />
-                  <div class="w-9 h-5 bg-forge-bg peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-forge-muted after:border-forge-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-forge-primary peer-checked:after:bg-white border border-forge-border/60 group-hover:border-forge-border transition-colors"></div>
-                </div>
-              </label>
+              {/* «Silenciar menciones» está fuera hasta que existan las menciones.
+
+              No hay tabla de comentarios, así que no hay ningún punto del
+              código que pueda crear una notificación de tipo `mention`: la
+              casilla ofrecía apagar algo que nunca se enciende. Es el mismo
+              criterio que se siguió con los desplegables de automatizaciones,
+              que prometían tres acciones teniendo una. El campo sigue en la
+              base de datos y el servicio sigue respetándolo; solo deja de
+              anunciarse. */}
+              <!-- -->
               
               <label class="flex items-center justify-between cursor-pointer group">
                 <div>
@@ -462,6 +462,18 @@ const oauthNotice =
               <label for="delete-confirm-username" class="block text-sm font-semibold text-forge-text mb-1.5">
                 {t('account.delete.confirm_label')}
               </label>
+              {/* El nombre exacto, delante. Teclearlo es fricción a propósito;
+                  tener que recordarlo de memoria no añade ninguna seguridad,
+                  solo intentos fallidos en la pantalla donde menos apetece
+                  equivocarse.
+
+                  Sin instrucción repetida: la etiqueta de arriba ya dice qué
+                  hay que hacer, así que aquí basta con enseñar la cadena. Va
+                  en una ficha monoespaciada para que se lea como un dato y no
+                  como una frase. */}
+              <p class="mb-1.5">
+                <span class="font-mono text-sm text-forge-text select-all bg-forge-bg border border-forge-border/60 rounded px-2 py-0.5">{user.username}</span>
+              </p>
               <input id="delete-confirm-username" type="text" autocomplete="off"
                 class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" />
             </div>
@@ -476,7 +488,7 @@ const oauthNotice =
                 class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" />
             </div>
             <div class="flex flex-wrap gap-2 pt-1">
-              <button id="btn-confirm-delete" class="text-sm font-bold px-4 py-2.5 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
+              <button id="btn-confirm-delete" disabled class="text-sm font-bold px-4 py-2.5 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {t('account.delete.button')}
               </button>
               <button id="btn-cancel-delete" class="text-sm font-semibold px-4 py-2.5 rounded-md border border-forge-border/60 text-forge-text hover:bg-forge-border/40 transition-colors">
@@ -491,7 +503,25 @@ const oauthNotice =
 
 <script is:inline define:vars={{
   confirmSignOutAll: t('user.settings.signout_all_confirm'),
+  miNombre: user.username,
+  // El servidor devuelve códigos (`{error_field, error_code}`), no frases. Sin
+  // este mapa, el aviso enseñaba la respuesta cruda:
+  //   Failed: {"error_field":"username","error_code":"charset"}
+  // Es la pantalla diciéndole a una persona que mire un JSON.
+  errores: Object.fromEntries(
+    [
+      'username.required','username.too_short','username.too_long','username.charset',
+      'username.edge_punctuation','username.reserved','username.inappropriate',
+      'username.looks_like_guest','username.taken',
+      'email.required','email.invalid','email.too_long','email.taken',
+      'password.too_short','password.too_long',
+    ].map((k) => [k, t(`err.${k}` as any)])
+  ),
+  msgGuardado: t('user.settings.saved_ok'),
+  msgRed: t('err.network'),
+  msgGenerico: t('err.generic'),
   delTxt: {
+    wouldHappen: t('account.delete.would_happen'),
     keeps: t('account.delete.keeps'),
     keepsNote: t('account.delete.keeps_note'),
     goes: t('account.delete.goes'),
@@ -505,6 +535,9 @@ const oauthNotice =
     nIssues: t('account.delete.n_issues'),
     nPages: t('account.delete.n_pages'),
     nLogs: t('account.delete.n_logs'),
+    nIssuesOne: t('account.delete.n_issues_one'),
+    nPagesOne: t('account.delete.n_pages_one'),
+    nLogsOne: t('account.delete.n_logs_one'),
   },
 }}>
   const userId = document.getElementById('avatar-preview-container')?.getAttribute('data-user-id');
@@ -645,11 +678,21 @@ const oauthNotice =
         showInlineSuccess(btn);
         if (onSuccess) onSuccess();
       } else {
-        window.showToast?.('Failed: ' + await res.text(), true);
+        // Se traduce el código; si llega algo que no está en el mapa, un
+        // mensaje genérico. Nunca el cuerpo de la respuesta: puede traer
+        // detalles internos y, sobre todo, no significa nada para quien lee.
+        let mensaje = msgGenerico;
+        try {
+          const data = await res.json();
+          if (data?.error_field && data?.error_code) {
+            mensaje = errores[`${data.error_field}.${data.error_code}`] || msgGenerico;
+          }
+        } catch { /* respuesta sin JSON: se queda el genérico */ }
+        window.showToast?.(mensaje, true);
       }
     } catch (e) {
       console.error(e);
-      window.showToast?.('Network error occurred', true);
+      window.showToast?.(msgRed, true);
     } finally {
       btn.innerHTML = originalText;
       btn.disabled = false;
@@ -675,7 +718,7 @@ const oauthNotice =
       // momento. La biografía, los pronombres y el correo no se guardaban nunca.
       if (newAvatarUrl) payload.avatar_url = newAvatarUrl;
 
-      await handleSave(btnSaveProfile, '/api/user/settings', payload, 'Profile updated successfully!');
+      await handleSave(btnSaveProfile, '/api/user/settings', payload, msgGuardado);
     });
 
     document.getElementById('btn-logout-all')?.addEventListener('click', () => {
@@ -727,7 +770,7 @@ const oauthNotice =
       if (currentPassword) payload.current_password = currentPassword;
     }
 
-    await handleSave(btn, '/api/user/settings', payload, 'Settings updated successfully!', () => {
+    await handleSave(btn, '/api/user/settings', payload, msgGuardado, () => {
       setTimeout(() => window.location.reload(), 1200);
     });
   });
@@ -747,14 +790,18 @@ const oauthNotice =
 
   document.getElementById('btn-save-notifs')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
+    // Se lee solo lo que está en pantalla. La casilla de menciones ya no se
+    // muestra —no hay menciones que silenciar—, y leerla aquí reventaría el
+    // guardado entero con «Cannot read properties of null»: se perderían
+    // también las otras cuatro preferencias.
+    const leer = (id) => (document.getElementById(id)?.checked ? 1 : 0);
     const payload = {
       notif_mute_all: muteAllChk.checked ? 1 : 0,
-      notif_mute_assign: document.getElementById('notif-mute-assign').checked ? 1 : 0,
-      notif_mute_mention: document.getElementById('notif-mute-mention').checked ? 1 : 0,
-      notif_mute_sprint: document.getElementById('notif-mute-sprint').checked ? 1 : 0,
-      notif_mute_system: document.getElementById('notif-mute-system').checked ? 1 : 0,
+      notif_mute_assign: leer('notif-mute-assign'),
+      notif_mute_sprint: leer('notif-mute-sprint'),
+      notif_mute_system: leer('notif-mute-system'),
     };
-    await handleSave(btn, '/api/user/settings', payload, 'Notification preferences saved!');
+    await handleSave(btn, '/api/user/settings', payload, msgGuardado);
   });
 
   // Delete Workspace
@@ -828,6 +875,10 @@ const oauthNotice =
       if (p.workspacesDeleted && p.workspacesDeleted.length) {
         html += '<div class="rounded-lg border border-forge-border/60 p-3">' +
           '<p class="font-bold text-forge-text">' + esc(delTxt.goes) + '</p>' +
+          // Estando bloqueado, «estos espacios se borrarán» afirma algo que no
+          // va a pasar: el borrado está detenido. Se pasa a condicional para no
+          // contradecir al aviso rojo de justo encima.
+          (bloqueado ? '<p class="text-forge-muted mt-1 italic">' + esc(delTxt.wouldHappen) + '</p>' : '') +
           '<p class="text-forge-muted mt-1">' + esc(delTxt.goesNote) + '</p>' +
           '<p class="text-forge-text mt-2 font-semibold">' + esc(delTxt.wsDeleted) + '</p>' +
           '<ul class="mt-1 list-disc list-inside text-forge-text">' +
@@ -847,10 +898,12 @@ const oauthNotice =
           // Con etiqueta. Tres números sueltos separados por puntos no dicen
           // qué se está contando, y esta es justo la pantalla donde hace falta
           // entenderlo a la primera.
+          // Singular cuando toca. «1 tickets reportados» chirría justo en la
+          // pantalla que más calma necesita transmitir.
           '<ul class="mt-2 text-forge-text list-disc list-inside">' +
-          '<li>' + p.issuesReported + ' ' + esc(delTxt.nIssues) + '</li>' +
-          '<li>' + p.pagesCreated + ' ' + esc(delTxt.nPages) + '</li>' +
-          '<li>' + p.workLogs + ' ' + esc(delTxt.nLogs) + '</li>' +
+          '<li>' + p.issuesReported + ' ' + esc(p.issuesReported === 1 ? delTxt.nIssuesOne : delTxt.nIssues) + '</li>' +
+          '<li>' + p.pagesCreated + ' ' + esc(p.pagesCreated === 1 ? delTxt.nPagesOne : delTxt.nPages) + '</li>' +
+          '<li>' + p.workLogs + ' ' + esc(p.workLogs === 1 ? delTxt.nLogsOne : delTxt.nLogs) + '</li>' +
           '</ul></div>';
       }
 
@@ -859,6 +912,16 @@ const oauthNotice =
       // con un botón que no va a funcionar.
       formulario.classList.toggle('hidden', bloqueado);
     }
+
+    // El botón permanece apagado hasta que el nombre coincida exactamente. Un
+    // botón rojo activo sobre un formulario vacío invita a pulsarlo para «ver
+    // qué pasa», y lo que pasa es un error; aquí la respuesta a un clic
+    // distraído debe ser que no ocurra nada.
+    const revisarNombre = () => {
+      if (!botonBorrar || !campoNombre) return;
+      botonBorrar.disabled = campoNombre.value !== miNombre;
+    };
+    campoNombre?.addEventListener('input', revisarNombre);
 
     abrir.addEventListener('click', async () => {
       panel.classList.remove('hidden');
@@ -876,6 +939,7 @@ const oauthNotice =
       abrir.classList.remove('hidden');
       if (campoNombre) campoNombre.value = '';
       if (campoPassword) campoPassword.value = '';
+      revisarNombre();
     });
 
     botonBorrar?.addEventListener('click', async () => {
@@ -907,7 +971,7 @@ const oauthNotice =
       } catch (e) {
         window.showToast?.(String(e), true);
       } finally {
-        botonBorrar.disabled = false;
+        revisarNombre();
       }
     });
 

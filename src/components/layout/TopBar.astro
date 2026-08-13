@@ -565,6 +565,15 @@ const currentUrl = Astro.url.pathname;
     fetchNotifications();
   });
 
+  // Cerrar al pulsar fuera.
+  //
+  // Ojo con quién puede abrir esto: el botón «Buscar personas» del hub rellena
+  // el campo y dispara `input` desde su propio `onclick`. Ese clic seguía
+  // subiendo hasta aquí, y como el botón no está dentro del buscador ni del
+  // desplegable, esta misma función cerraba lo que se acababa de abrir. Se veía
+  // como que las sugerencias «no salían» hasta escribir y reescribir a mano.
+  // El botón corta la propagación; esto queda documentado para que quien añada
+  // otro atajo sepa que tiene que hacer lo mismo.
   document.addEventListener('click', (e: any) => {
     if (!globalSearch?.contains(e.target) && !searchDropdown?.contains(e.target)) {
       searchDropdown?.classList.add('hidden');

@@ -52,7 +52,10 @@ test('pulsar el texto de una casilla cambia la casilla que dice, no la de al lad
   await entrar(page);
   await page.goto('/settings');
 
-  const casillas = ['notif-mute-all', 'notif-mute-assign', 'notif-mute-mention', 'notif-mute-sprint', 'notif-mute-system'];
+  // Sin `notif-mute-mention`: esa casilla se retiró de la pantalla porque no
+  // existe ningún sistema de menciones que pudiera generar la notificación que
+  // proponía silenciar. La columna sigue en la base y el servicio la respeta.
+  const casillas = ['notif-mute-all', 'notif-mute-assign', 'notif-mute-sprint', 'notif-mute-system'];
   const antes = await page.evaluate(
     (ids) => ids.map((id) => (document.getElementById(id) as HTMLInputElement).checked),
     casillas
