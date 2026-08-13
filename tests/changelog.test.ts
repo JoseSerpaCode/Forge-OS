@@ -74,7 +74,12 @@ describe('parseo del changelog', () => {
     // esto devuelve vacío, la sección desaparece sin que nadie se entere.
     const real = parseChangelog(fs.readFileSync('CHANGELOG.md', 'utf8'), 3);
     expect(real).toHaveLength(3);
-    expect(real[0].items.length).toBeGreaterThan(3);
+    // Basta con que la última versión traiga **algo**. Antes se exigían más de
+    // tres puntos, y eso ata la prueba al tamaño de la release: una versión de
+    // parche con dos arreglos la rompía sin que nada estuviera mal. Lo que hay
+    // que proteger es que el parseo siga devolviendo contenido, no que las
+    // notas sean largas.
+    expect(real[0].items.length).toBeGreaterThan(0);
     for (const r of real) {
       expect(r.version).toMatch(/^\d+\.\d+\.\d+$/);
       for (const i of r.items) {
