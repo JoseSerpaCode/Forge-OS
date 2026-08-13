@@ -129,6 +129,10 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect, locals }) 
       .prepare(`SELECT id, is_guest FROM users WHERE ${col} = ?`)
       .get(profile.providerUserId) as { id: string; is_guest: number } | undefined;
 
+    // ¿Esta vuelta ha acabado creando una cuenta nueva? Hay que decirlo, no
+    // dejar a la persona en el hub como si hubiera entrado en la suya.
+    let cuentaNueva = false;
+
     if (!user) {
       // Si ya hay una cuenta con ese correo, se vincula en vez de duplicar: es
       // la misma persona entrando por otra puerta.
@@ -166,6 +170,7 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect, locals }) 
           profile.providerUserId
         );
         user = { id, is_guest: 0 };
+        cuentaNueva = true;
       }
     }
 
@@ -186,7 +191,13 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect, locals }) 
       maxAge: 60 * 60 * 24 * 30,
     });
 
-    return redirect('/', 302);
+    // Entrar con un proveedor que no está vinculado a ninguna cuenta **crea
+    // una cuenta**. Es el comportamiento correcto de «entrar con GitHub» —el
+    // proveedor ya ha comprobado quién eres, no hace falta contraseña— pero
+    // hacerlo en silencio es lo que asusta: quien acaba de borrar su cuenta
+    // pulsa el botón esperando entrar, aterriza en un hub vacío y cree que ha
+    // perdido su trabajo. Se avisa, y se dice de qué proveedor viene.
+    return redirect(cuentaNueva ? `/?cuenta_nueva=${provider}` : '/', 302);
   } catch (err) {
     console.error(`[oauth/${provider}]`, err);
     return redirect('/login?error=oauth_failed', 302);

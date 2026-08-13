@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.13.1] - 2026-08-13
+
+### Fixed
+
+- **Entrar con un proveedor no vinculado creaba una cuenta en silencio.** Es el comportamiento correcto de «entrar con GitHub» —el proveedor ya ha comprobado quién eres— pero hacerlo sin decir nada asusta: quien acababa de borrar su cuenta pulsaba el botón esperando entrar, aterrizaba en un hub vacío y creía haber perdido su trabajo. Ahora se avisa en el hub, diciendo de qué proveedor viene y que el trabajo anterior no está ahí.
+- El aviso de build `INEFFECTIVE_DYNAMIC_IMPORT`: el endpoint de Recursos importaba su propio módulo dos veces, una estática y otra dinámica.
+
+### Changed
+
+- **El conmutador de idioma sube a la cabecera de la portada.** Al fondo del pie no lo encontraba quien llega y no lee en inglés, que es exactamente a quien sirve.
+- Fuera la frase «Autoalojado sobre un único archivo SQLite» del pie: lo mismo ya lo dicen el titular y la ficha de datos, tres veces en la misma página.
+
 ## [1.13.0] - 2026-08-13
 
 ### Added

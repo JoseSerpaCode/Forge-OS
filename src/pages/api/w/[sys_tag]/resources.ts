@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
-import { crearRecurso, listar, archivar, vincular, type TipoRecurso } from '../../../../lib/resources';
+import { crearRecurso, listar, archivar, vincular, normalizarUrl, type TipoRecurso } from '../../../../lib/resources';
 
 /**
  * Recursos de un espacio de trabajo.
@@ -58,8 +58,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
   // Los tipos con URL la necesitan de verdad, y tiene que ser una que se pueda
   // normalizar: sin clave de deduplicación, el módulo pierde su razón de ser.
-  if ((tipo === 'link' || tipo === 'repo')) {
-    const { normalizarUrl } = await import('../../../../lib/resources');
+  if (tipo === 'link' || tipo === 'repo') {
     if (!normalizarUrl(datos?.url)) return json({ error_field: 'url', error_code: 'invalid' }, 400);
   }
 
