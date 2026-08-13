@@ -444,20 +444,22 @@ const oauthNotice =
         borrado y qué trabajo se queda con el equipo. Eso es lo que cambia la
         decisión.
       */}
-      <section class="bg-forge-panel border border-red-500/40 rounded-xl p-5 sm:p-6 shadow-sm">
-        <div class="mb-4">
+      <div class="pt-4 mt-6 border-t border-forge-border/40"></div>
+
+      <section class="bg-forge-panel border border-red-500/40 rounded-xl p-6 sm:p-8 shadow-sm">
+        <div class="mb-6">
           <h2 class="text-lg font-bold text-red-500">{t('account.delete.title')}</h2>
-          <p class="text-sm text-forge-muted mt-1">{t('account.delete.lead')}</p>
+          <p class="text-sm text-forge-muted mt-1.5">{t('account.delete.lead')}</p>
         </div>
 
         <button id="btn-open-delete" class="text-sm font-semibold px-4 py-2 rounded-md border border-red-500/50 text-red-500 hover:bg-red-500/10 transition-colors">
           {t('account.delete.open')}
         </button>
 
-        <div id="delete-panel" class="hidden mt-5 space-y-4">
+        <div id="delete-panel" class="hidden mt-7 space-y-6">
           <div id="delete-consequences" class="space-y-4 text-sm" aria-live="polite"></div>
 
-          <div id="delete-form" class="space-y-3">
+          <div id="delete-form" class="space-y-5 pt-2 border-t border-forge-border/40">
             <div>
               <label for="delete-confirm-username" class="block text-sm font-semibold text-forge-text mb-1.5">
                 {t('account.delete.confirm_label')}
@@ -487,7 +489,7 @@ const oauthNotice =
               <input id="delete-password" type="password" autocomplete="current-password"
                 class="w-full bg-forge-bg border border-forge-border/60 rounded-md p-2.5 text-sm text-forge-text focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500" />
             </div>
-            <div class="flex flex-wrap gap-2 pt-1">
+            <div class="flex flex-wrap gap-3 pt-3">
               <button id="btn-confirm-delete" disabled class="text-sm font-bold px-4 py-2.5 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {t('account.delete.button')}
               </button>
