@@ -6,6 +6,16 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.12.0] - 2026-08-13
+
+### Added
+
+- **Un solo sprint activo por espacio, garantizado por la base de datos.** La regla vivía solo en la aplicación, y una regla que solo vive en el código se salta con dos peticiones a la vez: las dos pasan la comprobación antes de que ninguna escriba. Ahora lo impide un índice único parcial. La migración deja los datos en paz consigo mismos antes de crearlo: si ya había varios activos, conserva el más reciente.
+- **Cerrar un sprint obliga a decir qué pasa con lo que no se terminó**: moverlo al siguiente, devolverlo al backlog o dejarlo donde está. Antes se cerraba en silencio y el trabajo pendiente se quedaba dentro, invisible para el sprint siguiente. Sin decidir, el servidor responde 409 con **cuántos** tickets hay pendientes, para poder preguntar con el número delante.
+- **Reordenar el backlog con la posición calculada en el servidor.** El cliente dice entre qué dos tickets quiere dejar el suyo; el número lo pone el servidor. Y cuando el hueco entre dos posiciones se queda sin precisión de coma flotante, se reindexa la lista y se sigue, sin que nadie vea nada moverse.
+- **Fotos diarias del sprint** (`sprint_snapshots`) para el burndown. Se recalculaba desde los datos actuales en cada carga, así que la curva de la semana pasada se redibujaba distinta hoy si a un ticket le cambiaban los puntos. La foto de hoy se refresca; las de días anteriores no se tocan.
+- `sprints` gana `completed_at`, `created_by`, `created_at` y `updated_at`.
+
 ## [1.11.1] - 2026-08-13
 
 ### Fixed
