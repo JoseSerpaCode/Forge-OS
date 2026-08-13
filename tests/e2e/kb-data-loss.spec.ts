@@ -109,10 +109,24 @@ test('guardar mil veces no degrada el contenido', async ({ page }) => {
   for (let i = 0; i < 20; i++) {
     // Se reenvía lo que hay guardado, como haría el editor al releerlo.
     const actual = i === 0 ? { blocks } : rowOf(pageId);
-    await page.request.put(`/api/pages/${pageId}`, {
-      data: { content_json: JSON.stringify(actual) },
-      headers: { Origin: origin },
-    });
+    // Con un reintento: veinte peticiones seguidas contra el mismo servidor,
+    // mientras el resto de la suite corre en paralelo, hacen que de vez en
+    // cuando se caiga una conexión con ECONNRESET. Eso es transporte, no un
+    // fallo del guardado —lo que se está midiendo aquí es si el contenido se
+    // degrada al reescribirlo muchas veces—, y hacer fallar la prueba por ello
+    // solo enseña a desconfiar de la suite.
+    for (let intento = 0; intento < 3; intento++) {
+      try {
+        await page.request.put(`/api/pages/${pageId}`, {
+          data: { content_json: JSON.stringify(actual) },
+          headers: { Origin: origin },
+        });
+        break;
+      } catch (e) {
+        if (intento === 2) throw e;
+        await new Promise((r) => setTimeout(r, 150));
+      }
+    }
   }
 
   expect(rowOf(pageId).blocks[0].data.code).toBe(CODE);

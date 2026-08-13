@@ -696,6 +696,89 @@ const MIGRATIONS: Migration[] = [
       db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_sprint_snapshots_day ON sprint_snapshots(sprint_id, taken_on)');
     }
   },
+  {
+    version: 33,
+    description: 'resources: tablas del módulo de Recursos',
+    run: () => {
+      // Tabla de primera clase, no una tabla dinámica.
+      //
+      // La idea original era crear Recursos como una tabla dinámica más, pero
+      // esas solo ofrecen Text, Number y Select: un recurso necesita adjuntos,
+      // MIME, tamaño, vínculos a issues y sprints y marcas de enriquecimiento.
+      // Modelarlo con tres tipos obliga a un EAV imposible de consultar, y deja
+      // el esquema en manos de quien pueda editar la tabla.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS resources (
+          id TEXT PRIMARY KEY,
+          workspace_id TEXT NOT NULL,
+          type TEXT NOT NULL CHECK (type IN ('link','file','note','snippet','repo')),
+          title TEXT NOT NULL,
+          description TEXT,
+
+          url TEXT,
+          url_normalized TEXT,
+          favicon_url TEXT,
+          site_name TEXT,
+
+          file_path TEXT,
+          mime_type TEXT,
+          size_bytes INTEGER,
+
+          body TEXT,
+          language TEXT,
+
+          enriched_at DATETIME,
+          enrich_status TEXT DEFAULT 'pending' CHECK (enrich_status IN ('pending','ok','failed','skipped')),
+
+          created_by TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          archived_at DATETIME,
+
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+
+      // Deduplicación por URL normalizada, dentro del espacio.
+      //
+      // `archived_at IS NULL` en la condición no es un adorno: el borrado es
+      // lógico, y sin esa parte un recurso archivado bloquearía para siempre
+      // dar de alta la misma URL otra vez.
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_resources_dedup
+        ON resources(workspace_id, url_normalized)
+        WHERE url_normalized IS NOT NULL AND archived_at IS NULL
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_resources_ws ON resources(workspace_id, archived_at, created_at DESC)');
+
+      // Una misma URL citada en cinco issues es **un** recurso con cinco
+      // vínculos, no cinco filas repetidas.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS resource_links (
+          resource_id TEXT NOT NULL,
+          entity_type TEXT NOT NULL CHECK (entity_type IN ('issue','page','sprint')),
+          entity_id TEXT NOT NULL,
+          sprint_id TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (resource_id, entity_type, entity_id),
+          FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE,
+          FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_resource_links_entity ON resource_links(entity_type, entity_id)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_resource_links_sprint ON resource_links(sprint_id)');
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS resource_tags (
+          resource_id TEXT NOT NULL,
+          tag TEXT NOT NULL,
+          PRIMARY KEY (resource_id, tag),
+          FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE
+        )
+      `);
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

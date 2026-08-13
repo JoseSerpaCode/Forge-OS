@@ -6,6 +6,22 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.13.0] - 2026-08-13
+
+### Added
+
+- **Módulo de Recursos, primera capa.** Tablas propias (`resources`, `resource_links`, `resource_tags`), deduplicación por URL normalizada y CRUD con permisos. Un recurso es material que se comparte: la misma URL citada en cinco issues es **un** recurso con cinco vínculos, no cinco copias que mantener a la vez.
+- **Normalización de URL** como clave de deduplicación: minúsculas en el host, sin `www.`, sin puerto por defecto, sin parámetros de rastreo, con el resto ordenado, sin barra final y sin fragmento. La ruta **no** se toca, porque sí distingue mayúsculas.
+- El borrado es lógico. Si se borrara de verdad y la URL siguiera citada en un issue, la próxima ingesta la recrearía; y como el índice de deduplicación solo mira lo no archivado, archivar no impide volver a darla de alta.
+
+### Changed
+
+- La zona de eliminar cuenta se separa del resto con una línea y bastante aire. Pegada a la lista de espacios parecía una sección más, cuando es la única de la pantalla que no tiene vuelta atrás.
+
+### Fixed
+
+- La prueba de guardados repetidos de la base de conocimiento se caía a veces con `ECONNRESET`: veinte peticiones seguidas mientras el resto de la suite corre en paralelo. Lleva un reintento acotado — lo que mide es si el contenido se degrada, no el transporte.
+
 ## [1.12.0] - 2026-08-13
 
 ### Added
