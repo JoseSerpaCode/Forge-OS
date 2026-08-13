@@ -6,6 +6,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.11.1] - 2026-08-13
+
+### Fixed
+
+- **La prueba de arrastrar tarjetas vuelve a estar activa.** Llevaba desactivada con `test.skip` porque `dragTo` emite el gesto de un tirón y la librería del tablero necesita ver el puntero moverse: no se disparaba ningún guardado y la prueba esperaba en vano. Con el ratón paso a paso pasa siempre.
+- `CLAUDE.md` daba por muertas **siete** tablas del esquema. Son cinco: `channels` y `messages` las consultan `IssueService` —publica un aviso en el canal general al crear un ticket— y la limpieza de adjuntos de `WorkspaceService`. Borrarlas siguiendo esa nota habría roto dos caminos vivos.
+
 ## [1.11.0] - 2026-08-13
 
 ### Fixed

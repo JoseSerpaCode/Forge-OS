@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.11.0, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.11.1, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -163,8 +163,8 @@ resuelve la suma leyendo la página. No se puentea el captcha en pruebas.
 
 ## Tablas reservadas: no están rotas, están sin construir
 
-Hay 7 tablas en el esquema que no consulta ningún código. **No son restos ni un
-error**: son alcance declarado por adelantado. Se mantienen porque crear una
+Hay **5** tablas en el esquema que no consulta ningún código. **No son restos ni
+un error**: son alcance declarado por adelantado. Se mantienen porque crear una
 tabla vacía en SQLite cuesta unos bytes, mientras que borrarlas obliga a
 escribir la migración dos veces cuando llegue la feature.
 
@@ -174,7 +174,13 @@ escribir la migración dos veces cuando llegue la feature.
 | `document_chunks` | Búsqueda semántica / RAG |
 | `public_forms` | Formularios públicos |
 | `labels` | Etiquetas de issues y páginas |
-| `channels`, `messages` | Chat de equipo (tiene esquema, sin interfaz) |
+
+**`channels` y `messages` no están en esa lista**, aunque el chat siga sin
+interfaz: las consulta `IssueService.ts` —publica un aviso en el canal
+`general` al crear un ticket— y la limpieza de adjuntos de
+`WorkspaceService.ts`, que las une para saber qué archivos cuelgan de un
+mensaje. Aquí ponía que eran siete tablas muertas; borrar esas dos habría roto
+dos caminos vivos.
 
 Antes de dar por muerta cualquiera de ellas, comprueba si su feature sigue en el
 roadmap.
