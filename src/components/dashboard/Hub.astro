@@ -8,6 +8,10 @@ import TaskTable from './TaskTable.astro';
 
 const user = Astro.locals.user!;
 const lang = Astro.locals.lang || 'en';
+// El callback del proveedor marca así las vueltas que han acabado creando una
+// cuenta. Sin esto, quien acaba de borrar la suya y vuelve a pulsar «GitHub»
+// aterriza en un hub vacío sin saber que está en una cuenta distinta.
+const proveedorNuevaCuenta = Astro.url.searchParams.get('cuenta_nueva');
 const t = useTranslations(lang);
 
 // La rama de sysadmin lee todos los espacios de la instancia. Va acotada: el
@@ -46,6 +50,12 @@ const myTasks = db.prepare(`
 
 <MainLayout title={t('hub.title')}>
   <main class="space-y-8 max-w-5xl mx-auto pb-12">
+    {proveedorNuevaCuenta && (
+      <div class="rounded-xl border border-forge-accent-primary/50 bg-forge-accent-primary/10 p-4 sm:p-5" role="status">
+        <p class="font-bold text-forge-text">{t('hub.new_account.title')}</p>
+        <p class="text-sm text-forge-muted mt-1.5 max-w-2xl">{t('hub.new_account.body')}</p>
+      </div>
+    )}
     <header class="mb-8 flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-extrabold text-forge-text mb-2 tracking-tight">{t('hub.title')}</h1>

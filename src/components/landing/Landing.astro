@@ -49,6 +49,7 @@ const sections = [
 <header class="lp-nav">
   <Logo href="/" size="md" />
   <nav class="lp-nav-actions">
+    <LangSwitch />
     <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">GitHub</a>
     {signedIn ? (
       <a href="/" class="lp-btn lp-btn-primary">{t('landing.open')}</a>
@@ -248,8 +249,6 @@ const sections = [
 
     <div class="lp-foot-bottom">
       <span class="lp-foot-ver">Forge OS v{version}</span>
-      <span class="lp-foot-note">{t('foot.built')}</span>
-      <LangSwitch />
     </div>
   </footer>
 </main>
