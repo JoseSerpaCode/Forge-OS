@@ -26,4 +26,8 @@ declare namespace App {
 
 interface Window {
   showToast?: (message: string, type?: boolean | 'success' | 'error') => void;
+  /** Diálogo de confirmación de la aplicación (MainLayout). Se usa en lugar del
+      `confirm()` del navegador, que se puede bloquear tras el primer aviso y
+      deja los botones sin hacer nada en silencio. */
+  forgeConfirm?: (message: string, onConfirm: () => void) => void;
 }

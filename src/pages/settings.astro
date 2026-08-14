@@ -52,11 +52,15 @@ const oauthNotice =
 <MainLayout title={t('user.settings.title')}>
   <div id="settings-wrapper" data-i18n-saved={t('user.settings.saved_short') || 'Saved'} class="max-w-5xl mx-auto mt-4 sm:mt-8 p-0 sm:p-6 pb-20">
     
-    <div class="border-b border-forge-border/40 pb-5 mb-8 flex justify-between items-center">
+    <div class="border-b border-forge-border/40 pb-5 mb-8 flex flex-wrap gap-4 justify-between items-start sm:items-end">
       <div>
         <h1 class="text-2xl font-semibold text-forge-text">{t('user.settings.title')}</h1>
         <p class="text-forge-muted text-sm mt-1">{t('user.settings.desc')}</p>
       </div>
+      {/* Los dos juntos, y el de «en todas partes» detrás: es el menos
+          frecuente y el de consecuencias más amplias, así que no compite de
+          igual a igual con el de cerrar esta sesión. */}
+      <div class="flex flex-wrap items-center gap-2">
       <button id="btn-logout" class="bg-forge-panel border border-forge-border/60 hover:border-red-500/50 hover:bg-red-500/10 text-forge-muted hover:text-forge-error font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 text-sm shadow-sm">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         {t('user.settings.signout')}
@@ -69,9 +73,10 @@ const oauthNotice =
         acuerdas.
       */}
       <button id="btn-logout-all" class="bg-forge-panel border border-forge-border/60 hover:border-red-500/50 hover:bg-red-500/10 text-forge-muted hover:text-forge-error font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 text-sm shadow-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="14" height="11" rx="2"/><path d="M6 19h8"/><path d="M10 15v4"/><rect x="18" y="9" width="4" height="11" rx="1"/></svg>
         {t('user.settings.signout_all')}
       </button>
+      </div>
     </div>
 
     <div class="space-y-10">

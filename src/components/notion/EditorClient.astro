@@ -69,7 +69,7 @@ function formatDate(dateStr: string | undefined) {
         class="text-4xl font-bold bg-transparent text-forge-text focus:outline-none focus:border-b focus:border-forge-secondary border-b border-transparent w-full transition-colors pb-1"
         placeholder="Untitled" autocomplete="off" />
       {canEdit && (
-        <button id="btn-delete-page" class="absolute -right-12 w-8 h-8 rounded flex items-center justify-center text-forge-muted hover:bg-red-500/20 hover:text-forge-error transition-colors opacity-0 group-hover:opacity-100" title="Delete Page">
+        <button id="btn-delete-page" class="absolute -right-12 w-8 h-8 rounded flex items-center justify-center text-forge-muted hover:bg-red-500/20 hover:text-forge-error transition-colors opacity-0 group-hover:opacity-100" title={t('kb.delete_page')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       )}
@@ -119,6 +119,8 @@ function formatDate(dateStr: string | undefined) {
       id="page-editor"
       class="flex-1 text-forge-text outline-none prose dark:prose-invert max-w-none relative editor-js-container selection:bg-forge-primary selection:text-white"
       data-page-id={pageId}
+      data-t-del-confirm={t('kb.delete_confirm')}
+      data-t-del-error={t('kb.delete_error')}
       data-initial-content={initialContent}
       data-can-edit={canEdit.toString()}
     ></div>
@@ -159,6 +161,8 @@ function formatDate(dateStr: string | undefined) {
   if (editorDiv) {
     const pageId = editorDiv.dataset.pageId;
     const canEdit = editorDiv.dataset.canEdit === 'true';
+    const txtBorrarPagina = editorDiv.dataset.tDelConfirm || '';
+    const txtBorrarError = editorDiv.dataset.tDelError || '';
     let initialData: any = { blocks: [] };
 
     // Si el contenido guardado no se puede leer, **no se edita**.
@@ -295,19 +299,31 @@ function formatDate(dateStr: string | undefined) {
     titleInput?.addEventListener('input', debounceSave);
 
 
-    document.getElementById('btn-delete-page')?.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to delete this page and ALL its subpages? This action cannot be undone.')) return;
-      
-      const res = await fetch(`/api/pages/${pageId}`, { method: 'DELETE' });
-      if (res.ok) {
-        // Redirect to KB home
-        const sysTagMatch = window.location.pathname.match(/^\/w\/([^/]+)/);
-        if (sysTagMatch) {
-          window.location.href = `/w/${sysTagMatch[1]}/p`;
+    document.getElementById('btn-delete-page')?.addEventListener('click', () => {
+      // `window.forgeConfirm`, no el `confirm()` del navegador.
+      //
+      // Con el nativo, el navegador ofrece «impedir que esta página cree más
+      // diálogos» a partir del segundo; si alguien acepta, `confirm()` empieza
+      // a devolver `false` al instante y el botón deja de hacer nada **sin
+      // decir nada**. Eso es lo que se vio en producción: pulsar borrar una y
+      // otra vez sin efecto aparente. Además el texto estaba en inglés.
+      window.forgeConfirm?.(txtBorrarPagina, async () => {
+        const res = await fetch(`/api/pages/${pageId}`, { method: 'DELETE' });
+
+        if (!res.ok) {
+          // Sin volcar el cuerpo de la respuesta: no significa nada para quien
+          // lo lee y puede traer detalles internos.
+          window.showToast?.(txtBorrarError, true);
+          return;
         }
-      } else {
-        window.showToast?.('Error deleting page: ' + await res.text(), true);
-      }
+
+        // Salir de aquí **siempre**. Antes esto dependía de que la URL casara
+        // con un patrón; si no casaba, la página quedaba borrada y el navegador
+        // se quedaba en su dirección, que ya no existe. Al recargar aparecía un
+        // 404 pelado y parecía que se hubiera roto algo.
+        const m = window.location.pathname.match(/^\/w\/([^/]+)/);
+        window.location.href = m ? `/w/${m[1]}/p` : '/';
+      });
     });
 
     document.getElementById('btn-share-page')?.addEventListener('click', () => {

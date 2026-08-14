@@ -51,7 +51,7 @@ Astro.response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate
 Astro.response.headers.set('Pragma', 'no-cache');
 ---
 
-<html lang={Astro.locals.lang || 'es'} data-theme={user?.theme_preference || 'dark'}>
+<html lang={Astro.locals.lang || 'es'} data-theme={user?.theme_preference || 'light'}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />

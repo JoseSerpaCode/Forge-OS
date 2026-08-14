@@ -28,7 +28,7 @@ const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 ---
 <!-- Componente IssueCard.astro -->
-<div id={issue.id} draggable={canEdit ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-assignee={issue.assignee_username || 'Unassigned'} data-reporter={issue.reporter_username || 'System'} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-active-session={issue.active_session_start || ''}
+<div id={issue.id} draggable={canEdit ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-assignee={issue.assignee_username || 'Unassigned'} data-reporter={issue.reporter_username || 'System'} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-active-session={issue.active_session_start || ''} data-status={issue.status} data-t-due={t('card.due')} data-t-no-desc={t('modal.no_description')}
   class={`issue-card group bg-forge-panel border border-forge-border/40 p-4 rounded-xl shadow-sm hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.15)] hover:border-forge-secondary/50 transition-all duration-300 ease-out ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} mb-4 relative overflow-hidden
     ${issue.type === 'bug' ? 'before:bg-red-500' : 
       issue.type === 'story' ? 'before:bg-green-500' : 
@@ -47,15 +47,15 @@ const t = useTranslations(lang);
   <h4 class="text-forge-text font-semibold text-sm mb-1.5 pl-1 group-hover:text-forge-accent-text transition-colors leading-snug">{issue.title}</h4>
   
   {issue.due_date && (
-    <div class={`text-[10px] font-mono mb-2 ${issue.status !== 'done' && new Date(issue.due_date) < new Date() ? 'text-forge-error font-bold' : 'text-forge-muted'}`}>
-      Due: {new Date(issue.due_date).toLocaleDateString()}
+    <div class={`card-due text-[10px] font-mono mb-2 ${issue.status !== 'done' && new Date(issue.due_date) < new Date() ? 'text-forge-error font-bold' : 'text-forge-muted'}`}>
+      {t('card.due')} {new Date(issue.due_date).toLocaleDateString()}
     </div>
   )}
 
   <p class="text-forge-muted text-xs line-clamp-2 mb-4 pl-1 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">{issue.description || t('modal.no_description')}</p>
   <div class="flex items-center gap-2 pl-1">
     <span class="issue-type-badge px-2 py-0.5 rounded-md text-[10px] font-bold tracking-widest bg-forge-bg text-forge-muted border border-forge-border uppercase shadow-sm">
-      {issue.type}
+      {t(`type.${issue.type}` as any) || issue.type}
     </span>
   </div>
   
@@ -70,13 +70,13 @@ const t = useTranslations(lang);
             </span>
             <span class="timer-text">00:00:00</span>
           </div>
-          <button class="btn-stop-timer flex items-center gap-1 text-forge-bg bg-forge-secondary hover:bg-forge-secondary/80 px-2 py-1 rounded transition-colors text-[10px] font-bold shadow-sm" data-issue-id={issue.id} title="Stop Timer">
+          <button class="btn-stop-timer flex items-center gap-1 text-forge-bg bg-forge-secondary hover:bg-forge-secondary/80 px-2 py-1 rounded transition-colors text-[10px] font-bold shadow-sm" data-issue-id={issue.id} title={t('card.stop_timer')}>
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
             Stop
           </button>
         </div>
       ) : (
-        <button class="btn-start-timer flex items-center gap-1 text-forge-muted hover:text-forge-accent-text transition-colors text-xs font-bold" data-issue-id={issue.id} title="Start Timer (Tracks time automatically)">
+        <button class="btn-start-timer flex items-center gap-1 text-forge-muted hover:text-forge-accent-text transition-colors text-xs font-bold" data-issue-id={issue.id} title={t('card.start_timer')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           Start
         </button>
@@ -85,7 +85,7 @@ const t = useTranslations(lang);
   )}
   {issue.status === 'done' && issue.logged_hours !== undefined && issue.logged_hours > 0 && (
     <div class="mt-3 flex justify-end">
-      <div class="flex items-center gap-1 text-forge-success bg-forge-success/10 px-2 py-1 rounded text-xs font-bold cursor-help" title="Total time tracked for this task">
+      <div class="flex items-center gap-1 text-forge-success bg-forge-success/10 px-2 py-1 rounded text-xs font-bold cursor-help" title={t('card.total_time')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
         {Math.round(issue.logged_hours * 10) / 10}h registradas
       </div>

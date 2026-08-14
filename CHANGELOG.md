@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.14.0] - 2026-08-14
+
+### Fixed
+
+- **«Guardo y no se guarda».** El guardado funcionaba siempre; lo que no ocurría era que la pantalla lo reflejara. La tarjeta del tablero seguía enseñando el texto y la fecha viejos hasta recargar, así que la conclusión razonable era que no se había guardado — y a base de reintentos salían duplicados. Ahora hay **una sola función que repinta la tarjeta** y la llaman todos los guardados; antes cada campo actualizaba un trozo distinto, o ninguno.
+- El botón de guardar la descripción escribía sus estados en inglés a mano, así que «GUARDAR» se convertía en «SAVE» al pulsarlo. Y el «Guardado» **nunca llegaba a verse**: se escribía y en la línea siguiente se sobrescribía sin esperar nada.
+- **Borrar una página parecía no hacer nada.** Usaba el `confirm()` del navegador; tras el primer aviso, el navegador ofrece bloquear más diálogos y a partir de ahí devuelve «no» al instante, dejando el botón mudo. Ahora usa el diálogo de la aplicación, y sale de la página **siempre** — antes, si la URL no casaba con un patrón, la página quedaba borrada y el navegador se quedaba en su dirección, que ya no existía.
+- **La F del logo salía casi negra.** Usaba `--forge-on-accent`, que es el token del texto sobre botón naranja y vale lo mismo en los dos temas. El archivo de referencia ya la tenía blanca: el componente se había desviado. El token no se toca — ahí el valor oscuro es el que cumple AA.
+- El emblema llevaba un resplandor naranja que sobre fondo claro se leía como una mancha; ahora solo aparece en oscuro.
+
+### Added
+
+- **Modo claro en la portada, y por defecto.** Con conmutador en la cabecera, memoria compartida con la aplicación y sin parpadeo al cargar. Las capturas siguen al tema: las claras ya estaban en el repositorio sin usarse. Las cuentas nuevas nacen en claro para que registrarse no sea un salto de página clara a aplicación oscura.
+
+### Changed
+
+- Traducidas las columnas del tablero, los tipos de ticket, el detalle de un ticket, la barra lateral y el hub. Buena parte era cablear claves que ya existían: `status.todo` y compañía llevaban tiempo definidas mientras el tablero escribía «To Do» a mano.
+- El icono de «cerrar sesión en todas partes» era **una campana** —el de notificaciones—, que sugiere justo lo contrario de lo que hace el botón.
+
 ## [1.13.1] - 2026-08-13
 
 ### Fixed

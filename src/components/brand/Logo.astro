@@ -61,7 +61,23 @@ const Tag = href ? 'a' : 'span';
       </linearGradient>
     </defs>
     <rect width="100" height="100" rx="22" fill={`url(#forgeGrad-${size})`} />
-    <path d="M32 22 H70 V36 H46 V44 H64 V58 H46 V78 H32 Z" fill="var(--forge-on-accent)" />
+    {/*
+      Blanco literal, no `--forge-on-accent`.
+
+      Ese token vale `#0F172A` en los dos temas, y para lo suyo está bien: es el
+      texto de los botones naranjas, donde da 5,56:1 contra `#FF5D00` y cumple
+      AA. Pero aquí pintaba la F casi negra sobre el emblema, y en tema claro
+      encima parecía un error.
+
+      Un logotipo está exento del mínimo de contraste (WCAG 1.4.3, «Logotypes»),
+      así que el blanco es legítimo aquí y **solo aquí**: cambiar el token
+      habría dejado el texto de veintisiete botones en 3,06:1.
+
+      `public/forge-icon.svg` ya la tenía blanca. Este componente se había
+      desviado del archivo de referencia, que es exactamente lo que la nota de
+      CLAUDE.md pide evitar.
+    */}
+    <path d="M32 22 H70 V36 H46 V44 H64 V58 H46 V78 H32 Z" fill="#FFFFFF" />
   </svg>
 
   {/*
@@ -86,11 +102,18 @@ const Tag = href ? 'a' : 'span';
 
   .brand-mark {
     flex: none;
-    border-radius: 22%;
-    /* El resplandor es lo único que varía con el tamaño, y varía poco: en el
-       emblema de 22px una sombra de 15px lo emborrona. */
-    box-shadow: 0 0 12px color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
+    /* Sin `border-radius` aquí: el `<rect rx="22">` del SVG ya redondea, y
+       redondear también el elemento recortaba el gradiente en las esquinas. */
     transition: transform 0.2s;
+  }
+
+  /* El resplandor, solo sobre fondo oscuro.
+     Sobre el panel oscuro se lee como un halo intencionado; sobre el blanco del
+     tema claro se lee como una mancha borrosa alrededor del logo, que es
+     justo lo que hacía que la cabecera se viera «rara». */
+  :global([data-theme='dark']) .brand-mark,
+  :global(:root:not([data-theme])) .brand-mark {
+    box-shadow: 0 0 12px color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
   }
   a.brand:hover .brand-mark { transform: scale(1.06); }
 
@@ -99,5 +122,8 @@ const Tag = href ? 'a' : 'span';
   .brand-lg .brand-word { font-size: 1.35rem; }
   .brand-xl { gap: 1rem; }
   .brand-xl .brand-word { font-size: 2rem; }
-  .brand-xl .brand-mark { box-shadow: 0 0 30px color-mix(in srgb, var(--forge-accent-primary) 40%, transparent); }
+  :global([data-theme='dark']) .brand-xl .brand-mark,
+  :global(:root:not([data-theme])) .brand-xl .brand-mark {
+    box-shadow: 0 0 30px color-mix(in srgb, var(--forge-accent-primary) 40%, transparent);
+  }
 </style>

@@ -180,7 +180,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
       <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto">
         <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
-          <option value="backlog" selected={!activeSprintId}>Backlog</option>
+          <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
           {sprints.map(s => (
             <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? '(Active)' : s.status === 'completed' ? '(Completed)' : ''}</option>
           ))}
@@ -192,7 +192,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
               {currentSprintObj.status === 'planned' ? 'Start' : currentSprintObj.status === 'active' ? 'Complete' : 'Reopen'}
             </button>
             {currentSprintObj.status === 'active' && (
-              <button id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="text-forge-muted hover:text-forge-error px-2 py-1 rounded transition-colors" title="Deactivate Sprint">
+              <button id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="text-forge-muted hover:text-forge-error px-2 py-1 rounded transition-colors" title={t('board.deactivate')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
               </button>
             )}
@@ -206,7 +206,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         )}
         
         {access.role !== 'viewer' && (
-          <button id="btn-new-issue" title="Create New Issue (Press C)" class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity ml-2 relative group z-50">
+          <button id="btn-new-issue" title={t('board.new_issue_hint')} class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity ml-2 relative group z-50">
             + Issue
             <!-- Tooltip -->
             <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-forge-panel border border-forge-border text-forge-text text-[10px] px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-50">New Issue <kbd class="font-mono bg-forge-bg border border-forge-border px-1 py-0.5 rounded text-[8px] ml-1">C</kbd></span>
@@ -223,14 +223,14 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
   <!-- New Sprint Modal -->
   <dialog id="new-sprint-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 class="text-xl font-bold mb-4">Create Sprint</h2>
+    <h2 class="text-xl font-bold mb-4">{t('board.create_sprint')}</h2>
     <div class="mb-4">
       <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="sprint-name">Name</label>
-      <input type="text" id="sprint-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" placeholder="E.g. Sprint 4">
+      <input type="text" id="sprint-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" placeholder={t('board.sprint_name_ph')}>
     </div>
     <div class="flex justify-end gap-3 mt-6">
-      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-sprint-modal').close()">Cancel</button>
-      <button type="button" id="btn-save-sprint" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:bg-opacity-90 transition-colors">Create</button>
+      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-sprint-modal').close()">{t('modal.cancel')}</button>
+      <button type="button" id="btn-save-sprint" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:bg-opacity-90 transition-colors">{t('modal.create')}</button>
     </div>
   </dialog>
 
@@ -245,9 +245,9 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       <div>
         <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-type">{t('modal.type')}</label>
         <select id="new-issue-type" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
-          <option value="task">Task</option>
-          <option value="bug">Bug</option>
-          <option value="story">Story</option>
+          <option value="task">{t('type.task')}</option>
+          <option value="bug">{t('type.bug')}</option>
+          <option value="story">{t('type.story')}</option>
         </select>
       </div>
       <div>
@@ -262,7 +262,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       <div>
         <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-assignee">{t('modal.assignee') || 'Assignee'}</label>
         <select id="new-issue-assignee" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
-          <option value="">Unassigned</option>
+          <option value="">{t('modal.unassigned')}</option>
           {workspaceMembers.map(m => (
             <option value={m.id}>{m.username}</option>
           ))}

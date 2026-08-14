@@ -60,16 +60,47 @@ const structuredData = {
 
 <!doctype html>
 {/*
-  Sin `data-theme`: esta página la ve gente sin sesión, así que no hay
-  preferencia guardada que respetar. Los tokens de :root son los del tema
-  oscuro y el `color-scheme` deja que el navegador pinte los controles a juego.
+  `data-theme="light"` en el servidor.
+
+  Antes esta página no lo llevaba: se servía siempre oscura porque quien llega
+  sin sesión no tiene preferencia guardada. Ahora abre en claro, y el script de
+  abajo la corrige **antes de pintar** si esa persona ya eligió otra cosa.
+
+  El atributo va aquí, en el HTML del servidor, y no solo en el script: sin él,
+  entre que llega el HTML y corre el script hay un fotograma con el tema
+  equivocado, y eso se ve como un parpadeo blanco en cada carga.
 */}
-<html lang={Astro.locals.lang || 'en'}>
+<html lang={Astro.locals.lang || 'en'} data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={metaDesc} />
-    <meta name="theme-color" content="#0D0B0A" />
+    {/* El color de la barra del navegador móvil. Lo ajusta el script junto con
+        el tema; este es el valor de partida. */}
+    <meta name="theme-color" content="#F8F6F0" />
+
+    {/*
+      Antes de pintar nada: si hay una elección guardada, mandarla.
+
+      `is:inline` y en el `<head>` a propósito. La clave es la misma que usa la
+      aplicación (`forge_theme`), así que quien puso la app en oscuro encuentra
+      la portada en oscuro, y al revés. Sin esto, cada carga empezaría en claro
+      y saltaría al tema elegido con el contenido ya dibujado.
+    */}
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('forge_theme');
+          if (t === 'light' || t === 'dark') {
+            document.documentElement.setAttribute('data-theme', t);
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute('content', t === 'dark' ? '#0D0B0A' : '#F8F6F0');
+          }
+        } catch (e) {
+          /* Navegador con el almacenamiento bloqueado: se queda el del servidor. */
+        }
+      })();
+    </script>
 
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />

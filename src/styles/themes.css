@@ -57,6 +57,9 @@
     --forge-warning: #F59E0B;
     --forge-info: #6BA6FF;
     --forge-on-accent: #0F172A;
+    /* Sombra de las piezas elevadas de la portada. En oscuro es negra y densa;
+       sobre fondo claro eso mismo se lee como una mancha sucia. */
+    --forge-shadow-strong: rgb(0 0 0 / 0.45);
   }
   
   [data-theme="dark"] { 
@@ -80,6 +83,7 @@
 
   [data-theme="light"] {
     color-scheme: light;
+    --forge-shadow-strong: rgb(15 23 42 / 0.12);
     --forge-bg: #F8F6F0;
     --forge-panel: #FFFFFF;
     --forge-text: #0F172A;
