@@ -6,6 +6,20 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.15.0] - 2026-08-14
+
+### Added
+
+- **Plantillas para las bases de datos.** Al crear una tabla ya no se empieza mirando un formulario vacío: hay seis puntos de partida —Asignaturas, Lecturas, Gastos, Contactos, Inventario y Solicitudes— con sus columnas, sus tipos y las opciones de los desplegables ya escritas. Todo queda editable antes de crear, y la tabla en blanco sigue a un clic, arriba del todo. No hacen falta tablas ni endpoints nuevos: una plantilla es un esquema ya escrito que sale por el mismo alta de siempre, con la misma validación y con los identificadores de columna generados en el servidor.
+- Los nombres de columna y las opciones **se traducen al idioma de quien crea la tabla** y ahí se quedan: son datos desde el momento en que hay filas debajo, y cambiar el idioma de la interfaz no puede renombrar una columna con contenido.
+
+### Fixed
+
+- **Las columnas añadidas a mano tenían `aria-label` sin traducir.** Literalmente `{t('db.col_name')}`: el marcado se construía dentro de una cadena de JavaScript, donde Astro no sustituye nada, así que lo que oía un lector de pantalla era el nombre de la clave. La primera fila venía del servidor y las demás de esa cadena; ahora todas salen del mismo molde.
+- Quitar la última columna dejaba el formulario sin ningún sitio donde escribir y el botón de crear solo devolvía un error. Ahora se repone una fila en blanco.
+- El módulo de bases de datos **hablaba en inglés a medias**: el estado vacío, los tipos de dato, los avisos de error, el aviso de borrar una tabla y el de borrar una fila. Los errores que se enseñaban eran además los del servidor tal cual, en inglés y con detalles internos.
+- El alta de una tabla aceptaba esquemas sin columnas, con miles de ellas o con columnas sin nombre; lo último acababa en un 500. Ahora son 400 con su motivo.
+
 ## [1.14.0] - 2026-08-14
 
 ### Fixed

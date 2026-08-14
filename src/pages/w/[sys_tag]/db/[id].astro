@@ -9,6 +9,19 @@ const user = Astro.locals.user!;
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
+// Los textos que necesita el script. Dentro de un `<script>` no llega `t()`:
+// lo que se ponga ahí entre llaves se imprime tal cual.
+const TXT = {
+  savingRow: t('db.saving_row'),
+  saveRow: t('db.save_row'),
+  deleteTable: t('db.delete_table'),
+  confirmDeleteTable: t('db.confirm_delete_table'),
+  confirmDeleteRow: t('db.confirm_delete_row'),
+  errDeleteTable: t('db.err_delete_table'),
+  errDeleteRow: t('db.err_delete_row'),
+  errSaveRow: t('db.err_save_row'),
+};
+
 if (!user) return Astro.redirect('/login');
 if (user.is_guest) return Astro.redirect('/register');
 
@@ -61,7 +74,7 @@ if (view?.visibleColumnsJson) {
         </div>
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <a href={`/w/${sys_tag}/db`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors font-bold tracking-wide uppercase">Tables</a>
+            <a href={`/w/${sys_tag}/db`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors font-bold tracking-wide uppercase">{t('db.breadcrumb')}</a>
             <span class="text-forge-muted text-xs">/</span>
             <h1 class="text-2xl font-bold text-forge-text leading-none">{database.name}</h1>
           </div>
@@ -72,12 +85,12 @@ if (view?.visibleColumnsJson) {
       <div class="flex gap-3 items-center">
         {canEdit && (
           <>
-            <button id="btn-delete-db" class="text-forge-muted hover:text-forge-error p-2 rounded-lg transition-all hover:bg-forge-panel" title="Delete Table">
+            <button id="btn-delete-db" class="text-forge-muted hover:text-forge-error p-2 rounded-lg transition-all hover:bg-forge-panel" title={t('db.delete_table')} aria-label={t('db.delete_table')}>
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
             <button id="btn-add-row" class="bg-forge-text text-forge-bg text-sm font-bold px-5 py-2 rounded-xl hover:opacity-90 transition-all shadow-sm flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              New Row
+              {t('db.new_row')}
             </button>
           </>
         )}
@@ -121,14 +134,14 @@ if (view?.visibleColumnsJson) {
                           {col.type === 'select' && val ? (
                             <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-forge-secondary/10 text-forge-accent-text border border-forge-secondary/20">{val}</span>
                           ) : (
-                            <span class={val ? '' : 'text-forge-muted italic'}>{val !== null && val !== undefined && val !== '' ? val : 'Empty'}</span>
+                            <span class={val ? '' : 'text-forge-muted italic'}>{val !== null && val !== undefined && val !== '' ? val : t('db.empty_cell')}</span>
                           )}
                         </td>
                       );
                     })}
                     <td class="px-4 py-2 text-right">
                       {canEdit && (
-                        <button class="btn-delete-row opacity-0 group-hover:opacity-100 text-forge-muted hover:text-forge-error p-1 transition-all" data-id={entry.id} title="Delete Row">
+                        <button class="btn-delete-row opacity-0 group-hover:opacity-100 text-forge-muted hover:text-forge-error p-1 transition-all" data-id={entry.id} title={t('db.delete_row')} aria-label={t('db.delete_row')}>
                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                       )}
@@ -151,7 +164,7 @@ if (view?.visibleColumnsJson) {
           <div class="w-8 h-8 rounded-lg bg-forge-bg flex items-center justify-center border border-forge-border shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-forge-accent-text"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </div>
-          Add New Row
+          {t('db.add_row')}
         </h2>
         <button type="button" aria-label={t('common.close')} class="text-forge-muted hover:text-forge-text p-2 hover:bg-forge-bg rounded-lg transition-colors" onclick="document.getElementById('new-row-modal').close()">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -163,32 +176,32 @@ if (view?.visibleColumnsJson) {
           <div>
             <label for={`row-field-${col.id}`} class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-2 flex items-center gap-1.5">
               {col.name}
-              {col.type === 'number' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">NUMBER</span>}
-              {col.type === 'select' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">SELECT</span>}
+              {col.type === 'number' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">{t('db.badge_number')}</span>}
+              {col.type === 'select' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">{t('db.badge_select')}</span>}
             </label>
             
             {col.type === 'select' ? (
               <select id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm">
-                <option value="">-- Leave Empty --</option>
+                <option value="">{t('db.leave_empty')}</option>
                 {(col.options || []).map((opt: any) => <option value={opt}>{opt}</option>)}
               </select>
             ) : col.type === 'number' ? (
-              <input type="number" step="any" id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder="Enter a number">
+              <input type="number" step="any" id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder={t('db.enter_number')}>
             ) : (
-              <input type="text" id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder="Enter text">
+              <input type="text" id={`row-field-${col.id}`} name={col.id} class="w-full bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-text focus:border-forge-secondary focus:outline-none transition-colors shadow-sm" placeholder={t('db.enter_text')}>
             )}
           </div>
         ))}
       </form>
       
       <div class="px-6 py-5 border-t border-forge-border/40 bg-forge-panel flex justify-end gap-3 rounded-b-2xl">
-        <button type="button" class="px-5 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text hover:bg-forge-bg rounded-xl transition-colors" onclick="document.getElementById('new-row-modal').close()">Cancel</button>
-        <button type="button" id="btn-save-row" class="bg-forge-primary text-forge-on-accent text-sm font-bold px-6 py-2.5 rounded-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(255,93,0,0.3)]">Save Row</button>
+        <button type="button" class="px-5 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text hover:bg-forge-bg rounded-xl transition-colors" onclick="document.getElementById('new-row-modal').close()">{t('ws.settings.modal_cancel')}</button>
+        <button type="button" id="btn-save-row" class="bg-forge-primary text-forge-on-accent text-sm font-bold px-6 py-2.5 rounded-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(255,93,0,0.3)]">{t('db.save_row')}</button>
       </div>
     </dialog>
   )}
 
-  <script define:vars={{ sysTag: sys_tag, dbId: id, dbName: database.name }}>
+  <script define:vars={{ sysTag: sys_tag, dbId: id, dbName: database.name, TXT }}>
     const newRowBtn = document.getElementById('btn-add-row');
     const modal = document.getElementById('new-row-modal');
     const saveBtn = document.getElementById('btn-save-row');
@@ -205,7 +218,7 @@ if (view?.visibleColumnsJson) {
         }
       });
 
-      saveBtn.textContent = 'Saving...';
+      saveBtn.textContent = TXT.savingRow;
       saveBtn.disabled = true;
 
       try {
@@ -218,8 +231,9 @@ if (view?.visibleColumnsJson) {
         if (res.ok) {
           window.location.reload();
         } else {
-          window.showToast?.(await res.text(), true);
-          saveBtn.textContent = 'Save Row';
+          // El cuerpo del error es interno y viene en inglés; no se enseña.
+          window.showToast?.(TXT.errSaveRow, true);
+          saveBtn.textContent = TXT.saveRow;
           saveBtn.disabled = false;
         }
       } catch (e) {
@@ -230,27 +244,27 @@ if (view?.visibleColumnsJson) {
     // Delete Database Logic
     const btnDeleteDb = document.getElementById('btn-delete-db');
     btnDeleteDb?.addEventListener('click', () => {
-      window.forgeConfirm?.(`Are you sure you want to permanently delete the table "${dbName}" and all its rows? This cannot be undone.`, async () => {
+      window.forgeConfirm?.(TXT.confirmDeleteTable.replace('{name}', dbName), async () => {
         try {
           btnDeleteDb.disabled = true;
           const res = await fetch(`/api/w/${sysTag}/db/${dbId}`, { method: 'DELETE' });
           if (res.ok) window.location.href = `/w/${sysTag}/db`;
-          else window.showToast?.('Error deleting table', true);
+          else window.showToast?.(TXT.errDeleteTable, true);
         } catch(err) {
           console.error(err);
         }
-      }, 'Delete Table');
+      }, TXT.deleteTable);
     });
 
     // Delete Row Logic
     document.querySelectorAll('.btn-delete-row').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const id = e.currentTarget.getAttribute('data-id');
-        window.forgeConfirm?.('Are you sure you want to delete this row?', async () => {
+        window.forgeConfirm?.(TXT.confirmDeleteRow, async () => {
           try {
             const res = await fetch(`/api/w/${sysTag}/db/${dbId}/entries/${id}`, { method: 'DELETE' });
             if (res.ok) window.location.reload();
-            else window.showToast?.('Error deleting row', true);
+            else window.showToast?.(TXT.errDeleteRow, true);
           } catch(err) {
             console.error(err);
           }

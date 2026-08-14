@@ -20,6 +20,7 @@ if (!access.granted) return new Response('Access Denied', { status: 403 });
 import { orm } from '../../../../lib/db/drizzle';
 import { dynamicDatabases } from '../../../../lib/db/schema';
 import { desc, eq } from 'drizzle-orm';
+import { plantillasTraducidas } from '../../../../lib/dbTemplates';
 
 const databases = orm.select().from(dynamicDatabases)
   .where(eq(dynamicDatabases.workspaceId, workspace.id))
@@ -27,6 +28,34 @@ const databases = orm.select().from(dynamicDatabases)
   .all() as any[];
 
 const canEdit = access.role !== 'viewer';
+
+// Las plantillas se traducen aquí y viajan ya en texto: el script del modal solo
+// rellena campos. Los nombres de columna se convierten en datos al crear la
+// tabla, así que se fijan en el idioma de quien la crea y ahí se quedan.
+const plantillas = plantillasTraducidas(t);
+
+// Los textos que el script necesita. Van por `define:vars` porque dentro de un
+// `<script>` no llega `t()`: lo que se escriba ahí entre llaves sale tal cual.
+const TXT = {
+  saving: t('db.saving'),
+  create: t('db.create'),
+  errName: t('db.err_name_required'),
+  errNoCols: t('db.err_no_columns'),
+  errUnnamed: t('db.err_col_unnamed'),
+  errNoOptions: t('db.err_col_no_options'),
+  errCreate: t('db.err_create'),
+  colName: t('db.col_name'),
+  colNamePh: t('db.col_name_ph2'),
+  colType: t('db.col_type'),
+  colOptions: t('db.col_options'),
+  colOptionsLabel: t('db.col_options_label'),
+  colOptionsPh: t('db.col_options_ph'),
+  removeCol: t('db.remove_col'),
+  typeText: t('db.type_text'),
+  typeNumber: t('db.type_number'),
+  typeSelect: t('db.type_select'),
+  nameDefault: t('db.col_name_default'),
+};
 ---
 
 <MainLayout hideFooter={true} title={`Databases — ${workspace.name}`} workspaceId={workspace.id}>
@@ -59,9 +88,9 @@ const canEdit = access.role !== 'viewer';
         <div class="w-16 h-16 rounded-2xl bg-forge-bg border border-forge-border flex items-center justify-center mx-auto mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-forge-muted"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
         </div>
-        <h3 class="text-lg font-bold text-forge-text mb-1">No tables created yet</h3>
+        <h3 class="text-lg font-bold text-forge-text mb-1">{t('db.empty_title')}</h3>
         <p class="text-sm text-forge-muted max-w-sm mx-auto leading-relaxed">
-          Start organizing your team's data by creating your first tabular database.
+          {t('db.empty_desc')}
         </p>
       </div>
     ) : (
@@ -86,7 +115,7 @@ const canEdit = access.role !== 'viewer';
                   </div>
                 </div>
               </div>
-              <p class="text-sm text-forge-muted line-clamp-2 leading-relaxed h-10">{database.description || <span class="italic opacity-50">No description provided.</span>}</p>
+              <p class="text-sm text-forge-muted line-clamp-2 leading-relaxed h-10">{database.description || <span class="italic">{t('db.no_desc')}</span>}</p>
             </div>
           </a>
         ))}
@@ -103,14 +132,61 @@ const canEdit = access.role !== 'viewer';
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             {t('db.new_db')}
           </h2>
-          <p class="text-sm text-forge-muted mt-2 ml-13">{t('db.new_db_desc')}</p>
+          {/* Describe el formulario, no la galería: se oculta en el primer paso.
+              En móvil, además, cuatro líneas de subtítulo empujaban las
+              plantillas fuera de la pantalla. */}
+          <p id="modal-sub" class="hidden text-sm text-forge-muted mt-2 ml-13">{t('db.new_db_desc')}</p>
         </div>
         <button type="button" aria-label={t('common.close')} class="text-forge-muted hover:text-forge-text p-2 hover:bg-forge-border/50 rounded-full transition-all" onclick="document.getElementById('new-db-modal').close()">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       
+      {/* Paso 1: la galería. Se abre siempre aquí, porque elegir una plantilla
+          es más rápido que escribir cinco columnas, y quien no la quiera tiene
+          la tabla en blanco a un clic. */}
+      <div id="step-tpl" class="p-8 max-h-[65vh] overflow-y-auto custom-scrollbar bg-forge-bg/30">
+        {/* La tabla en blanco va arriba y a todo lo ancho. Al final de la
+            rejilla quedaba por debajo del borde y había que adivinar que
+            estaba: quien ya sabe qué columnas quiere no debería tener que
+            buscar la salida. */}
+        <button type="button" data-tpl="__blank__" class="tpl-card w-full text-left flex items-center gap-4 bg-forge-panel border border-dashed border-forge-border rounded-2xl px-4 py-3 mb-6 hover:border-forge-secondary/50 transition-all focus:outline-none focus:ring-2 focus:ring-forge-secondary/40">
+          <span class="w-9 h-9 shrink-0 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center text-forge-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </span>
+          <span class="min-w-0">
+            <span class="block text-sm font-bold text-forge-text">{t('db.tpl_blank')}</span>
+            <span class="block text-xs text-forge-muted">{t('db.tpl_blank_desc')}</span>
+          </span>
+        </button>
+
+        <h3 class="text-base font-bold text-forge-text">{t('db.tpl_heading')}</h3>
+        <p class="text-xs text-forge-muted mt-1 mb-5">{t('db.tpl_desc')}</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {plantillas.map(p => (
+            <button type="button" data-tpl={p.id} class="tpl-card text-left flex gap-4 bg-forge-panel border border-forge-border rounded-2xl p-4 hover:border-forge-secondary/50 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-forge-secondary/40">
+              <span class="w-11 h-11 shrink-0 rounded-xl bg-forge-bg border border-forge-border/60 flex items-center justify-center text-2xl">{p.icono}</span>
+              <span class="min-w-0">
+                <span class="block text-sm font-bold text-forge-text">{p.nombre}</span>
+                <span class="block text-xs text-forge-muted mt-1 leading-relaxed">{p.descripcion}</span>
+                <span class="inline-block text-[10px] uppercase font-bold tracking-wider text-forge-muted bg-forge-bg border border-forge-border/50 rounded-md px-2 py-0.5 mt-2">
+                  {p.columnas.length} {t('db.columns')}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Paso 2: el formulario de siempre, ya relleno si venía de una plantilla. */}
+      <div id="step-form" class="hidden">
       <div class="p-8 max-h-[65vh] overflow-y-auto space-y-8 custom-scrollbar bg-forge-bg/30">
+        <button type="button" id="btn-tpl-back" class="inline-flex items-center gap-1.5 text-xs font-bold text-forge-muted hover:text-forge-text transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          {t('db.tpl_back')}
+        </button>
+
         <div class="flex flex-col sm:flex-row gap-6">
           <div class="w-24 shrink-0 flex flex-col items-center">
             <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2 text-center w-full" for="db-icon">{t('db.icon')}</label>
@@ -145,31 +221,14 @@ const canEdit = access.role !== 'viewer';
             </button>
           </div>
           
-          <div id="columns-container" class="space-y-4">
-            <!-- Default column -->
-            <div class="col-def flex flex-wrap gap-4 items-start bg-forge-panel border border-forge-border p-4 rounded-2xl shadow-sm relative overflow-hidden group hover:border-forge-border/80 transition-colors">
-              <div class="absolute left-0 top-0 bottom-0 w-1 bg-forge-secondary/30"></div>
-              <div class="flex-1 min-w-[200px]">
-                <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1">{t('db.col_name')}</span>
-                <input type="text" aria-label={t('db.col_name')} class="col-name w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all" placeholder={t('db.col_name_ph')} value={t('db.col_name_default') || "Name"}>
-              </div>
-              <div class="w-36 shrink-0">
-                <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1">Data Type</span>
-                <select aria-label={t('db.col_type')} class="col-type w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all cursor-pointer">
-                  <option value="text">Aa Text</option>
-                  <option value="number"># Number</option>
-                  <option value="select">▼ Select Options</option>
-                </select>
-              </div>
-              <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
-                <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-accent-text mb-1.5 ml-1">Select Options (Comma separated)</span>
-                <input type="text" aria-label={t('db.col_options')} class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted" placeholder="e.g. Active, Pending, Closed">
-              </div>
-            </div>
-          </div>
+          {/* Vacío a propósito: las filas las construye el script, todas con el
+              mismo molde. Antes la primera venía del servidor y las demás de
+              una plantilla de JavaScript, y las dos se fueron separando —las
+              creadas a mano acabaron con `aria-label` literales sin traducir. */}
+          <div id="columns-container" class="space-y-4"></div>
         </div>
       </div>
-      
+
       <div class="pt-6 border-t border-forge-border/40 flex justify-end gap-3 mt-8 p-8">
         <button type="button" class="px-6 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text transition-colors" onclick="document.getElementById('new-db-modal').close()">
           {t('ws.settings.modal_cancel')}
@@ -178,15 +237,20 @@ const canEdit = access.role !== 'viewer';
           {t('db.create')}
         </button>
       </div>
+      </div>
     </dialog>
   )}
 
-  <script define:vars={{ sysTag: sys_tag }}>
+  <script define:vars={{ sysTag: sys_tag, plantillas, TXT }}>
     class DatabaseManager {
       constructor() {
         this.elements = {
           newDbBtn: document.getElementById('btn-new-db'),
           modal: document.getElementById('new-db-modal'),
+          stepTpl: document.getElementById('step-tpl'),
+          stepForm: document.getElementById('step-form'),
+          backBtn: document.getElementById('btn-tpl-back'),
+          subtitulo: document.getElementById('modal-sub'),
           addColBtn: document.getElementById('btn-add-col'),
           colsContainer: document.getElementById('columns-container'),
           saveBtn: document.getElementById('btn-save-db'),
@@ -194,73 +258,154 @@ const canEdit = access.role !== 'viewer';
           iconInput: document.getElementById('db-icon'),
           descInput: document.getElementById('db-desc')
         };
-        
+
         this.init();
       }
 
       init() {
         if (!this.elements.modal) return;
-        
-        this.elements.newDbBtn?.addEventListener('click', () => this.elements.modal.showModal());
+
+        this.elements.newDbBtn?.addEventListener('click', () => this.abrir());
+        this.elements.backBtn?.addEventListener('click', () => this.mostrarPaso('tpl'));
         this.elements.addColBtn?.addEventListener('click', () => this.addColumnRow());
         this.elements.saveBtn?.addEventListener('click', () => this.handleSave());
-        
-        // Bind initial default row
-        document.querySelectorAll('.col-def').forEach(row => this.bindTypeSelect(row));
+
+        this.elements.modal.querySelectorAll('[data-tpl]').forEach(card => {
+          card.addEventListener('click', () => this.aplicarPlantilla(card.dataset.tpl));
+        });
+      }
+
+      /** Abre siempre por la galería, también la segunda vez. */
+      abrir() {
+        this.mostrarPaso('tpl');
+        this.elements.modal.showModal();
+      }
+
+      mostrarPaso(paso) {
+        this.elements.stepTpl?.classList.toggle('hidden', paso !== 'tpl');
+        this.elements.stepForm?.classList.toggle('hidden', paso === 'tpl');
+        this.elements.subtitulo?.classList.toggle('hidden', paso === 'tpl');
+      }
+
+      /**
+       * Vuelca una plantilla en el formulario y pasa al paso 2.
+       *
+       * Deja todo editable: la plantilla es un punto de partida, no un molde
+       * cerrado. El nombre se puede cambiar antes de crear, y las columnas
+       * también.
+       */
+      aplicarPlantilla(id) {
+        const p = id === '__blank__' ? null : plantillas.find(x => x.id === id);
+
+        this.elements.nameInput.value = p ? p.nombre : '';
+        this.elements.iconInput.value = p ? p.icono : '🗄️';
+        this.elements.descInput.value = p ? p.descripcion : '';
+
+        this.elements.colsContainer.innerHTML = '';
+        const columnas = p ? p.columnas : [{ name: TXT.nameDefault, type: 'text' }];
+        columnas.forEach(c => this.addColumnRow(c));
+
+        this.mostrarPaso('form');
+        this.elements.nameInput.focus();
+      }
+
+      /**
+       * Añade una fila de columna, opcionalmente con valores ya puestos.
+       *
+       * Los valores se asignan por propiedad y no dentro del HTML: así un
+       * nombre con comillas o con `<` no puede romper el marcado ni inyectar
+       * nada, venga de una plantilla o de lo que se haya escrito antes.
+       */
+      addColumnRow(valores = null) {
+        const div = document.createElement('div');
+        div.className = 'col-def flex flex-wrap gap-4 items-start bg-forge-panel border border-forge-border p-4 rounded-2xl shadow-sm relative overflow-hidden group hover:border-forge-border/80 transition-colors';
+
+        div.innerHTML = `
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-forge-border/40 group-hover:bg-forge-secondary/50 transition-colors"></div>
+          <div class="flex-1 min-w-[200px]">
+            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1"></span>
+            <input type="text" class="col-name w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all">
+          </div>
+          <div class="w-36 shrink-0">
+            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1"></span>
+            <select class="col-type w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all cursor-pointer">
+              <option value="text"></option>
+              <option value="number"></option>
+              <option value="select"></option>
+            </select>
+          </div>
+          <div class="shrink-0 pt-6">
+            <button type="button" class="btn-rm-col text-forge-muted hover:text-forge-error hover:bg-red-500/10 p-2 rounded-xl transition-all border border-transparent hover:border-red-500/20">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
+            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-accent-text mb-1.5 ml-1"></span>
+            <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted">
+          </div>
+        `;
+
+        const etiquetas = div.querySelectorAll('span');
+        etiquetas[0].textContent = TXT.colName;
+        etiquetas[1].textContent = TXT.colType;
+        etiquetas[2].textContent = TXT.colOptionsLabel;
+
+        const nombre = div.querySelector('.col-name');
+        nombre.placeholder = TXT.colNamePh;
+        nombre.setAttribute('aria-label', TXT.colName);
+
+        const tipo = div.querySelector('.col-type');
+        tipo.setAttribute('aria-label', TXT.colType);
+        const opciones = tipo.querySelectorAll('option');
+        opciones[0].textContent = TXT.typeText;
+        opciones[1].textContent = TXT.typeNumber;
+        opciones[2].textContent = TXT.typeSelect;
+
+        const listaOpciones = div.querySelector('.col-options');
+        listaOpciones.placeholder = TXT.colOptionsPh;
+        listaOpciones.setAttribute('aria-label', TXT.colOptions);
+
+        div.querySelector('.btn-rm-col').setAttribute('aria-label', TXT.removeCol);
+
+        if (valores) {
+          nombre.value = valores.name || '';
+          tipo.value = valores.type || 'text';
+          if (valores.options?.length) listaOpciones.value = valores.options.join(', ');
+        }
+
+        this.elements.colsContainer?.appendChild(div);
+        this.bindTypeSelect(div);
+
+        div.querySelector('.btn-rm-col')?.addEventListener('click', () => {
+          div.remove();
+          // Quedarse con cero columnas es un callejón sin salida: no hay dónde
+          // escribir y el botón de crear solo devuelve un error. Se repone una
+          // fila en blanco.
+          if (!this.elements.colsContainer.querySelector('.col-def')) this.addColumnRow();
+        });
+
+        return div;
       }
 
       bindTypeSelect(row) {
         const typeSelect = row.querySelector('.col-type');
         const optContainer = row.querySelector('.col-options-container');
-        
-        if (!typeSelect || !optContainer) return;
-        
-        typeSelect.addEventListener('change', () => {
-          optContainer.classList.toggle('hidden', typeSelect.value !== 'select');
-        });
-      }
 
-      addColumnRow() {
-        const div = document.createElement('div');
-        div.className = 'col-def flex flex-wrap gap-4 items-start bg-forge-panel border border-forge-border p-4 rounded-2xl shadow-sm relative overflow-hidden group hover:border-forge-border/80 transition-colors mt-4';
-        
-        div.innerHTML = `
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-forge-border/40 group-hover:bg-forge-secondary/50 transition-colors"></div>
-          <div class="flex-1 min-w-[200px]">
-            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1">Column Name</span>
-            <input type="text" aria-label={t('db.col_name')} class="col-name w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all" placeholder="e.g. Status">
-          </div>
-          <div class="w-36 shrink-0">
-            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1">Data Type</span>
-            <select aria-label={t('db.col_type')} class="col-type w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all cursor-pointer">
-              <option value="text">Aa Text</option>
-              <option value="number"># Number</option>
-              <option value="select">▼ Select Options</option>
-            </select>
-          </div>
-          <div class="shrink-0 pt-6">
-            <button type="button" aria-label={t('db.remove_col')} class="btn-rm-col text-forge-muted hover:text-forge-error hover:bg-red-500/10 p-2 rounded-xl transition-all border border-transparent hover:border-red-500/20">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-          <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
-            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-accent-text mb-1.5 ml-1">Select Options (Comma separated)</span>
-            <input type="text" aria-label={t('db.col_options')} class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted" placeholder="e.g. Active, Pending, Closed">
-          </div>
-        `;
-        
-        this.elements.colsContainer?.appendChild(div);
-        this.bindTypeSelect(div);
-        
-        div.querySelector('.btn-rm-col')?.addEventListener('click', () => div.remove());
+        if (!typeSelect || !optContainer) return;
+
+        const sincronizar = () => optContainer.classList.toggle('hidden', typeSelect.value !== 'select');
+        typeSelect.addEventListener('change', sincronizar);
+        // También al construir la fila: una plantilla puede traer ya un
+        // desplegable, y su lista de opciones tiene que verse desde el principio.
+        sincronizar();
       }
 
       extractColumns() {
         const columns = [];
-        const colDefs = document.querySelectorAll('.col-def');
-        
+        const colDefs = this.elements.colsContainer.querySelectorAll('.col-def');
+
         if (colDefs.length === 0) {
-          return { error: 'You must add at least one column' };
+          return { error: TXT.errNoCols };
         }
 
         for (let i = 0; i < colDefs.length; i++) {
@@ -268,18 +413,18 @@ const canEdit = access.role !== 'viewer';
           const name = def.querySelector('.col-name').value.trim();
           const type = def.querySelector('.col-type').value;
           const optionsText = def.querySelector('.col-options').value.trim();
-          
-          if (!name) return { error: `Column #${i + 1} is missing a name` };
-          if (type === 'select' && !optionsText) return { error: `Column "${name}" needs at least one option` };
-          
+
+          if (!name) return { error: TXT.errUnnamed.replace('{n}', String(i + 1)) };
+          if (type === 'select' && !optionsText) return { error: TXT.errNoOptions.replace('{name}', name) };
+
           const col = { name, type };
           if (type === 'select' && optionsText) {
             col.options = optionsText.split(',').map(o => o.trim()).filter(Boolean);
           }
-          
+
           columns.push(col);
         }
-        
+
         return { columns };
       }
 
@@ -288,7 +433,7 @@ const canEdit = access.role !== 'viewer';
         const icon = this.elements.iconInput?.value.trim();
         const description = this.elements.descInput?.value.trim();
 
-        if (!name) return window.showToast?.('Table Name is required', true);
+        if (!name) return window.showToast?.(TXT.errName, true);
 
         const { error, columns } = this.extractColumns();
         if (error) return window.showToast?.(error, true);
@@ -301,25 +446,24 @@ const canEdit = access.role !== 'viewer';
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, description, icon, columns })
           });
-          
-          if (!res.ok) {
-            const errText = await res.text();
-            throw new Error(errText || 'Error creating table');
-          }
-          
+
+          if (!res.ok) throw new Error(TXT.errCreate);
+
           const data = await res.json();
           window.location.href = `/w/${sysTag}/db/${data.id}`;
-          
+
         } catch (err) {
-          window.showToast?.(err.message, true);
+          // El texto del servidor no se enseña: son mensajes internos, en
+          // inglés y a veces con detalles que al usuario no le dicen nada.
+          window.showToast?.(TXT.errCreate, true);
           this.setLoading(false);
         }
       }
-      
+
       setLoading(isLoading) {
         if (!this.elements.saveBtn) return;
         this.elements.saveBtn.disabled = isLoading;
-        this.elements.saveBtn.innerHTML = isLoading ? 'Saving...' : 'Create Table';
+        this.elements.saveBtn.textContent = isLoading ? TXT.saving : TXT.create;
       }
     }
 
