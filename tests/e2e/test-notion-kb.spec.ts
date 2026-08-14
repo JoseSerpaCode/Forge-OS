@@ -97,8 +97,12 @@ test('Knowledge Base: Create, auto-save and cascading delete', async ({ page }) 
   // Delete parent page using API directly or UI. Let's navigate back to parent and delete it
   await page.goto(`/w/notion-ws-a/p/${parentId}`);
   
-  page.on('dialog', dialog => dialog.accept());
+  // El borrado ya no usa el `confirm()` del navegador sino el diálogo de la
+  // aplicación. El nativo se puede bloquear tras el primer aviso —el navegador
+  // ofrece «impedir que esta página cree más diálogos»— y a partir de ahí el
+  // botón dejaba de hacer nada sin decirlo, que es lo que se vio en producción.
   await page.click('#btn-delete-page');
+  await page.click('#btn-forge-confirm-ok');
   
   // Should redirect back to /p
   await page.waitForURL(/\/w\/notion-ws-a\/p$/);

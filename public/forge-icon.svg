@@ -15,7 +15,7 @@
   <defs>
     <linearGradient id="forgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FF5D00" />
-      <stop offset="100%" stop-color="#E64A19" />
+      <stop offset="100%" stop-color="#FF8533" />
     </linearGradient>
   </defs>
   <rect width="100" height="100" rx="22" fill="url(#forgeGrad)" />

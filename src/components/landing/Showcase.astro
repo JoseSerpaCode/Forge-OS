@@ -62,8 +62,15 @@ const views = [
         data-active={i === 0 ? '' : undefined}
         hidden={i !== 0}
       >
+        {/* La captura sigue al tema. `src` trae la clara —que es el tema por
+            defecto de la portada— y `data-dark` la oscura; el script de abajo
+            cambia una por otra. Con la oscura fija, el tema claro enseñaba
+            capturas negras dentro de una página blanca. Las claras ya estaban
+            en `public/screenshots/` sin usarse. */}
         <img
-          src={`/screenshots/${v.id}-dark.png`}
+          src={`/screenshots/${v.id}-light.png`}
+          data-dark={`/screenshots/${v.id}-dark.png`}
+          data-light={`/screenshots/${v.id}-light.png`}
           alt={v.alt}
           width="2880"
           height="1800"
@@ -136,7 +143,7 @@ const views = [
     height: auto;
     border: 1px solid var(--forge-border);
     border-radius: 0.85rem;
-    box-shadow: 0 24px 70px rgb(0 0 0 / 0.45);
+    box-shadow: 0 24px 70px var(--forge-shadow-strong);
   }
   @media (prefers-reduced-motion: no-preference) {
     .sc-panel[data-active] img { animation: scin 0.4s ease-out; }
@@ -155,6 +162,22 @@ const views = [
 </style>
 
 <script>
+  // La captura sigue al tema. El `src` del servidor trae la clara —el tema por
+  // defecto de la portada— y aquí se cambia si toca. `MutationObserver` porque
+  // el conmutador solo cambia `data-theme`; no hay evento al que suscribirse.
+  function aplicarTemaCapturas() {
+    const oscuro = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.querySelectorAll('img[data-dark][data-light]').forEach((el) => {
+      const img = el as HTMLImageElement;
+      const quiere = oscuro ? img.dataset.dark : img.dataset.light;
+      if (quiere && !img.src.endsWith(quiere)) img.src = quiere;
+    });
+  }
+  aplicarTemaCapturas();
+  new MutationObserver(aplicarTemaCapturas).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['data-theme'],
+  });
+
   const sc = document.querySelector('.sc');
   if (sc) {
     const tabs = [...sc.querySelectorAll<HTMLButtonElement>('[role="tab"]')];

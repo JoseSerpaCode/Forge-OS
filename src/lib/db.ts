@@ -82,7 +82,10 @@ CREATE TABLE IF NOT EXISTS users (
  is_guest BOOLEAN DEFAULT 0 CHECK(is_guest IN (0, 1)),
  is_sysadmin BOOLEAN DEFAULT 0 CHECK(is_sysadmin IN (0, 1)),
  avatar_url TEXT DEFAULT '/default-avatar.svg',
- theme_preference TEXT DEFAULT 'dark',
+ -- Claro por defecto, igual que la portada: quien se registra venía de una
+ -- página clara y saltar a una aplicación oscura al entrar es un tropiezo.
+ -- Quien ya tenga preferencia guardada no se ve afectado.
+ theme_preference TEXT DEFAULT 'light',
   last_workspace_id TEXT,
   bio TEXT,
   pronouns TEXT,

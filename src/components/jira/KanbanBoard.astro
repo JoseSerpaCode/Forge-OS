@@ -22,10 +22,10 @@ const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMemb
 const canEdit = userRole === 'owner' || userRole === 'editor';
 
 const columns = [
-  { id: 'todo', title: 'To Do' },
-  { id: 'in_progress', title: 'In Progress' },
-  { id: 'review', title: 'Review' },
-  { id: 'done', title: 'Done' }
+  { id: 'todo', title: t('status.todo') },
+  { id: 'in_progress', title: t('status.in_progress') },
+  { id: 'review', title: t('status.in_review') },
+  { id: 'done', title: t('status.done') }
 ];
 
 // Helper para extraer iniciales

@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.13.1, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.14.0, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
