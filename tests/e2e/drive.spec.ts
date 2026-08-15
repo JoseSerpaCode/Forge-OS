@@ -139,6 +139,25 @@ test('la vuelta de Google con un estado inventado no conecta nada', async ({ bro
   expect(hayConexion()).toBe(false);
 });
 
+test('un código de resultado inventado no pinta un aviso vacío', async ({ page }) => {
+  await page.goto('/login');
+  await page.fill('input[name="username"]', 'aud_owner');
+  await page.fill('input[name="password"]', PW);
+  await page.click('button.af-submit');
+  await page.waitForURL(/\/$/);
+
+  // `constructor` sale del prototipo de Object: con un acceso directo sería
+  // cierto pero sin texto, y se pintaba un recuadro de aviso en blanco.
+  for (const codigo of ['constructor', 'toString', 'noexiste']) {
+    await page.goto(`/w/auditoria-ws/files?drive=${codigo}`);
+    await expect(page.locator('.rounded-2xl.border.px-5.py-4')).toHaveCount(0);
+  }
+
+  // Y uno de verdad sí se ve.
+  await page.goto('/w/auditoria-ws/files?drive=cancelled');
+  await expect(page.getByText(/cancelada|cancelled/i)).toBeVisible();
+});
+
 test('la sección de archivos se ve, y dice antes de conectar lo que hay que saber', async ({ page }) => {
   await page.goto('/login');
   await page.fill('input[name="username"]', 'aud_owner');

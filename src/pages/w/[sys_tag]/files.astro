@@ -45,7 +45,10 @@ const RESULTADOS: Record<string, { clave: string; mal: boolean }> = {
   bad_state: { clave: 'drive.result_bad_state', mal: true },
   google_error: { clave: 'drive.result_google_error', mal: true },
 };
-const resultado = codigo ? RESULTADOS[codigo] : undefined;
+// `hasOwn` y no un acceso directo: el código viene de la URL, y `?drive=constructor`
+// devolvería algo del prototipo de Object —cierto, pero sin `clave` ni `mal`—, que
+// aquí se traduce en un recuadro de aviso vacío.
+const resultado = codigo && Object.hasOwn(RESULTADOS, codigo) ? RESULTADOS[codigo] : undefined;
 
 const TXT = {
   connect: t('drive.connect'),
