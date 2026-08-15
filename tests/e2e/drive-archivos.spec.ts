@@ -375,14 +375,20 @@ test('adjuntar desde la tarea, con el ratón, y ver la herencia', async ({ page 
   await page.goto('/w/archivos-ws/board');
   await page.locator('#i-ui').click();
 
-  await expect(page.locator('#drive-linked-list')).toContainText(/No files attached|Ningún archivo/);
+  // Una sola lista para los dos orígenes: los adjuntos del servidor y los del
+  // Drive. Antes eran dos secciones, y elegir entre ellas no era asunto de
+  // quien usa la aplicación.
+  await expect(page.locator('#issue-files')).toContainText(/No files yet|Todavía no hay archivos/);
 
   await page.locator('#btn-drive-attach').click();
   await page.fill('#drive-attach-search', 'laboratorio');
   await expect(page.locator('#drive-attach-results button')).toHaveCount(1);
   await page.locator('#drive-attach-results button').first().click();
 
-  await expect(page.locator('#drive-linked-list')).toContainText('Guía de laboratorio.pdf');
+  await expect(page.locator('#issue-files')).toContainText('Guía de laboratorio.pdf');
+  // Y el distintivo que dice de dónde sale, que es lo único que cambia para
+  // quien mira: ese se abre en Drive y lo ve todo el espacio.
+  await expect(page.locator('#issue-files')).toContainText(/Drive/i);
 
   // Lo que importa: la etiqueta del ticket ha pasado al archivo.
   await expect(async () => {
@@ -396,4 +402,25 @@ test('adjuntar desde la tarea, con el ratón, y ver la herencia', async ({ page 
   db3.prepare("DELETE FROM issues WHERE id='i-ui'").run();
   db3.prepare("DELETE FROM labels WHERE id='l-ui'").run();
   db3.close();
+});
+
+test('el script del modal del ticket llega a ejecutarse', async ({ page }) => {
+  // Guarda contra un fallo que no da la cara: si el marcado del componente
+  // queda descompensado —un `</div>` de más—, Astro deja de emitir su
+  // `<script>` **por completo**. La página carga, el modal se abre, y nada
+  // dentro funciona: ni etiquetas, ni archivos, ni cronómetro. Sin un solo
+  // error en consola, porque el código sencillamente no está.
+  await page.goto('/login');
+  await page.fill('input[name="username"]', 'aud_owner');
+  await page.fill('input[name="password"]', PW);
+  await page.click('button.af-submit');
+  await page.waitForURL(/\/$/);
+  await page.goto('/w/archivos-ws/board');
+
+  const vivas = await page.evaluate(() => ({
+    archivos: typeof (window as any).loadIssueAttachments,
+    etiquetas: typeof (window as any).forgeLabelsOpen,
+    drive: typeof (window as any).forgeDriveFilesOpen,
+  }));
+  expect(vivas).toEqual({ archivos: 'function', etiquetas: 'function', drive: 'function' });
 });

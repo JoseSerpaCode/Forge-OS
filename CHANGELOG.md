@@ -6,6 +6,24 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.23.0] - 2026-08-15
+
+### Changed
+
+- **Una sola sección de archivos en el ticket, no dos.** Había una para los del Drive conectado y otra para los subidos al disco de la máquina. La separación era real por dentro —distinto sitio, distinto tope, distinto efecto al borrar— pero es una distinción de fontanería: quien abre un ticket quiere poner un archivo, y se encontraba dos cajas sin saber cuál era la suya. Ahora hay una lista con las dos cosas y un distintivo «Drive» solo donde cambia algo para quien mira.
+- Lo que sí siguen siendo dos cosas, y por eso quedan dos botones, es **traer uno nuevo** y **elegir uno que ya está en el espacio**. Eso son dos intenciones distintas; dónde acaben los bytes lo decide el sistema.
+- El tope de tamaño y el destino se dicen debajo de los botones, en vez de descubrirse chocándose contra ellos.
+- El aviso al quitar dice qué pasa en cada caso: el de Drive se desvincula y sigue en los archivos del espacio, el del servidor se borra y no está en ninguna otra parte.
+
+### Fixed
+
+- Los estados del botón de subir estaban en inglés a mano («Processing...», «Uploading...»), y además **no volvían a su sitio**: si la subida fallaba, el botón se quedaba diciendo «Uploading...» para siempre.
+- El botón de borrar un adjunto tenía un `title` con el texto literal `{t('modal.delete_file')}`. Es el mismo fallo de las columnas de las bases dinámicas: dentro de una cadena de JavaScript, Astro no sustituye nada.
+
+### Added
+
+- Una prueba comprueba que **el script del modal llega a ejecutarse**. Un `</div>` de más en el componente hace que Astro deje de emitir su `<script>` entero: la página carga, el modal se abre y nada dentro funciona, sin un solo error en consola. Pasó al hacer este cambio. Verificada contra el marcado roto: falla.
+
 ## [1.22.0] - 2026-08-15
 
 ### Changed

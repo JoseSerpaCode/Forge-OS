@@ -28,6 +28,15 @@ const t = useTranslations(lang);
   data-t-inherited={t('drive.inherited')}
   data-t-inherited-one={t('drive.inherited_one')}
   data-t-attach-error={t('drive.err_attach')}
+  data-t-files-none={t('files.none')}
+  data-t-badge-drive={t('files.badge_drive')}
+  data-t-files-remove={t('files.remove')}
+  data-t-files-remove-confirm={t('files.remove_confirm')}
+  data-t-files-delete-confirm={t('files.delete_confirm')}
+  data-t-files-upload={t('files.upload')}
+  data-t-files-uploading={t('files.uploading')}
+  data-t-files-uploaded={t('files.uploaded')}
+  data-t-files-err-upload={t('files.err_upload')}
   class="fixed top-0 right-0 w-[550px] max-w-full h-full bg-forge-bg/95 backdrop-blur-md max-md:backdrop-blur-none border-l border-forge-border/40 z-[110] transform translate-x-full transition-transform duration-300 ease-out shadow-2xl shadow-black/50 overflow-y-auto flex flex-col">
   
   <!-- Header -->
@@ -199,56 +208,52 @@ const t = useTranslations(lang);
       </div>
     </div>
     
-    {/* Archivos del espacio, los que viven en Drive.
-        Va separado de los adjuntos de abajo a propósito: aquéllos se suben al
-        disco de esta máquina y son de este ticket; éstos están en el Drive
-        conectado, se comparten con todo el espacio y **heredan las etiquetas**
-        del ticket al colgarlos. Mezclarlos en una sola lista haría imposible
-        saber cuál es cuál cuando importa. */}
-    <div class="space-y-2 pt-6 border-t border-forge-border/30">
+    {/* Archivos del ticket. **Una sola sección.**
+
+        Antes había dos: los del Drive conectado arriba y los subidos al disco
+        de esta máquina abajo. La separación era real por dentro —distinto
+        sitio, distinto tope de tamaño, distinto comportamiento al borrar— pero
+        es una distinción de fontanería. Quien usa esto quiere poner un archivo
+        en una tarea, y se encontraba dos cajas sin saber cuál era la suya.
+
+        Lo que sí son dos cosas distintas, y por eso quedan dos botones, es
+        **traer uno nuevo** y **elegir uno que ya está en el espacio**. Eso son
+        dos intenciones, no dos almacenamientos. Dónde acaben los bytes lo
+        decide el sistema, y el distintivo «Drive» aparece solo donde cambia
+        algo para quien mira: esos se abren en Drive y los ve todo el espacio. */}
+    <div class="space-y-2 mt-auto pt-6 border-t border-forge-border/30">
       <div class="flex justify-between items-center">
         <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-          {t('drive.section_title')}
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          {t('files.section')}
         </span>
       </div>
-      <p class="text-[11px] text-forge-muted leading-relaxed">{t('drive.section_desc')}</p>
 
-      <ul id="drive-linked-list" class="space-y-1.5 mt-2"></ul>
+      <ul id="issue-files" class="space-y-1.5"></ul>
 
-      <div class="relative">
-        <button type="button" id="btn-drive-attach" class="inline-flex items-center gap-1.5 text-xs font-bold text-forge-muted hover:text-forge-text border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 transition-colors" aria-expanded="false">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          {t('drive.attach')}
+      <div class="flex flex-wrap items-center gap-2 relative">
+        <button type="button" id="btn-upload-file" class="inline-flex items-center gap-1.5 text-xs font-bold text-forge-muted hover:text-forge-text border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+          {/* La etiqueta en su propio span: cambiarla por «Subiendo…» con
+              `textContent` sobre el botón entero se llevaría el icono por
+              delante y no volvería. */}
+          <span class="btn-subir-txt">{t('files.upload')}</span>
         </button>
 
-        <div id="drive-attach-panel" class="hidden absolute z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] bg-forge-panel border border-forge-border rounded-xl shadow-xl p-2">
+        <button type="button" id="btn-drive-attach" class="inline-flex items-center gap-1.5 text-xs font-bold text-forge-muted hover:text-forge-text border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 transition-colors" aria-expanded="false">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+          {t('files.pick')}
+        </button>
+
+        <div id="drive-attach-panel" class="hidden absolute top-full left-0 z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] bg-forge-panel border border-forge-border rounded-xl shadow-xl p-2">
           <input type="text" id="drive-attach-search" autocomplete="off" placeholder={t('drive.attach_search')} aria-label={t('drive.attach_search')} class="w-full bg-forge-bg border border-forge-border rounded-lg px-2.5 py-1.5 text-xs text-forge-text focus:border-forge-secondary outline-none mb-2">
           <div id="drive-attach-results" class="max-h-56 overflow-y-auto custom-scrollbar space-y-0.5"></div>
         </div>
       </div>
-    </div>
 
-    <div class="space-y-2 mt-auto pt-6 border-t border-forge-border/30">
-      <div class="flex justify-between items-center">
-        <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-          {t('modal.attachments')}
-        </span>
-        <button id="btn-add-attachment-compact" class="hidden text-forge-accent-text hover:bg-forge-secondary/10 p-1.5 rounded transition-colors" title={t('modal.add_attachment')}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        </button>
-      </div>
-      
-      <div id="attachments-list" class="space-y-2 mb-2 empty:hidden"></div>
+      {/* El tope y el destino se dicen aquí, no se descubren chocándose. */}
+      <p class="text-[11px] text-forge-muted leading-relaxed">{t('files.hint_drive')}</p>
 
-      <div id="btn-add-attachment" class="border-2 border-dashed border-forge-border/40 bg-forge-panel/20 rounded-xl p-8 flex flex-col items-center justify-center text-forge-muted hover:text-forge-accent-text hover:border-forge-secondary/60 hover:bg-forge-secondary/5 transition-all cursor-pointer group">
-        <div class="bg-forge-bg p-3 rounded-full border border-forge-border/40 group-hover:border-forge-secondary/30 group-hover:scale-110 transition-transform mb-3 shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.4"></path><path d="M12 18v-6"></path><path d="M9 15l3-3 3 3"></path></svg>
-        </div>
-        <span class="text-sm font-bold tracking-tight">{t('modal.click_or_drag')}</span>
-        <span class="text-[10px] text-forge-muted mt-1">PNG, JPG, PDF up to 20MB</span>
-      </div>
       <input type="file" id="file-attachment" aria-label={t('a11y.attach_file')} class="hidden" />
     </div>
   </div>
@@ -428,6 +433,15 @@ const t = useTranslations(lang);
     cargandoLogs: modalRaiz?.dataset.tLoadingLogs || '',
     errorCarga: modalRaiz?.dataset.tLoadFailed || '',
     sinDescripcion: modalRaiz?.dataset.tNoDesc || '',
+    sinArchivos: modalRaiz?.dataset.tFilesNone || '',
+    badgeDrive: modalRaiz?.dataset.tBadgeDrive || '',
+    quitar: modalRaiz?.dataset.tFilesRemove || '',
+    confirmarQuitar: modalRaiz?.dataset.tFilesRemoveConfirm || '',
+    confirmarBorrado: modalRaiz?.dataset.tFilesDeleteConfirm || '',
+    subir: modalRaiz?.dataset.tFilesUpload || '',
+    subiendo: modalRaiz?.dataset.tFilesUploading || '',
+    subido: modalRaiz?.dataset.tFilesUploaded || '',
+    errorSubida: modalRaiz?.dataset.tFilesErrUpload || '',
   };
 
   // ── Archivos del espacio ───────────────────────────────────────────────────
@@ -437,12 +451,11 @@ const t = useTranslations(lang);
   // ha heredado —si no, el efecto más útil de la función es invisible.
   (() => {
     const raiz = document.getElementById('issue-details-modal');
-    const lista = document.getElementById('drive-linked-list');
     const boton = document.getElementById('btn-drive-attach');
     const panel = document.getElementById('drive-attach-panel');
     const buscador = document.getElementById('drive-attach-search') as HTMLInputElement | null;
     const resultados = document.getElementById('drive-attach-results');
-    if (!raiz || !lista || !boton || !panel || !buscador || !resultados) return;
+    if (!raiz || !boton || !panel || !buscador || !resultados) return;
 
     const sysTag = raiz.dataset.sysTag || '';
     const T = {
@@ -455,49 +468,15 @@ const t = useTranslations(lang);
 
     const idActual = () => document.getElementById('modal-issue-id')?.getAttribute('data-full-id') || '';
 
+    // Deja los archivos en la lista compartida y deja que la pinte el
+    // renderizador único. Antes este bloque tenía su propia lista y su propio
+    // dibujo, que es de donde salían las dos secciones.
     const pintar = (archivos: any[]) => {
-      lista.innerHTML = '';
-      if (!archivos.length) {
-        const vacio = document.createElement('li');
-        vacio.className = 'text-[11px] text-forge-muted italic';
-        vacio.textContent = T.ninguno;
-        lista.appendChild(vacio);
-        return;
-      }
-
-      for (const f of archivos) {
-        const li = document.createElement('li');
-        li.className = 'flex items-center gap-2 bg-forge-panel/40 border border-forge-border/40 rounded-lg px-2.5 py-2';
-
-        const icono = document.createElement('span');
-        icono.className = 'shrink-0 text-forge-muted';
-        icono.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>';
-
-        const nombre = f.webViewLink ? document.createElement('a') : document.createElement('span');
-        nombre.className = 'flex-1 min-w-0 text-xs text-forge-text truncate';
-        if (nombre instanceof HTMLAnchorElement) {
-          nombre.href = f.webViewLink;
-          nombre.target = '_blank';
-          nombre.rel = 'noopener noreferrer';
-          nombre.classList.add('hover:underline');
-        }
-        nombre.textContent = f.name;
-
-        const quitar = document.createElement('button');
-        quitar.type = 'button';
-        quitar.className = 'shrink-0 text-forge-muted hover:text-forge-error transition-colors';
-        quitar.setAttribute('aria-label', T.quitar);
-        quitar.title = T.quitar;
-        quitar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-        quitar.addEventListener('click', () => desvincular(f.id));
-
-        li.append(icono, nombre, quitar);
-        lista.appendChild(li);
-      }
+      ARCHIVOS_DRIVE = archivos || [];
+      pintarArchivos();
     };
 
     const cargar = async (issueId: string) => {
-      lista.innerHTML = '';
       try {
         const res = await fetch(`/api/w/${sysTag}/files/link?entity_type=issue&entity_id=${encodeURIComponent(issueId)}`);
         if (!res.ok) return;
@@ -585,6 +564,7 @@ const t = useTranslations(lang);
     });
 
     (window as any).forgeDriveFilesOpen = (issueId: string) => { abrir(false); cargar(issueId); };
+    (window as any).forgeDriveDetach = (fileId: string) => desvincular(fileId);
   })();
 
   // ── Etiquetas ──────────────────────────────────────────────────────────────
@@ -1098,83 +1078,125 @@ const t = useTranslations(lang);
     }, 'Delete Issue');
   });
 
-  // Attachments
-  const attachBtn = document.getElementById('btn-add-attachment');
-  const attachBtnCompact = document.getElementById('btn-add-attachment-compact');
+  // ── Archivos del ticket ────────────────────────────────────────────────────
+  //
+  // Dos orígenes, **una** lista. Los adjuntos viven en el disco de esta máquina
+  // y los otros en el Drive conectado, pero esa diferencia es fontanería: quien
+  // abre un ticket quiere ver sus archivos, no elegir almacenamiento. El
+  // distintivo «Drive» aparece solo donde cambia algo para quien mira —esos se
+  // abren en Drive y los ve todo el espacio— y el aviso al quitar dice qué pasa
+  // en cada caso, porque no es lo mismo: uno se desvincula, el otro se borra.
+  let ARCHIVOS_SUBIDOS: any[] = [];
+  let ARCHIVOS_DRIVE: any[] = [];
+
+  const listaArchivos = document.getElementById('issue-files');
   const fileInput = document.getElementById('file-attachment') as HTMLInputElement;
-  const attachmentsList = document.getElementById('attachments-list');
-  
-  const triggerUpload = () => fileInput?.click();
-  attachBtn?.addEventListener('click', triggerUpload);
-  attachBtnCompact?.addEventListener('click', triggerUpload);
-  
-  // Expose a global function to load attachments so KanbanBoard can call it when opening a card
-  // @ts-ignore
-  window.loadIssueAttachments = async (issueId) => {
-    if (!attachmentsList || !attachBtn || !attachBtnCompact) return;
-    attachmentsList.innerHTML = `<span class="text-[10px] text-forge-muted">${TXT.cargando}</span>`;
-    
-    try {
-      const res = await fetch(`/api/attachments/issue/${issueId}`);
-      if (res.ok) {
-        const data = await res.json();
-        renderAttachments(data);
-      } else {
-        attachmentsList.innerHTML = `<span class="text-[10px] text-forge-error">${TXT.errorCarga}</span>`;
-      }
-    } catch (e) {
-      attachmentsList.innerHTML = '';
+  const btnSubir = document.getElementById('btn-upload-file');
+  const btnSubirTxt = btnSubir?.querySelector('.btn-subir-txt');
+  btnSubir?.addEventListener('click', () => fileInput?.click());
+
+  const idDelTicket = () => document.getElementById('modal-issue-id')?.getAttribute('data-full-id') || '';
+
+  /** Una fila. Todo por propiedades, nunca por `innerHTML` con datos dentro. */
+  const filaArchivo = (datos: {
+    nombre: string; href: string | null; enDrive: boolean; alQuitar: (() => void) | null;
+  }) => {
+    const li = document.createElement('li');
+    li.className = 'flex items-center gap-2 bg-forge-panel/40 border border-forge-border/40 rounded-lg px-2.5 py-2 group';
+
+    const icono = document.createElement('span');
+    icono.className = 'shrink-0 text-forge-muted';
+    icono.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>';
+
+    const nombre = datos.href ? document.createElement('a') : document.createElement('span');
+    nombre.className = 'flex-1 min-w-0 text-xs text-forge-text truncate';
+    if (nombre instanceof HTMLAnchorElement && datos.href) {
+      nombre.href = datos.href;
+      nombre.target = '_blank';
+      nombre.rel = 'noopener noreferrer';
+      nombre.classList.add('hover:underline');
+    }
+    nombre.textContent = datos.nombre;
+
+    li.append(icono, nombre);
+
+    if (datos.enDrive) {
+      const marca = document.createElement('span');
+      marca.className = 'shrink-0 text-[9px] font-bold uppercase tracking-wider text-forge-muted border border-forge-border/60 rounded px-1.5 py-0.5';
+      marca.textContent = TXT.badgeDrive;
+      li.appendChild(marca);
+    }
+
+    if (datos.alQuitar) {
+      const quitar = document.createElement('button');
+      quitar.type = 'button';
+      quitar.className = 'shrink-0 text-forge-muted hover:text-forge-error transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100';
+      quitar.setAttribute('aria-label', `${TXT.quitar}: ${datos.nombre}`);
+      quitar.title = TXT.quitar;
+      quitar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      quitar.addEventListener('click', datos.alQuitar);
+      li.appendChild(quitar);
+    }
+    return li;
+  };
+
+  const pintarArchivos = () => {
+    if (!listaArchivos) return;
+    listaArchivos.innerHTML = '';
+
+    if (!ARCHIVOS_SUBIDOS.length && !ARCHIVOS_DRIVE.length) {
+      const vacio = document.createElement('li');
+      vacio.className = 'text-[11px] text-forge-muted italic';
+      vacio.textContent = TXT.sinArchivos;
+      listaArchivos.appendChild(vacio);
+      return;
+    }
+
+    for (const f of ARCHIVOS_DRIVE) {
+      listaArchivos.appendChild(filaArchivo({
+        nombre: f.name,
+        href: f.webViewLink || null,
+        enDrive: true,
+        alQuitar: puedeEditarArchivos() ? () => quitarDeDrive(f.id) : null,
+      }));
+    }
+
+    for (const a of ARCHIVOS_SUBIDOS) {
+      listaArchivos.appendChild(filaArchivo({
+        nombre: a.file_name,
+        href: a.file_path,
+        enDrive: false,
+        alQuitar: puedeEditarArchivos() ? () => borrarAdjunto(a.id) : null,
+      }));
     }
   };
 
-  const renderAttachments = (data: any[]) => {
-    if (!attachmentsList || !attachBtn || !attachBtnCompact) return;
-    attachmentsList.innerHTML = '';
-    
-    const esc = (str: any) => {
-      if (typeof str !== 'string') return str;
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-    };
-    
-    if (data.length > 0) {
-      attachBtn.classList.add('hidden');
-      attachBtnCompact.classList.remove('hidden');
-      
-      data.forEach(att => {
-        const div = document.createElement('div');
-        div.className = 'flex items-center justify-between p-2.5 bg-forge-panel/30 border border-forge-border/40 rounded-lg group';
-        div.innerHTML = `
-          <a href="/api/storage/${esc(att.file_path.split('/').pop())}" target="_blank" class="text-[12px] font-mono text-forge-text hover:text-forge-accent-text hover:underline truncate max-w-[80%] flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.4"></path><path d="M12 18v-6"></path><path d="M9 15l3-3 3 3"></path></svg>
-            ${esc(att.file_name)}
-          </a>
-          <button class="delete-attachment-btn hidden text-forge-error hover:text-forge-error hover:bg-red-400/10 p-1.5 rounded transition-all opacity-0 group-hover:opacity-100" data-id="${att.id}" title={t('modal.delete_file')}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          </button>
-        `;
-        attachmentsList.appendChild(div);
-      });
-      
-      if (role !== 'viewer') {
-        document.querySelectorAll('.delete-attachment-btn').forEach(btn => {
-          btn.classList.remove('hidden');
-          btn.addEventListener('click', async (e) => {
-            const attId = (e.currentTarget as HTMLElement).getAttribute('data-id');
-            // @ts-ignore
-            window.forgeConfirm('Delete this attachment?', async () => {
-              await fetch(`/api/attachments/${attId}`, { method: 'DELETE' });
-              // @ts-ignore
-              const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
-              // @ts-ignore
-              window.loadIssueAttachments(issueId);
-            });
-          });
-        });
-      }
-    } else {
-      attachBtn.classList.remove('hidden');
-      attachBtnCompact.classList.add('hidden');
+  const puedeEditarArchivos = () => role !== 'viewer';
+
+  const borrarAdjunto = (id: string) => {
+    // Un adjunto del servidor no está en ninguna otra parte: quitarlo lo borra,
+    // y el aviso lo dice.
+    (window as any).forgeConfirm?.(TXT.confirmarBorrado, async () => {
+      await fetch(`/api/attachments/${id}`, { method: 'DELETE' });
+      (window as any).loadIssueAttachments(idDelTicket());
+    }, TXT.quitar);
+  };
+
+  const quitarDeDrive = (fileId: string) => {
+    (window as any).forgeConfirm?.(TXT.confirmarQuitar, async () => {
+      (window as any).forgeDriveDetach?.(fileId);
+    }, TXT.quitar);
+  };
+
+  // La carga la dispara el tablero al abrir una tarjeta.
+  (window as any).loadIssueAttachments = async (issueId: string) => {
+    try {
+      const res = await fetch(`/api/attachments/issue/${issueId}`);
+      ARCHIVOS_SUBIDOS = res.ok ? await res.json() : [];
+    } catch {
+      ARCHIVOS_SUBIDOS = [];
     }
+    pintarArchivos();
   };
 
   fileInput?.addEventListener('change', () => {
@@ -1185,31 +1207,34 @@ const t = useTranslations(lang);
     const issueId = idEl?.getAttribute('data-full-id');
     if (!issueId) return;
 
-    if (attachBtn) attachBtn.innerHTML = '<span class="text-sm font-bold text-forge-accent-text animate-pulse">Processing...</span>';
+    // El botón dice lo que está pasando y **vuelve a su sitio** al terminar.
+    // Antes se quedaba con «Uploading...» para siempre si algo fallaba.
+    if (btnSubirTxt) btnSubirTxt.textContent = TXT.subiendo;
     
     const formData = new FormData();
     formData.append('entity_type', 'issue');
     formData.append('entity_id', issueId);
     
     const uploadFile = async (blobToUpload: Blob, filename: string) => {
-      if (attachBtn) attachBtn.innerHTML = '<span class="text-sm font-bold text-forge-accent-text animate-pulse">Uploading...</span>';
+      if (btnSubirTxt) btnSubirTxt.textContent = TXT.subiendo;
       formData.append('file', blobToUpload, filename);
       try {
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         if (res.ok) {
           // @ts-ignore
-          window.showToast('File uploaded successfully!');
+          window.showToast(TXT.subido);
           // @ts-ignore
           window.loadIssueAttachments(issueId);
         } else {
           // @ts-ignore
-          window.showToast('Failed to upload', true);
+          window.showToast(TXT.errorSubida, true);
         }
       } catch (e) {
         // @ts-ignore
-        window.showToast('Upload error', true);
+        window.showToast(TXT.errorSubida, true);
       } finally {
-        fileInput.value = ''; 
+        fileInput.value = '';
+        if (btnSubirTxt) btnSubirTxt.textContent = TXT.subir;
       }
     };
 
