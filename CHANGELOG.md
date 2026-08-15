@@ -6,6 +6,24 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.17.0] - 2026-08-15
+
+### Added
+
+- **Etiquetas por espacio de trabajo.** Se crean en los ajustes del espacio, con nombre y color de una paleta cerrada, y se ponen en **tickets y en páginas**: la misma «Parcial 2» sirve para la tarea y para los apuntes, que es justo lo que permite cruzar las dos cosas. Las tablas existían desde el principio pero no las usaba nadie; lo que faltaba era todo lo demás.
+- **Filtro por etiqueta en el tablero**, y en la consulta, no en el navegador: el tablero solo trae cien tarjetas por columna, así que filtrar en pantalla buscaría dentro de esas cien y diría que no hay nada más. El filtro va en la URL, así que el enlace de «solo Parcial 2» se puede pegar en un mensaje.
+- Se pueden **crear sobre la marcha** desde el propio ticket o la página, escribiendo el nombre en el buscador del selector. Ir a los ajustes del espacio en mitad de otra cosa y volver es lo que hace que una función así no se use.
+- Los ajustes dicen **en cuántos sitios está puesta cada etiqueta** antes de borrarla, y el borrado la quita de todo lo que la lleva sin tocar nada más.
+
+### Fixed
+
+- **Peticiones que morían de vez en cuando con `ECONNRESET`.** Node cierra una conexión persistente ociosa a los cinco segundos; si quien está delante la reutiliza en ese preciso instante, la petición se escribe sobre un socket que ya se cierra. No dejaba rastro en los registros. Se vio en las pruebas —una prueba cualquiera fallaba una de cada tres corridas— pero detrás del proxy el mismo caso es un 502 esporádico para alguien de verdad. Ahora el servidor espera más que quien le habla.
+- El color de una etiqueta se comprueba **dos veces**: al guardarlo, contra la paleta, y al pintarlo, contra el formato. Acaba dentro de un atributo `style`, y aunque no se pueda salir de él, dentro cabría colar más propiedades CSS.
+
+### Changed
+
+- Nombres de etiqueta únicos por espacio, sin distinguir mayúsculas: «Urgente» y «urgente» son la misma para cualquiera que las lea, y tenerlas separadas solo reparte lo mismo en dos sitios.
+
 ## [1.16.0] - 2026-08-15
 
 ### Added

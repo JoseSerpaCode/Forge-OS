@@ -1,0 +1,42 @@
+---
+/**
+ * Una etiqueta.
+ *
+ * El color va en un punto, no en el fondo. Con fondos de color habría que
+ * calcular el contraste del texto para cada color y cada tema —y en cuanto
+ * alguien elige el ámbar, el texto blanco desaparece—. Así el color distingue
+ * pero no puede romper la lectura: el texto usa siempre el color normal de la
+ * interfaz, que ya cumple AA en los dos temas.
+ */
+interface Props {
+  name: string;
+  color: string;
+  /** `sm` para las tarjetas del tablero, donde caben varias. */
+  size?: 'sm' | 'md';
+  class?: string;
+}
+
+const { name, color, size = 'md', class: className = '' } = Astro.props;
+const pequeña = size === 'sm';
+
+// El color acaba dentro de un atributo `style`, así que se comprueba aquí
+// además de al guardarlo. Astro escapa las comillas —no se puede salir del
+// atributo— pero dentro de él aún cabría colar más propiedades CSS, y esto es
+// más barato que confiar en que ninguna fila vieja traiga algo raro.
+const tono = /^#[0-9a-f]{6}$/i.test(color) ? color : '#8B8D98';
+---
+
+<span
+  class:list={[
+    'inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text max-w-full',
+    pequeña ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs',
+    className,
+  ]}
+>
+  <span
+    class:list={['rounded-full shrink-0', pequeña ? 'w-1.5 h-1.5' : 'w-2 h-2']}
+    style={`background-color:${tono}`}
+    aria-hidden="true"
+  ></span>
+  <span class="truncate">{name}</span>
+</span>

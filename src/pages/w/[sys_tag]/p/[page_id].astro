@@ -3,6 +3,7 @@ import { useTranslations } from '../../../../i18n/ui';
 import MainLayout from '../../../../layouts/MainLayout.astro';
 import PageTree from '../../../../components/notion/PageTree.astro';
 import EditorClient from '../../../../components/notion/EditorClient.astro';
+import { deEntidad, listar as listarEtiquetas } from '../../../../lib/labels';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
 
@@ -59,6 +60,8 @@ if (page.parent_page_id) {
       parentTitle={parentTitle}
       parentId={parentId}
       sysTag={sys_tag!}
+      labels={deEntidad('page', page.id)}
+      labelCatalog={listarEtiquetas(ws.id)}
     />
   </div>
 </MainLayout>

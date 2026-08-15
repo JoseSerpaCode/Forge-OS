@@ -68,6 +68,28 @@ setupSockets(io);
 // Astro SSR Middleware
 app.use(astroHandler);
 
+/**
+ * Conexiones persistentes: el servidor tiene que aguantar más que quien le
+ * habla.
+ *
+ * Node cierra una conexión keep-alive ociosa a los 5 segundos. Si el cliente
+ * —Caddy delante, o el navegador— reutiliza esa misma conexión justo en ese
+ * instante, la petición se escribe en un socket que ya se está cerrando y el
+ * cliente ve un `ECONNRESET`. No es un fallo de la aplicación y no deja rastro
+ * en los registros: simplemente, de vez en cuando, una petición muere.
+ *
+ * Se vio en las pruebas de punta a punta, donde varios trabajadores en paralelo
+ * hacen justo eso —muchas peticiones cortas reutilizando conexiones— y una
+ * prueba cualquiera fallaba una vez de cada tres corridas. Detrás de un proxy
+ * el mismo caso se convierte en un 502 esporádico para alguien de verdad.
+ *
+ * La regla es que el origen espere más que el que está delante. 65 segundos
+ * queda por encima de los 60 habituales, y `headersTimeout` tiene que ser mayor
+ * que `keepAliveTimeout` o vuelve a ganar la carrera.
+ */
+server.keepAliveTimeout = 65_000;
+server.headersTimeout = 66_000;
+
 const PORT = process.env.PORT || 4321;
 server.listen(PORT, () => {
   const publicUrl = process.env.PUBLIC_SITE_URL || `http://localhost:${PORT}`;

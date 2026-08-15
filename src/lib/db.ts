@@ -821,6 +821,38 @@ const MIGRATIONS: Migration[] = [
       `);
     }
   },
+  {
+    version: 35,
+    description: 'labels: nombres únicos por espacio e índices para el filtrado',
+    run: () => {
+      // Las tablas de etiquetas existían desde el principio pero no las usaba
+      // nadie. Antes de ponerlas en marcha hay que cerrar dos huecos.
+
+      // 1. Nada impedía dos «Urgente» en el mismo espacio. Con el filtro por
+      //    etiqueta eso son dos entradas idénticas en la lista y ninguna forma
+      //    de saber cuál es cuál. Se limpian los duplicados que hubiera —en la
+      //    práctica ninguno, porque la tabla está vacía— antes de crear el
+      //    índice, porque si no el CREATE falla y con él la migración entera.
+      db.exec(`
+        DELETE FROM labels WHERE id NOT IN (
+          SELECT MIN(id) FROM labels GROUP BY workspace_id, name COLLATE NOCASE
+        )
+      `);
+      // COLLATE NOCASE: «Urgente» y «urgente» son la misma etiqueta para
+      // cualquiera que las lea, y tenerlas separadas solo reparte lo mismo en
+      // dos sitios.
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_labels_nombre_unico
+        ON labels(workspace_id, name COLLATE NOCASE)
+      `);
+
+      // 2. Las puentes solo tenían índice por su clave primaria, que empieza
+      //    por la entidad. «Qué tickets llevan esta etiqueta» —justo lo que
+      //    hace el filtro— recorría la tabla entera.
+      db.exec('CREATE INDEX IF NOT EXISTS idx_issue_labels_label ON issue_labels(label_id)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_page_labels_label ON page_labels(label_id)');
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

@@ -1,11 +1,14 @@
 ---
 import { useTranslations } from '../../i18n/ui';
+import LabelPicker from '../labels/LabelPicker.astro';
 interface Props {
   sprints?: any[];
   currentSprintId?: string | null;
   workspaceMembers?: any[];
+  labels?: Array<{ id: string; name: string; color: string }>;
+  sysTag?: string;
 }
-const { sprints = [], currentSprintId = null, workspaceMembers = [] } = Astro.props;
+const { sprints = [], currentSprintId = null, workspaceMembers = [], labels = [], sysTag = '' } = Astro.props;
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -141,7 +144,14 @@ const t = useTranslations(lang);
       <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-due-date">{t('modal.due_date') || 'Due Date'}</label>
       <input type="date" id="modal-issue-due-date" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm font-mono" />
     </div>
-    
+
+    {/* Etiquetas. El mismo selector que usan las páginas: aquí la entidad
+        cambia con cada apertura del modal, y se le dice con `setEntity`. */}
+    <div class="space-y-2">
+      <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('labels.assign')}</span>
+      <LabelPicker sysTag={sysTag} entityType="issue" catalog={labels} class="modal-labels" />
+    </div>
+
     <!-- Time Tracking Section -->
     <div class="bg-forge-panel/20 border border-forge-border/40 rounded-xl p-5 space-y-4">
       <div class="flex items-center justify-between">
@@ -384,6 +394,33 @@ const t = useTranslations(lang);
     sinDescripcion: modalRaiz?.dataset.tNoDesc || '',
   };
 
+  // ── Etiquetas ──────────────────────────────────────────────────────────────
+  //
+  // El selector es un componente aparte; aquí solo se le dice de qué ticket se
+  // trata al abrir el modal, y se escucha lo que devuelve para que la tarjeta
+  // del tablero cuente lo mismo que el modal.
+  (() => {
+    const picker = document.querySelector('.modal-labels') as HTMLElement | null;
+    if (!picker) return;
+
+    const idActual = () => document.getElementById('modal-issue-id')?.getAttribute('data-full-id') || '';
+
+    picker.addEventListener('labels-changed', (e) => {
+      const issueId = idActual();
+      const card = document.getElementById(issueId);
+      if (!card) return;
+      card.dataset.labels = JSON.stringify((e as CustomEvent).detail.labels || []);
+      repintarTarjeta(issueId);
+    });
+
+    (window as any).forgeLabelsOpen = (issueId: string) => {
+      const card = document.getElementById(issueId);
+      let etiquetas = [];
+      try { etiquetas = JSON.parse(card?.dataset.labels || '[]'); } catch { etiquetas = []; }
+      (picker as any).setEntity?.(issueId, etiquetas);
+    };
+  })();
+
   /**
    * Repinta la tarjeta del tablero con lo que ya tiene en sus `data-*`.
    *
@@ -421,6 +458,35 @@ const t = useTranslations(lang);
     // Descripción.
     const parrafo = card.querySelector('p.line-clamp-2');
     if (parrafo) parrafo.textContent = card.dataset.description || (card.dataset.tNoDesc || '');
+
+    // Etiquetas. El bloque aparece y desaparece según haya o no: una fila
+    // vacía con su margen deja un hueco que se nota.
+    let etiquetas: Array<{ id: string; name: string; color: string }> = [];
+    try { etiquetas = JSON.parse(card.dataset.labels || '[]'); } catch { etiquetas = []; }
+
+    let zonaEtiquetas = card.querySelector('.card-labels') as HTMLElement | null;
+    if (etiquetas.length === 0) {
+      zonaEtiquetas?.remove();
+    } else {
+      if (!zonaEtiquetas) {
+        zonaEtiquetas = document.createElement('div');
+        zonaEtiquetas.className = 'flex flex-wrap gap-1 mb-3 pl-1 card-labels';
+        card.querySelector('p.line-clamp-2')?.insertAdjacentElement('afterend', zonaEtiquetas);
+      }
+      zonaEtiquetas.innerHTML = '';
+      for (const e of etiquetas) {
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text max-w-full px-1.5 py-0.5 text-[10px]';
+        const punto = document.createElement('span');
+        punto.className = 'rounded-full shrink-0 w-1.5 h-1.5';
+        punto.style.backgroundColor = e.color;
+        const texto = document.createElement('span');
+        texto.className = 'truncate';
+        texto.textContent = e.name;
+        span.append(punto, texto);
+        zonaEtiquetas.appendChild(span);
+      }
+    }
   }
 
   // Interaction Logic
