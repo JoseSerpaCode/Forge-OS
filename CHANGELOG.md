@@ -6,6 +6,20 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.22.0] - 2026-08-15
+
+### Changed
+
+- **La portada dejó de hablar de la implementación en la primera frase.** Antes empezaba por «un proceso de Node sobre un único archivo SQLite», que a quien llega buscando cómo organizar sus asignaturas no le dice nada. Ahora abre con lo que hace: un tablero, un editor, tablas y archivos. La ficha técnica sigue estando, más abajo, donde sirve de prueba en vez de de presentación.
+- **Todo el texto pasa a tercera persona.** «Tus tareas» y «puedes copiarlo» se leían como publicidad; la ficha de producto es más creíble y envejece mejor.
+- Reescrito para quitarle el tic: cada párrafo acababa en un giro ingenioso y la página iba llena de rayas. Ahora hay frases que simplemente afirman algo y se paran.
+- Los apartados hablan de **archivos**, que la portada no mencionaba pese a llevar tres versiones existiendo.
+
+### Added
+
+- **Sección «Una etiqueta, tres sitios»**, que enseña la misma etiqueta puesta sobre una tarea, un apunte y un PDF. Es la diferencia real frente a tener tres herramientas sueltas, y era lo único de lo que la página hablaba sin enseñarlo. Va en HTML y CSS: sin JavaScript, sin imágenes y sin coste apreciable de carga.
+- Un apartado **«Por qué una herramienta más»** con las tres razones, cada una con su contrapartida dicha. Una lista de ventajas sin ningún «pero» se lee como folleto.
+
 ## [1.21.4] - 2026-08-15
 
 ### Fixed
