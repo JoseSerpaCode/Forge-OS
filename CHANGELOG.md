@@ -6,6 +6,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.20.0] - 2026-08-15
+
+### Added
+
+- **Adjuntar un archivo del espacio desde el propio ticket.** La herencia de etiquetas ya funcionaba por API, pero no había forma de usarla con el ratón. Ahora el detalle del ticket tiene su sección: se busca un archivo del espacio, se adjunta, y **se dice cuántas etiquetas ha heredado** — sin eso, lo más útil de la función es invisible.
+- Va **separada** de los adjuntos de siempre, a propósito: aquéllos se suben al disco de esta máquina y son de ese ticket; éstos están en el Drive conectado, se comparten con todo el espacio y heredan etiquetas. Mezclarlos en una lista haría imposible saber cuál es cuál cuando importa.
+
 ## [1.19.0] - 2026-08-15
 
 ### Added

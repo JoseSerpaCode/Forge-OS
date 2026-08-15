@@ -167,6 +167,7 @@ function getInitials(username: string) {
           // Las etiquetas las pinta el propio modal: toda su lógica vive allí
           // y aquí solo se le dice de qué ticket se trata.
           (window as any).forgeLabelsOpen?.(card.id);
+          (window as any).forgeDriveFilesOpen?.(card.id);
 
           const typeBadge = card.querySelector('.issue-type-badge');
           const typeEl = document.getElementById('modal-issue-type') as HTMLSelectElement;
