@@ -138,6 +138,30 @@ describe('borrado', () => {
     expect(t.is_public).toBe(0);
   });
 
+  it('avisa de los espacios que se quedan sin sus archivos, y corta la conexión', () => {
+    // Un espacio que **sobrevive** al borrado —hay otro propietario— pero que
+    // tenía conectado el Drive de quien se va.
+    db.prepare("INSERT INTO users (id, username, password_hash) VALUES ('u-drive', 'drive', ?)").run(PW);
+    crearEspacio('ws-drive', 'ws-drive', 'u-drive');
+    db.prepare("INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES ('ws-drive', 'u-companero', 'owner')").run();
+    db.prepare(`
+      INSERT INTO workspace_drive (workspace_id, refresh_token_enc, connected_by)
+      VALUES ('ws-drive', 'v1.x.y.z', 'u-drive')
+    `).run();
+
+    const previo = lib.previewAccountDeletion('u-drive');
+    expect(previo.drivesDisconnected.map((w) => w.id)).toContain('ws-drive');
+
+    lib.deleteAccount('u-drive');
+
+    // La fila se va: `connected_by` está en SET NULL, así que sin borrarla
+    // Forge seguiría escribiendo en el Drive personal de alguien que ya no
+    // existe en la aplicación y no tiene dónde verlo.
+    expect(db.prepare("SELECT 1 FROM workspace_drive WHERE workspace_id='ws-drive'").get()).toBeFalsy();
+    // El espacio sigue en pie: tenía más gente dentro.
+    expect(db.prepare("SELECT 1 FROM workspaces WHERE id='ws-drive'").get()).toBeTruthy();
+  });
+
   it('por la cuenta lápida no se puede entrar', () => {
     const t = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(lib.TOMBSTONE_ID) as any;
     expect(t).toBeTruthy();
