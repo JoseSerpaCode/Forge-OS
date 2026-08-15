@@ -21,6 +21,11 @@ test.describe('Dynamic Databases Module', () => {
     const modal = page.locator('#new-db-modal');
     await expect(modal).toBeVisible();
 
+    // 4b. The modal now opens on the template gallery. This test builds its own
+    // columns, so it takes the blank table.
+    await page.click('[data-tpl="__blank__"]');
+    await expect(page.locator('#step-form')).toBeVisible();
+
     // 5. Fill out the form
     await page.fill('#db-name', 'E2E Test CRM');
     await page.fill('#db-desc', 'Automated CRM tracker for E2E testing');
