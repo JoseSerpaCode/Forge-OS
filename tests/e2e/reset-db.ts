@@ -141,6 +141,19 @@ export default function resetDb() {
     db.prepare('INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)')
       .run('ws-archivos', uid, rol);
   }
+
+  // Y otro más para las columnas de tipo archivo de las bases dinámicas.
+  //
+  // Por lo mismo: la limpieza de `drive-archivos.spec` borra **todos** los
+  // archivos de su espacio, y los ficheros de prueba corren en paralelo. Con un
+  // espacio compartido, a esta prueba le desaparecía el archivo a mitad de
+  // camino y fallaba una de cada tres corridas.
+  db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, ?, ?, ?)')
+    .run('ws-tablas', 'Tablas', 'tablas-ws', 'aud-owner');
+  for (const [uid, rol] of [['aud-owner', 'owner'], ['aud-editor', 'editor'], ['aud-viewer', 'viewer']] as const) {
+    db.prepare('INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)')
+      .run('ws-tablas', uid, rol);
+  }
   db.prepare(`INSERT INTO pages (id, workspace_id, title, created_by)
               VALUES ('p-auditoria', 'ws-auditoria', 'Pagina privada', 'aud-owner')`).run();
   // Una segunda página para la prueba de inyección: comparte espacio con la

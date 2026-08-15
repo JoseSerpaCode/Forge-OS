@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import db from '../../../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../../../lib/guard';
 import crypto from 'crypto';
+import { esDelEspacio } from '../../../../../../lib/driveFiles';
 
 export const GET: APIRoute = async ({ params, request, locals }) => {
   const { sys_tag, id } = params;
@@ -84,6 +85,16 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
         }
         validPayload[col.id] = escapeHtml(strVal);
       } 
+      else if (col.type === 'file') {
+        // Lo que se guarda es el id de un archivo de **este** espacio. Sin
+        // comprobarlo, una fila podría apuntar a un archivo de otro equipo y
+        // la tabla enseñaría su nombre a quien no debería verlo.
+        const fileId = String(val).trim();
+        if (!esDelEspacio(fileId, database.workspace_id)) {
+          return new Response(`Validation Error: Column ${col.name} expects a file from this workspace`, { status: 400 });
+        }
+        validPayload[col.id] = fileId;
+      }
       else {
         // Text type or fallback
         validPayload[col.id] = escapeHtml(String(val));

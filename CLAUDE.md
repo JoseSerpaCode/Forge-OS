@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.14.0, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Versión 1.21.0, Astro en modo SSR. Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -173,7 +173,9 @@ escribir la migración dos veces cuando llegue la feature.
 | `entry_relations`, `dynamic_views` | Bases de datos dinámicas fase 2 (está en el roadmap del README) |
 | `document_chunks` | Búsqueda semántica / RAG |
 | `public_forms` | Formularios públicos |
-| `labels` | Etiquetas de issues y páginas |
+
+**`labels` ya no está en esa lista.** Estuvo mucho tiempo como esquema muerto
+y ahora la usan tickets, páginas y archivos; ver `src/lib/labels.ts`.
 
 **`channels` y `messages` no están en esa lista**, aunque el chat siga sin
 interfaz: las consulta `IssueService.ts` —publica un aviso en el canal
@@ -206,6 +208,32 @@ métodos que escriben) y **ningún GET que modifique estado** salvo el callback 
 OAuth, que va firmado con HMAC. La biografía se pinta dentro de
 `<meta content="...">` y Astro escapa las comillas, así que no se puede salir
 del atributo.
+
+## Archivos en Drive
+
+Los archivos de un espacio **no se guardan en esta máquina**: viven en el Drive
+de quien conectó la cuenta. El motivo es la salida de red — 1 GB al mes en la
+`e2-micro`— y condiciona todo el diseño. Cuatro cosas que no se ven en el
+código:
+
+- **El ámbito es `drive.file`**, no acceso completo. El completo es un ámbito
+  restringido y Google exige para ellos una auditoría anual de pago. A cambio,
+  Forge solo ve lo que crea la propia aplicación.
+- **Los bytes nunca pasan por el servidor.** El servidor abre una sesión de
+  subida en Drive y le da al navegador **solo la URL de esa sesión**, que vale
+  para una subida. Darle el token de acceso sería darle permiso para borrar los
+  archivos de los demás en ese Drive.
+- **No se cree al navegador cuando dice «ya lo subí».** El id se comprueba
+  contra Drive: que exista, que no esté en la papelera y que esté dentro de la
+  carpeta del espacio.
+- **El token de refresco va cifrado** (`src/lib/secretBox.ts`, AES-256-GCM) con
+  `DRIVE_TOKEN_KEY`. Es una llave permanente al Drive de una persona y la base
+  se copia entera a un bucket cada noche. Si esa clave cambia, hay que volver a
+  conectar cada espacio.
+
+Cuando se pierde el acceso —permiso revocado, cuenta borrada— **los metadatos no
+se borran**: se marcan. Una lista que encoge sola parece pérdida de datos, y no
+lo es: los archivos siguen en su Drive.
 
 ## Despliegue
 

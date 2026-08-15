@@ -72,7 +72,10 @@ export const POST: APIRoute = async (context) => {
       return {
         id: colId,
         name: nombre.slice(0, 120),
-        type: ['text', 'number', 'select'].includes(col.type) ? col.type : 'text',
+        // `file` apunta a un archivo de la sección de Archivos. No duplica un
+        // sistema de archivos dentro de las bases de datos: los archivos viven
+        // en un solo sitio y la tabla los referencia.
+        type: ['text', 'number', 'select', 'file'].includes(col.type) ? col.type : 'text',
         options: col.type === 'select' && Array.isArray(col.options)
           ? col.options.filter((o: any) => typeof o === 'string' && o.trim()).slice(0, 50).map((o: string) => o.trim().slice(0, 120))
           : undefined

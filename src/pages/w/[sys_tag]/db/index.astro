@@ -57,6 +57,7 @@ const TXT = {
   typeText: t('db.type_text'),
   typeNumber: t('db.type_number'),
   typeSelect: t('db.type_select'),
+  typeFile: t('db.type_file'),
   nameDefault: t('db.col_name_default'),
 };
 ---
@@ -372,6 +373,7 @@ const TXT = {
               <option value="text"></option>
               <option value="number"></option>
               <option value="select"></option>
+              <option value="file"></option>
             </select>
           </div>
           <div class="shrink-0 pt-6">
@@ -400,6 +402,7 @@ const TXT = {
         opciones[0].textContent = TXT.typeText;
         opciones[1].textContent = TXT.typeNumber;
         opciones[2].textContent = TXT.typeSelect;
+        opciones[3].textContent = TXT.typeFile;
 
         const listaOpciones = div.querySelector('.col-options');
         listaOpciones.placeholder = TXT.colOptionsPh;
