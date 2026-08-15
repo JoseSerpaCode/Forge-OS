@@ -12,13 +12,16 @@ interface Props {
   userRole?: string;
   /** Total real por estado, para poder avisar de lo que no se pinta. */
   statusCounts?: Record<string, number>;
+  /** Catálogo de etiquetas del espacio, para el selector del modal. */
+  labels?: Array<{ id: string; name: string; color: string }>;
+  sysTag?: string;
 }
 
 import { useTranslations } from '../../i18n/ui';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
-const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer', statusCounts = {} } = Astro.props;
+const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer', statusCounts = {}, labels = [], sysTag = '' } = Astro.props;
 const canEdit = userRole === 'owner' || userRole === 'editor';
 
 const columns = [
@@ -60,7 +63,8 @@ function getInitials(username: string) {
             active_session_start: issue.active_session_start,
             due_date: issue.due_date,
             status: issue.status,
-            logged_hours: issue.logged_hours
+            logged_hours: issue.logged_hours,
+            labels: issue.labels || []
           }} canEdit={canEdit} />
         ))}
       </BoardColumn>
@@ -83,7 +87,7 @@ function getInitials(username: string) {
   )}
 </div>
 
-<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} />
+<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} labels={labels} sysTag={sysTag} />
 
 <script>
   const columns = document.querySelectorAll('.board-column');
@@ -159,6 +163,10 @@ function getInitials(username: string) {
           if (sprintEl) {
             sprintEl.value = card.getAttribute('data-sprint-id') || 'backlog';
           }
+
+          // Las etiquetas las pinta el propio modal: toda su lógica vive allí
+          // y aquí solo se le dice de qué ticket se trata.
+          (window as any).forgeLabelsOpen?.(card.id);
 
           const typeBadge = card.querySelector('.issue-type-badge');
           const typeEl = document.getElementById('modal-issue-type') as HTMLSelectElement;

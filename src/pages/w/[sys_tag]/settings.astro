@@ -3,6 +3,8 @@ import MainLayout from '../../../layouts/MainLayout.astro';
 import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
+import LabelChip from '../../../components/labels/LabelChip.astro';
+import { COLORES, listar as listarEtiquetas } from '../../../lib/labels';
 
 const user = Astro.locals.user!;
 const t = useTranslations(Astro.locals.lang || 'en');
@@ -15,6 +17,8 @@ if (!ws) return Astro.redirect('/404');
 
 const access = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'owner');
 if (!access.granted) return Astro.redirect(`/w/${sys_tag}`); // Only owners can access settings
+
+const etiquetas = listarEtiquetas(ws.id);
 
 const members = db.prepare(`
   SELECT u.id, u.username, u.avatar_url, wm.ws_role, wm.joined_at
@@ -240,6 +244,64 @@ const wsPendingInvites = (db.prepare(`
       </div>
     </div>
     
+    <!-- Etiquetas del espacio -->
+    <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
+      <div class="flex items-center justify-between mb-2 gap-4">
+        <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4Z"/><path d="M7.5 7.5h.01"/></svg>
+          {t('labels.title')}
+        </h2>
+      </div>
+      <p class="text-sm text-forge-muted mb-6 max-w-2xl leading-relaxed">{t('labels.desc')}</p>
+
+      <form id="form-nueva-etiqueta" class="flex flex-col sm:flex-row gap-3 sm:items-end mb-6">
+        <div class="flex-1 min-w-0">
+          <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5" for="etiqueta-nombre">{t('labels.name')}</label>
+          <input type="text" id="etiqueta-nombre" maxlength="40" autocomplete="off" placeholder={t('labels.name_ph')} class="w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all">
+        </div>
+        <fieldset class="shrink-0">
+          <legend class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5">{t('labels.color')}</legend>
+          <div id="etiqueta-colores" class="flex flex-wrap gap-1.5">
+            {COLORES.map((c, i) => (
+              <button
+                type="button"
+                class="color-opt w-7 h-7 rounded-lg border-2 border-transparent transition-all focus:outline-none focus:ring-2 focus:ring-forge-secondary/40 aria-pressed:border-forge-text"
+                style={`background-color:${c}`}
+                data-color={c}
+                aria-pressed={i === 1 ? 'true' : 'false'}
+                aria-label={c}
+              ></button>
+            ))}
+          </div>
+        </fieldset>
+        <button type="submit" class="shrink-0 bg-forge-primary text-forge-on-accent font-bold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
+          {t('labels.create')}
+        </button>
+      </form>
+
+      <ul id="lista-etiquetas" class="space-y-2">
+        {etiquetas.map((e: any) => (
+          <li class="fila-etiqueta flex items-center justify-between gap-3 bg-forge-bg/50 border border-forge-border p-3 rounded-lg" data-id={e.id} data-name={e.name} data-color={e.color}>
+            <div class="flex items-center gap-3 min-w-0">
+              <LabelChip name={e.name} color={e.color} />
+              <span class="text-xs text-forge-muted truncate">
+                {e.usos === 0 ? t('labels.unused') : e.usos === 1 ? t('labels.used_in_one') : t('labels.used_in').replace('{n}', String(e.usos))}
+              </span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button class="btn-renombrar-etiqueta text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors">{t('labels.rename')}</button>
+              <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-red-500/10 transition-colors" aria-label={t('labels.delete')} title={t('labels.delete')}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div id="etiquetas-vacio" class:list={['py-6 text-center text-forge-muted text-sm border border-dashed border-forge-border rounded-lg bg-forge-bg/30', etiquetas.length > 0 && 'hidden']}>
+        {t('labels.none')}
+      </div>
+    </div>
+
     <!-- Automations Engine -->
     <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
       <div class="flex items-center justify-between mb-6">
@@ -459,7 +521,206 @@ const wsPendingInvites = (db.prepare(`
 <script is:inline define:vars={{
   autoNeedName: t('ws.settings.auto_need_name'),
   autoNeedUrl: t('ws.settings.auto_need_url'),
+  sysTag: sys_tag,
+  LBL: {
+    rename: t('labels.rename'),
+    save: t('labels.save'),
+    cancel: t('labels.cancel'),
+    del: t('labels.delete'),
+    delConfirm: t('labels.delete_confirm'),
+    unused: t('labels.unused'),
+    errRequired: t('labels.err_required'),
+    errTooLong: t('labels.err_too_long'),
+    errDuplicate: t('labels.err_duplicate'),
+    errTooMany: t('labels.err_too_many'),
+    errBadColor: t('labels.err_bad_color'),
+    errGeneric: t('labels.err_generic'),
+  },
 }}>
+  // ── Etiquetas ──────────────────────────────────────────────────────────────
+  //
+  // Todo sin recargar: la lista se retoca en el sitio. Recargar la página
+  // entera por crear una etiqueta pierde el resto del formulario de ajustes, y
+  // era una de las quejas concretas sobre la aplicación.
+  (() => {
+    const apiEtiquetas = `/api/w/${sysTag}/labels`;
+    const lista = document.getElementById('lista-etiquetas');
+    const vacio = document.getElementById('etiquetas-vacio');
+    const form = document.getElementById('form-nueva-etiqueta');
+    const campoNombre = document.getElementById('etiqueta-nombre');
+    const paletaNueva = document.getElementById('etiqueta-colores');
+    if (!lista || !form) return;
+
+    /** Traduce el código que devuelve la API. Nunca se enseña el código a secas. */
+    const explicar = (codigo) => ({
+      required: LBL.errRequired,
+      too_long: LBL.errTooLong,
+      duplicate: LBL.errDuplicate,
+      too_many: LBL.errTooMany,
+      bad_color: LBL.errBadColor,
+    }[codigo] ?? LBL.errGeneric);
+
+    function marcarColor(paleta, color) {
+      paleta?.querySelectorAll('.color-opt').forEach((b) => {
+        b.setAttribute('aria-pressed', String(b.dataset.color === color));
+      });
+    }
+    const colorElegido = (paleta) =>
+      paleta?.querySelector('.color-opt[aria-pressed="true"]')?.dataset.color;
+
+    paletaNueva?.addEventListener('click', (e) => {
+      const boton = e.target.closest('.color-opt');
+      if (boton) marcarColor(paletaNueva, boton.dataset.color);
+    });
+
+    function refrescarVacio() {
+      vacio?.classList.toggle('hidden', lista.children.length > 0);
+    }
+
+    /** Pinta una fila. El nombre va por textContent: lo escribe cualquiera. */
+    function filaDe(etiqueta) {
+      const li = document.createElement('li');
+      li.className = 'fila-etiqueta flex items-center justify-between gap-3 bg-forge-bg/50 border border-forge-border p-3 rounded-lg';
+      li.dataset.id = etiqueta.id;
+      li.dataset.name = etiqueta.name;
+      li.dataset.color = etiqueta.color;
+
+      li.innerHTML = `
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text max-w-full px-2 py-1 text-xs">
+            <span class="rounded-full shrink-0 w-2 h-2 chip-dot"></span>
+            <span class="truncate chip-name"></span>
+          </span>
+          <span class="text-xs text-forge-muted truncate chip-uso"></span>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button class="btn-renombrar-etiqueta text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors"></button>
+          <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-red-500/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+      `;
+      li.querySelector('.chip-dot').style.backgroundColor = etiqueta.color;
+      li.querySelector('.chip-name').textContent = etiqueta.name;
+      li.querySelector('.chip-uso').textContent = LBL.unused;
+      li.querySelector('.btn-renombrar-etiqueta').textContent = LBL.rename;
+      const borrar = li.querySelector('.btn-borrar-etiqueta');
+      borrar.setAttribute('aria-label', LBL.del);
+      borrar.title = LBL.del;
+      return li;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = campoNombre.value.trim();
+      if (!name) return window.showToast?.(LBL.errRequired, true);
+
+      const res = await fetch(apiEtiquetas, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color: colorElegido(paletaNueva) }),
+      });
+      const datos = await res.json().catch(() => ({}));
+      if (!res.ok) return window.showToast?.(explicar(datos.error_code), true);
+
+      // Se inserta donde toca: la lista va por nombre, y añadir al final la
+      // dejaría desordenada hasta la siguiente recarga.
+      const nueva = filaDe(datos);
+      const siguiente = [...lista.children].find(
+        (li) => li.dataset.name.localeCompare(datos.name, undefined, { sensitivity: 'base' }) > 0
+      );
+      lista.insertBefore(nueva, siguiente ?? null);
+      campoNombre.value = '';
+      refrescarVacio();
+    });
+
+    lista.addEventListener('click', async (e) => {
+      const fila = e.target.closest('.fila-etiqueta');
+      if (!fila) return;
+
+      if (e.target.closest('.btn-borrar-etiqueta')) {
+        window.forgeConfirm?.(LBL.delConfirm, async () => {
+          const res = await fetch(apiEtiquetas, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: fila.dataset.id }),
+          });
+          if (!res.ok) return window.showToast?.(LBL.errGeneric, true);
+          fila.remove();
+          refrescarVacio();
+        }, LBL.del);
+        return;
+      }
+
+      if (e.target.closest('.btn-renombrar-etiqueta')) abrirEdicion(fila);
+    });
+
+    /** Cambia la fila por un formulario en el sitio, sin modal. */
+    function abrirEdicion(fila) {
+      if (fila.querySelector('.edicion-etiqueta')) return;
+      const original = fila.innerHTML;
+
+      const caja = document.createElement('div');
+      caja.className = 'edicion-etiqueta flex flex-col sm:flex-row sm:items-center gap-3 w-full';
+      caja.innerHTML = `
+        <input type="text" maxlength="40" class="editar-nombre flex-1 min-w-0 bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none">
+        <div class="editar-colores flex flex-wrap gap-1.5"></div>
+        <div class="flex gap-2 shrink-0">
+          <button class="editar-guardar bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-lg text-xs"></button>
+          <button class="editar-cancelar text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5"></button>
+        </div>
+      `;
+      caja.querySelector('.editar-guardar').textContent = LBL.save;
+      caja.querySelector('.editar-cancelar').textContent = LBL.cancel;
+      const campo = caja.querySelector('.editar-nombre');
+      campo.value = fila.dataset.name;
+
+      const paleta = caja.querySelector('.editar-colores');
+      paletaNueva.querySelectorAll('.color-opt').forEach((modelo) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'color-opt w-7 h-7 rounded-lg border-2 border-transparent transition-all focus:outline-none focus:ring-2 focus:ring-forge-secondary/40 aria-pressed:border-forge-text';
+        b.style.backgroundColor = modelo.dataset.color;
+        b.dataset.color = modelo.dataset.color;
+        b.setAttribute('aria-label', modelo.dataset.color);
+        b.setAttribute('aria-pressed', String(modelo.dataset.color === fila.dataset.color));
+        paleta.appendChild(b);
+      });
+      paleta.addEventListener('click', (ev) => {
+        const boton = ev.target.closest('.color-opt');
+        if (boton) marcarColor(paleta, boton.dataset.color);
+      });
+
+      fila.innerHTML = '';
+      fila.appendChild(caja);
+      campo.focus();
+      campo.select();
+
+      caja.querySelector('.editar-cancelar').addEventListener('click', () => { fila.innerHTML = original; });
+
+      caja.querySelector('.editar-guardar').addEventListener('click', async () => {
+        const name = campo.value.trim();
+        const color = colorElegido(paleta);
+        const res = await fetch(apiEtiquetas, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: fila.dataset.id, name, color }),
+        });
+        const datos = await res.json().catch(() => ({}));
+        if (!res.ok) return window.showToast?.(explicar(datos.error_code), true);
+
+        // Se conserva el texto de uso: renombrar no cambia dónde está puesta.
+        const uso = new DOMParser().parseFromString(original, 'text/html')
+          .querySelector('.chip-uso, .text-xs.text-forge-muted')?.textContent ?? '';
+        fila.dataset.name = name;
+        fila.dataset.color = color;
+        fila.innerHTML = filaDe({ id: fila.dataset.id, name, color }).innerHTML;
+        const usoEl = fila.querySelector('.chip-uso');
+        if (usoEl && uso) usoEl.textContent = uso;
+      });
+    }
+  })();
+
   const wsId = document.getElementById('btn-save-general')?.getAttribute('data-ws-id');
   let newIconUrl = null;
   const iconInput = document.getElementById('ws-icon-file-input');

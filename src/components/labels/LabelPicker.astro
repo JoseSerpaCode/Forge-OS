@@ -1,0 +1,250 @@
+---
+/**
+ * Poner y quitar etiquetas de algo.
+ *
+ * Sirve para un ticket y para una página, y también para el ticket que cambia
+ * cada vez que se abre el modal del tablero: la entidad se puede cambiar desde
+ * fuera con `setEntity()`. Sin eso harían falta dos implementaciones de lo
+ * mismo, y dos sitios donde arreglar cada fallo.
+ *
+ * Quien lo usa se entera de los cambios por el evento `labels-changed`, con la
+ * lista que ha devuelto el servidor. Así el tablero puede repintar la tarjeta
+ * sin que este componente sepa nada de tarjetas.
+ */
+import { useTranslations } from '../../i18n/ui';
+
+interface Props {
+  sysTag: string;
+  entityType: 'issue' | 'page';
+  /** Vacío si la entidad se asigna después con `setEntity()`. */
+  entityId?: string;
+  initial?: Array<{ id: string; name: string; color: string }>;
+  catalog?: Array<{ id: string; name: string; color: string }>;
+  canEdit?: boolean;
+  class?: string;
+}
+
+const {
+  sysTag, entityType, entityId = '', initial = [], catalog = [], canEdit = true, class: className = '',
+} = Astro.props;
+
+const t = useTranslations(Astro.locals.lang || 'en');
+---
+
+<div
+  class:list={['forge-label-picker', className]}
+  data-sys-tag={sysTag}
+  data-entity-type={entityType}
+  data-entity-id={entityId}
+  data-can-edit={canEdit ? 'true' : 'false'}
+  data-initial={JSON.stringify(initial)}
+  data-catalog={JSON.stringify(catalog)}
+  data-t-create={t('labels.create_named')}
+  data-t-error={t('labels.err_generic')}
+>
+  <div class="flex flex-wrap items-center gap-1.5 lp-chips"></div>
+
+  {canEdit && (
+    <div class="relative inline-block mt-1.5">
+      <button type="button" class="lp-toggle inline-flex items-center gap-1.5 text-xs font-bold text-forge-muted hover:text-forge-text border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 transition-colors" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        {t('labels.add')}
+      </button>
+
+      <div class="lp-panel hidden absolute z-30 mt-2 w-64 max-w-[calc(100vw-3rem)] bg-forge-panel border border-forge-border rounded-xl shadow-xl p-2">
+        <input type="text" class="lp-search w-full bg-forge-bg border border-forge-border rounded-lg px-2.5 py-1.5 text-xs text-forge-text focus:border-forge-secondary outline-none mb-2" autocomplete="off" placeholder={t('labels.search')} aria-label={t('labels.search')}>
+        <div class="lp-options max-h-56 overflow-y-auto custom-scrollbar space-y-0.5"></div>
+      </div>
+    </div>
+  )}
+</div>
+
+<script>
+  type Etiqueta = { id: string; name: string; color: string };
+
+  /** Un chip. El nombre por `textContent`: lo escribe cualquiera. */
+  function chip(e: Etiqueta, alQuitar?: () => void): HTMLElement {
+    const span = document.createElement('span');
+    span.className = 'inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text px-2 py-1 text-xs max-w-full';
+
+    const punto = document.createElement('span');
+    punto.className = 'rounded-full shrink-0 w-2 h-2';
+    punto.style.backgroundColor = e.color;
+
+    const texto = document.createElement('span');
+    texto.className = 'truncate';
+    texto.textContent = e.name;
+    span.append(punto, texto);
+
+    if (alQuitar) {
+      const quitar = document.createElement('button');
+      quitar.type = 'button';
+      quitar.className = 'lp-remove text-forge-muted hover:text-forge-error transition-colors shrink-0';
+      quitar.setAttribute('aria-label', `${e.name} ✕`);
+      quitar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      quitar.addEventListener('click', alQuitar);
+      span.appendChild(quitar);
+    }
+    return span;
+  }
+
+  function montar(raiz: HTMLElement) {
+    if (raiz.dataset.montado === 'true') return;
+    raiz.dataset.montado = 'true';
+
+    const sysTag = raiz.dataset.sysTag || '';
+    const tipo = raiz.dataset.entityType || 'issue';
+    const puedeEditar = raiz.dataset.canEdit === 'true';
+    const txtCrear = raiz.dataset.tCreate || '';
+    const txtError = raiz.dataset.tError || '';
+
+    const chips = raiz.querySelector('.lp-chips') as HTMLElement;
+    const boton = raiz.querySelector('.lp-toggle') as HTMLButtonElement | null;
+    const panel = raiz.querySelector('.lp-panel') as HTMLElement | null;
+    const buscador = raiz.querySelector('.lp-search') as HTMLInputElement | null;
+    const opciones = raiz.querySelector('.lp-options') as HTMLElement | null;
+
+    const leer = (clave: string): Etiqueta[] => {
+      try { return JSON.parse(raiz.dataset[clave] || '[]'); } catch { return []; }
+    };
+
+    let puestas: Etiqueta[] = leer('initial');
+    let catalogo: Etiqueta[] = leer('catalog');
+
+    const pintar = () => {
+      chips.innerHTML = '';
+      for (const e of puestas) {
+        chips.appendChild(chip(e, puedeEditar ? () => cambiar(e.id, false) : undefined));
+      }
+    };
+
+    const refrescar = () => {
+      if (!opciones || !buscador) return;
+      const texto = buscador.value.trim().toLowerCase();
+      const yaEstan = new Set(puestas.map((e) => e.id));
+      opciones.innerHTML = '';
+
+      for (const e of catalogo.filter((x) => x.name.toLowerCase().includes(texto))) {
+        const fila = document.createElement('button');
+        fila.type = 'button';
+        fila.className = 'lp-option w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-forge-text hover:bg-forge-bg transition-colors text-left';
+        fila.dataset.labelId = e.id;
+        fila.setAttribute('aria-pressed', String(yaEstan.has(e.id)));
+
+        const marca = document.createElement('span');
+        marca.className = 'w-3.5 h-3.5 shrink-0 rounded border border-forge-border flex items-center justify-center';
+        if (yaEstan.has(e.id)) {
+          marca.classList.add('bg-forge-secondary', 'border-forge-secondary');
+          marca.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--forge-on-accent)" stroke-width="3.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+        }
+
+        const punto = document.createElement('span');
+        punto.className = 'w-2 h-2 rounded-full shrink-0';
+        punto.style.backgroundColor = e.color;
+
+        const nombre = document.createElement('span');
+        nombre.className = 'truncate';
+        nombre.textContent = e.name;
+
+        fila.append(marca, punto, nombre);
+        fila.addEventListener('click', () => cambiar(e.id, !yaEstan.has(e.id)));
+        opciones.appendChild(fila);
+      }
+
+      // Crear desde aquí. Si no, hay que irse a los ajustes del espacio en
+      // mitad de otra cosa y volver.
+      const escrito = buscador.value.trim();
+      if (escrito && !catalogo.some((e) => e.name.toLowerCase() === escrito.toLowerCase())) {
+        const crear = document.createElement('button');
+        crear.type = 'button';
+        crear.className = 'lp-create w-full text-left px-2 py-1.5 rounded-lg text-xs font-bold text-forge-accent-text hover:bg-forge-secondary/10 transition-colors mt-1 border-t border-forge-border/40 pt-2';
+        crear.textContent = txtCrear.replace('{name}', escrito);
+        crear.addEventListener('click', () => crearYPoner(escrito));
+        opciones.appendChild(crear);
+      }
+    };
+
+    const avisar = () => {
+      raiz.dispatchEvent(new CustomEvent('labels-changed', { bubbles: true, detail: { labels: puestas } }));
+    };
+
+    async function cambiar(labelId: string, poner: boolean) {
+      const entityId = raiz.dataset.entityId;
+      if (!entityId) return;
+
+      try {
+        const res = await fetch(`/api/w/${sysTag}/labels/assign`, {
+          method: poner ? 'POST' : 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label_id: labelId, entity_type: tipo, entity_id: entityId }),
+        });
+        if (!res.ok) throw new Error('no');
+        const datos = await res.json();
+        // La lista viene del servidor, no se adivina: si dos personas tocan el
+        // mismo ticket, lo que se ve es lo que hay.
+        puestas = datos.labels || [];
+        pintar();
+        refrescar();
+        avisar();
+      } catch {
+        (window as any).showToast?.(txtError, true);
+      }
+    }
+
+    async function crearYPoner(nombre: string) {
+      try {
+        const res = await fetch(`/api/w/${sysTag}/labels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: nombre }),
+        });
+        if (!res.ok) throw new Error('no');
+        const etiqueta = await res.json();
+        catalogo.push(etiqueta);
+        catalogo.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        if (buscador) buscador.value = '';
+        await cambiar(etiqueta.id, true);
+      } catch {
+        (window as any).showToast?.(txtError, true);
+      }
+    }
+
+    const abrir = (si: boolean) => {
+      panel?.classList.toggle('hidden', !si);
+      boton?.setAttribute('aria-expanded', String(si));
+      if (si && buscador) {
+        buscador.value = '';
+        refrescar();
+        buscador.focus();
+      }
+    };
+
+    boton?.addEventListener('click', () => abrir(panel?.classList.contains('hidden') ?? false));
+    buscador?.addEventListener('input', refrescar);
+    buscador?.addEventListener('keydown', (e) => {
+      // Se para la propagación: en el modal del tablero, Escape lo cierra
+      // entero, y aquí lo que se quiere cerrar es solo el desplegable.
+      if (e.key === 'Escape') { e.stopPropagation(); abrir(false); boton?.focus(); }
+    });
+    document.addEventListener('click', (e) => {
+      if (!raiz.contains(e.target as Node)) abrir(false);
+    });
+
+    // Para quien lo use desde fuera: cambiar de entidad sin volver a montarlo.
+    (raiz as any).setEntity = (id: string, etiquetas: Etiqueta[]) => {
+      raiz.dataset.entityId = id;
+      puestas = etiquetas || [];
+      abrir(false);
+      pintar();
+    };
+    (raiz as any).getLabels = () => puestas;
+
+    pintar();
+  }
+
+  const montarTodos = () => document.querySelectorAll<HTMLElement>('.forge-label-picker').forEach(montar);
+  document.addEventListener('DOMContentLoaded', montarTodos);
+  // Por si el componente entra después de la carga (el modal del tablero ya
+  // está en el DOM, pero esto lo hace válido para cualquier otro sitio).
+  montarTodos();
+</script>

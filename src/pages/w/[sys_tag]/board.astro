@@ -4,6 +4,7 @@ import KanbanBoard from '../../../components/jira/KanbanBoard.astro';
 import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
+import { deVarias, listar as listarEtiquetas } from '../../../lib/labels';
 
 const { sys_tag } = Astro.params;
 const user = Astro.locals.user!;
@@ -89,6 +90,26 @@ if (activeSprintId) {
 }
 
 /**
+ * Filtro por etiqueta.
+ *
+ * Va en la consulta y no en el navegador porque el tablero solo trae cien
+ * tarjetas por columna: filtrar en pantalla buscaría dentro de esas cien y
+ * diría que no hay nada más, cuando lo que se busca puede estar entre las que
+ * no llegaron. Se comprueba que la etiqueta sea **de este espacio** antes de
+ * usarla; si no lo es, se ignora en vez de fingir un tablero vacío.
+ */
+const etiquetaPedida = Astro.url.searchParams.get('label');
+const etiquetaFiltro = etiquetaPedida
+  ? (db.prepare('SELECT id, name, color FROM labels WHERE id = ? AND workspace_id = ?')
+      .get(etiquetaPedida, workspace.id) as any) ?? null
+  : null;
+
+if (etiquetaFiltro) {
+  issuesQuery += ' AND EXISTS (SELECT 1 FROM issue_labels il WHERE il.issue_id = i.id AND il.label_id = ?)';
+  queryParams.push(etiquetaFiltro.id);
+}
+
+/**
  * Tope por columna.
  *
  * La consulta no tenía ninguno: pintaba **todos** los issues del sprint. Medido
@@ -127,6 +148,13 @@ const pagedQuery = `
   ORDER BY position ASC, id ASC
 `;
 const issues = db.prepare(pagedQuery).all(...queryParams) as any[];
+
+// Las etiquetas de todas las tarjetas en **una** consulta. Una por tarjeta
+// serían cien consultas por carga de tablero.
+const etiquetasPorIssue = deVarias('issue', issues.map((i) => i.id));
+for (const issue of issues) issue.labels = etiquetasPorIssue.get(issue.id) ?? [];
+
+const etiquetasDelEspacio = listarEtiquetas(workspace.id);
 
 const activeSprintName = activeSprintId ? sprints.find(s => s.id === activeSprintId)?.name : 'Backlog';
 
@@ -185,6 +213,17 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
             <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? '(Active)' : s.status === 'completed' ? '(Completed)' : ''}</option>
           ))}
         </select>
+
+        {/* Filtro por etiqueta. Solo aparece si hay etiquetas: un desplegable
+            con una única opción vacía es ruido. */}
+        {etiquetasDelEspacio.length > 0 && (
+          <select id="label-filter" aria-label={t('labels.filter')} class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
+            <option value="">{t('labels.filter_all')}</option>
+            {etiquetasDelEspacio.map((e: any) => (
+              <option value={e.id} selected={etiquetaFiltro?.id === e.id}>{e.name}</option>
+            ))}
+          </select>
+        )}
         
         {access.role !== 'viewer' && activeSprintId && currentSprintObj && (
           <div class="flex items-center gap-1 bg-forge-bg rounded-md border border-forge-border/50 p-1">
@@ -217,7 +256,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={access.role} statusCounts={statusCounts} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={access.role} statusCounts={statusCounts} labels={etiquetasDelEspacio} sysTag={sys_tag} />
     </div>
   </div>
 
@@ -305,6 +344,21 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       } else {
         url.searchParams.set('sprint', val);
       }
+      window.location.href = url.toString();
+    });
+
+    // FILTRO POR ETIQUETA
+    //
+    // Va en la URL y no en `localStorage`: así el enlace de «solo Parcial 2»
+    // se puede pegar en un mensaje y le abre a otro lo mismo que estás viendo.
+    // Y a diferencia del sprint, no se recuerda entre visitas: un filtro
+    // pegajoso hace creer que el tablero se ha vaciado.
+    const filtroEtiqueta = document.getElementById('label-filter') as HTMLSelectElement | null;
+    filtroEtiqueta?.addEventListener('change', (e) => {
+      const val = (e.target as HTMLSelectElement).value;
+      const url = new URL(window.location.href);
+      if (val) url.searchParams.set('label', val);
+      else url.searchParams.delete('label');
       window.location.href = url.toString();
     });
 

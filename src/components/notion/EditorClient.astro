@@ -1,5 +1,6 @@
 ---
 import { useTranslations } from '../../i18n/ui';
+import LabelPicker from '../labels/LabelPicker.astro';
 
 interface Props {
   pageId: string;
@@ -13,8 +14,10 @@ interface Props {
   parentTitle?: string | null;
   parentId?: string | null;
   sysTag: string;
+  labels?: Array<{ id: string; name: string; color: string }>;
+  labelCatalog?: Array<{ id: string; name: string; color: string }>;
 }
-const { pageId, initialTitle, initialContent, canEdit, authorName, authorAvatar, updatedAt, parentTitle, parentId, sysTag } = Astro.props;
+const { pageId, initialTitle, initialContent, canEdit, authorName, authorAvatar, updatedAt, parentTitle, parentId, sysTag, labels = [], labelCatalog = [] } = Astro.props;
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -113,6 +116,22 @@ function formatDate(dateStr: string | undefined) {
         </button>
       </div>
     </div>
+
+    {/* Etiquetas de la página. Las mismas del espacio que llevan los tickets:
+        es lo que permite cruzar los apuntes de «Parcial 2» con las tareas de
+        «Parcial 2». Se ven aunque no se pueda editar. */}
+    {(canEdit || labels.length > 0) && (
+      <div class="-mt-6 mb-8">
+        <LabelPicker
+          sysTag={sysTag}
+          entityType="page"
+          entityId={pageId}
+          initial={labels}
+          catalog={labelCatalog}
+          canEdit={canEdit}
+        />
+      </div>
+    )}
 
     <!-- Editor.js Container -->
     <div 

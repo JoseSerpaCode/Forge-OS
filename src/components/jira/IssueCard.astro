@@ -17,6 +17,7 @@ interface Props {
     due_date?: string;
     status?: string;
     logged_hours?: number;
+    labels?: Array<{ id: string; name: string; color: string }>;
   };
   canEdit?: boolean;
 }
@@ -24,11 +25,12 @@ interface Props {
 const { issue, canEdit = false } = Astro.props;
 
 import { useTranslations } from '../../i18n/ui';
+import LabelChip from '../labels/LabelChip.astro';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 ---
 <!-- Componente IssueCard.astro -->
-<div id={issue.id} draggable={canEdit ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-assignee={issue.assignee_username || 'Unassigned'} data-reporter={issue.reporter_username || 'System'} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-active-session={issue.active_session_start || ''} data-status={issue.status} data-t-due={t('card.due')} data-t-no-desc={t('modal.no_description')}
+<div id={issue.id} draggable={canEdit ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-assignee={issue.assignee_username || 'Unassigned'} data-reporter={issue.reporter_username || 'System'} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-active-session={issue.active_session_start || ''} data-status={issue.status} data-t-due={t('card.due')} data-t-no-desc={t('modal.no_description')} data-labels={JSON.stringify(issue.labels || [])}
   class={`issue-card group bg-forge-panel border border-forge-border/40 p-4 rounded-xl shadow-sm hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.15)] hover:border-forge-secondary/50 transition-all duration-300 ease-out ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} mb-4 relative overflow-hidden
     ${issue.type === 'bug' ? 'before:bg-red-500' : 
       issue.type === 'story' ? 'before:bg-green-500' : 
@@ -53,6 +55,12 @@ const t = useTranslations(lang);
   )}
 
   <p class="text-forge-muted text-xs line-clamp-2 mb-4 pl-1 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">{issue.description || t('modal.no_description')}</p>
+  {issue.labels && issue.labels.length > 0 && (
+    <div class="flex flex-wrap gap-1 mb-3 pl-1 card-labels">
+      {issue.labels.map(l => <LabelChip name={l.name} color={l.color} size="sm" />)}
+    </div>
+  )}
+
   <div class="flex items-center gap-2 pl-1">
     <span class="issue-type-badge px-2 py-0.5 rounded-md text-[10px] font-bold tracking-widest bg-forge-bg text-forge-muted border border-forge-border uppercase shadow-sm">
       {t(`type.${issue.type}` as any) || issue.type}
