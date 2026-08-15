@@ -4,13 +4,14 @@ import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
 import { conexionDe, driveDisponible } from '../../../lib/drive';
+import { archivosDe, caminoDe, carpeta, carpetasDe } from '../../../lib/driveFiles';
 
 /**
  * Sección de archivos.
  *
- * De momento solo la conexión: conectar un Drive, ver cuál está conectado y
- * desconectarlo. La subida y las carpetas vienen después, pero esta pantalla
- * tiene que existir antes porque es donde se decide de quién son los archivos.
+ * Los archivos viven en el Drive de quien conectó la cuenta; aquí solo están
+ * sus datos. Los bytes no pasan por esta máquina ni al subir ni al abrir: se
+ * suben del navegador a Google, y se abren en Drive.
  */
 
 const { sys_tag } = Astro.params;
@@ -28,8 +29,19 @@ const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspace.id, 'vi
 if (!access.granted) return new Response('Access Denied', { status: 403 });
 
 const esPropietario = access.role === 'owner';
+const puedeEditar = access.role !== 'viewer';
 const conexion = conexionDe(workspace.id);
 const disponible = driveDisponible();
+
+// La carpeta que se está mirando. Se comprueba que sea de este espacio: con un
+// id de otro, se enseña la raíz en vez de fingir una carpeta vacía.
+const carpetaPedida = Astro.url.searchParams.get('folder');
+const carpetaActual = carpetaPedida ? carpeta(carpetaPedida, workspace.id) : null;
+const folderId = carpetaActual?.id ?? null;
+
+const camino = caminoDe(folderId, workspace.id);
+const carpetas = conexion ? carpetasDe(workspace.id, folderId) : [];
+const archivos = conexion ? archivosDe(workspace.id, folderId) : [];
 
 // El resultado de volver de Google. Se traduce aquí y no se enseña el código.
 const codigo = Astro.url.searchParams.get('drive');
@@ -52,6 +64,16 @@ const resultado = codigo && Object.hasOwn(RESULTADOS, codigo) ? RESULTADOS[codig
 
 const TXT = {
   connect: t('drive.connect'),
+  uploading: t('drive.uploading'),
+  upload: t('drive.upload'),
+  folderName: t('drive.folder_name'),
+  removeConfirm: t('drive.remove_confirm'),
+  remove: t('drive.remove'),
+  errTooLarge: t('drive.err_too_large'),
+  errUpload: t('drive.err_upload'),
+  errFolder: t('drive.err_folder'),
+  errFolderDup: t('drive.err_folder_dup'),
+  errRemove: t('drive.err_remove'),
   connecting: t('drive.connecting'),
   disconnectConfirm: t('drive.disconnect_confirm'),
   disconnect: t('drive.disconnect'),
@@ -72,7 +94,7 @@ const TXT = {
     </header>
 
     {resultado && (
-      <div class:list={[
+      <div id="drive-result" class:list={[
         'rounded-2xl border px-5 py-4 text-sm',
         resultado.mal
           ? 'border-forge-error/40 bg-forge-error/10 text-forge-text'
@@ -82,11 +104,20 @@ const TXT = {
       </div>
     )}
 
-    {!disponible ? (
-      <div class="bg-forge-panel border border-forge-border rounded-2xl p-8 text-sm text-forge-muted">
+    {/* El aviso de «no configurado» es un aviso, no un muro.
+        Antes ocupaba el sitio de todo lo demás: si a este servidor le faltaran
+        las credenciales de Google —porque se rotaron y no se pusieron, por
+        ejemplo—, un espacio con cien archivos subidos enseñaba esta frase y
+        nada más. Una lista que desaparece parece pérdida de datos, y no lo es:
+        los archivos siguen en su Drive y sus nombres siguen aquí. */}
+    {!disponible && (
+      <div class="rounded-2xl border border-forge-border bg-forge-panel px-5 py-4 text-sm text-forge-muted">
         {t('drive.unavailable')}
       </div>
-    ) : !conexion ? (
+    )}
+
+    {!conexion ? (
+      disponible ? (
       <div class="bg-forge-panel border border-dashed border-forge-border rounded-2xl p-8">
         <h2 class="text-lg font-bold text-forge-text">{t('drive.not_connected')}</h2>
         <p class="text-sm text-forge-muted mt-2 max-w-xl leading-relaxed">{t('drive.not_connected_desc')}</p>
@@ -112,6 +143,7 @@ const TXT = {
           <p class="mt-6 text-sm text-forge-muted italic">{t('drive.only_owner')}</p>
         )}
       </div>
+      ) : null
     ) : (
       <div class="space-y-6">
         {conexion.status === 'revoked' && (
@@ -151,19 +183,114 @@ const TXT = {
 
           <p class="mt-5 pt-5 border-t border-forge-border/40 text-xs text-forge-muted leading-relaxed">{t('drive.warn_link')}</p>
         </div>
+
+        {/* El explorador. Carpetas primero y archivos después, como en
+            cualquier gestor de archivos: mezclarlos obliga a leer el icono de
+            cada fila para saber en qué se puede entrar. */}
+        <div class="bg-forge-panel border border-forge-border rounded-2xl overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-forge-border/40">
+            <nav class="flex items-center gap-1.5 text-sm min-w-0" aria-label={t('drive.files_title')}>
+              <a href={`/w/${sys_tag}/files`} class:list={['truncate hover:underline', camino.length ? 'text-forge-muted' : 'text-forge-text font-bold']}>
+                {t('drive.root')}
+              </a>
+              {camino.map((c, i) => (
+                <>
+                  <span class="text-forge-border">/</span>
+                  <a
+                    href={`/w/${sys_tag}/files?folder=${c.id}`}
+                    class:list={['truncate hover:underline', i === camino.length - 1 ? 'text-forge-text font-bold' : 'text-forge-muted']}
+                  >{c.name}</a>
+                </>
+              ))}
+            </nav>
+
+            {puedeEditar && disponible && conexion.status === 'ok' && (
+              <div class="flex items-center gap-2 shrink-0">
+                <button id="btn-nueva-carpeta" class="text-xs font-bold text-forge-muted hover:text-forge-text border border-forge-border rounded-lg px-3 py-2 transition-colors flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M12 10v6"/><path d="M9 13h6"/></svg>
+                  {t('drive.new_folder')}
+                </button>
+                <button id="btn-subir" class="bg-forge-primary text-forge-on-accent text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-all flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+                  {t('drive.upload')}
+                </button>
+                <input type="file" id="input-archivo" class="hidden" multiple aria-label={t('drive.upload')}>
+              </div>
+            )}
+          </div>
+
+          {/* Progreso. Aparece solo mientras hay algo subiendo. */}
+          <div id="zona-progreso" class="hidden px-5 py-3 border-b border-forge-border/40 space-y-2"></div>
+
+          {/* Nombre de la carpeta nueva, en línea.
+              Con `prompt()` pasaría lo mismo que pasaba con `confirm()`: tras
+              el primero, el navegador ofrece bloquear los diálogos y a partir
+              de ahí el botón se queda mudo sin decir por qué. */}
+          <form id="form-carpeta" class="hidden px-5 py-3 border-b border-forge-border/40 flex flex-wrap items-center gap-2">
+            <input type="text" id="nombre-carpeta" maxlength="200" autocomplete="off" placeholder={t('drive.folder_name')} aria-label={t('drive.folder_name')} class="flex-1 min-w-[12rem] bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none">
+            <button type="submit" class="bg-forge-primary text-forge-on-accent text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-all">{t('drive.new_folder')}</button>
+            <button type="button" id="btn-cancelar-carpeta" class="text-xs font-bold text-forge-muted hover:text-forge-text px-3 py-2">{t('labels.cancel')}</button>
+          </form>
+
+          <ul id="lista-archivos" class="divide-y divide-forge-border/40">
+            {carpetas.map(c => (
+              <li class="flex items-center gap-3 px-5 py-3 hover:bg-forge-bg/50 transition-colors">
+                <span class="text-forge-accent-text shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                </span>
+                <a href={`/w/${sys_tag}/files?folder=${c.id}`} class="flex-1 min-w-0 text-sm font-bold text-forge-text truncate hover:underline">{c.name}</a>
+                {!c.driveId && <span class="text-[10px] text-forge-muted italic shrink-0">{t('drive.folder_not_synced')}</span>}
+              </li>
+            ))}
+
+            {archivos.map(f => (
+              <li class="archivo-fila flex items-center gap-3 px-5 py-3 hover:bg-forge-bg/50 transition-colors" data-id={f.id}>
+                <span class:list={['shrink-0', f.status === 'missing' ? 'text-forge-error' : 'text-forge-muted']}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>
+                </span>
+                <div class="flex-1 min-w-0">
+                  {f.webViewLink && f.status === 'ok' ? (
+                    <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" class="block text-sm font-bold text-forge-text truncate hover:underline">{f.name}</a>
+                  ) : (
+                    <span class="block text-sm font-bold text-forge-text truncate">{f.name}</span>
+                  )}
+                  <p class="text-[11px] text-forge-muted mt-0.5 truncate">
+                    {f.status === 'missing' && <span class="text-forge-error font-bold">{t('drive.missing')} · </span>}
+                    {f.sizeBytes ? `${(f.sizeBytes / 1024 / 1024).toFixed(1)} MB · ` : ''}
+                    {f.uploaderName ? `${t('drive.uploaded_by')} ${f.uploaderName} · ` : ''}
+                    {f.createdAt?.slice(0, 10)}
+                  </p>
+                </div>
+                {puedeEditar && (
+                  <button class="btn-quitar-archivo text-forge-muted hover:text-forge-error p-2 rounded-lg hover:bg-red-500/10 transition-colors shrink-0" aria-label={t('drive.remove')} title={t('drive.remove')}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {carpetas.length === 0 && archivos.length === 0 && (
+            <div class="px-5 py-16 text-center">
+              <p class="text-sm font-bold text-forge-text">{t('drive.empty')}</p>
+              <p class="text-xs text-forge-muted mt-1.5 max-w-sm mx-auto leading-relaxed">{t('drive.empty_desc')}</p>
+            </div>
+          )}
+        </div>
       </div>
     )}
   </div>
 
   <script define:vars={{ sysTag: sys_tag, TXT }}>
-    const api = `/api/w/${sysTag}/drive`;
+    const apiDrive = `/api/w/${sysTag}/drive`;
+    const api = `/api/w/${sysTag}/files`;
 
     async function conectar(boton) {
       boton.disabled = true;
       const original = boton.textContent;
       boton.textContent = TXT.connecting;
       try {
-        const res = await fetch(api, { method: 'POST' });
+        const res = await fetch(apiDrive, { method: 'POST' });
         if (!res.ok) throw new Error('no');
         const { url } = await res.json();
         // La redirección la hace el navegador, no el `fetch`: si el endpoint
@@ -180,10 +307,170 @@ const TXT = {
     document.getElementById('btn-drive-connect')?.addEventListener('click', (e) => conectar(e.currentTarget));
     document.getElementById('btn-drive-reconnect')?.addEventListener('click', (e) => conectar(e.currentTarget));
 
+    // ── Subir ────────────────────────────────────────────────────────────────
+    //
+    // Tres pasos: el servidor abre una sesión en Drive, el navegador manda el
+    // archivo **directamente a Google**, y el servidor comprueba lo subido y lo
+    // da de alta. Los bytes no tocan nuestra máquina en ningún momento; con
+    // 1 GB de salida al mes, hacer de intermediario no es una opción.
+    const inputArchivo = document.getElementById('input-archivo');
+    const zonaProgreso = document.getElementById('zona-progreso');
+    const carpetaActualId = new URLSearchParams(location.search).get('folder');
+
+    document.getElementById('btn-subir')?.addEventListener('click', () => inputArchivo?.click());
+
+    function barraDe(nombre) {
+      const fila = document.createElement('div');
+      fila.className = 'text-xs';
+      const texto = document.createElement('div');
+      texto.className = 'flex justify-between gap-3 text-forge-muted mb-1';
+      const izq = document.createElement('span');
+      izq.className = 'truncate';
+      izq.textContent = nombre;
+      const der = document.createElement('span');
+      der.className = 'shrink-0 font-mono';
+      der.textContent = '0%';
+      texto.append(izq, der);
+
+      const canal = document.createElement('div');
+      canal.className = 'h-1.5 bg-forge-bg rounded-full overflow-hidden border border-forge-border';
+      const barra = document.createElement('div');
+      barra.className = 'h-full bg-forge-secondary transition-all';
+      barra.style.width = '0%';
+      canal.appendChild(barra);
+
+      fila.append(texto, canal);
+      zonaProgreso.appendChild(fila);
+      zonaProgreso.classList.remove('hidden');
+      return { fila, barra, der };
+    }
+
+    /** El `PUT` a Drive, con progreso. `fetch` no lo da; XHR sí. */
+    function subirADrive(url, archivo, alAvanzar) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, true);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) alAvanzar(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText)); } catch { reject(new Error('respuesta rara')); }
+          } else {
+            reject(new Error(`drive ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('red'));
+        xhr.send(archivo);
+      });
+    }
+
+    async function subirUno(archivo) {
+      const { fila, barra, der } = barraDe(archivo.name);
+      try {
+        const sesion = await fetch(`${api}/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: archivo.name,
+            size: archivo.size,
+            mime_type: archivo.type,
+            folder_id: carpetaActualId,
+          }),
+        });
+        const datos = await sesion.json().catch(() => ({}));
+        if (!sesion.ok) {
+          throw new Error(datos.error_code === 'too_large' ? TXT.errTooLarge : TXT.errUpload);
+        }
+
+        const subido = await subirADrive(datos.upload_url, archivo, (pct) => {
+          barra.style.width = `${pct}%`;
+          der.textContent = `${pct}%`;
+        });
+
+        // El servidor comprueba con Drive que el archivo está donde decimos
+        // antes de darlo de alta; lo que dice el navegador no basta.
+        const alta = await fetch(`${api}/upload`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ drive_id: subido.id, folder_id: carpetaActualId }),
+        });
+        if (!alta.ok) throw new Error(TXT.errUpload);
+
+        fila.remove();
+        return true;
+      } catch (e) {
+        fila.remove();
+        window.showToast?.(e instanceof Error && e.message !== 'red' ? e.message : TXT.errUpload, true);
+        return false;
+      }
+    }
+
+    inputArchivo?.addEventListener('change', async () => {
+      const archivos = [...(inputArchivo.files || [])];
+      inputArchivo.value = '';
+      if (!archivos.length) return;
+
+      let alguno = false;
+      // De uno en uno: en paralelo, varias subidas grandes se pelean por el
+      // ancho de banda y todas van lentas.
+      for (const a of archivos) alguno = (await subirUno(a)) || alguno;
+
+      zonaProgreso.classList.add('hidden');
+      if (alguno) window.location.reload();
+    });
+
+    // ── Carpetas ─────────────────────────────────────────────────────────────
+    const formCarpeta = document.getElementById('form-carpeta');
+    const campoCarpeta = document.getElementById('nombre-carpeta');
+
+    function mostrarFormCarpeta(si) {
+      formCarpeta?.classList.toggle('hidden', !si);
+      if (si) { campoCarpeta.value = ''; campoCarpeta.focus(); }
+    }
+
+    document.getElementById('btn-nueva-carpeta')?.addEventListener('click', () => mostrarFormCarpeta(true));
+    document.getElementById('btn-cancelar-carpeta')?.addEventListener('click', () => mostrarFormCarpeta(false));
+    campoCarpeta?.addEventListener('keydown', (e) => { if (e.key === 'Escape') mostrarFormCarpeta(false); });
+
+    formCarpeta?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = campoCarpeta.value.trim();
+      if (!nombre) return;
+
+      const res = await fetch(api, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nombre, parent_id: carpetaActualId }),
+      });
+      const datos = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return window.showToast?.(datos.error_code === 'duplicate' ? TXT.errFolderDup : TXT.errFolder, true);
+      }
+      window.location.reload();
+    });
+
+    // ── Quitar ───────────────────────────────────────────────────────────────
+    document.getElementById('lista-archivos')?.addEventListener('click', (e) => {
+      const boton = e.target.closest('.btn-quitar-archivo');
+      if (!boton) return;
+      const fila = boton.closest('.archivo-fila');
+
+      window.forgeConfirm?.(TXT.removeConfirm, async () => {
+        const res = await fetch(api, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: fila.dataset.id }),
+        });
+        if (!res.ok) return window.showToast?.(TXT.errRemove, true);
+        fila.remove();
+      }, TXT.remove);
+    });
+
     document.getElementById('btn-drive-disconnect')?.addEventListener('click', () => {
       window.forgeConfirm?.(TXT.disconnectConfirm, async () => {
         try {
-          const res = await fetch(api, { method: 'DELETE' });
+          const res = await fetch(apiDrive, { method: 'DELETE' });
           if (res.ok) window.location.href = `/w/${sysTag}/files`;
           else window.showToast?.(TXT.error, true);
         } catch {

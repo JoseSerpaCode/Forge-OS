@@ -127,6 +127,20 @@ export default function resetDb() {
   }
   db.prepare(`INSERT INTO issues (id, workspace_id, title, type, reporter_id, status)
               VALUES ('i-auditoria', 'ws-auditoria', 'Ticket privado', 'task', 'aud-owner', 'todo')`).run();
+
+  // Espacio propio para las pruebas de archivos.
+  //
+  // Comparten los mismos papeles que el de auditoría, pero **no** el espacio:
+  // hay una sola fila de conexión con Drive por espacio, y Playwright ejecuta
+  // ficheros distintos en paralelo. Con un solo espacio, la limpieza de un
+  // fichero borraba la conexión que el otro acababa de poner, y el fallo salía
+  // en una prueba cualquiera.
+  db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, ?, ?, ?)')
+    .run('ws-archivos', 'Archivos', 'archivos-ws', 'aud-owner');
+  for (const [uid, rol] of [['aud-owner', 'owner'], ['aud-editor', 'editor'], ['aud-viewer', 'viewer']] as const) {
+    db.prepare('INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)')
+      .run('ws-archivos', uid, rol);
+  }
   db.prepare(`INSERT INTO pages (id, workspace_id, title, created_by)
               VALUES ('p-auditoria', 'ws-auditoria', 'Pagina privada', 'aud-owner')`).run();
   // Una segunda página para la prueba de inyección: comparte espacio con la

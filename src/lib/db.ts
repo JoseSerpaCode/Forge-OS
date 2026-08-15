@@ -853,6 +853,74 @@ const MIGRATIONS: Migration[] = [
       db.exec('CREATE INDEX IF NOT EXISTS idx_page_labels_label ON page_labels(label_id)');
     }
   },
+  {
+    version: 36,
+    description: 'drive_folders y drive_files: los archivos que viven en Drive',
+    run: () => {
+      // Tablas propias, y no `attachments`.
+      //
+      // Un adjunto está siempre colgado de algo —un ticket, una página— y muere
+      // con ello. Un archivo de esta sección es del **espacio**: vive en una
+      // carpeta, puede no estar atado a nada y puede estarlo a varias cosas a
+      // la vez. Meter las dos ideas en la misma tabla obliga a que la mitad de
+      // las columnas estén siempre a nulo y a que cada consulta explique cuál
+      // de los dos casos está mirando.
+      //
+      // Lo que se guarda aquí son **metadatos**. Los bytes están en el Drive de
+      // quien conectó la cuenta y no pasan por esta máquina en ningún momento.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS drive_folders (
+          id TEXT PRIMARY KEY,
+          workspace_id TEXT NOT NULL,
+          -- NULL = cuelga de la carpeta del espacio.
+          parent_id TEXT,
+          name TEXT NOT NULL,
+          -- Id de la carpeta en Drive. Puede faltar si se creó aquí y la
+          -- llamada a Drive falló: la carpeta existe en Forge y se sincroniza
+          -- después, en vez de perder lo que la persona ya había ordenado.
+          drive_id TEXT,
+          created_by TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+          FOREIGN KEY (parent_id) REFERENCES drive_folders(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_drive_folders_ws ON drive_folders(workspace_id, parent_id)');
+      // Dos carpetas con el mismo nombre en el mismo sitio son indistinguibles
+      // para quien las mira. `IFNULL` porque en SQLite dos NULL no chocan en un
+      // índice único, y la raíz del espacio es justamente `parent_id IS NULL`.
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_drive_folders_nombre
+        ON drive_folders(workspace_id, IFNULL(parent_id, ''), name COLLATE NOCASE)
+      `);
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS drive_files (
+          id TEXT PRIMARY KEY,
+          workspace_id TEXT NOT NULL,
+          folder_id TEXT,
+          -- Id del archivo en Drive. Único: el mismo archivo no puede estar dos
+          -- veces en la lista.
+          drive_id TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL,
+          mime_type TEXT,
+          size_bytes INTEGER,
+          web_view_link TEXT,
+          uploaded_by TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          -- 'ok' | 'missing'. Se marca cuando Drive dice que ya no está —lo
+          -- borraron desde el Drive, o se perdió el acceso—. La fila **no** se
+          -- borra: una lista que encoge sola parece pérdida de datos.
+          status TEXT NOT NULL DEFAULT 'ok' CHECK (status IN ('ok','missing')),
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+          FOREIGN KEY (folder_id) REFERENCES drive_folders(id) ON DELETE SET NULL,
+          FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_drive_files_ws ON drive_files(workspace_id, folder_id, created_at DESC)');
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

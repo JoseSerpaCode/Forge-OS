@@ -113,6 +113,31 @@ rollback() {
 trap 'rollback' ERR
 
 # ── Desplegar ────────────────────────────────────────────────────────────────
+#
+# `npm ci` deja a veces `package-lock.json` tocado —reordena, o ajusta una
+# resolución— y entonces `git pull` se niega: «Your local changes would be
+# overwritten by merge». El despliegue se para en seco por un fichero que ni
+# siquiera se edita a mano aquí, y que además va a quedar exactamente como diga
+# el repositorio en cuanto el pull entre.
+#
+# Se restauran solo **los ficheros que npm toca**, y no un `reset --hard` a
+# secas: eso borraría también cualquier cambio que alguien hubiera hecho a mano
+# en la máquina, que es justamente lo que sí conviene que pare el despliegue.
+for tocado in package-lock.json package.json; do
+    if ! run_as_app git diff --quiet -- "$tocado" 2>/dev/null; then
+        log "Descartando cambios locales en $tocado (los deja npm)"
+        run_as_app git checkout -- "$tocado"
+    fi
+done
+
+# Lo que quede sucio sí es cosa de una persona. Se dice cuál, en vez de dejar
+# que git lo cuente a su manera en mitad de un pull.
+sucios="$(run_as_app git status --porcelain --untracked-files=no || true)"
+if [[ -n $sucios ]]; then
+    printf '%s\n' "$sucios" >&2
+    die "Hay cambios locales sin guardar en $APP_DIR. Revísalos antes de desplegar."
+fi
+
 log "Trayendo cambios…"
 run_as_app git pull --ff-only
 
