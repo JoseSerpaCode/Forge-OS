@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.18.0] - 2026-08-15
+
+### Added
+
+- **Subir archivos a Drive, con carpetas.** La sección de Archivos ya no es solo la conexión: se sube, se crean carpetas —que se crean también en el Drive, para que el árbol de allí sea el mismo— y se quitan. Cada archivo enseña su tamaño, quién lo subió y cuándo, y se abre en Drive.
+- **Los bytes no pasan por el servidor.** El servidor abre una sesión de subida en Drive y le pasa al navegador **solo la URL de esa sesión**; el archivo va del navegador a Google directamente. Con 1 GB de salida al mes, hacer de intermediario para los archivos de todo el mundo se lo come en dos tardes.
+- Quitar un archivo lo manda a la **papelera** de Drive, no lo destruye: es el Drive de una persona y ahí puede recuperarlo.
+
+### Security
+
+- **Al navegador no se le da nunca el token de acceso.** Sería una llave que abre todo lo que la aplicación ha creado en ese Drive —incluidos los archivos de los demás—. La URL de sesión que sí recibe sirve para una subida y para nada más, y caduca sola.
+- **No se le cree cuando dice «ya lo he subido».** El id que manda se comprueba contra Drive: que exista, que no esté en la papelera y que esté **dentro de la carpeta de este espacio**. Sin eso, cualquiera podría meter en la lista el id de un archivo que no salió de aquí. El nombre y el tamaño también se toman de Drive, no de lo que diga el navegador.
+- El tope de 500 MB por archivo se comprueba **antes** de abrir la sesión: no tiene sentido empezar una subida que no va a poder terminar. No es por coste nuestro, sino por el de quien presta su Drive.
+
+### Fixed
+
+- **La lista de archivos desaparecía si al servidor le faltaban las credenciales de Google.** Un espacio con cien archivos subidos enseñaba «no configurado» y nada más. Los archivos siguen en su Drive y sus nombres siguen aquí: ahora el aviso es un aviso, no un muro.
+- **Un despliegue se paraba por el `package-lock.json`.** `npm ci` lo deja tocado a veces, y `git pull` se niega a seguir. Ahora el despliegue descarta los cambios locales de los ficheros que toca npm —y solo esos—, y si queda algo más sucio dice qué es en vez de dejar que git lo cuente a su manera en mitad del proceso.
+- Crear una carpeta usaba el `prompt()` del navegador, que tiene el mismo problema que el `confirm()` que ya se quitó: tras el primero, el navegador ofrece bloquear los diálogos y el botón se queda mudo. Ahora el nombre se escribe en la propia lista.
+
 ## [1.17.0] - 2026-08-15
 
 ### Added

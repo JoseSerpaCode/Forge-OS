@@ -40,3 +40,10 @@ cookies.txt
 # raíz para tener node_modules a mano y no deben acabar en el repositorio.
 *.tmp.mjs
 *.tmp.ts
+
+# Cachés que npm crea en el HOME del usuario de servicio, que en la VM es el
+# propio directorio de la aplicación. No son del proyecto, pero ensucian
+# `git status` justo cuando se está desplegando y hay que mirarlo.
+.cache/
+.npm/
+.config/

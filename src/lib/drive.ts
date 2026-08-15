@@ -277,6 +277,98 @@ export async function compartirPorEnlace(accessToken: string, folderId: string):
   }
 }
 
+// ── Subida ───────────────────────────────────────────────────────────────────
+
+/**
+ * Abre una sesión de subida reanudable y devuelve su URL.
+ *
+ * Esta es la pieza que hace que los bytes **no pasen por el servidor**. Con
+ * 1 GB de salida de red al mes, servir de intermediario para los archivos de
+ * todo el mundo se lo come en un par de tardes; y además el archivo entero
+ * pasaría por 1 GB de RAM.
+ *
+ * Lo importante es *qué* se le da al navegador. La opción evidente —darle el
+ * token de acceso para que hable con Drive— sería entregarle una llave que
+ * abre **todo lo que la aplicación ha creado** en ese Drive: podría borrar los
+ * archivos de los demás. Lo que se le da es la URL de esta sesión, que sirve
+ * para una subida y para nada más. Sin token, sin cabeceras de autorización, y
+ * caduca sola.
+ *
+ * `Origin` va en la petición porque Drive lo usa para permitir que el `PUT`
+ * llegue desde el navegador; sin él, el navegador lo bloquea por CORS.
+ */
+export async function abrirSesionDeSubida(
+  accessToken: string,
+  datos: { nombre: string; mimeType: string; carpetaDrive: string; origen: string }
+): Promise<string | null> {
+  try {
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        Origin: datos.origen,
+      },
+      body: JSON.stringify({
+        name: datos.nombre,
+        mimeType: datos.mimeType || 'application/octet-stream',
+        parents: [datos.carpetaDrive],
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    return res.headers.get('location');
+  } catch {
+    return null;
+  }
+}
+
+export type ArchivoDrive = {
+  id: string;
+  name: string;
+  mimeType?: string;
+  size?: string;
+  webViewLink?: string;
+  parents?: string[];
+  trashed?: boolean;
+};
+
+/**
+ * Los datos de un archivo, según Drive.
+ *
+ * Se usa para **comprobar** lo que dice el navegador cuando termina de subir.
+ * Sin esto, cualquiera podría mandar el id de un archivo que no ha subido —o
+ * que ni siquiera está en la carpeta del espacio— y quedaría en la lista como
+ * si lo estuviera.
+ */
+export async function datosDeArchivo(accessToken: string, fileId: string): Promise<ArchivoDrive | null> {
+  try {
+    const res = await fetch(
+      `${API}/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,size,webViewLink,parents,trashed`,
+      { headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(15_000) }
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as ArchivoDrive;
+  } catch {
+    return null;
+  }
+}
+
+/** Manda un archivo a la papelera de Drive. No lo destruye. */
+export async function aLaPapelera(accessToken: string, fileId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API}/files/${encodeURIComponent(fileId)}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trashed: true }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── La conexión guardada ─────────────────────────────────────────────────────
 
 export type Conexion = {

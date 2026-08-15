@@ -150,7 +150,7 @@ test('un código de resultado inventado no pinta un aviso vacío', async ({ page
   // cierto pero sin texto, y se pintaba un recuadro de aviso en blanco.
   for (const codigo of ['constructor', 'toString', 'noexiste']) {
     await page.goto(`/w/auditoria-ws/files?drive=${codigo}`);
-    await expect(page.locator('.rounded-2xl.border.px-5.py-4')).toHaveCount(0);
+    await expect(page.locator('#drive-result')).toHaveCount(0);
   }
 
   // Y uno de verdad sí se ve.
