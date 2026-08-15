@@ -229,3 +229,127 @@ test('crear una carpeta no usa un diálogo del navegador', async ({ page }) => {
   await page.fill('#nombre-carpeta', 'Apuntes');
   expect(hubo, 'no debería salir un diálogo del navegador').toBe(false);
 });
+
+test('la búsqueda encuentra por trozo del nombre y recuerda la consulta', async ({ browser }) => {
+  conectarAMano();
+
+  const db = getTestDb();
+  db.prepare(`
+    INSERT INTO drive_files (id, workspace_id, drive_id, name, uploaded_by)
+    VALUES ('f-lab', ?, 'd-lab', 'Guía de laboratorio 4.pdf', 'aud-owner')
+  `).run(WS);
+  db.prepare(`
+    INSERT INTO drive_files (id, workspace_id, drive_id, name, uploaded_by)
+    VALUES ('f-otro', ?, 'd-otro', 'Presentación.pptx', 'aud-owner')
+  `).run(WS);
+  db.close();
+
+  const api = await sesion(browser, 'aud_owner');
+
+  const r = await api.get(`${API}/search?q=laboratorio`, { headers: ORIGIN });
+  expect(r.status()).toBe(200);
+  const datos = await r.json();
+  expect(datos.files.map((f: any) => f.name)).toEqual(['Guía de laboratorio 4.pdf']);
+  expect(datos.history).toContain('laboratorio');
+
+  // Sin texto se devuelve el historial, que es lo que hace falta para enseñar
+  // sugerencias nada más abrir el buscador.
+  const vacia = await api.get(`${API}/search`, { headers: ORIGIN });
+  const sinTexto = await vacia.json();
+  expect(sinTexto.files).toEqual([]);
+  expect(sinTexto.history).toContain('laboratorio');
+
+  // El historial es de cada quien: otra persona no ve el mío.
+  const otra = await sesion(browser, 'aud_editor');
+  expect((await (await otra.get(`${API}/search`, { headers: ORIGIN })).json()).history).toEqual([]);
+
+  // Y se puede olvidar.
+  expect((await api.fetch(`${API}/search`, { method: 'DELETE', headers: ORIGIN })).status()).toBe(200);
+  expect((await (await api.get(`${API}/search`, { headers: ORIGIN })).json()).history).toEqual([]);
+
+  const db2 = getTestDb();
+  db2.prepare('DELETE FROM file_searches').run();
+  db2.close();
+});
+
+test('adjuntar un archivo a una tarea le pasa sus etiquetas', async ({ browser }) => {
+  conectarAMano();
+
+  const db = getTestDb();
+  db.prepare(`INSERT INTO drive_files (id, workspace_id, drive_id, name, uploaded_by)
+              VALUES ('f-guia', ?, 'd-guia', 'Guia.pdf', 'aud-owner')`).run(WS);
+  db.prepare(`INSERT INTO issues (id, workspace_id, title, type, status, reporter_id)
+              VALUES ('i-arch', ?, 'Práctica', 'task', 'todo', 'aud-owner')`).run(WS);
+  db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES ('l-arch', ?, 'Parcial 2', '#0091FF')").run(WS);
+  db.prepare("INSERT INTO issue_labels (issue_id, label_id) VALUES ('i-arch', 'l-arch')").run();
+  db.close();
+
+  const api = await sesion(browser, 'aud_owner');
+  const r = await api.post(`${API}/link`, {
+    data: { file_id: 'f-guia', entity_type: 'issue', entity_id: 'i-arch' }, headers: ORIGIN,
+  });
+  expect(r.status()).toBe(200);
+
+  const datos = await r.json();
+  expect(datos.inherited).toBe(1);
+  expect(datos.labels.map((e: any) => e.name)).toEqual(['Parcial 2']);
+  expect(datos.files.map((f: any) => f.id)).toEqual(['f-guia']);
+
+  const db2 = getTestDb();
+  db2.prepare("DELETE FROM issues WHERE id='i-arch'").run();
+  db2.prepare("DELETE FROM labels WHERE id='l-arch'").run();
+  db2.close();
+});
+
+test('no se puede colgar un archivo de un ticket de otro espacio', async ({ browser }) => {
+  conectarAMano();
+
+  const db = getTestDb();
+  db.prepare(`INSERT INTO drive_files (id, workspace_id, drive_id, name, uploaded_by)
+              VALUES ('f-mio', ?, 'd-mio', 'Mio.pdf', 'aud-owner')`).run(WS);
+  db.close();
+
+  const api = await sesion(browser, 'aud_owner');
+  const r = await api.post(`${API}/link`, {
+    data: { file_id: 'f-mio', entity_type: 'issue', entity_id: 'i-auditoria' }, headers: ORIGIN,
+  });
+  expect(r.status()).toBe(400);
+  expect((await r.json()).error_code).toBe('entity_not_here');
+});
+
+test('buscar y volver no deja muertos los selectores de etiqueta', async ({ page }) => {
+  conectarAMano();
+
+  const db = getTestDb();
+  db.prepare(`INSERT INTO drive_files (id, workspace_id, drive_id, name, uploaded_by)
+              VALUES ('f-vivo', ?, 'd-vivo', 'Guía de laboratorio.pdf', 'aud-owner')`).run(WS);
+  db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES ('l-vivo', ?, 'Prácticas', '#30A46C')").run(WS);
+  db.close();
+
+  await page.goto('/login');
+  await page.fill('input[name="username"]', 'aud_owner');
+  await page.fill('input[name="password"]', PW);
+  await page.click('button.af-submit');
+  await page.waitForURL(/\/$/);
+  await page.goto('/w/archivos-ws/files');
+
+  const picker = page.locator('.forge-label-picker').first();
+  await expect(picker).toBeVisible();
+
+  // Buscar y volver. Antes esto reescribía el contenido de la lista, y los
+  // selectores quedaban pintados pero sin escuchadores: parecían funcionar y
+  // no hacían nada.
+  await page.fill('#buscador-archivos', 'laboratorio');
+  await expect(page.locator('#resultados-busqueda .archivo-fila')).toHaveCount(1);
+  await page.fill('#buscador-archivos', '');
+  await expect(page.locator('#lista-archivos')).toBeVisible();
+
+  await picker.locator('.lp-toggle').click();
+  await expect(picker.locator('.lp-option')).toHaveCount(1);
+  await picker.locator('.lp-option').first().click();
+  await expect(picker.locator('.lp-chips')).toContainText('Prácticas');
+
+  const db2 = getTestDb();
+  db2.prepare("DELETE FROM labels WHERE id='l-vivo'").run();
+  db2.close();
+});

@@ -40,16 +40,20 @@ const LARGO_MAXIMO = 40;
 /** Tope por espacio. Cien etiquetas ya no se eligen, se buscan. */
 const MAXIMO_POR_ESPACIO = 100;
 
-export type TipoEntidad = 'issue' | 'page';
+export type TipoEntidad = 'issue' | 'page' | 'file';
 
 /** La tabla puente y la columna de cada tipo de entidad. */
 const PUENTES: Record<TipoEntidad, { tabla: string; columna: string; origen: string }> = {
   issue: { tabla: 'issue_labels', columna: 'issue_id', origen: 'issues' },
   page: { tabla: 'page_labels', columna: 'page_id', origen: 'pages' },
+  // Los archivos de Drive llevan las mismas etiquetas del espacio. Ese es el
+  // punto de que sean del espacio: filtrar «Parcial 2» y que salgan la tarea,
+  // los apuntes y el PDF.
+  file: { tabla: 'file_labels', columna: 'file_id', origen: 'drive_files' },
 };
 
 export function esTipoEntidad(valor: unknown): valor is TipoEntidad {
-  return valor === 'issue' || valor === 'page';
+  return valor === 'issue' || valor === 'page' || valor === 'file';
 }
 
 export function esColor(valor: unknown): boolean {
@@ -69,7 +73,8 @@ export function listar(workspaceId: string): EtiquetaConUso[] {
   return db.prepare(`
     SELECT l.id, l.name, l.color,
            (SELECT COUNT(*) FROM issue_labels il WHERE il.label_id = l.id) +
-           (SELECT COUNT(*) FROM page_labels pl WHERE pl.label_id = l.id) AS usos
+           (SELECT COUNT(*) FROM page_labels pl WHERE pl.label_id = l.id) +
+           (SELECT COUNT(*) FROM file_labels fl WHERE fl.label_id = l.id) AS usos
     FROM labels l
     WHERE l.workspace_id = ?
     ORDER BY l.name COLLATE NOCASE ASC

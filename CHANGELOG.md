@@ -6,6 +6,23 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.19.0] - 2026-08-15
+
+### Added
+
+- **Etiquetas en los archivos**, las mismas del espacio que llevan los tickets y las páginas. Ese era el punto de que fueran del espacio: filtrar «Parcial 2» y que salgan la tarea, los apuntes y el PDF.
+- **Herencia.** Adjuntar un archivo a una tarea le pasa las etiquetas de la tarea, sin que nadie las ponga a mano. Se **añaden**, nunca se quitan: adjuntarlo es decir «esto también es de aquí», no «esto ahora es solo de aquí». Descolgarlo tampoco se las quita — ya son suyas, y no hay forma de saber cuáles vinieron de dónde sin guardarlo, así que quitarlas borraría trabajo de quien organizó.
+- **Búsqueda por nombre en todo el espacio**, no solo en la carpeta abierta: quien busca «laboratorio» no sabe en qué carpeta lo dejó, y por eso lo busca. Los resultados salen con sus etiquetas.
+- **Historial de búsqueda**, de cada persona y cada espacio. Sirve para repetir una consulta de ayer sin volver a escribirla: se guardan diez, lo repetido sube en vez de duplicarse, y hay un botón para olvidarlo. No es un registro de lo que la gente busca.
+
+### Fixed
+
+- **Volver de una búsqueda dejaba muertos los selectores de etiqueta.** Se reescribía el contenido de la lista para restaurarla, y con ello se perdían los escuchadores de cada fila: los botones seguían pintados y ya no hacían nada. Ahora los resultados van en su propia lista y la de la carpeta se esconde, sin tocarla.
+
+### Security
+
+- El texto de la búsqueda escapa `%` y `_` antes de llegar al `LIKE`. Sin eso, buscar `%` devolvía **todos** los archivos del espacio en vez de los que llevan un `%` en el nombre.
+
 ## [1.18.0] - 2026-08-15
 
 ### Added

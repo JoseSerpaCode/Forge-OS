@@ -2,7 +2,8 @@
 /**
  * Poner y quitar etiquetas de algo.
  *
- * Sirve para un ticket y para una página, y también para el ticket que cambia
+ * Sirve para un ticket, para una página y para un archivo, y también para el
+ * ticket que cambia
  * cada vez que se abre el modal del tablero: la entidad se puede cambiar desde
  * fuera con `setEntity()`. Sin eso harían falta dos implementaciones de lo
  * mismo, y dos sitios donde arreglar cada fallo.
@@ -15,7 +16,7 @@ import { useTranslations } from '../../i18n/ui';
 
 interface Props {
   sysTag: string;
-  entityType: 'issue' | 'page';
+  entityType: 'issue' | 'page' | 'file';
   /** Vacío si la entidad se asigna después con `setEntity()`. */
   entityId?: string;
   initial?: Array<{ id: string; name: string; color: string }>;
