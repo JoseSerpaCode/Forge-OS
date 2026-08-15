@@ -260,13 +260,39 @@ sudo systemctl enable --now forge-backup.timer
 ```
 
 **Saca las copias de la máquina.** Un backup en el mismo disco no protege del
-escenario que importa: que la VM desaparezca. Backblaze B2 da 10 GB gratis:
+escenario que importa: que la VM desaparezca.
 
 ```sh
-rclone config      # crea un remoto llamado exactamente "forge-backup"
+sudo apt-get install -y rclone
+sudo rclone config      # el remoto tiene que llamarse exactamente "forge-backup"
 ```
 
-El script lo detecta y sincroniza solo. Si no está configurado, avisa por stderr.
+El script lo detecta solo. Si no está configurado, avisa por stderr en cada
+copia — ese aviso sale en la salida de cada despliegue.
+
+> **El remoto se configura como root**, porque el temporizador corre como root y
+> `rclone` busca su configuración en el `HOME` de quien lo ejecuta. Un remoto
+> creado con tu usuario existe para ti y no para el temporizador, y el aviso de
+> «rclone sin configurar» seguiría saliendo sin que se entienda por qué.
+
+**Y pon la retención en el bucket, no aquí.** El script usa `rclone copy`, que
+solo añade: la rotación local de 30 días **no** se propaga, y si alguien entra
+en la máquina y borra `/var/backups`, el bucket no se entera. Esa es la
+diferencia entre una copia de seguridad y un espejo.
+
+En Google Cloud Storage, una regla de ciclo de vida que borre lo que pase de 90
+días:
+
+```sh
+cat > /tmp/ciclo.json <<'EOF'
+{"lifecycle":{"rule":[{"action":{"type":"Delete"},"condition":{"age":90}}]}}
+EOF
+gcloud storage buckets update gs://TU-BUCKET --lifecycle-file=/tmp/ciclo.json
+```
+
+Si además puedes, activa el **bloqueo de objetos** o el versionado del bucket:
+con eso, ni siquiera unas credenciales robadas de esta máquina podrían borrar
+las copias antiguas.
 
 ### Restaurar
 

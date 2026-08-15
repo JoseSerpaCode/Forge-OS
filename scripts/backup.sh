@@ -61,11 +61,25 @@ find "$DEST" -name 'forge-*.db.gz' -mtime "+$KEEP_DAYS" -delete
 find "$DEST" -name 'storage-*.tar.gz' -mtime "+$KEEP_DAYS" -delete
 
 # ── Copia fuera de la máquina ────────────────────────────────────────────────
-# Un backup en el mismo disco no protege del escenario que importa: que la VM
-# o su disco desaparezcan. Si rclone está configurado, sincroniza.
+#
+# Un backup en el mismo disco no protege del escenario que importa: que la VM o
+# su disco desaparezcan.
+#
+# `copy` y **no** `sync`. Es la diferencia entre una copia de seguridad y un
+# espejo, y aquí importa mucho:
+#
+#   - `sync` deja el destino idéntico al origen, así que **borra en el bucket lo
+#     que ya no está aquí**. La rotación local de 30 días se propagaría, y el
+#     bucket no guardaría nada más antiguo que el disco que intenta proteger.
+#   - Peor: si alguien entra en la máquina y borra `/var/backups`, el siguiente
+#     `sync` vacía el bucket. El backup moriría con el servidor, que es
+#     exactamente lo que no puede pasar.
+#
+# `copy` solo añade. La retención del bucket se decide **en el bucket**, con una
+# regla de ciclo de vida (ver deploy/README.md), donde esta máquina no manda.
 if command -v rclone >/dev/null 2>&1 && rclone listremotes 2>/dev/null | grep -q "^forge-backup:"; then
-    rclone sync "$DEST" forge-backup:forge-os --quiet
-    echo "sincronizado con forge-backup:"
+    rclone copy "$DEST" forge-backup:forge-os --quiet
+    echo "copiado a forge-backup:"
 else
     echo "aviso: rclone sin configurar — el backup solo existe en esta máquina" >&2
 fi
