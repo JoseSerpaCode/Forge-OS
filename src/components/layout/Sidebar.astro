@@ -26,6 +26,7 @@ const isMetrics  = sys_tag && currentPath.includes('/metrics');
 const isBoard    = sys_tag && (currentPath.includes('/board') || currentPath.includes('/backlog'));
 const isKB       = sys_tag && (currentPath.endsWith('/p') || currentPath.includes('/p/'));
 const isDB       = sys_tag && currentPath.includes('/db');
+const isFiles    = sys_tag && currentPath.includes('/files');
 const isSettings = sys_tag && currentPath.match(/\/w\/[^\/]+\/settings/);
 
 // Rutas globales, fuera de cualquier workspace.
@@ -120,6 +121,18 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
         >
           <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
           {t('sidebar.databases')}
+        </a>
+
+        {/* Files (Drive) */}
+        <a
+          href={`/w/${sys_tag}/files`}
+          class={`sidebar-link guest-restricted-action ${isFiles ? 'active' : ''}`}
+          aria-current={isFiles ? 'page' : undefined}
+          data-guest={user?.is_guest ? 'true' : 'false'}
+          data-guest-msg="Please create an account to use Files."
+        >
+          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+          {t('drive.sidebar')}
         </a>
 
         {/* Metrics */}

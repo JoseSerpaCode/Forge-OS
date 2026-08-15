@@ -782,6 +782,45 @@ const MIGRATIONS: Migration[] = [
       `);
     }
   },
+  {
+    version: 34,
+    description: 'workspace_drive: la conexión con Google Drive de cada espacio',
+    run: () => {
+      // Una fila por espacio: los archivos de un espacio viven en **un** Drive,
+      // el de quien lo conectó. La clave primaria sobre `workspace_id` lo
+      // impone; dos conexiones a la vez significarían archivos repartidos entre
+      // dos cuentas sin forma de saber cuál manda.
+      //
+      // Conectar de nuevo sobreescribe la fila, y eso es justo lo que hace
+      // falta cuando la persona que conectó se va: otro propietario conecta la
+      // suya y la sección vuelve, apuntando a una carpeta nueva. Los archivos
+      // anteriores se quedan en el Drive de quien se fue —no hay forma de
+      // moverlos sin su permiso—, así que sus metadatos no se borran: se
+      // marcan como sin acceso, que es la verdad.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS workspace_drive (
+          workspace_id TEXT PRIMARY KEY,
+          google_email TEXT,
+          root_folder_id TEXT,
+          folder_id TEXT,
+          folder_link TEXT,
+          -- Cifrado con AES-256-GCM (ver lib/secretBox). Nunca en claro: es una
+          -- llave permanente al Drive de una persona y la base se copia entera
+          -- a un bucket cada noche.
+          refresh_token_enc TEXT NOT NULL,
+          -- 'ok' | 'revoked'. Se pasa a 'revoked' cuando Google rechaza el
+          -- token, para poder enseñar «vuelve a conectar» en vez de una lista
+          -- vacía que parece pérdida de datos.
+          status TEXT NOT NULL DEFAULT 'ok' CHECK (status IN ('ok','revoked')),
+          connected_by TEXT,
+          connected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          last_error_at DATETIME,
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+          FOREIGN KEY (connected_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

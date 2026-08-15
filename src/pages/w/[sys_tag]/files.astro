@@ -1,0 +1,195 @@
+---
+import MainLayout from '../../../layouts/MainLayout.astro';
+import db from '../../../lib/db';
+import { checkWorkspaceAccess } from '../../../lib/guard';
+import { useTranslations } from '../../../i18n/ui';
+import { conexionDe, driveDisponible } from '../../../lib/drive';
+
+/**
+ * Sección de archivos.
+ *
+ * De momento solo la conexión: conectar un Drive, ver cuál está conectado y
+ * desconectarlo. La subida y las carpetas vienen después, pero esta pantalla
+ * tiene que existir antes porque es donde se decide de quién son los archivos.
+ */
+
+const { sys_tag } = Astro.params;
+const user = Astro.locals.user!;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+if (!user) return Astro.redirect('/login');
+if (user.is_guest) return Astro.redirect('/register');
+
+const workspace = db.prepare('SELECT id, name FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
+if (!workspace) return Astro.redirect('/404');
+
+const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspace.id, 'viewer');
+if (!access.granted) return new Response('Access Denied', { status: 403 });
+
+const esPropietario = access.role === 'owner';
+const conexion = conexionDe(workspace.id);
+const disponible = driveDisponible();
+
+// El resultado de volver de Google. Se traduce aquí y no se enseña el código.
+const codigo = Astro.url.searchParams.get('drive');
+const RESULTADOS: Record<string, { clave: string; mal: boolean }> = {
+  ok: { clave: 'drive.result_ok', mal: false },
+  ok_not_shared: { clave: 'drive.result_ok_not_shared', mal: true },
+  cancelled: { clave: 'drive.result_cancelled', mal: false },
+  missing_scope: { clave: 'drive.result_missing_scope', mal: true },
+  no_refresh_token: { clave: 'drive.result_no_refresh_token', mal: true },
+  folder_failed: { clave: 'drive.result_folder_failed', mal: true },
+  wrong_user: { clave: 'drive.result_wrong_user', mal: true },
+  forbidden: { clave: 'drive.result_forbidden', mal: true },
+  bad_state: { clave: 'drive.result_bad_state', mal: true },
+  google_error: { clave: 'drive.result_google_error', mal: true },
+};
+// `hasOwn` y no un acceso directo: el código viene de la URL, y `?drive=constructor`
+// devolvería algo del prototipo de Object —cierto, pero sin `clave` ni `mal`—, que
+// aquí se traduce en un recuadro de aviso vacío.
+const resultado = codigo && Object.hasOwn(RESULTADOS, codigo) ? RESULTADOS[codigo] : undefined;
+
+const TXT = {
+  connect: t('drive.connect'),
+  connecting: t('drive.connecting'),
+  disconnectConfirm: t('drive.disconnect_confirm'),
+  disconnect: t('drive.disconnect'),
+  error: t('drive.result_google_error'),
+};
+---
+
+<MainLayout hideFooter={true} title={`${t('drive.title')} — ${workspace.name}`} workspaceId={workspace.id}>
+  <div class="max-w-[900px] mx-auto space-y-6">
+    <header class="bg-gradient-to-r from-forge-panel to-forge-panel/50 p-6 rounded-2xl border border-forge-border/40 shadow-sm">
+      <h1 class="text-2xl font-bold text-forge-text flex items-center gap-2.5">
+        <span class="w-10 h-10 rounded-xl bg-forge-bg flex items-center justify-center border border-forge-border/60 shadow-sm text-forge-accent-text">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+        </span>
+        {t('drive.title')}
+      </h1>
+      <p class="text-sm text-forge-muted mt-2 max-w-xl leading-relaxed">{t('drive.subtitle')}</p>
+    </header>
+
+    {resultado && (
+      <div class:list={[
+        'rounded-2xl border px-5 py-4 text-sm',
+        resultado.mal
+          ? 'border-forge-error/40 bg-forge-error/10 text-forge-text'
+          : 'border-forge-secondary/40 bg-forge-secondary/10 text-forge-text',
+      ]}>
+        {t(resultado.clave as any)}
+      </div>
+    )}
+
+    {!disponible ? (
+      <div class="bg-forge-panel border border-forge-border rounded-2xl p-8 text-sm text-forge-muted">
+        {t('drive.unavailable')}
+      </div>
+    ) : !conexion ? (
+      <div class="bg-forge-panel border border-dashed border-forge-border rounded-2xl p-8">
+        <h2 class="text-lg font-bold text-forge-text">{t('drive.not_connected')}</h2>
+        <p class="text-sm text-forge-muted mt-2 max-w-xl leading-relaxed">{t('drive.not_connected_desc')}</p>
+
+        {/* Los dos avisos van **antes** del botón, no escondidos detrás. Quien
+            conecta decide por todo el equipo y pone su propio almacenamiento. */}
+        <ul class="mt-5 space-y-3 text-sm text-forge-muted max-w-xl">
+          <li class="flex gap-3">
+            <svg class="shrink-0 mt-0.5 text-forge-accent-text" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>{t('drive.warn_link')}</span>
+          </li>
+          <li class="flex gap-3">
+            <svg class="shrink-0 mt-0.5 text-forge-accent-text" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <span>{t('drive.warn_owner')}</span>
+          </li>
+        </ul>
+
+        {esPropietario ? (
+          <button id="btn-drive-connect" class="mt-6 bg-forge-primary text-forge-on-accent px-6 py-2.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm">
+            {t('drive.connect')}
+          </button>
+        ) : (
+          <p class="mt-6 text-sm text-forge-muted italic">{t('drive.only_owner')}</p>
+        )}
+      </div>
+    ) : (
+      <div class="space-y-6">
+        {conexion.status === 'revoked' && (
+          <div class="rounded-2xl border border-forge-error/40 bg-forge-error/10 px-5 py-4">
+            <h2 class="text-sm font-bold text-forge-text">{t('drive.revoked')}</h2>
+            <p class="text-sm text-forge-muted mt-1 leading-relaxed">{t('drive.revoked_desc')}</p>
+            {esPropietario && (
+              <button id="btn-drive-reconnect" class="mt-4 bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-all">
+                {t('drive.reconnect')}
+              </button>
+            )}
+          </div>
+        )}
+
+        <div class="bg-forge-panel border border-forge-border rounded-2xl p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-forge-muted">{t('drive.connected_as')}</p>
+              <p class="text-base font-bold text-forge-text truncate">{conexion.googleEmail || '—'}</p>
+              {conexion.connectedAt && (
+                <p class="text-xs text-forge-muted mt-1">{t('drive.connected_on')} {conexion.connectedAt.slice(0, 10)}</p>
+              )}
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              {conexion.folderLink && (
+                <a href={conexion.folderLink} target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-forge-accent-text hover:underline">
+                  {t('drive.open_folder')}
+                </a>
+              )}
+              {esPropietario && (
+                <button id="btn-drive-disconnect" class="text-sm font-bold text-forge-muted hover:text-forge-error transition-colors px-3 py-2 rounded-xl">
+                  {t('drive.disconnect')}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <p class="mt-5 pt-5 border-t border-forge-border/40 text-xs text-forge-muted leading-relaxed">{t('drive.warn_link')}</p>
+        </div>
+      </div>
+    )}
+  </div>
+
+  <script define:vars={{ sysTag: sys_tag, TXT }}>
+    const api = `/api/w/${sysTag}/drive`;
+
+    async function conectar(boton) {
+      boton.disabled = true;
+      const original = boton.textContent;
+      boton.textContent = TXT.connecting;
+      try {
+        const res = await fetch(api, { method: 'POST' });
+        if (!res.ok) throw new Error('no');
+        const { url } = await res.json();
+        // La redirección la hace el navegador, no el `fetch`: si el endpoint
+        // respondiera con un 302, `fetch` lo seguiría él solo y se traería el
+        // HTML de Google a ninguna parte.
+        window.location.href = url;
+      } catch {
+        window.showToast?.(TXT.error, true);
+        boton.disabled = false;
+        boton.textContent = original;
+      }
+    }
+
+    document.getElementById('btn-drive-connect')?.addEventListener('click', (e) => conectar(e.currentTarget));
+    document.getElementById('btn-drive-reconnect')?.addEventListener('click', (e) => conectar(e.currentTarget));
+
+    document.getElementById('btn-drive-disconnect')?.addEventListener('click', () => {
+      window.forgeConfirm?.(TXT.disconnectConfirm, async () => {
+        try {
+          const res = await fetch(api, { method: 'DELETE' });
+          if (res.ok) window.location.href = `/w/${sysTag}/files`;
+          else window.showToast?.(TXT.error, true);
+        } catch {
+          window.showToast?.(TXT.error, true);
+        }
+      }, TXT.disconnect);
+    });
+  </script>
+</MainLayout>

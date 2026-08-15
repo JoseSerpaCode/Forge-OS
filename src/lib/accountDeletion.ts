@@ -48,6 +48,12 @@ export type DeletionPreview = {
   issuesReported: number;
   pagesCreated: number;
   workLogs: number;
+  /**
+   * Espacios que se quedan **sin sus archivos**: tenían conectado el Drive de
+   * esta persona. No es una consecuencia menor y hay que decirla antes, no
+   * descubrirla después con una sección vacía.
+   */
+  drivesDisconnected: WorkspaceRef[];
 };
 
 /** ¿Puede llevarse a cabo el borrado tal cual está la cuenta? */
@@ -88,10 +94,25 @@ export function previewAccountDeletion(userId: string): DeletionPreview {
   const notIn = doomed.length ? `AND workspace_id NOT IN (${doomed.map(() => '?').join(',')})` : '';
   const count = (sql: string) => (db.prepare(sql).get(userId, ...doomed) as any)?.n ?? 0;
 
+  // Los espacios que sobreviven pero pierden el Drive. Los que se borran
+  // enteros no se cuentan aquí: ahí no queda sección que se quede vacía.
+  const drivesDisconnected = doomed.length
+    ? (db.prepare(`
+        SELECT w.id, w.name, w.sys_tag AS sysTag
+        FROM workspace_drive d JOIN workspaces w ON w.id = d.workspace_id
+        WHERE d.connected_by = ? AND w.id NOT IN (${doomed.map(() => '?').join(',')})
+      `).all(userId, ...doomed) as WorkspaceRef[])
+    : (db.prepare(`
+        SELECT w.id, w.name, w.sys_tag AS sysTag
+        FROM workspace_drive d JOIN workspaces w ON w.id = d.workspace_id
+        WHERE d.connected_by = ?
+      `).all(userId) as WorkspaceRef[]);
+
   return {
     workspacesDeleted,
     blocking,
     membershipsLeft,
+    drivesDisconnected,
     issuesReported: count(`SELECT COUNT(*) AS n FROM issues WHERE reporter_id = ? ${notIn}`),
     pagesCreated: count(`SELECT COUNT(*) AS n FROM pages WHERE created_by = ? ${notIn}`),
     workLogs: count(
@@ -143,6 +164,12 @@ export function deleteAccount(userId: string): DeletionPreview {
     // tiene que tocar filas que ya no existen.
     const dropWs = db.prepare('DELETE FROM workspaces WHERE id = ?');
     for (const ws of preview.workspacesDeleted) dropWs.run(ws.id);
+
+    // La conexión con Drive se corta. La fila tiene `connected_by` en SET NULL,
+    // así que sobreviviría al borrado y Forge seguiría escribiendo en el Drive
+    // personal de alguien que ya no está en la aplicación y no tiene dónde
+    // verlo. Los archivos no se tocan: son suyos y se quedan en su cuenta.
+    db.prepare('DELETE FROM workspace_drive WHERE connected_by = ?').run(userId);
 
     // Un ticket asignado a «[cuenta eliminada]» es peor que uno sin asignar:
     // el segundo se ve en los filtros de trabajo sin dueño, el primero no.

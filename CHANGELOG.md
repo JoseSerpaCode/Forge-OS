@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.16.0] - 2026-08-15
+
+### Added
+
+- **Sección de Archivos, sobre el Drive de quien la conecta.** Un propietario conecta una cuenta de Google y Forge crea dentro `Forge OS / <espacio>`. Los archivos vivirán ahí, no en el disco de la máquina: son 1 GB de salida de red al mes y unos pocos PDF se lo comen. Esta versión trae la conexión —conectar, ver de quién es, desconectar—; la subida viene después.
+- El ámbito pedido es `drive.file`, que da acceso **solo a lo que crea la propia aplicación**. El acceso completo a Drive es un ámbito restringido y exige una auditoría de seguridad anual de pago; a cambio, Forge no ve el resto del Drive de nadie, que además es lo correcto.
+- **La carpeta se comparte por enlace**, para que el equipo abra los archivos sin cuenta de Google. Eso significa que el enlace es la llave, y la pantalla lo dice **antes** del botón de conectar, junto con la otra consecuencia que no se puede esconder: los archivos gastan el almacenamiento de esa cuenta y se quedan en ella.
+- **Conectar es cosa de un propietario**, no de cualquiera que pueda editar: lo que se ata al espacio es el Drive personal de alguien, con efectos fuera de Forge.
+
+### Security
+
+- **El token de refresco se guarda cifrado** con AES-256-GCM y una clave que no está en la base (`DRIVE_TOKEN_KEY`, o derivada de `SESSION_SECRET`). Es una llave permanente al Drive de una persona y esta base se copia entera a un bucket cada noche: en claro, quien llegue a una copia llega a los archivos de todo el mundo. Cifrado y autenticado, un byte retocado hace que el descifrado falle en vez de devolver basura.
+- El `state` de la conexión va firmado y **lleva dentro el espacio y la persona**. Sin eso, el permiso que estás concediendo podría acabar atado a un espacio distinto del que estás mirando, o completarse desde otra sesión.
+- **Borrar la cuenta corta la conexión.** La columna estaba en `SET NULL`, así que la fila sobrevivía y Forge habría seguido escribiendo en el Drive personal de alguien que ya no está en la aplicación y no tiene dónde verlo. Los archivos no se tocan: son suyos. El aviso previo al borrado ahora enumera los espacios que se quedan sin ellos.
+- Perder el acceso —permiso revocado, cuenta borrada— **no borra metadatos**: la conexión se marca y la pantalla ofrece volver a conectar. Una lista vacía parecería que el trabajo se ha perdido.
+
+### Fixed
+
+- Las pruebas de punta a punta abrían la base sin `busy_timeout`, así que un bloqueo momentáneo lanzaba en el acto y el fallo salía en una prueba cualquiera —la que tuviera mala suerte— en vez de en la que estaba escribiendo.
+
 ## [1.15.0] - 2026-08-14
 
 ### Added
