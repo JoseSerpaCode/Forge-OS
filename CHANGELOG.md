@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.21.4] - 2026-08-15
+
+### Fixed
+
+- **El backup fuera de la máquina apuntaba a un bucket escrito a fuego.** `forge-backup:forge-os` no significa «la carpeta forge-os de mi almacenamiento»: en Cloud Storage —y en S3, y en B2— la primera parte de la ruta **es el nombre del bucket**. Con cualquier bucket que no se llamara exactamente `forge-os`, la copia fallaba. Ahora el destino sale de `BACKUP_REMOTE`, que se pone en `/etc/forge-os.env`.
+- **Un fallo de la copia fuera de la máquina no se veía.** Iba con `--quiet` y sin comprobar el resultado, así que un bucket mal escrito o sin permisos daba exactamente el mismo aspecto que una copia correcta: ninguno. Ahora se dice, y se sale con código 3 para que systemd marque el temporizador como fallido.
+- Ese código 3 es distinto de 1 a propósito: la copia **local** sí se ha hecho, y es la que protege del escenario que motiva el backup previo a un despliegue. Bloquear el despliegue por un fallo del bucket empujaría a desactivar la comprobación entera.
+- El temporizador no leía `/etc/forge-os.env`, así que la variable no le habría llegado nunca. El script la lee ahora por su cuenta, y la unidad de systemd la carga también.
+
+### Changed
+
+- La guía de despliegue explica cómo configurar rclone **sin el asistente** —`rclone config create ... env_auth true` ignora el `env_auth` y se queda pidiendo un login por navegador que en un servidor sin pantalla no lleva a ninguna parte— y por qué `bucket_policy_only = true` no es opcional: los buckets nuevos traen acceso uniforme y ahí no se admiten permisos por objeto.
 ## [1.21.3] - 2026-08-15
 
 ### Fixed
