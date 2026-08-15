@@ -353,3 +353,47 @@ test('buscar y volver no deja muertos los selectores de etiqueta', async ({ page
   db2.prepare("DELETE FROM labels WHERE id='l-vivo'").run();
   db2.close();
 });
+
+test('adjuntar desde la tarea, con el ratón, y ver la herencia', async ({ page }) => {
+  conectarAMano();
+
+  const db = getTestDb();
+  db.prepare(`INSERT INTO drive_files (id, workspace_id, drive_id, name, web_view_link, uploaded_by)
+              VALUES ('f-ui', ?, 'd-ui', 'Guía de laboratorio.pdf', 'https://drive.google.com/file/d/d-ui/view', 'aud-owner')`).run(WS);
+  db.prepare(`INSERT INTO issues (id, workspace_id, title, type, status, reporter_id, position)
+              VALUES ('i-ui', ?, 'Práctica con archivo', 'task', 'todo', 'aud-owner', 1000)`).run(WS);
+  db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES ('l-ui', ?, 'Parcial 2', '#0091FF')").run(WS);
+  db.prepare("INSERT INTO issue_labels (issue_id, label_id) VALUES ('i-ui', 'l-ui')").run();
+  db.close();
+
+  await page.goto('/login');
+  await page.fill('input[name="username"]', 'aud_owner');
+  await page.fill('input[name="password"]', PW);
+  await page.click('button.af-submit');
+  await page.waitForURL(/\/$/);
+
+  await page.goto('/w/archivos-ws/board');
+  await page.locator('#i-ui').click();
+
+  await expect(page.locator('#drive-linked-list')).toContainText(/No files attached|Ningún archivo/);
+
+  await page.locator('#btn-drive-attach').click();
+  await page.fill('#drive-attach-search', 'laboratorio');
+  await expect(page.locator('#drive-attach-results button')).toHaveCount(1);
+  await page.locator('#drive-attach-results button').first().click();
+
+  await expect(page.locator('#drive-linked-list')).toContainText('Guía de laboratorio.pdf');
+
+  // Lo que importa: la etiqueta del ticket ha pasado al archivo.
+  await expect(async () => {
+    const db2 = getTestDb();
+    const heredadas = db2.prepare("SELECT label_id FROM file_labels WHERE file_id = 'f-ui'").all() as any[];
+    db2.close();
+    expect(heredadas.map((f) => f.label_id)).toEqual(['l-ui']);
+  }).toPass({ timeout: 5000 });
+
+  const db3 = getTestDb();
+  db3.prepare("DELETE FROM issues WHERE id='i-ui'").run();
+  db3.prepare("DELETE FROM labels WHERE id='l-ui'").run();
+  db3.close();
+});
