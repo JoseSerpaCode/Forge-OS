@@ -6,6 +6,19 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.21.2] - 2026-08-15
+
+### Fixed
+
+- **El cortafuegos borraba las reglas antiguas antes de poner las nuevas, y murió en medio.** Pasó al aplicarlo por primera vez en producción. Con la política por defecto en «denegar» eso es el sitio caído; con «permitir», el servidor abierto de par en par. Ahora **primero pone y después quita**: permitir de más unos segundos es reversible, quedarse sin ninguna de las dos no.
+- La causa: el fichero de rangos IPv4 de Cloudflare **no termina en salto de línea**, así que `cat v4 v6` pegaba el último rango IPv4 con el primero IPv6 —`131.0.72.0/222400:cb00::/32`— y `ufw` respondía «Bad source address». Se validaban los dos ficheros por separado; nadie validaba **lo que de verdad se le pasaba a ufw**. Ahora se normaliza en una sola lista y se valida esa, línea por línea.
+- El borrado de reglas usaba un patrón que solo miraba el puerto, así que al invertir el orden habría borrado también las de Cloudflare recién puestas. Ahora quita únicamente las que abrían a **todo el mundo**, dejando en pie SSH y las del CDN.
+- **Los scripts instalados en `/usr/local/bin` no se actualizaban nunca.** Son copias, no enlaces, y los ejecutan temporizadores de systemd que no saben nada del checkout: un arreglo se desplegaba, se daba por bueno, y el temporizador seguía corriendo la versión rota. El despliegue refresca ahora las que ya estén instaladas.
+
+### Added
+
+- Pruebas del cortafuegos contra un `ufw` de mentira que rechaza direcciones inválidas igual que el real: comprueban el orden, que no se borre lo que no toca, y que una lista truncada o con basura **no cambie nada**. Verificadas contra el script viejo: fallan, que es lo único que hace válida a una prueba de regresión.
+
 ## [1.21.1] - 2026-08-15
 
 ### Security
