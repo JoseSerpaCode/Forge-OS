@@ -6,6 +6,16 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.21.1] - 2026-08-15
+
+### Security
+
+- **El backup fuera de la máquina usaba `rclone sync`, que es un espejo y no una copia de seguridad.** `sync` deja el destino idéntico al origen, así que borraba en el bucket lo que ya no estuviera en el disco: la rotación local de 30 días se propagaba, y sobre todo, quien entrara en la máquina y borrara `/var/backups` habría vaciado el bucket en la siguiente pasada — el backup habría muerto con el servidor, que es justo lo que no puede pasar. Ahora es `rclone copy`, que solo añade, y la retención se decide en el bucket.
+
+### Changed
+
+- La guía de despliegue explica que el remoto de rclone hay que crearlo **como root**, porque el temporizador corre como root y rclone busca su configuración en el `HOME` de quien lo ejecuta. Un remoto creado con el usuario normal no lo ve el temporizador, y el aviso de «rclone sin configurar» sigue saliendo sin que se entienda por qué.
+
 ## [1.21.0] - 2026-08-15
 
 ### Added
