@@ -264,7 +264,60 @@ escenario que importa: que la VM desaparezca.
 
 ```sh
 sudo apt-get install -y rclone
-sudo rclone config      # el remoto tiene que llamarse exactamente "forge-backup"
+
+# En una VM de GCP con el ámbito devstorage.read_write, esto basta: usa la
+# cuenta de servicio de la propia máquina y no hay ninguna clave que guardar.
+# Comprueba primero que el ámbito está:
+#
+#   curl -s -H 'Metadata-Flavor: Google' \
+#     http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/scopes
+#
+sudo mkdir -p /root/.config/rclone
+sudo tee /root/.config/rclone/rclone.conf > /dev/null <<'EOF'
+[forge-backup]
+type = google cloud storage
+env_auth = true
+bucket_policy_only = true
+EOF
+```
+
+Se escribe el fichero en vez de pasar por `rclone config`: el asistente son
+veinte preguntas donde es fácil colarse, y `rclone config create ... env_auth
+true` **ignora el env_auth** y se pone a pedir un login por navegador que en un
+servidor sin pantalla no lleva a ninguna parte.
+
+`bucket_policy_only = true` no es opcional. Los buckets nuevos vienen con
+**acceso uniforme** activado, y ahí no se admiten permisos por objeto; sin esa
+línea, cada fichero falla con `Cannot insert legacy ACL for an object when
+uniform bucket-level access is enabled`.
+
+Comprueba que escribe de verdad **antes** de fiarte:
+
+```sh
+sudo rclone ls forge-backup:TU-BUCKET     # sin salida y sin error = bien
+```
+
+> `rclone lsd forge-backup:` da «can't list buckets without project number».
+> Es normal y no importa: solo afecta a *listar* buckets, no a escribir en uno.
+```
+
+> Se configura **con `sudo`**: el temporizador corre como root y rclone busca su
+> configuración en el `HOME` de quien lo ejecuta. Un remoto creado con tu
+> usuario no lo ve el temporizador, y el aviso de «rclone sin configurar»
+> seguiría saliendo sin que se entienda por qué.
+
+**Dile a qué bucket.** En Cloud Storage —y en S3, y en B2— la primera parte de
+la ruta **es el nombre del bucket**, no una carpeta: `forge-backup:forge-os`
+significa «el bucket `forge-os`». Añade el tuyo a `/etc/forge-os.env`:
+
+```sh
+echo 'BACKUP_REMOTE=forge-backup:NOMBRE-DE-TU-BUCKET' | sudo tee -a /etc/forge-os.env
+```
+
+Y pruébalo antes de fiarte:
+
+```sh
+sudo /usr/local/bin/forge-backup    # debe acabar en «copiado a forge-backup:…»
 ```
 
 El script lo detecta solo. Si no está configurado, avisa por stderr en cada

@@ -97,8 +97,16 @@ log "Versión actual: $(run_as_app git log -1 --format='%h %s' | head -c 70)"
 # migraciones son lo único de este proceso que no se deshace con un git reset.
 if [[ -x $BACKUP_CMD ]]; then
     log "Copia de seguridad de la base…"
-    run_as_app "$BACKUP_CMD" || die "El backup falló. No sigo: desplegar sin copia previa es apostar la base de datos."
-    ok "Copia hecha"
+    # El código 3 significa «la copia local está hecha, la de fuera no». Se
+    # avisa y se sigue: lo que protege de una migración que sale mal es la
+    # copia local, y es la que existe.
+    estado=0
+    run_as_app "$BACKUP_CMD" || estado=$?
+    case $estado in
+        0) ok "Copia hecha" ;;
+        3) printf '\033[1;31m!\033[0m %s\n' "La copia fuera de la máquina falló (ver arriba). Sigo: la copia local sí está hecha." >&2 ;;
+        *) die "El backup falló. No sigo: desplegar sin copia previa es apostar la base de datos." ;;
+    esac
 else
     printf '\033[1;31m!\033[0m %s\n' "No encuentro $BACKUP_CMD — se despliega SIN copia previa." >&2
     printf '  %s\n' "Instálalo con: sudo cp scripts/backup.sh $BACKUP_CMD && sudo chmod +x $BACKUP_CMD" >&2

@@ -1,7 +1,7 @@
 {
   "name": "forge-js",
   "type": "module",
-  "version": "1.21.3",
+  "version": "1.21.4",
   "engines": {
     "node": ">=22.12.0"
   },

@@ -4,6 +4,7 @@
 #
 #   ./scripts/backup.sh                    # usa los valores por defecto
 #   DB=/ruta/forge.db DEST=/ruta ./scripts/backup.sh
+#   BACKUP_REMOTE=forge-backup:mi-bucket ./scripts/backup.sh
 #
 # Pensado para correr desde un timer de systemd (ver deploy/README.md).
 #
@@ -23,6 +24,25 @@ DB="${DB:-/var/lib/forge-os/forge.db}"
 STORAGE="${STORAGE:-/var/lib/forge-os/storage}"
 DEST="${DEST:-/var/backups/forge-os}"
 KEEP_DAYS="${KEEP_DAYS:-30}"
+
+# A dónde se copia fuera de la máquina.
+#
+# En Google Cloud Storage —y en S3, y en B2— **la primera parte de la ruta es el
+# nombre del bucket**, no una carpeta. `forge-backup:forge-os` no significa «la
+# carpeta forge-os de mi almacenamiento», significa «el bucket forge-os», y si
+# no existe la copia falla en silencio para quien no lea el error.
+#
+# Por eso va en una variable: el nombre del bucket lo elige quien instala, y
+# aquí no se puede adivinar. Se pone en /etc/forge-os.env junto al resto.
+# El destino puede venir del entorno o del fichero de configuración. Lo segundo
+# es lo que hace que le llegue al temporizador de systemd, que no hereda nada.
+# `-r` porque /etc/forge-os.env es de root: cuando el script corre como `forge`
+# —desde el despliegue— sencillamente no lo lee y se queda con el valor de por
+# defecto, en vez de fallar.
+if [[ -z ${BACKUP_REMOTE:-} && -r /etc/forge-os.env ]]; then
+    BACKUP_REMOTE="$(grep -E '^BACKUP_REMOTE=' /etc/forge-os.env | tail -1 | cut -d= -f2- | tr -d "\"' ")"
+fi
+REMOTO="${BACKUP_REMOTE:-forge-backup:forge-os}"
 
 stamp=$(date +%Y%m%d-%H%M%S)
 mkdir -p "$DEST"
@@ -77,9 +97,28 @@ find "$DEST" -name 'storage-*.tar.gz' -mtime "+$KEEP_DAYS" -delete
 #
 # `copy` solo añade. La retención del bucket se decide **en el bucket**, con una
 # regla de ciclo de vida (ver deploy/README.md), donde esta máquina no manda.
-if command -v rclone >/dev/null 2>&1 && rclone listremotes 2>/dev/null | grep -q "^forge-backup:"; then
-    rclone copy "$DEST" forge-backup:forge-os --quiet
-    echo "copiado a forge-backup:"
+if command -v rclone >/dev/null 2>&1 && rclone listremotes 2>/dev/null | grep -q "^${REMOTO%%:*}:"; then
+    # El error de rclone **se enseña**. Antes iba a /dev/null con `--quiet`, así
+    # que un bucket mal escrito o sin permisos daba exactamente el mismo aspecto
+    # que una copia correcta: nada. Un backup que falla en silencio es peor que
+    # no tener backup, porque encima da tranquilidad.
+    if rclone copy "$DEST" "$REMOTO" --quiet; then
+        echo "copiado a $REMOTO"
+    else
+        # Código 3, y no 1, a propósito.
+        #
+        # La copia **local** sí se ha hecho: es la que protege del escenario que
+        # motiva el backup previo a un despliegue —una migración que sale mal—,
+        # y bloquear el despliegue por un fallo del bucket empujaría a
+        # desactivar la comprobación entera, que es mucho peor.
+        #
+        # Pero tampoco puede pasar desapercibido: con un código distinto de
+        # cero, systemd marca el temporizador como fallido y se ve en
+        # `systemctl status forge-backup`. Un backup fuera de la máquina que
+        # falla en silencio es peor que no tenerlo, porque da tranquilidad.
+        echo "error: rclone no ha podido copiar a $REMOTO — la copia solo existe en esta máquina" >&2
+        exit 3
+    fi
 else
     echo "aviso: rclone sin configurar — el backup solo existe en esta máquina" >&2
 fi
