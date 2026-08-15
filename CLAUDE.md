@@ -174,8 +174,8 @@ escribir la migración dos veces cuando llegue la feature.
 | `document_chunks` | Búsqueda semántica / RAG |
 | `public_forms` | Formularios públicos |
 
-**`labels` ya no está en esa lista.** Estuvo tres años sin usarse y ahora la
-usan tickets, páginas y archivos; ver `src/lib/labels.ts`.
+**`labels` ya no está en esa lista.** Estuvo mucho tiempo como esquema muerto
+y ahora la usan tickets, páginas y archivos; ver `src/lib/labels.ts`.
 
 **`channels` y `messages` no están en esa lista**, aunque el chat siga sin
 interfaz: las consulta `IssueService.ts` —publica un aviso en el canal
