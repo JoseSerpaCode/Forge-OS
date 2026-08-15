@@ -33,10 +33,36 @@ die() {
     exit 1
 }
 
+# ── Correr desde una copia, no desde el repositorio ──────────────────────────
+#
+# Este script vive **dentro** del repositorio que él mismo actualiza. Bash lee
+# el fichero a medida que lo ejecuta, así que un `git pull` que lo reescriba a
+# mitad puede dejarlo leyendo desde un desplazamiento que ya no significa lo
+# mismo. Es raro, silencioso y difícil de reproducir.
+#
+# Hay una consecuencia menos exótica y más molesta: **un arreglo en este script
+# no se aplica al despliegue que lo trae**, sino al siguiente. Pasó con el
+# refresco de /usr/local/bin, que se quedó sin hacer justo el día que hacía
+# falta.
+#
+# La solución es sacarse una copia y ejecutarla desde ahí. `FORGE_DEPLOY_COPIA`
+# corta la recursión: el que ya corre desde la copia no vuelve a copiarse.
+if [[ -z ${FORGE_DEPLOY_COPIA:-} ]]; then
+    COPIA="$(mktemp /tmp/forge-deploy-XXXXXX.sh)"
+    cat "${BASH_SOURCE[0]}" > "$COPIA"
+    export FORGE_DEPLOY_COPIA="$COPIA"
+    # El nombre real, para que los mensajes no digan «prueba: sudo
+    # /tmp/forge-deploy-XXXX.sh», que no le sirve a nadie.
+    export FORGE_DEPLOY_ORIGEN="${BASH_SOURCE[0]}"
+    exec bash "$COPIA" "$@"
+fi
+# Ya corriendo desde la copia: se borra al salir, termine bien o mal.
+trap 'rm -f "$FORGE_DEPLOY_COPIA"' EXIT
+
 # ── Comprobaciones previas ───────────────────────────────────────────────────
 # Todas antes de tocar nada: es preferible negarse a empezar que abortar con el
 # despliegue a medio hacer.
-[[ $EUID -eq 0 ]] || die "Hay que ejecutarlo como root (necesita systemctl). Prueba: sudo $0"
+[[ $EUID -eq 0 ]] || die "Hay que ejecutarlo como root (necesita systemctl). Prueba: sudo ${FORGE_DEPLOY_ORIGEN:-$0}"
 [[ -d $APP_DIR/.git ]] || die "No encuentro un repositorio en $APP_DIR"
 [[ -f $ENV_FILE ]] || die "Falta $ENV_FILE"
 id "$APP_USER" &>/dev/null || die "No existe el usuario $APP_USER"
