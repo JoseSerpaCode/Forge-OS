@@ -356,3 +356,39 @@ export function busquedasRecientes(userId: string, workspaceId: string): string[
 export function olvidarBusquedas(userId: string, workspaceId: string): void {
   db.prepare('DELETE FROM file_searches WHERE user_id = ? AND workspace_id = ?').run(userId, workspaceId);
 }
+
+/**
+ * Varios archivos por id, acotados al espacio.
+ *
+ * Para las columnas de tipo archivo de las bases dinámicas: una tabla con
+ * cincuenta filas necesita resolver cincuenta ids, y de uno en uno serían
+ * cincuenta consultas por carga.
+ *
+ * El `workspace_id` va en el WHERE, no como comprobación posterior: un id
+ * guardado en una fila podría apuntar —por un fallo o por manipulación— a un
+ * archivo de otro espacio, y así sencillamente no se encuentra.
+ */
+export function porIds(ids: string[], workspaceId: string): Map<string, Archivo> {
+  const salida = new Map<string, Archivo>();
+  if (ids.length === 0) return salida;
+
+  const huecos = ids.map(() => '?').join(',');
+  const filas = db.prepare(`
+    SELECT f.id, f.name, f.mime_type AS mimeType, f.size_bytes AS sizeBytes,
+           f.web_view_link AS webViewLink, f.drive_id AS driveId, f.folder_id AS folderId,
+           f.status, f.created_at AS createdAt, f.uploaded_by AS uploadedBy,
+           u.username AS uploaderName
+    FROM drive_files f
+    LEFT JOIN users u ON u.id = f.uploaded_by
+    WHERE f.workspace_id = ? AND f.id IN (${huecos})
+  `).all(workspaceId, ...ids) as Archivo[];
+
+  for (const f of filas) salida.set(f.id, f);
+  return salida;
+}
+
+/** ¿Este archivo es de este espacio? Para validar lo que llega de fuera. */
+export function esDelEspacio(fileId: unknown, workspaceId: string): boolean {
+  if (typeof fileId !== 'string' || !fileId) return false;
+  return Boolean(db.prepare('SELECT 1 FROM drive_files WHERE id = ? AND workspace_id = ?').get(fileId, workspaceId));
+}

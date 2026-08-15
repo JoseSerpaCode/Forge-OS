@@ -6,6 +6,21 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.21.0] - 2026-08-15
+
+### Added
+
+- **Columna de tipo archivo en las bases dinámicas.** Una columna que **apunta** a un archivo de la sección de Archivos, en vez de meter un sistema de archivos dentro del módulo de bases de datos. Los archivos viven en un solo sitio y la tabla los referencia: así no hay dos verdades sobre el mismo archivo ni dos sitios donde borrarlo.
+- En la tabla se ve el nombre, enlazado a Drive. Al crear una fila se elige buscando entre los archivos del espacio; no se sube desde ahí.
+
+### Security
+
+- El id que se guarda en una celda de tipo archivo **se comprueba contra el espacio**. Sin eso, una fila podría apuntar a un archivo de otro equipo y la tabla enseñaría su nombre a quien no debería verlo. Hay una prueba que lo intenta.
+
+### Fixed
+
+- Dos ficheros de prueba compartían espacio de trabajo, y la limpieza de uno borraba los archivos que el otro acababa de crear: fallaba una de cada tres corridas, y siempre en una prueba distinta. Cada uno tiene ahora el suyo.
+
 ## [1.20.0] - 2026-08-15
 
 ### Added
