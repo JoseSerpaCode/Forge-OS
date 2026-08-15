@@ -921,6 +921,66 @@ const MIGRATIONS: Migration[] = [
       db.exec('CREATE INDEX IF NOT EXISTS idx_drive_files_ws ON drive_files(workspace_id, folder_id, created_at DESC)');
     }
   },
+  {
+    version: 37,
+    description: 'archivos: etiquetas, vínculos con tickets y páginas, e historial de búsqueda',
+    run: () => {
+      // Las mismas etiquetas del espacio que llevan los tickets y las páginas.
+      // Ese es el punto: poder filtrar «Parcial 2» y que salgan la tarea, los
+      // apuntes y el PDF.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS file_labels (
+          file_id TEXT NOT NULL,
+          label_id TEXT NOT NULL,
+          PRIMARY KEY (file_id, label_id),
+          FOREIGN KEY (file_id) REFERENCES drive_files(id) ON DELETE CASCADE,
+          FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_file_labels_label ON file_labels(label_id)');
+
+      // Un archivo colgado de un ticket o de una página.
+      //
+      // Tabla aparte y no una columna en `drive_files`: el mismo PDF puede
+      // estar en tres tareas —la guía del laboratorio vale para las tres
+      // prácticas— y una columna obligaría a subirlo tres veces.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS drive_file_links (
+          file_id TEXT NOT NULL,
+          entity_type TEXT NOT NULL CHECK (entity_type IN ('issue','page')),
+          entity_id TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (file_id, entity_type, entity_id),
+          FOREIGN KEY (file_id) REFERENCES drive_files(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_drive_file_links_entidad ON drive_file_links(entity_type, entity_id)');
+
+      // Historial de búsqueda, por persona y espacio.
+      //
+      // No es un registro de auditoría: es para poder repetir una búsqueda de
+      // ayer sin volver a escribirla. Por eso se guarda poco y se limpia solo
+      // (ver `lib/driveFiles`), en vez de acumular todo lo que alguien ha
+      // buscado nunca.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS file_searches (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          workspace_id TEXT NOT NULL,
+          query TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        )
+      `);
+      // Una consulta repetida sube al principio en vez de duplicarse.
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_file_searches_unica
+        ON file_searches(user_id, workspace_id, query COLLATE NOCASE)
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_file_searches_recientes ON file_searches(user_id, workspace_id, created_at DESC)');
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

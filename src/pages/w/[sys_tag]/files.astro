@@ -5,6 +5,8 @@ import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
 import { conexionDe, driveDisponible } from '../../../lib/drive';
 import { archivosDe, caminoDe, carpeta, carpetasDe } from '../../../lib/driveFiles';
+import LabelPicker from '../../../components/labels/LabelPicker.astro';
+import { deVarias as etiquetasDeVarias, listar as listarEtiquetas } from '../../../lib/labels';
 
 /**
  * Sección de archivos.
@@ -43,6 +45,10 @@ const camino = caminoDe(folderId, workspace.id);
 const carpetas = conexion ? carpetasDe(workspace.id, folderId) : [];
 const archivos = conexion ? archivosDe(workspace.id, folderId) : [];
 
+// Las etiquetas de todos los archivos en **una** consulta, no una por fila.
+const etiquetasPorArchivo = etiquetasDeVarias('file', archivos.map((a) => a.id));
+const catalogoEtiquetas = listarEtiquetas(workspace.id);
+
 // El resultado de volver de Google. Se traduce aquí y no se enseña el código.
 const codigo = Astro.url.searchParams.get('drive');
 const RESULTADOS: Record<string, { clave: string; mal: boolean }> = {
@@ -74,6 +80,8 @@ const TXT = {
   errFolder: t('drive.err_folder'),
   errFolderDup: t('drive.err_folder_dup'),
   errRemove: t('drive.err_remove'),
+  searchNone: t('drive.search_none'),
+  searchRecent: t('drive.search_recent'),
   connecting: t('drive.connecting'),
   disconnectConfirm: t('drive.disconnect_confirm'),
   disconnect: t('drive.disconnect'),
@@ -219,6 +227,25 @@ const TXT = {
             )}
           </div>
 
+          {/* Buscador. Busca en **todo el espacio**, no en la carpeta abierta:
+              quien busca «laboratorio» no sabe en qué carpeta lo dejó, y por
+              eso lo busca. */}
+          <div class="px-5 py-3 border-b border-forge-border/40 relative">
+            <div class="flex items-center gap-2">
+              <svg class="text-forge-muted shrink-0" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="search" id="buscador-archivos" autocomplete="off" placeholder={t('drive.search')} aria-label={t('drive.search')} class="flex-1 bg-transparent text-sm text-forge-text placeholder:text-forge-muted outline-none py-1">
+              <a id="volver-archivos" href={`/w/${sys_tag}/files`} class="hidden text-xs font-bold text-forge-muted hover:text-forge-text shrink-0">{t('drive.back_to_files')}</a>
+            </div>
+
+            <div id="historial-busqueda" class="hidden absolute left-5 right-5 top-full z-20 bg-forge-panel border border-forge-border rounded-xl shadow-xl p-2 mt-1">
+              <div class="flex items-center justify-between px-2 pb-1.5">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-forge-muted">{t('drive.search_recent')}</span>
+                <button type="button" id="btn-olvidar-busquedas" class="text-[10px] font-bold text-forge-muted hover:text-forge-error transition-colors">{t('drive.search_clear')}</button>
+              </div>
+              <div id="lista-historial" class="space-y-0.5"></div>
+            </div>
+          </div>
+
           {/* Progreso. Aparece solo mientras hay algo subiendo. */}
           <div id="zona-progreso" class="hidden px-5 py-3 border-b border-forge-border/40 space-y-2"></div>
 
@@ -260,6 +287,15 @@ const TXT = {
                     {f.uploaderName ? `${t('drive.uploaded_by')} ${f.uploaderName} · ` : ''}
                     {f.createdAt?.slice(0, 10)}
                   </p>
+                  <LabelPicker
+                    sysTag={sys_tag!}
+                    entityType="file"
+                    entityId={f.id}
+                    initial={etiquetasPorArchivo.get(f.id) ?? []}
+                    catalog={catalogoEtiquetas}
+                    canEdit={puedeEditar}
+                    class="mt-1.5"
+                  />
                 </div>
                 {puedeEditar && (
                   <button class="btn-quitar-archivo text-forge-muted hover:text-forge-error p-2 rounded-lg hover:bg-red-500/10 transition-colors shrink-0" aria-label={t('drive.remove')} title={t('drive.remove')}>
@@ -269,6 +305,13 @@ const TXT = {
               </li>
             ))}
           </ul>
+
+          {/* Los resultados van en su **propia** lista, y la de la carpeta se
+              esconde. Antes se reescribía el contenido de la lista original al
+              volver de una búsqueda, y eso dejaba sin escuchadores los
+              selectores de etiqueta de cada fila: seguían pintados pero ya no
+              respondían. */}
+          <ul id="resultados-busqueda" class="hidden divide-y divide-forge-border/40"></ul>
 
           {carpetas.length === 0 && archivos.length === 0 && (
             <div class="px-5 py-16 text-center">
@@ -448,6 +491,145 @@ const TXT = {
         return window.showToast?.(datos.error_code === 'duplicate' ? TXT.errFolderDup : TXT.errFolder, true);
       }
       window.location.reload();
+    });
+
+    // ── Buscar ───────────────────────────────────────────────────────────────
+    //
+    // Los resultados sustituyen a la lista mientras dura la búsqueda; al
+    // vaciar el campo vuelve la carpeta. No se cambia la URL en cada tecla:
+    // llenaría el historial del navegador de estados intermedios.
+    const buscador = document.getElementById('buscador-archivos');
+    const historial = document.getElementById('historial-busqueda');
+    const listaHistorial = document.getElementById('lista-historial');
+    const lista = document.getElementById('lista-archivos');
+    const resultados = document.getElementById('resultados-busqueda');
+    const volver = document.getElementById('volver-archivos');
+
+    function pintarHistorial(consultas) {
+      if (!listaHistorial) return;
+      listaHistorial.innerHTML = '';
+      for (const q of consultas) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'w-full text-left px-2 py-1.5 rounded-lg text-xs text-forge-text hover:bg-forge-bg transition-colors truncate';
+        b.textContent = q;
+        b.addEventListener('mousedown', (e) => {
+          // `mousedown` y no `click`: el `blur` del campo esconde el panel
+          // antes de que llegue el `click`, y el botón no llegaba a responder.
+          e.preventDefault();
+          buscador.value = q;
+          buscar(q);
+          historial.classList.add('hidden');
+        });
+        listaHistorial.appendChild(b);
+      }
+      historial?.classList.toggle('hidden', consultas.length === 0);
+    }
+
+    function filaDeResultado(f) {
+      const li = document.createElement('li');
+      li.className = 'archivo-fila flex items-center gap-3 px-5 py-3 hover:bg-forge-bg/50 transition-colors';
+      li.dataset.id = f.id;
+
+      const icono = document.createElement('span');
+      icono.className = f.status === 'missing' ? 'shrink-0 text-forge-error' : 'shrink-0 text-forge-muted';
+      icono.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>';
+
+      const centro = document.createElement('div');
+      centro.className = 'flex-1 min-w-0';
+      const titulo = f.webViewLink && f.status === 'ok' ? document.createElement('a') : document.createElement('span');
+      titulo.className = 'block text-sm font-bold text-forge-text truncate';
+      if (titulo instanceof HTMLAnchorElement) {
+        titulo.href = f.webViewLink;
+        titulo.target = '_blank';
+        titulo.rel = 'noopener noreferrer';
+        titulo.classList.add('hover:underline');
+      }
+      titulo.textContent = f.name;
+
+      const meta = document.createElement('p');
+      meta.className = 'text-[11px] text-forge-muted mt-0.5 truncate';
+      const trozos = [];
+      if (f.sizeBytes) trozos.push(`${(f.sizeBytes / 1024 / 1024).toFixed(1)} MB`);
+      if (f.uploaderName) trozos.push(f.uploaderName);
+      if (f.createdAt) trozos.push(f.createdAt.slice(0, 10));
+      meta.textContent = trozos.join(' · ');
+
+      centro.append(titulo, meta);
+
+      if (f.labels?.length) {
+        const chips = document.createElement('div');
+        chips.className = 'flex flex-wrap gap-1 mt-1.5';
+        for (const e of f.labels) {
+          const chip = document.createElement('span');
+          chip.className = 'inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text px-2 py-1 text-xs max-w-full';
+          const punto = document.createElement('span');
+          punto.className = 'rounded-full shrink-0 w-2 h-2';
+          punto.style.backgroundColor = e.color;
+          const nombre = document.createElement('span');
+          nombre.className = 'truncate';
+          nombre.textContent = e.name;
+          chip.append(punto, nombre);
+          chips.appendChild(chip);
+        }
+        centro.appendChild(chips);
+      }
+
+      li.append(icono, centro);
+      return li;
+    }
+
+    let ultimaBusqueda = 0;
+    async function buscar(texto) {
+      const mio = ++ultimaBusqueda;
+      const limpio = texto.trim();
+
+      if (!limpio) {
+        // Vuelve la carpeta, que nunca se tocó.
+        lista?.classList.remove('hidden');
+        resultados?.classList.add('hidden');
+        volver?.classList.add('hidden');
+        return;
+      }
+
+      const res = await fetch(`${api}/search?q=${encodeURIComponent(limpio)}`);
+      if (!res.ok || mio !== ultimaBusqueda) return; // llegó tarde: manda la última
+      const datos = await res.json();
+
+      if (!resultados) return;
+      resultados.innerHTML = '';
+      if (datos.files.length === 0) {
+        const vacio = document.createElement('li');
+        vacio.className = 'px-5 py-10 text-center text-sm text-forge-muted';
+        vacio.textContent = TXT.searchNone;
+        resultados.appendChild(vacio);
+      } else {
+        for (const f of datos.files) resultados.appendChild(filaDeResultado(f));
+      }
+      lista?.classList.add('hidden');
+      resultados.classList.remove('hidden');
+      volver?.classList.remove('hidden');
+    }
+
+    let temporizador;
+    buscador?.addEventListener('input', () => {
+      clearTimeout(temporizador);
+      historial?.classList.add('hidden');
+      // Un respiro antes de preguntar: si no, se lanza una búsqueda por tecla.
+      temporizador = setTimeout(() => buscar(buscador.value), 250);
+    });
+
+    buscador?.addEventListener('focus', async () => {
+      if (buscador.value.trim()) return;
+      const res = await fetch(`${api}/search`);
+      if (res.ok) pintarHistorial((await res.json()).history || []);
+    });
+    buscador?.addEventListener('blur', () => setTimeout(() => historial?.classList.add('hidden'), 150));
+
+    document.getElementById('btn-olvidar-busquedas')?.addEventListener('mousedown', async (e) => {
+      e.preventDefault();
+      await fetch(`${api}/search`, { method: 'DELETE' });
+      pintarHistorial([]);
     });
 
     // ── Quitar ───────────────────────────────────────────────────────────────
