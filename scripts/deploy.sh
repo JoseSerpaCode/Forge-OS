@@ -200,5 +200,24 @@ fi
 trap - ERR
 drop_dist_backup
 
+# ── Refrescar los scripts instalados ─────────────────────────────────────────
+#
+# `forge-backup` y `forge-cf-firewall` son **copias** en /usr/local/bin, no
+# enlaces: los ejecutan temporizadores de systemd, que no saben nada del
+# checkout. Sin esto, un arreglo en el repositorio nunca llega a lo que corre
+# cada noche y cada semana — se despliega, se da por bueno, y el temporizador
+# sigue ejecutando la versión rota durante meses.
+#
+# Solo se refresca lo que ya estaba instalado: si alguien decidió no usar el
+# temporizador, este script no se lo instala por su cuenta.
+for par in "backup.sh:forge-backup" "cloudflare-firewall.sh:forge-cf-firewall"; do
+    origen="$APP_DIR/scripts/${par%%:*}"
+    destino="/usr/local/bin/${par##*:}"
+    if [[ -f $destino && -f $origen ]] && ! cmp -s "$origen" "$destino"; then
+        install -m 755 "$origen" "$destino"
+        log "Actualizado $destino"
+    fi
+done
+
 ok "Desplegado: $(run_as_app git log -1 --format='%h %s' | head -c 70)"
 ok "Servicio sano en $HEALTH_URL"
