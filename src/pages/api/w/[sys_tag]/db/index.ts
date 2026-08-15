@@ -4,6 +4,7 @@ import { dynamicDatabases, dynamicViews } from '../../../../../lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import crypto from 'node:crypto';
+import { esIcono } from '../../../../../lib/icons';
 
 import db from '../../../../../lib/db';
 
@@ -87,7 +88,10 @@ export const POST: APIRoute = async (context) => {
       name,
       sysTag: sys_tag as string,
       description: description || null,
-      icon: icon || null,
+      // Solo nombres de la tabla de iconos. Lo que se guarda aquí se acaba
+      // usando para pintar, así que un valor cualquiera no entra; si no se
+      // reconoce, se queda sin icono y la pantalla pone el de por defecto.
+      icon: esIcono(icon) ? icon : null,
       schemaJson
     }).run();
 

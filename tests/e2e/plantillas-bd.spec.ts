@@ -21,12 +21,20 @@ async function entrar(page: any) {
   await page.waitForURL(/\/$/);
 }
 
-/** El esquema tal y como quedó guardado, por id de tabla. */
-function esquemaDe(id: string) {
+/** Lo que quedó guardado de una tabla, por id. */
+function guardada(id: string) {
   const db = getTestDb();
-  const fila = db.prepare('SELECT schema_json FROM dynamic_databases WHERE id = ?').get(id) as any;
+  const fila = db.prepare('SELECT schema_json, icon FROM dynamic_databases WHERE id = ?').get(id) as any;
   db.close();
-  return JSON.parse(fila.schema_json).columns as Array<{ id: string; name: string; type: string; options?: string[] }>;
+  return fila;
+}
+
+function esquemaDe(id: string) {
+  return JSON.parse(guardada(id).schema_json).columns as Array<{ id: string; name: string; type: string; options?: string[] }>;
+}
+
+function iconoDe(id: string): string | null {
+  return guardada(id).icon;
 }
 
 test('una plantilla llega entera hasta el esquema guardado', async ({ page }) => {
@@ -44,6 +52,12 @@ test('una plantilla llega entera hasta el esquema guardado', async ({ page }) =>
   await expect(page.locator('#db-name')).not.toHaveValue('');
   await expect(page.locator('.col-def')).toHaveCount(5);
 
+  // El icono de la plantilla queda marcado en el selector, y es un nombre de
+  // la tabla de iconos: si aquí llegara un emoji, no se pintaría nada.
+  await expect(page.locator('#db-icon')).toHaveValue('graduation-cap');
+  await expect(page.locator('.icon-opt[aria-pressed="true"]')).toHaveCount(1);
+  await expect(page.locator('.icon-opt[data-icon="graduation-cap"]')).toHaveAttribute('aria-pressed', 'true');
+
   // La columna de selección enseña sus opciones desde el principio: si el
   // contenedor siguiera oculto, quien quisiera cambiarlas no las encontraría.
   const seleccion = page.locator('.col-def').nth(4);
@@ -60,6 +74,8 @@ test('una plantilla llega entera hasta el esquema guardado', async ({ page }) =>
 
   const id = page.url().split('/').pop()!;
   const columnas = esquemaDe(id);
+
+  expect(iconoDe(id)).toBe('graduation-cap');
 
   expect(columnas).toHaveLength(5);
   expect(columnas.map((c) => c.type)).toEqual(['text', 'text', 'number', 'text', 'select']);

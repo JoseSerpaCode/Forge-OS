@@ -1,0 +1,38 @@
+---
+/**
+ * Un icono de la tabla de `lib/icons`.
+ *
+ * Solo dibuja nombres conocidos. Si llega otra cosa no pinta nada, para que
+ * lo que acaba como marcado salga siempre de esa tabla y nunca de un valor
+ * guardado por alguien.
+ */
+import { ICONOS, esIcono } from '../../lib/icons';
+
+interface Props {
+  name: string | null | undefined;
+  size?: number;
+  class?: string;
+  /** Grosor del trazo. Los iconos pequeños se emborronan con 2. */
+  stroke?: number;
+}
+
+const { name, size = 20, class: className = '', stroke = 2 } = Astro.props;
+const trazos = esIcono(name) ? ICONOS[name] : null;
+---
+
+{trazos && (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width={stroke}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={className}
+    aria-hidden="true"
+    set:html={trazos}
+  />
+)}

@@ -1,0 +1,30 @@
+---
+/**
+ * El icono de una tabla.
+ *
+ * Las tablas creadas antes de esto guardaron un emoji en la misma columna, así
+ * que hay que saber pintar las dos cosas: si el valor es un nombre conocido,
+ * un icono de línea; si no, el texto tal cual, que es el emoji de siempre. Y
+ * si no hay nada, el icono de base de datos.
+ *
+ * El emoji se pinta como **texto**, nunca como marcado: es un valor que
+ * escribió alguien.
+ */
+import Icon from './Icon.astro';
+import { esIcono, ICONO_POR_DEFECTO } from '../../lib/icons';
+
+interface Props {
+  value?: string | null;
+  size?: number;
+  class?: string;
+}
+
+const { value, size = 20, class: className = '' } = Astro.props;
+const heredado = typeof value === 'string' ? value.trim() : '';
+---
+
+{esIcono(heredado) || !heredado ? (
+  <Icon name={heredado || ICONO_POR_DEFECTO} size={size} class={className} />
+) : (
+  <span class={className} style={`font-size:${size}px;line-height:1`}>{heredado}</span>
+)}

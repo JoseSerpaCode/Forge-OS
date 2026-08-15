@@ -1,4 +1,5 @@
 import type { ui, defaultLang } from '../i18n/ui';
+import type { NombreIcono } from './icons';
 
 /**
  * Plantillas para las bases de datos dinámicas.
@@ -38,7 +39,7 @@ type ColumnaPlantilla = {
 
 export type Plantilla = {
   id: string;
-  icono: string;
+  icono: NombreIcono;
   nombre: ClaveI18n;
   descripcion: ClaveI18n;
   columnas: ColumnaPlantilla[];
@@ -56,7 +57,7 @@ export type Plantilla = {
 export const PLANTILLAS: Plantilla[] = [
   {
     id: 'courses',
-    icono: '🎓',
+    icono: 'graduation-cap',
     nombre: 'dbt.courses.name',
     descripcion: 'dbt.courses.desc',
     columnas: [
@@ -69,7 +70,7 @@ export const PLANTILLAS: Plantilla[] = [
   },
   {
     id: 'reading',
-    icono: '📚',
+    icono: 'book-open',
     nombre: 'dbt.reading.name',
     descripcion: 'dbt.reading.desc',
     columnas: [
@@ -83,7 +84,7 @@ export const PLANTILLAS: Plantilla[] = [
   },
   {
     id: 'expenses',
-    icono: '💸',
+    icono: 'wallet',
     nombre: 'dbt.expenses.name',
     descripcion: 'dbt.expenses.desc',
     columnas: [
@@ -96,7 +97,7 @@ export const PLANTILLAS: Plantilla[] = [
   },
   {
     id: 'contacts',
-    icono: '👤',
+    icono: 'users',
     nombre: 'dbt.contacts.name',
     descripcion: 'dbt.contacts.desc',
     columnas: [
@@ -110,7 +111,7 @@ export const PLANTILLAS: Plantilla[] = [
   },
   {
     id: 'inventory',
-    icono: '📦',
+    icono: 'package',
     nombre: 'dbt.inventory.name',
     descripcion: 'dbt.inventory.desc',
     columnas: [
@@ -123,7 +124,7 @@ export const PLANTILLAS: Plantilla[] = [
   },
   {
     id: 'applications',
-    icono: '📮',
+    icono: 'send',
     nombre: 'dbt.applications.name',
     descripcion: 'dbt.applications.desc',
     columnas: [
@@ -140,7 +141,7 @@ export const PLANTILLAS: Plantilla[] = [
 /** Una plantilla ya traducida, lista para volcar en el formulario. */
 export type PlantillaResuelta = {
   id: string;
-  icono: string;
+  icono: NombreIcono;
   nombre: string;
   descripcion: string;
   columnas: Array<{ name: string; type: TipoColumna; options?: string[] }>;

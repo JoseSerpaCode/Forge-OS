@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PLANTILLAS, plantillasTraducidas } from '../src/lib/dbTemplates';
+import { ICONOS, ICONOS_ELEGIBLES, ICONO_POR_DEFECTO, esIcono } from '../src/lib/icons';
 import { ui, useTranslations } from '../src/i18n/ui';
 
 /**
@@ -69,6 +70,39 @@ describe('catálogo de plantillas', () => {
         }
       }
     }
+  });
+});
+
+describe('iconos', () => {
+  it('cada plantilla usa un icono que existe', () => {
+    for (const p of PLANTILLAS) {
+      expect(esIcono(p.icono), `icono desconocido en ${p.id}: ${p.icono}`).toBe(true);
+    }
+  });
+
+  it('el selector ofrece todos los iconos y el de por defecto está entre ellos', () => {
+    expect(ICONOS_ELEGIBLES).toEqual(Object.keys(ICONOS));
+    expect(ICONOS_ELEGIBLES).toContain(ICONO_POR_DEFECTO);
+  });
+
+  it('los trazos son solo dibujo, sin nada ejecutable', () => {
+    // Estos trazos se inyectan como marcado dentro del `<svg>`. Salen de esta
+    // tabla y no de nadie de fuera, pero si algún día alguien pega aquí un
+    // fragmento copiado de internet, esto lo para.
+    for (const [nombre, trazos] of Object.entries(ICONOS)) {
+      expect(trazos, `${nombre} lleva algo que no es un trazo`).toMatch(/^(<(path|circle|rect|ellipse|line|polyline|polygon)\b[^<>]*\/>)+$/);
+      expect(trazos.toLowerCase()).not.toContain('script');
+      expect(trazos.toLowerCase()).not.toContain('on');
+    }
+  });
+
+  it('esIcono rechaza lo que no está en la tabla', () => {
+    expect(esIcono('database')).toBe(true);
+    expect(esIcono('🗄️')).toBe(false);
+    expect(esIcono('<script>')).toBe(false);
+    expect(esIcono('')).toBe(false);
+    expect(esIcono(null)).toBe(false);
+    expect(esIcono('toString')).toBe(false);
   });
 });
 

@@ -12,6 +12,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 - **Plantillas para las bases de datos.** Al crear una tabla ya no se empieza mirando un formulario vacío: hay seis puntos de partida —Asignaturas, Lecturas, Gastos, Contactos, Inventario y Solicitudes— con sus columnas, sus tipos y las opciones de los desplegables ya escritas. Todo queda editable antes de crear, y la tabla en blanco sigue a un clic, arriba del todo. No hacen falta tablas ni endpoints nuevos: una plantilla es un esquema ya escrito que sale por el mismo alta de siempre, con la misma validación y con los identificadores de columna generados en el servidor.
 - Los nombres de columna y las opciones **se traducen al idioma de quien crea la tabla** y ahí se quedan: son datos desde el momento en que hay filas debajo, y cambiar el idioma de la interfaz no puede renombrar una columna con contenido.
+- **Iconos de verdad en vez de emoji.** El icono de una tabla se elegía escribiendo un emoji en una caja de texto; ahora se elige de una lista de catorce iconos de línea, los mismos que usa el resto de la interfaz. Un emoji no hereda el color del tema, se dibuja distinto en cada sistema operativo y desentonaba con todo lo demás. Lo que se guarda es el nombre del icono, y solo se pinta si está en la tabla de iconos conocidos. Las tablas que ya tenían un emoji lo conservan y se siguen viendo.
 
 ### Fixed
 
@@ -19,6 +20,8 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Quitar la última columna dejaba el formulario sin ningún sitio donde escribir y el botón de crear solo devolvía un error. Ahora se repone una fila en blanco.
 - El módulo de bases de datos **hablaba en inglés a medias**: el estado vacío, los tipos de dato, los avisos de error, el aviso de borrar una tabla y el de borrar una fila. Los errores que se enseñaban eran además los del servidor tal cual, en inglés y con detalles internos.
 - El alta de una tabla aceptaba esquemas sin columnas, con miles de ellas o con columnas sin nombre; lo último acababa en un 500. Ahora son 400 con su motivo.
+- El árbol de la base de conocimiento dibujaba un emoji de documento delante de cada página, por lo mismo: era el único sitio del árbol que no usaba un icono de línea.
+- El título de la pestaña del navegador llevaba el emoji de la tabla delante del nombre.
 
 ## [1.14.0] - 2026-08-14
 

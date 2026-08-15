@@ -3,6 +3,7 @@ import MainLayout from '../../../../layouts/MainLayout.astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
 import { useTranslations } from '../../../../i18n/ui';
+import DbIcon from '../../../../components/icons/DbIcon.astro';
 
 const { sys_tag, id } = Astro.params;
 const user = Astro.locals.user!;
@@ -64,13 +65,13 @@ if (view?.visibleColumnsJson) {
 }
 ---
 
-<MainLayout hideFooter={true} title={`${database.icon || ''} ${database.name} — ${workspace.name}`} workspaceId={workspace.id}>
+<MainLayout hideFooter={true} title={`${database.name} — ${workspace.name}`} workspaceId={workspace.id}>
   <div class="h-full flex flex-col -mx-4 -mt-4 p-4 lg:p-6 lg:-m-6 lg:h-[calc(100vh-2rem)]">
     
     <header class="flex flex-col md:flex-row md:items-center justify-between mb-6 shrink-0 gap-4">
       <div class="flex items-center gap-5">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-forge-panel to-forge-panel/50 border border-forge-border flex items-center justify-center text-3xl shadow-sm">
-          {database.icon || '🗄️'}
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-forge-panel to-forge-panel/50 border border-forge-border flex items-center justify-center text-forge-accent-text shadow-sm">
+          <DbIcon value={database.icon} size={24} />
         </div>
         <div>
           <div class="flex items-center gap-2 mb-1">
