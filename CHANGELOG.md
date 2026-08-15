@@ -6,6 +6,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.21.3] - 2026-08-15
+
+### Fixed
+
+- **Un arreglo en el script de despliegue no se aplicaba al despliegue que lo traía**, sino al siguiente. El script vive dentro del repositorio que él mismo actualiza: cuando `git pull` lo reescribe, el que está corriendo sigue siendo el viejo. Pasó justo el día que hacía falta — el refresco de `/usr/local/bin` se quedó sin hacer y el cortafuegos siguió ejecutando la versión rota. Ahora el script se saca una copia en `/tmp` y se ejecuta desde ahí, así que lo que corre no cambia bajo sus pies.
+- Eso cierra además un fallo latente peor: bash lee el fichero **a medida que lo ejecuta**, así que reescribirlo a mitad puede dejarlo leyendo desde un desplazamiento que ya no significa lo mismo. Raro, silencioso y difícil de reproducir.
+
 ## [1.21.2] - 2026-08-15
 
 ### Fixed
