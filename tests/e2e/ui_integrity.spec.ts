@@ -16,7 +16,11 @@ test.describe('UI Integrity & DB Sync', () => {
     // Configurar listener de diálogos porque tiramos 'alert()' en JS
     page.on('dialog', dialog => dialog.accept());
 
-    await page.click('#btn-user-settings');
+    // El bloque de usuario dejó de ser un enlace directo a los ajustes: ahora
+    // abre un menú, porque desde ahí se llega también al perfil y a las
+    // solicitudes de amistad, que antes no tenían ninguna puerta.
+    await page.click('#btn-user-menu');
+    await page.click('#user-menu a[href="/settings"]');
     await page.waitForURL('**/settings');
     
     // 3. Cambiar username

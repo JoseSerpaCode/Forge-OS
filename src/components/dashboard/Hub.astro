@@ -1,5 +1,6 @@
 ---
 import Logo from '../brand/Logo.astro';
+import WorkspaceIcon from '../brand/WorkspaceIcon.astro';
 // src/pages/index.astro
 import MainLayout from '../../layouts/MainLayout.astro';
 import db from '../../lib/db';
@@ -39,13 +40,61 @@ for (const ws of workspaces) {
 }
 
 // 2. Obtener Tareas Asignadas a mí (My Tasks)
-const myTasks = db.prepare(`
-  SELECT i.id, i.title, i.status, i.sprint_id, i.type, i.due_date, w.sys_tag, w.icon as workspace_icon, w.name as workspace_name
-  FROM issues i 
-  JOIN workspaces w ON i.workspace_id = w.id 
+/**
+ * Lo que tengo pendiente, y **de qué espacio es cada cosa**.
+ *
+ * Antes eran diez filas seguidas ordenadas por lo último tocado, con los
+ * espacios mezclados y sin decir de cuál era cada una. Con dos espacios ya
+ * costaba; con cinco, la lista dejaba de servir para decidir qué hacer, que es
+ * lo único para lo que está.
+ *
+ * Tres cambios, y los tres importan:
+ *
+ *  - **Se agrupan por espacio**, con la cuenta de cada uno.
+ *  - **Ordenan por urgencia**, no por lo último tocado: lo que vence antes va
+ *    primero, y lo que no tiene fecha va al final. Ordenar por `updated_at`
+ *    subía justo lo que se acababa de mirar, que es lo que menos falta hace
+ *    ver.
+ *  - **Lo vencido se cuenta aparte**, porque es lo que hay que mirar hoy.
+ *
+ * El tope sigue existiendo —esto es un resumen, no la lista de tareas— pero se
+ * dice cuántas quedan fuera en vez de cortar en silencio.
+ */
+const TOPE_PENDIENTES = 12;
+
+const pendientes = db.prepare(`
+  SELECT i.id, i.title, i.status, i.sprint_id, i.type, i.due_date, i.priority,
+         w.sys_tag, w.id AS workspace_id, w.icon AS workspace_icon, w.name AS workspace_name
+  FROM issues i
+  JOIN workspaces w ON i.workspace_id = w.id
   WHERE i.assignee_id = ? AND i.status != 'done'
-  ORDER BY i.updated_at DESC LIMIT 10
+  ORDER BY
+    i.due_date IS NULL ASC,
+    i.due_date ASC,
+    CASE i.priority WHEN 'highest' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 WHEN 'lowest' THEN 4 ELSE 2 END ASC,
+    i.updated_at DESC
 `).all(user.id) as any[];
+
+const totalPendientes = pendientes.length;
+const myTasks = pendientes.slice(0, TOPE_PENDIENTES);
+const pendientesOcultas = totalPendientes - myTasks.length;
+
+// Agrupadas, conservando el orden de urgencia dentro de cada espacio.
+const porEspacio = new Map<string, { sysTag: string; nombre: string; icono: string | null; tareas: any[] }>();
+for (const tarea of myTasks) {
+  let grupo = porEspacio.get(tarea.workspace_id);
+  if (!grupo) {
+    grupo = { sysTag: tarea.sys_tag, nombre: tarea.workspace_name, icono: tarea.workspace_icon, tareas: [] };
+    porEspacio.set(tarea.workspace_id, grupo);
+  }
+  grupo.tareas.push(tarea);
+}
+const gruposPendientes = [...porEspacio.values()];
+
+// Vencidas: comparando solo la fecha, no la hora. Una entrega «de hoy» no está
+// vencida a las nueve de la mañana.
+const hoy = new Date().toISOString().slice(0, 10);
+const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due_date).slice(0, 10) < hoy).length;
 ---
 
 <MainLayout title={t('hub.title')}>
@@ -83,11 +132,7 @@ const myTasks = db.prepare(`
                   <div class="flex items-start justify-between mb-6">
                     <div class="flex items-center gap-3">
                       <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border flex items-center justify-center text-forge-accent-text font-black text-lg shadow-sm shrink-0 overflow-hidden">
-                        {ws.icon && ws.icon.startsWith('data:image') ? (
-                          <img src={ws.icon} class="w-full h-full object-cover" alt={`${ws.name} Icon`} loading="lazy" />
-                        ) : (
-                          ws.icon ? ws.icon : ws.name.charAt(0).toUpperCase()
-                        )}
+                        <WorkspaceIcon icon={ws.icon} name={ws.name} />
                       </div>
                       <div class="min-w-0">
                         <h3 class="font-bold text-forge-text group-hover:text-forge-accent-text transition-colors text-base truncate">{ws.name}</h3>
@@ -149,12 +194,47 @@ const myTasks = db.prepare(`
         
         <!-- Pending Tasks Section -->
         <section>
-          <h2 class="text-xl font-bold text-forge-text mb-4 border-b border-forge-border pb-2">{t('hub.pending_tasks')}</h2>
-          <div class="bg-forge-panel border border-forge-border rounded-lg overflow-hidden max-h-[320px] flex flex-col">
-            <div class="overflow-y-auto custom-scrollbar flex-1">
-              <TaskTable tasks={myTasks} />
-            </div>
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4 border-b border-forge-border pb-2">
+            <h2 class="text-xl font-bold text-forge-text">{t('hub.pending_tasks')}</h2>
+            {vencidas > 0 && (
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-forge-error/10 text-forge-error border border-forge-error/30">
+                {vencidas === 1 ? t('hub.overdue_one') : t('hub.overdue').replace('{n}', String(vencidas))}
+              </span>
+            )}
           </div>
+
+          {gruposPendientes.length === 0 ? (
+            <div class="bg-forge-panel border border-forge-border rounded-lg p-8 text-center text-forge-muted text-sm">
+              {t('dashboard.no_tasks')}
+            </div>
+          ) : (
+            <div class="space-y-4 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+              {gruposPendientes.map((g) => (
+                <div class="bg-forge-panel border border-forge-border rounded-lg overflow-hidden">
+                  {/* Qué espacio es, y un enlace a su tablero: desde aquí se
+                      decide qué hacer, y lo siguiente es ir a hacerlo. */}
+                  <a href={`/w/${g.sysTag}/board`} class="flex items-center gap-2.5 px-4 py-2.5 border-b border-forge-border bg-forge-bg/40 hover:bg-forge-bg transition-colors group">
+                    <span class="w-6 h-6 rounded-md border border-forge-border bg-forge-bg overflow-hidden flex items-center justify-center shrink-0 text-[11px]">
+                      <WorkspaceIcon icon={g.icono} name={g.nombre} />
+                    </span>
+                    <span class="text-sm font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{g.nombre}</span>
+                    <span class="text-xs text-forge-muted shrink-0">
+                      {g.tareas.length === 1 ? t('hub.one_task') : t('hub.n_tasks').replace('{n}', String(g.tareas.length))}
+                    </span>
+                  </a>
+                  <TaskTable tasks={g.tareas} sys_tag={g.sysTag} />
+                </div>
+              ))}
+
+              {pendientesOcultas > 0 && (
+                <p class="text-xs text-forge-muted text-center py-2">
+                  {pendientesOcultas === 1
+                    ? t('hub.more_one')
+                    : t('hub.more_n').replace('{n}', String(pendientesOcultas))}
+                </p>
+              )}
+            </div>
+          )}
         </section>
       
     </div>

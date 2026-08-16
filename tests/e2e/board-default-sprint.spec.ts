@@ -18,7 +18,9 @@ test('el tablero abre en el sprint activo cuando no hay elección previa', async
   await page.context().clearCookies({ name: 'forge_last_sprint_ws-jose-test' });
   await page.goto('/w/test-workspace/board');
 
-  const selected = page.locator('select').first();
+    // Por id y no `select.first()`: la barra tiene tres desplegables —sprint,
+  // orden y etiqueta— y cuál es el primero depende del maquetado.
+  const selected = page.locator('#sprint-selector');
   const label = (await selected.locator('option:checked').textContent())?.trim() ?? '';
 
   // El espacio de pruebas puede no tener sprint activo; entonces backlog es lo

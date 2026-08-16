@@ -178,7 +178,16 @@ function applySecurityHeaders(response: Response): Response {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
-    "connect-src 'self' ws: wss:",
+    // `storage.googleapis.com` es donde vive la sesión de subida reanudable de
+    // Drive. El archivo va del navegador a Google **directamente**, así que sin
+    // este origen la CSP corta el `PUT` y la subida falla con «No se ha podido
+    // subir el archivo» sin más explicación. Es exactamente lo que pasó en
+    // producción: el servidor abría la sesión bien y el navegador no podía
+    // usarla.
+    //
+    // Solo el origen de la subida, no `*.googleapis.com`: lo demás que hable
+    // con Google lo hace el servidor, no el navegador.
+    "connect-src 'self' ws: wss: https://storage.googleapis.com",
     "frame-ancestors 'none'"
   ].join('; ');
   

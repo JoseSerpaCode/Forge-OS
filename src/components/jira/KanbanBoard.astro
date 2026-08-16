@@ -14,6 +14,10 @@ interface Props {
   statusCounts?: Record<string, number>;
   /** Catálogo de etiquetas del espacio, para el selector del modal. */
   labels?: Array<{ id: string; name: string; color: string }>;
+  /** Tipos de ticket del espacio. Ya no son tres fijos. */
+  issueTypes?: Array<{ id: string; key: string; name: string; color: string; isBuiltin: boolean }>;
+  /** Orden activo. Con uno que no es el manual, arrastrar no puede funcionar. */
+  sortMode?: string;
   sysTag?: string;
 }
 
@@ -21,8 +25,24 @@ import { useTranslations } from '../../i18n/ui';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
-const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer', statusCounts = {}, labels = [], sysTag = '' } = Astro.props;
+const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer', statusCounts = {}, labels = [], issueTypes = [], sortMode = 'manual', sysTag = '' } = Astro.props;
+
+
+
+// Por clave, para no recorrer la lista una vez por tarjeta.
+const tiposPorClave = new Map(issueTypes.map((t) => [t.key, t]));
 const canEdit = userRole === 'owner' || userRole === 'editor';
+
+/**
+ * Arrastrar solo tiene sentido con el orden manual.
+ *
+ * Con el tablero ordenado por prioridad, soltar una tarjeta escribiría un
+ * `position` que la vista ni mira: la tarjeta volvería sola a su sitio y
+ * parecería un fallo. Se apaga el arrastre y se dice por qué, en vez de dejar
+ * que la gente lo intente tres veces.
+ */
+const ordenManual = sortMode === 'manual';
+const sePuedeArrastrar = canEdit && ordenManual;
 
 const columns = [
   { id: 'todo', title: t('status.todo') },
@@ -38,7 +58,13 @@ function getInitials(username: string) {
 }
 ---
 <div class="h-full flex flex-col relative">
-  <div class="flex gap-4 h-full overflow-x-auto pb-4 kanban-container" data-workspace={workspaceId} data-can-edit={canEdit.toString()}>
+  {canEdit && !ordenManual && (
+    <p id="board-sort-notice" class="mb-3 text-xs text-forge-muted flex items-center gap-2" role="status">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 text-forge-accent-text" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      {t('board.sort_no_drag')}
+    </p>
+  )}
+  <div class="flex gap-4 h-full overflow-x-auto pb-4 kanban-container" data-workspace={workspaceId} data-can-edit={sePuedeArrastrar.toString()} data-sort-mode={sortMode}>
     {columns.map(col => (
       <BoardColumn
         title={col.title}
@@ -65,7 +91,7 @@ function getInitials(username: string) {
             status: issue.status,
             logged_hours: issue.logged_hours,
             labels: issue.labels || []
-          }} canEdit={canEdit} />
+          }} canEdit={canEdit} arrastrable={sePuedeArrastrar} tipo={tiposPorClave.get(issue.type) ?? null} />
         ))}
       </BoardColumn>
     ))}
@@ -87,7 +113,7 @@ function getInitials(username: string) {
   )}
 </div>
 
-<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} labels={labels} sysTag={sysTag} />
+<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} labels={labels} issueTypes={issueTypes} sysTag={sysTag} />
 
 <script>
   const columns = document.querySelectorAll('.board-column');
@@ -169,13 +195,27 @@ function getInitials(username: string) {
           (window as any).forgeLabelsOpen?.(card.id);
           (window as any).forgeDriveFilesOpen?.(card.id);
 
+          // La clave viaja en un `data-*` de la insignia.
+          //
+          // Antes se sacaba de su **texto** en minúsculas y se comparaba con
+          // 'task', 'bug' y 'story'. Eso ya fallaba con la interfaz en español
+          // —«Tarea» no es 'task'— y con tipos propios falla siempre: el
+          // desplegable del modal se quedaba en la primera opción y guardar
+          // cualquier otro cambio le cambiaba el tipo al ticket sin tocarlo.
           const typeBadge = card.querySelector('.issue-type-badge');
           const typeEl = document.getElementById('modal-issue-type') as HTMLSelectElement;
-          if (typeBadge && typeEl) {
-            const t = typeBadge.textContent?.toLowerCase().trim();
-            if (t === 'task' || t === 'bug' || t === 'story') {
-               typeEl.value = t;
+          const clave = typeBadge?.getAttribute('data-type-key');
+          if (typeEl && clave) {
+            const existe = Array.from(typeEl.options).some((o) => o.value === clave);
+            // Un tipo borrado ya no está en la lista. Se añade como opción
+            // suelta para no cambiárselo por accidente al guardar otra cosa.
+            if (!existe) {
+              const suelta = document.createElement('option');
+              suelta.value = clave;
+              suelta.textContent = clave;
+              typeEl.appendChild(suelta);
             }
+            typeEl.value = clave;
           }
           
           // Update Assignee and Reporter
