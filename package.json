@@ -35,7 +35,7 @@
     "@editorjs/warning": "^1.4.1",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.2.0",
+    "astro": "^7.2.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "chart.js": "^4.5.1",
