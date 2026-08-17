@@ -39,6 +39,8 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      // Las de `movil/` las corre el proyecto de abajo, en un teléfono.
+      testIgnore: /movil\/.*\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
 
@@ -52,15 +54,24 @@ export default defineConfig({
     //   use: { ...devices['Desktop Safari'] },
     // },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    /**
+     * Móvil.
+     *
+     * No corre la suite entera en un teléfono: eso duplicaría el tiempo de CI
+     * para volver a comprobar cosas que no dependen del tamaño de pantalla.
+     * Solo las pruebas de `tests/e2e/movil/`, que son las que existen
+     * precisamente porque en un móvil el resultado es distinto.
+     *
+     * Pixel 5 son 393×851. Se eligió ese y no uno más ancho porque los
+     * problemas de este proyecto aparecen por debajo de 400px: cuatro columnas
+     * de kanban de 320px, un árbol de páginas de 288px fijos y un diálogo de
+     * confirmación de 420px sin `max-w`.
+     */
+    {
+      name: 'movil',
+      testMatch: /movil\/.*\.spec\.ts$/,
+      use: { ...devices['Pixel 5'] },
+    },
 
     /* Test against branded browsers. */
     // {

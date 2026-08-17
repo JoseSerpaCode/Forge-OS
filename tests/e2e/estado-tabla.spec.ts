@@ -54,11 +54,37 @@ test('una tarea en revisión no muestra la clave cruda', async ({ page }) => {
 
 test('ningún estado ni tipo se pinta como clave en la tabla', async ({ page }) => {
   await entrar(page);
+
+  /**
+   * La tarea se siembra aquí en vez de saltar la prueba si no hay ninguna.
+   *
+   * Con un `test.skip` condicional, el número de pruebas de la suite cambiaba
+   * de una corrida a otra según lo que hubieran dejado las demás. Eso hace
+   * imposible distinguir «se saltó» de «desapareció», que es justo lo que hay
+   * que poder distinguir cuando algo empieza a fallar de vez en cuando.
+   */
+  // El espacio se crea aquí y no se hereda de la prueba de arriba: con
+  // `fullyParallel` no hay orden garantizado entre las dos, y depender de eso
+  // produce un fallo que aparece una de cada tres corridas.
+  const r = await page.request.post('/api/workspaces', { data: { name: 'Estado 2', sys_tag: `${ESPACIO}-2` } });
+  expect([200, 201, 409]).toContain(r.status());
+
+  const db = getTestDb();
+  const yo = db.prepare("SELECT id FROM users WHERE username = 'jose'").get() as any;
+  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(`${ESPACIO}-2`) as any;
+  expect(ws).toBeTruthy();
+
+  db.prepare("DELETE FROM issues WHERE title = 'Clave cruda'").run();
+  db.prepare(`INSERT INTO issues (id, workspace_id, type, title, status, reporter_id, assignee_id, position)
+              VALUES (?, ?, 'epic', 'Clave cruda', 'review', ?, ?, 900000)`)
+    .run(crypto.randomUUID(), ws.id, yo.id, yo.id);
+
   await page.goto('/');
   const tablas = page.locator('.task-table-container');
-  if (await tablas.count() === 0) test.skip(true, 'sin tareas pendientes');
+  await expect(tablas.first()).toBeVisible();
 
   const texto = (await tablas.allTextContents()).join(' ');
-  // Cualquier `prefijo.clave` sin espacios delatando una traducción sin resolver.
+  // Cualquier `prefijo.clave` sin resolver delata una traducción que falta.
+  // El tipo `epic` es el que faltaba: pintaba `type.epic`.
   expect(texto).not.toMatch(/\b(status|type)\.[a-z_]+/);
 });
