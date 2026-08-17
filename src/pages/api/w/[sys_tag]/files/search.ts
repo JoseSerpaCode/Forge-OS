@@ -3,6 +3,7 @@ import db from '../../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { buscar, busquedasRecientes, olvidarBusquedas, recordarBusqueda } from '../../../../../lib/driveFiles';
 import { deVarias as etiquetasDeVarias } from '../../../../../lib/labels';
+import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
 
 /**
  * Buscar archivos por nombre, con historial.
@@ -12,24 +13,11 @@ import { deVarias as etiquetasDeVarias } from '../../../../../lib/labels';
  * gente busca: se guardan diez y se pueden borrar de un botón.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function abrirEspacio(sysTag: string | undefined, user: any) {
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
-
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'viewer');
-  if (!acceso.granted) {
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
 
 export const GET: APIRoute = async ({ params, url, locals }) => {
   const user = locals.user!;
-  const { ws, error } = abrirEspacio(params.sys_tag, user);
+  const { ws, error } = abrirEspacio(params.sys_tag, user, 'viewer');
   if (error) return error;
 
   const texto = (url.searchParams.get('q') ?? '').trim();
@@ -64,7 +52,7 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
 /** Olvida el historial de quien lo pide. Solo el suyo. */
 export const DELETE: APIRoute = async ({ params, locals }) => {
   const user = locals.user!;
-  const { ws, error } = abrirEspacio(params.sys_tag, user);
+  const { ws, error } = abrirEspacio(params.sys_tag, user, 'viewer');
   if (error) return error;
 
   olvidarBusquedas(user.id, ws.id);

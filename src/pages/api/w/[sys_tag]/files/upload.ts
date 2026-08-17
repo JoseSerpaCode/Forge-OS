@@ -3,6 +3,7 @@ import db from '../../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { abrirSesionDeSubida, accesoPara, conexionDe, datosDeArchivo } from '../../../../../lib/drive';
 import { carpeta, limpiarNombre, registrar } from '../../../../../lib/driveFiles';
+import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
 
 /**
  * Subida de archivos, en dos tiempos.
@@ -23,8 +24,6 @@ import { carpeta, limpiarNombre, registrar } from '../../../../../lib/driveFiles
  *      cualquiera podría meter en la lista el id de un archivo ajeno.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 /**
  * Tope por archivo.
@@ -35,21 +34,10 @@ const json = (body: unknown, status = 200) =>
  */
 const MAXIMO_BYTES = 500 * 1024 * 1024;
 
-function abrirEspacio(sysTag: string | undefined, user: any) {
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
-
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'editor');
-  if (!acceso.granted) {
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
 
 /** Paso 1: abre la sesión de subida. */
 export const POST: APIRoute = async ({ params, request, locals, url }) => {
-  const { ws, error } = abrirEspacio(params.sys_tag, locals.user!);
+  const { ws, error } = abrirEspacio(params.sys_tag, locals.user!, 'editor');
   if (error) return error;
 
   let datos: any;
@@ -99,7 +87,7 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
 /** Paso 3: comprobar lo subido y darlo de alta. */
 export const PUT: APIRoute = async ({ params, request, locals }) => {
   const user = locals.user!;
-  const { ws, error } = abrirEspacio(params.sys_tag, user);
+  const { ws, error } = abrirEspacio(params.sys_tag, user, 'editor');
   if (error) return error;
 
   let datos: any;

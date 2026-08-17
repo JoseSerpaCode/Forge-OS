@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { crear, listar, reordenar } from '../../../../../lib/issueTypes';
+import { abrirEspacio, json, cuerpo } from '../../../../../lib/apiWorkspace';
 
 /**
  * Tipos de ticket de un espacio.
@@ -16,28 +17,8 @@ import { crear, listar, reordenar } from '../../../../../lib/issueTypes';
  * tickets que lo llevan.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-export function abrirEspacio(sysTag: string | undefined, user: any, rol: 'viewer' | 'editor' | 'owner') {
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
 
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, rol);
-  if (!acceso.granted) {
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
-
-async function cuerpo(request: Request): Promise<any | null> {
-  try {
-    return await request.json();
-  } catch {
-    return null;
-  }
-}
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const { ws, error } = abrirEspacio(params.sys_tag, locals.user!, 'viewer');

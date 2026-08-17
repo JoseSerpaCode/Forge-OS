@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
+import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
 
 /**
  * Personas a las que se puede invitar a este espacio.
@@ -20,21 +20,12 @@ import { checkWorkspaceAccess } from '../../../../../lib/guard';
  *    alguien que ya es miembro solo lleva a un error al enviar.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 export const GET: APIRoute = async ({ params, url, locals }) => {
   const user = locals.user!;
 
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(params.sys_tag) as any;
-  if (!ws) return new Response('Not Found', { status: 404 });
-
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'owner');
-  if (!acceso.granted) {
-    // 404 a quien no es miembro: un 403 confirmaría que el espacio existe.
-    if (acceso.reason === 'not_member') return new Response('Not Found', { status: 404 });
-    return new Response(acceso.error, { status: 403 });
-  }
+  const { ws, error } = abrirEspacio(params.sys_tag, user, 'owner');
+  if (error) return error;
 
   const texto = (url.searchParams.get('q') ?? '').trim();
   // Con menos de dos letras la lista sería medio padrón. Se devuelve vacío en

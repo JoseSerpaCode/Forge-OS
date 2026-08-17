@@ -1,17 +1,8 @@
 import type { APIRoute } from 'astro';
 import { borrar, editar, listar } from '../../../../../lib/issueTypes';
-import { abrirEspacio } from './index';
+import { abrirEspacio, json, cuerpo } from '../../../../../lib/apiWorkspace';
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-async function cuerpo(request: Request): Promise<any | null> {
-  try {
-    return await request.json();
-  } catch {
-    return null;
-  }
-}
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   const { ws, error } = abrirEspacio(params.sys_tag, locals.user!, 'owner');

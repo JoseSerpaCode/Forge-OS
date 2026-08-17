@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
+import { abrirEspacio, json } from '../../../../lib/apiWorkspace';
 import {
   conexionDe, crearEstado, desconectar, driveDisponible, urlDeConsentimiento,
 } from '../../../../lib/drive';
@@ -14,22 +15,7 @@ import {
  * de otra persona sería regalar una decisión que no le corresponde.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function abrirEspacio(sysTag: string | undefined, user: any, rol: 'owner' | 'editor' | 'viewer') {
-  const ws = db.prepare('SELECT id, name FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
-
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, rol);
-  if (!acceso.granted) {
-    // A quien no es miembro se le responde 404: un 403 confirma que el espacio
-    // existe, y eso ya es información sobre un sitio donde no pinta nada.
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
 
 /** El estado de la conexión. Nunca el token, ni cifrado. */
 export const GET: APIRoute = async ({ params, locals }) => {
