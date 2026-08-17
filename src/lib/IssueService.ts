@@ -158,4 +158,136 @@ export class IssueService {
 
     return { id: issueId };
   }
+
+  /**
+   * Duplicar un ticket.
+   *
+   * Lo interesante no es lo que se copia, sino lo que **no**:
+   *
+   *  - **Las horas registradas se quedan a cero.** Son el registro de un tiempo
+   *    que alguien trabajó de verdad. Copiarlas inventa trabajo que no ocurrió,
+   *    y el tablero las suma para dar el total del sprint: duplicar tres veces
+   *    un ticket de ocho horas añadiría veinticuatro horas de nada.
+   *  - **El estado vuelve a «por hacer».** Se duplica sobre todo para repetir
+   *    algo ya hecho, y una copia que nace en «Hecho» es trabajo invisible: no
+   *    la mira nadie y cuenta como terminada.
+   *  - **El cronómetro no se hereda.** Una sesión abierta pertenece a la
+   *    persona que la arrancó sobre el ticket original.
+   *
+   * Sí se copian las etiquetas: son la clasificación del trabajo y siguen
+   * valiendo. Y el sprint, **salvo que esté cerrado** — meter trabajo nuevo en
+   * un sprint terminado descuadra lo que ese sprint dice que se hizo, así que
+   * en ese caso la copia va al backlog.
+   */
+  static async duplicate(issueId: string, userId: string, isSysadmin: number) {
+    const original = db.prepare('SELECT * FROM issues WHERE id = ?').get(issueId) as Issue | undefined;
+    if (!original) throw new ApiError(404, 'Not Found');
+
+    const access = checkWorkspaceAccess(userId, isSysadmin, original.workspace_id, 'editor');
+    if (!access.granted) {
+      if (access.reason === 'not_member') throw new ApiError(404, 'Not Found');
+      throw new ApiError(403, access.error || 'Forbidden');
+    }
+
+    // Un sprint cerrado no recibe trabajo nuevo.
+    let sprintId = original.sprint_id;
+    if (sprintId) {
+      const sprint = db.prepare("SELECT status FROM sprints WHERE id = ?").get(sprintId) as any;
+      if (!sprint || sprint.status === 'completed') sprintId = null;
+    }
+
+    // Quien estaba asignado puede haberse ido del espacio desde entonces.
+    let assigneeId = original.assignee_id;
+    if (assigneeId) {
+      const sigue = db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?')
+        .get(original.workspace_id, assigneeId);
+      if (!sigue) assigneeId = null;
+    }
+
+    const nuevoId = crypto.randomUUID();
+    const estado = 'todo';
+
+    const ultima = db.prepare(
+      'SELECT position FROM issues WHERE workspace_id = ? AND status = ? ORDER BY position DESC LIMIT 1'
+    ).get(original.workspace_id, estado) as any;
+    const position = ultima ? ultima.position + 100000 : 100000;
+
+    // Título y etiquetas en la misma transacción: una copia a medias —el ticket
+    // creado y las etiquetas no— es peor que ninguna, porque parece completa.
+    const titulo = IssueService.tituloDeCopia(original.title, original.workspace_id);
+
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO issues (
+          id, workspace_id, sprint_id, parent_issue_id, type, title, description,
+          status, priority, story_points, estimated_hours, logged_hours,
+          position, reporter_id, assignee_id, due_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+      `).run(
+        nuevoId,
+        original.workspace_id,
+        sprintId,
+        original.parent_issue_id ?? null,
+        original.type,
+        titulo,
+        original.description ?? null,
+        estado,
+        original.priority ?? null,
+        original.story_points ?? null,
+        original.estimated_hours ?? null,
+        position,
+        // El autor de la copia es quien la hace, no quien escribió el original:
+        // las preguntas sobre este ticket nuevo van a quien lo creó.
+        userId,
+        assigneeId,
+        original.due_date ?? null
+      );
+
+      db.prepare(`
+        INSERT OR IGNORE INTO issue_labels (issue_id, label_id)
+        SELECT ?, label_id FROM issue_labels WHERE issue_id = ?
+      `).run(nuevoId, issueId);
+    })();
+
+    if (assigneeId && assigneeId !== userId) {
+      const ws = db.prepare('SELECT sys_tag FROM workspaces WHERE id = ?').get(original.workspace_id) as any;
+      const quien = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as any;
+      if (ws) {
+        NotificationService.notify(
+          assigneeId,
+          'assign',
+          'Te han asignado un ticket',
+          `${quien?.username ?? 'Alguien'}: ${titulo}`,
+          `/w/${ws.sys_tag}/board?issue=${nuevoId}`
+        );
+      }
+    }
+
+    return { id: nuevoId, title: titulo, sprint_id: sprintId };
+  }
+
+  /**
+   * «Informe semanal» → «Informe semanal (copia)» → «Informe semanal (copia 2)».
+   *
+   * Numerar desde la segunda evita el ridículo de un «(copia 1)» cuando solo hay
+   * una, y evita también tres tarjetas idénticas en el tablero, que es lo que
+   * pasa si el título se repite tal cual: son indistinguibles salvo abriéndolas.
+   *
+   * El tope de 200 caracteres es el de la columna en la práctica; el sufijo se
+   * añade recortando el título, no reventándolo.
+   */
+  private static tituloDeCopia(titulo: string, workspaceId: string): string {
+    const base = titulo.replace(/\s*\(copia(?: \d+)?\)$/i, '').trim();
+
+    const usados = db.prepare(
+      "SELECT title FROM issues WHERE workspace_id = ? AND (title = ? OR title LIKE ?)"
+    ).all(workspaceId, base, `${base.replace(/[%_]/g, (c) => `\\${c}`)} (copia%`) as Array<{ title: string }>;
+
+    const nombres = new Set(usados.map((u) => u.title));
+    const recorta = (t: string) => (t.length > 200 ? `${t.slice(0, 197)}...` : t);
+
+    let candidato = `${base} (copia)`;
+    for (let n = 2; nombres.has(candidato); n++) candidato = `${base} (copia ${n})`;
+    return recorta(candidato);
+  }
 }

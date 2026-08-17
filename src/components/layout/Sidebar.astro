@@ -20,6 +20,26 @@ if (!sys_tag && user?.last_workspace_id) {
 
 const currentPath = Astro.url.pathname;
 
+/**
+ * Solicitudes de amistad esperando respuesta.
+ *
+ * Se cuentan aquí porque el sitio donde se atienden —los ajustes— es
+ * precisamente al que no vas si nada te dice que hay algo. Una solicitud sin
+ * aviso es una solicitud que caduca por olvido.
+ *
+ * Los invitados no reciben ninguna: `canInteractSocially` lo impide en los dos
+ * sentidos, así que ni se consulta.
+ */
+const solicitudesPendientes = user && !user.is_guest
+  ? (db.prepare(`
+      SELECT COUNT(*) AS n FROM friendships
+      WHERE (user_a_id = ? OR user_b_id = ?)
+        AND status = 'pending'
+        AND action_user_id != ?
+    `).get(user.id, user.id, user.id) as { n: number }).n
+  : 0;
+
+
 // Determine active sections
 const isDash     = sys_tag && (currentPath === `/w/${sys_tag}` || currentPath === `/w/${sys_tag}/`);
 const isMetrics  = sys_tag && currentPath.includes('/metrics');
@@ -180,24 +200,143 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
         {t('auth.login') || 'Sign In'} / {t('auth.register') || 'Register'}
       </a>
     )}
-    <a href={user?.is_guest ? "/register" : "/settings"} class="flex items-center gap-3 hover:bg-forge-bg px-2 py-2.5 -mx-1 rounded-lg transition-colors group" id="btn-user-settings" title={user?.is_guest ? "Create Account to Save Data" : "Account Settings"}>
-      {user?.avatar_url && !user.is_guest ? (
-        <img src={user.avatar_url} class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg object-cover shrink-0" alt={`${user.username} avatar`} />
-      ) : (
-        <div class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg flex items-center justify-center text-forge-accent-text shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    {/*
+      Esto llevaba **directo a los ajustes**, sin menú.
+      Consecuencia: a tu propio perfil no apuntaba ningún enlace en toda la
+      aplicación. Se podía llegar escribiendo `/u/tu-nombre` a mano, y el banner
+      solo se cambiaba pasando el ratón por encima de una imagen que no se sabía
+      que fuera pulsable. Aquí están las cuatro cosas que cuelgan de la cuenta.
+    */}
+    <div class="relative" id="user-menu-root">
+      <button
+        id="btn-user-menu"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="user-menu"
+        class="w-full flex items-center gap-3 hover:bg-forge-bg px-2 py-2.5 -mx-1 rounded-lg transition-colors group text-left"
+        title={t('user.menu.open')}
+      >
+        {user?.avatar_url && !user.is_guest ? (
+          <img src={user.avatar_url} class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg object-cover shrink-0" alt="" />
+        ) : (
+          <div class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg flex items-center justify-center text-forge-accent-text shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+        )}
+        <div class="flex-1 min-w-0 leading-tight">
+          <div class="text-xs font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{user?.is_guest ? t('user.menu.guest') : (user?.username || t('user.menu.guest'))}</div>
+          <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? t('user.menu.unregistered') : userRole}</div>
         </div>
-      )}
-      <div class="flex-1 min-w-0 leading-tight">
-        <div class="text-xs font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{user?.is_guest ? 'Guest' : (user?.username || 'Guest')}</div>
-        <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? 'Unregistered' : userRole}</div>
+        {solicitudesPendientes > 0 && (
+          <span class="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center" aria-label={t('friends.incoming')}>
+            {solicitudesPendientes > 9 ? '9+' : solicitudesPendientes}
+          </span>
+        )}
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted shrink-0" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+      </button>
+
+      <div
+        id="user-menu"
+        role="menu"
+        aria-labelledby="btn-user-menu"
+        class="hidden absolute bottom-full left-0 right-0 mb-2 bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1"
+      >
+        {user?.is_guest ? (
+          <a href="/register" role="menuitem" class="user-menu-item">{t('user.menu.register')}</a>
+        ) : (
+          <>
+            <a href={`/u/${user?.username}`} role="menuitem" class="user-menu-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              {t('user.menu.profile')}
+            </a>
+            <a href="/people" role="menuitem" class="user-menu-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span class="flex-1">{t('friends.title')}</span>
+              {solicitudesPendientes > 0 && (
+                <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center">{solicitudesPendientes > 9 ? '9+' : solicitudesPendientes}</span>
+              )}
+            </a>
+            <a href="/settings" role="menuitem" class="user-menu-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              {t('user.menu.account')}
+            </a>
+            <div class="h-px bg-forge-border/50 my-1"></div>
+            <button type="button" role="menuitem" id="btn-user-menu-logout" class="user-menu-item w-full text-left hover:text-forge-error">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              {t('user.settings.signout')}
+            </button>
+          </>
+        )}
       </div>
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-    </a>
+    </div>
   </div>
 </aside>
 
+<script is:inline>
+  /**
+   * El menú de la cuenta.
+   *
+   * `<details>` habría sido más corto, pero se abre hacia abajo dentro de un
+   * contenedor con scroll y el menú queda cortado por el borde de la barra.
+   * Esto lo posiciona hacia arriba, que es donde hay sitio.
+   */
+  (function () {
+    const boton = document.getElementById('btn-user-menu');
+    const menu = document.getElementById('user-menu');
+    if (!boton || !menu) return;
+
+    const cerrar = () => {
+      menu.classList.add('hidden');
+      boton.setAttribute('aria-expanded', 'false');
+    };
+
+    boton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const abierto = !menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', abierto);
+      boton.setAttribute('aria-expanded', String(!abierto));
+    });
+
+    // Pulsar fuera y Escape cierran. Sin lo segundo, quien navega con teclado
+    // se queda dentro del menú sin salida.
+    document.addEventListener('click', (e) => {
+      if (!menu.contains(e.target)) cerrar();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !menu.classList.contains('hidden')) {
+        cerrar();
+        boton.focus();
+      }
+    });
+
+    document.getElementById('btn-user-menu-logout')?.addEventListener('click', async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    });
+  })();
+</script>
+
 <style>
+  .user-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--forge-text);
+    text-decoration: none;
+    transition: background-color 0.15s, color 0.15s;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+  }
+  .user-menu-item:hover {
+    background: var(--forge-bg);
+    color: var(--forge-accent-text);
+  }
+
   /* Sidebar link styles */
   .sidebar-link {
     display: flex;

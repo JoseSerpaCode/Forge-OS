@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS issues (
  workspace_id TEXT NOT NULL,
  sprint_id TEXT,
  parent_issue_id TEXT,
- type TEXT NOT NULL CHECK(type IN ('epic', 'story', 'task', 'bug')),
+ type TEXT NOT NULL,
  title TEXT NOT NULL,
  description TEXT,
  status TEXT DEFAULT 'todo',
@@ -979,6 +979,163 @@ const MIGRATIONS: Migration[] = [
         ON file_searches(user_id, workspace_id, query COLLATE NOCASE)
       `);
       db.exec('CREATE INDEX IF NOT EXISTS idx_file_searches_recientes ON file_searches(user_id, workspace_id, created_at DESC)');
+    }
+  },
+  {
+    version: 38,
+    description: 'tipos de ticket propios por espacio, y quitar la CHECK que los impedía',
+    run: () => {
+      // El alcance es **el espacio**, no la cuenta.
+      //
+      // Un tipo de ticket describe cómo trabaja un equipo: si «Incidencia» y
+      // «Mantenimiento» fueran de la persona, aparecerían en el tablero de otro
+      // equipo que no los usa, y al irse esa persona el espacio se quedaría con
+      // tickets de un tipo que ya no existe para nadie.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS issue_types (
+          id TEXT PRIMARY KEY,
+          workspace_id TEXT NOT NULL,
+          key TEXT NOT NULL,
+          name TEXT NOT NULL,
+          color TEXT NOT NULL,
+          position INTEGER NOT NULL DEFAULT 0,
+          -- Los de fábrica se distinguen para poder traducir su nombre. Los
+          -- propios no se traducen: los escribió alguien, en su idioma.
+          is_builtin INTEGER NOT NULL DEFAULT 0,
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_issue_types_clave ON issue_types(workspace_id, key)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_issue_types_espacio ON issue_types(workspace_id, position)');
+
+      /**
+       * `issues.type` sigue guardando la **clave**, no el id de la fila.
+       *
+       * Es lo que evita reescribir la columna de todos los tickets que ya
+       * existen: 'task' seguía significando lo mismo antes y después. Con ids,
+       * esta migración tendría que tocar cada ticket del sistema y una base a
+       * medio migrar dejaría tickets sin tipo.
+       */
+      const espacios = db.prepare('SELECT id FROM workspaces').all() as Array<{ id: string }>;
+      const insertaTipo = db.prepare(`
+        INSERT OR IGNORE INTO issue_types (id, workspace_id, key, name, color, position, is_builtin)
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+      `);
+      // Los colores salen de la paleta de etiquetas, que ya pasa contraste en
+      // los dos temas.
+      const DE_FABRICA = [
+        { key: 'task',  name: 'Task',  color: '#3B82F6' },
+        { key: 'bug',   name: 'Bug',   color: '#EF4444' },
+        { key: 'story', name: 'Story', color: '#22C55E' },
+        { key: 'epic',  name: 'Epic',  color: '#A855F7' },
+      ];
+      for (const ws of espacios) {
+        DE_FABRICA.forEach((t, i) => {
+          insertaTipo.run(`${ws.id}:${t.key}`, ws.id, t.key, t.name, t.color, i);
+        });
+      }
+
+      /**
+       * Quitar `CHECK(type IN ('epic','story','task','bug'))`.
+       *
+       * Sin esto, un tipo propio se guarda bien en `issue_types` y **revienta**
+       * al crear el primer ticket que lo use: la función queda montada entera y
+       * solo falla en el último paso.
+       *
+       * SQLite no sabe quitar una restricción; hay que rehacer la tabla. El
+       * orden importa mucho más de lo que parece: se crea la nueva con un
+       * nombre temporal, se copia, se **suelta la vieja** y solo entonces se
+       * renombra la nueva.
+       *
+       * Lo intuitivo —renombrar `issues` a `issues_old` primero— corrompe la
+       * base en silencio. Desde SQLite 3.25, `ALTER TABLE RENAME` reescribe las
+       * cláusulas `REFERENCES` de las **demás** tablas para que sigan apuntando
+       * al nombre nuevo, así que `issue_labels`, `work_logs` y las otras tres
+       * acaban apuntando a `issues_old`; al soltarla quedan con una clave
+       * ajena hacia una tabla que no existe. No da ningún error al migrar:
+       * salta semanas después, al borrar un espacio, con «no such table:
+       * main.issues_old». Renombrando al final, la que se renombra no tiene a
+       * nadie apuntándola y no hay nada que reescribir.
+       *
+       * `foreign_keys` está desactivado durante todo esto —lo hace el runner,
+       * fuera de la transacción, porque el PRAGMA no hace nada dentro de una—,
+       * que es lo que impide que soltar la tabla vieja arrastre en cascada los
+       * tickets de las tablas que cuelgan de ella.
+       *
+       * Los índices se van con la tabla y hay que rehacerlos: perderlos no da
+       * ningún error, solo un tablero cada vez más lento sin explicación.
+       */
+      const esquema = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='issues'").get() as any;
+      if (esquema && esquema.sql.includes("CHECK(type IN")) {
+        db.exec(`
+          CREATE TABLE issues_nueva (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            sprint_id TEXT,
+            parent_issue_id TEXT,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'todo',
+            priority TEXT CHECK(priority IN ('lowest', 'low', 'medium', 'high', 'highest')) DEFAULT 'medium',
+            story_points INTEGER DEFAULT 0,
+            estimated_hours REAL DEFAULT 0.0,
+            logged_hours REAL DEFAULT 0.0,
+            position REAL DEFAULT 0.0,
+            reporter_id TEXT NOT NULL,
+            assignee_id TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            due_date DATETIME,
+            FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+            FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL,
+            FOREIGN KEY (parent_issue_id) REFERENCES issues(id) ON DELETE CASCADE,
+            FOREIGN KEY (reporter_id) REFERENCES users(id),
+            FOREIGN KEY (assignee_id) REFERENCES users(id)
+          )
+        `);
+        // Por nombre de columna y no `SELECT *`: el orden de la tabla vieja no
+        // es el del CREATE de arriba —`due_date` se añadió después y quedó al
+        // final—, y un `INSERT ... SELECT *` casaría columnas por posición.
+        db.exec(`
+          INSERT INTO issues_nueva (
+            id, workspace_id, sprint_id, parent_issue_id, type, title, description,
+            status, priority, story_points, estimated_hours, logged_hours, position,
+            reporter_id, assignee_id, created_at, updated_at, due_date
+          )
+          SELECT
+            id, workspace_id, sprint_id, parent_issue_id, type, title, description,
+            status, priority, story_points, estimated_hours, logged_hours, position,
+            reporter_id, assignee_id, created_at, updated_at, due_date
+          FROM issues
+        `);
+        db.exec('DROP TABLE issues');
+
+        /**
+         * `legacy_alter_table` para el renombrado final.
+         *
+         * Sin él, `RENAME` reparsea todos los triggers y vistas del esquema
+         * para reescribir las referencias, y los tres triggers de `work_logs`
+         * nombran a `issues`, que en este punto acaba de soltarse. El renombrado
+         * muere con «error in trigger trg_work_logs_insert: no such table:
+         * main.issues» y la migración se queda sin tabla de tickets.
+         *
+         * Activándolo, `RENAME` vuelve a ser lo que dice ser: cambiar el nombre
+         * y nada más. Es justo lo que hace falta aquí, porque lo que las demás
+         * tablas y los triggers dicen —`issues`— ya es lo correcto en cuanto
+         * termina.
+         */
+        const legado = db.pragma('legacy_alter_table', { simple: true });
+        db.pragma('legacy_alter_table = ON');
+        try {
+          db.exec('ALTER TABLE issues_nueva RENAME TO issues');
+        } finally {
+          db.pragma(`legacy_alter_table = ${legado ? 'ON' : 'OFF'}`);
+        }
+        db.exec('CREATE INDEX IF NOT EXISTS idx_issues_workspace ON issues(workspace_id)');
+        db.exec('CREATE INDEX IF NOT EXISTS idx_issues_metrics ON issues(workspace_id, sprint_id, status)');
+        db.exec('CREATE INDEX IF NOT EXISTS idx_issues_workspace_status ON issues(workspace_id, status)');
+      }
     }
   },
 ];

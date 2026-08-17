@@ -14,7 +14,7 @@ const memberships = db.prepare(`
 `).all(user.id) as any[];
 
 const tienePassword = (h: unknown) => typeof h === 'string' && h.startsWith('$2');
-const userProfile = db.prepare('SELECT bio, pronouns, public_email, email, is_public, github_id, google_id, password_hash, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
+const userProfile = db.prepare('SELECT bio, banner_url, pronouns, public_email, email, is_public, github_id, google_id, password_hash, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
 
 // Una cuenta creada por un proveedor guarda la cadena `oauth` como hash, que no
 // es bcrypt válido. A quien está en esa situación no se le puede pedir «la
@@ -90,6 +90,37 @@ const oauthNotice =
         
         <div class="md:col-span-2 bg-forge-panel border border-forge-border/60 rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div class="p-6 space-y-7 flex-1">
+            {/*
+              El banner solo se podía cambiar desde el propio perfil público,
+              pasando el ratón por encima de la imagen. Nada lo anunciaba, y a
+              tu perfil no llevaba ningún enlace: era una función que había que
+              descubrir por accidente. Aquí está donde se buscan las cosas del
+              perfil, junto al resto.
+            */}
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="font-semibold text-forge-text text-sm">{t('user.settings.banner')}</h3>
+                {userProfile.banner_url && (
+                  <button id="btn-remove-banner" class="text-xs font-semibold text-forge-muted hover:text-forge-error transition-colors">{t('user.settings.banner_remove')}</button>
+                )}
+              </div>
+              <div class="relative group cursor-pointer w-full h-32 rounded-lg border border-forge-border/40 bg-forge-bg overflow-hidden shadow-sm" id="banner-preview-container">
+                {userProfile.banner_url ? (
+                  <img src={userProfile.banner_url} class="w-full h-full object-cover" id="banner-preview-img" alt="" loading="lazy" />
+                ) : (
+                  <div class="w-full h-full bg-gradient-to-r from-forge-secondary/30 via-forge-primary/20 to-forge-bg" id="banner-preview-empty"></div>
+                )}
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold z-10">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  {t('user.settings.banner_change')}
+                </div>
+                <input type="file" id="banner-file-input" accept="image/*" aria-label={t('user.settings.banner_change')} class="absolute inset-0 opacity-0 cursor-pointer z-20" title={t('user.settings.banner_change')} />
+              </div>
+              <p class="text-xs text-forge-muted mt-2">{t('user.settings.banner_desc')}</p>
+            </div>
+
+            <div class="w-full h-px bg-forge-border/40"></div>
+
             <!-- Avatar -->
             <div class="flex items-center gap-6">
               <div class="relative group cursor-pointer w-24 h-24 rounded-full border border-forge-border/40 bg-forge-bg flex items-center justify-center overflow-hidden shadow-sm shrink-0" id="avatar-preview-container" data-user-id={user.id}>
@@ -451,6 +482,31 @@ const oauthNotice =
       */}
       <div class="pt-4 mt-6 border-t border-forge-border/40"></div>
 
+      {/*
+        Personas tiene página propia (`/people`).
+        Aquí abajo, entre las notificaciones y el botón de borrar la cuenta, no
+        la encontraba nadie: hay que bajar los ajustes enteros para llegar, y lo
+        que tiene al lado no se le parece en nada. Queda el enlace, porque
+        buscarla en ajustes es razonable.
+      */}
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10">
+        <div class="md:col-span-1">
+          <h2 class="text-base font-semibold text-forge-text">{t('friends.title')}</h2>
+          <p class="text-sm text-forge-muted mt-1">{t('friends.desc')}</p>
+        </div>
+        <div class="md:col-span-2">
+          <a href="/people" class="flex items-center justify-between gap-4 bg-forge-panel border border-forge-border/60 rounded-xl px-5 py-4 shadow-sm hover:border-forge-secondary/50 transition-colors group">
+            <span class="flex items-center gap-3 min-w-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text shrink-0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span class="text-sm font-semibold text-forge-text group-hover:text-forge-accent-text transition-colors">{t('friends.open')}</span>
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted shrink-0" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+        </div>
+      </section>
+
+      <div class="h-px w-full bg-forge-border/40 my-10"></div>
+
       <section class="bg-forge-panel border border-red-500/40 rounded-xl p-6 sm:p-8 shadow-sm">
         <div class="mb-6">
           <h2 class="text-lg font-bold text-red-500">{t('account.delete.title')}</h2>
@@ -525,6 +581,21 @@ const oauthNotice =
       'password.too_short','password.too_long',
     ].map((k) => [k, t(`err.${k}` as any)])
   ),
+  txtImg: {
+    grande: t('user.settings.img_too_big'),
+    invalida: t('user.settings.img_invalid'),
+    subiendo: t('user.settings.img_uploading'),
+    listo: t('user.settings.img_done'),
+    fallo: t('user.settings.img_failed'),
+  },
+  txtAmigos: {
+    ver: t('friends.view_profile'),
+    aceptar: t('friends.accept'),
+    rechazar: t('friends.reject'),
+    cancelar: t('friends.cancel'),
+    quitar: t('friends.remove'),
+    pendiente: t('friends.awaiting'),
+  },
   msgGuardado: t('user.settings.saved_ok'),
   msgRed: t('err.network'),
   msgGenerico: t('err.generic'),
@@ -559,86 +630,138 @@ const oauthNotice =
     });
   }
 
-  let newAvatarUrl = null;
-  const avatarInput = document.getElementById('avatar-file-input');
-  
-  avatarInput?.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        // @ts-ignore
-        return window.showToast('Image is too massive, keep it under 10MB', true);
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_SIZE = 512;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height && width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          } else if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) ctx.drawImage(img, 0, 0, width, height);
-
-          // Convert to WebP and Upload
-          canvas.toBlob(async (blob) => {
-            if (blob) {
-              const formData = new FormData();
-              formData.append('entity_type', 'user');
-              formData.append('entity_id', userId); // You might need to set data-user-id on body or pass it in script
-              formData.append('file', blob, 'avatar.webp');
-
-              // @ts-ignore
-              if (window.showToast) window.showToast('Uploading avatar...');
-
-              try {
-                const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (res.ok) {
-                  const data = await res.json();
-                  newAvatarUrl = data.url;
-                  
-                  let avatarPreview = document.getElementById('avatar-preview-img');
-                  if (avatarPreview) {
-                    avatarPreview.src = newAvatarUrl;
-                  } else {
-                    const container = document.getElementById('avatar-preview-container');
-                    const defaultIcon = document.getElementById('avatar-preview-default');
-                    if (defaultIcon) defaultIcon.style.display = 'none';
-                    
-                    const newImg = document.createElement('img');
-                    newImg.src = newAvatarUrl;
-                    newImg.id = 'avatar-preview-img';
-                    newImg.className = 'w-full h-full object-cover z-0';
-                    container?.insertBefore(newImg, container.firstChild);
-                  }
-                  // @ts-ignore
-                  if (window.showToast) window.showToast('Avatar uploaded!');
-                } else {
-                  // @ts-ignore
-                  if (window.showToast) window.showToast('Failed to upload avatar', true);
-                }
-              } catch (e) {
-                console.error(e);
-              }
-            }
-          }, 'image/webp', 0.8);
-        };
-        img.src = e.target?.result;
-      };
-      reader.readAsDataURL(file);
+  /**
+   * Redimensionar y subir una imagen.
+   *
+   * Era el cuerpo del manejador del avatar, escrito en línea y con las cinco
+   * frases en inglés a mano («Uploading avatar...», «Image is too massive»).
+   * El banner necesita exactamente lo mismo, así que o se sacaba a una función
+   * o eran dos copias que se separan a la primera corrección.
+   *
+   * El redimensionado ocurre **aquí**, antes de subir: una foto de móvil son
+   * cuatro megas, y lo que se ve son 96 píxeles de avatar. Subirla entera gasta
+   * disco del servidor y salida de red cada vez que alguien la mira.
+   */
+  async function subirImagen(file, { maxAncho, nombre }) {
+    if (file.size > 10 * 1024 * 1024) {
+      window.showToast?.(txtImg.grande, true);
+      return null;
     }
+
+    const bitmap = await new Promise((ok, err) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => ok(img);
+        img.onerror = err;
+        img.src = ev.target?.result;
+      };
+      reader.onerror = err;
+      reader.readAsDataURL(file);
+    }).catch(() => null);
+
+    if (!bitmap) { window.showToast?.(txtImg.invalida, true); return null; }
+
+    let { width, height } = bitmap;
+    if (width > maxAncho) { height = Math.round(height * (maxAncho / width)); width = maxAncho; }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d')?.drawImage(bitmap, 0, 0, width, height);
+
+    const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/webp', 0.85));
+    if (!blob) { window.showToast?.(txtImg.fallo, true); return null; }
+
+    const formData = new FormData();
+    formData.append('entity_type', 'user');
+    formData.append('entity_id', userId);
+    formData.append('file', blob, nombre);
+
+    window.showToast?.(txtImg.subiendo);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) { window.showToast?.(txtImg.fallo, true); return null; }
+      const data = await res.json();
+      window.showToast?.(txtImg.listo);
+      return data.url;
+    } catch (e) {
+      console.error('subir imagen:', e);
+      window.showToast?.(txtImg.fallo, true);
+      return null;
+    }
+  }
+
+  let newAvatarUrl = null;
+  document.getElementById('avatar-file-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // 512 basta: el avatar más grande que se pinta es de 96 px, y el doble
+    // cubre las pantallas de densidad alta.
+    const url = await subirImagen(file, { maxAncho: 512, nombre: 'avatar.webp' });
+    if (!url) return;
+    newAvatarUrl = url;
+
+    const preview = document.getElementById('avatar-preview-img');
+    if (preview) { preview.src = url; return; }
+    const container = document.getElementById('avatar-preview-container');
+    document.getElementById('avatar-preview-default')?.style.setProperty('display', 'none');
+    const img = document.createElement('img');
+    img.src = url;
+    img.id = 'avatar-preview-img';
+    img.className = 'w-full h-full object-cover z-0';
+    container?.insertBefore(img, container.firstChild);
+  });
+
+  /**
+   * El banner se guarda al soltarlo, no al pulsar «Guardar perfil».
+   *
+   * Es lo que ya hacía en el perfil público y lo que espera quien acaba de ver
+   * la imagen puesta: si la pantalla ya enseña el banner nuevo, dar por hecho
+   * que hace falta confirmar en otro sitio es cómo se pierden los cambios.
+   */
+  async function guardarBanner(url) {
+    const res = await fetch('/api/user/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ banner_url: url }),
+    });
+    if (!res.ok) { window.showToast?.(msgGenerico, true); return false; }
+    return true;
+  }
+
+  document.getElementById('banner-file-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Ancho completo de una tarjeta de perfil; 1600 cubre pantallas grandes.
+    const url = await subirImagen(file, { maxAncho: 1600, nombre: 'banner.webp' });
+    if (!url || !(await guardarBanner(url))) return;
+
+    const contenedor = document.getElementById('banner-preview-container');
+    let img = document.getElementById('banner-preview-img');
+    if (!img) {
+      document.getElementById('banner-preview-empty')?.remove();
+      img = document.createElement('img');
+      img.id = 'banner-preview-img';
+      img.className = 'w-full h-full object-cover';
+      img.alt = '';
+      contenedor?.insertBefore(img, contenedor.firstChild);
+    }
+    img.src = url;
+    document.getElementById('btn-remove-banner')?.classList.remove('hidden');
+  });
+
+  document.getElementById('btn-remove-banner')?.addEventListener('click', async () => {
+    if (!(await guardarBanner(null))) return;
+    document.getElementById('banner-preview-img')?.remove();
+    const contenedor = document.getElementById('banner-preview-container');
+    if (contenedor && !document.getElementById('banner-preview-empty')) {
+      const vacio = document.createElement('div');
+      vacio.id = 'banner-preview-empty';
+      vacio.className = 'w-full h-full bg-gradient-to-r from-forge-secondary/30 via-forge-primary/20 to-forge-bg';
+      contenedor.insertBefore(vacio, contenedor.firstChild);
+    }
+    document.getElementById('btn-remove-banner')?.classList.add('hidden');
   });
 
   const wrapper = document.getElementById('settings-wrapper');
@@ -982,6 +1105,5 @@ const oauthNotice =
         revisarNombre();
       }
     });
-
   })();
 </script>

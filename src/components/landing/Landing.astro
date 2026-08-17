@@ -532,15 +532,23 @@ const sections = [
   .lp-link:hover { color: var(--forge-text); }
 
   /* ── Datos ──────────────────────────────────────────────────────────── */
-  .lp-facts { margin-top: var(--lp-gap); }
+  /* La banda de cifras se lee de un vistazo, así que no necesita el aire de una
+     sección: con `--lp-gap` arriba quedaba flotando en medio de dos vacíos y no
+     se veía a qué pertenecía. */
+  .lp-facts { margin-top: calc(var(--lp-gap) * 0.55); }
   .lp-facts dl {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 2rem;
     margin: 0;
-    padding: 2rem 0;
+    padding: 1.75rem 0;
     border-top: 1px solid var(--forge-border);
     border-bottom: 1px solid var(--forge-border);
+    /* Centrado dentro de cada columna.
+       Alineado a la izquierda, la última —«MIT», tres letras— dejaba un hueco
+       enorme a su derecha y la fila entera parecía descuadrada hacia un lado,
+       aunque las cuatro columnas midieran lo mismo. */
+    text-align: center;
   }
   .lp-facts dt {
     font-family: 'JetBrains Mono', ui-monospace, monospace;

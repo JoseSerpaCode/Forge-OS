@@ -1,5 +1,6 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
+import WorkspaceIcon from '../../components/brand/WorkspaceIcon.astro';
 import db from '../../lib/db';
 import { useTranslations, defaultLang } from '../../i18n/ui';
 import { canInteractSocially, socialBlockReason } from '../../lib/social';
@@ -215,15 +216,9 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                     <div class="bg-forge-panel rounded-xl p-6 border border-forge-border hover:border-forge-secondary hover:shadow-md transition-all group flex flex-col h-full relative overflow-hidden">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex items-center gap-3">
-                                {ws.icon ? (
-                                    <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center text-lg shadow-sm shrink-0">
-                                        {ws.icon.startsWith('data:image') ? <img src={ws.icon} alt="" class="w-full h-full object-cover rounded-lg" /> : ws.icon}
-                                    </div>
-                                ) : (
-                                    <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center font-bold text-forge-accent-text shadow-sm shrink-0">
-                                        {ws.name.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
+                                <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center text-lg shadow-sm shrink-0 overflow-hidden">
+                                    <WorkspaceIcon icon={ws.icon} name={ws.name} />
+                                </div>
                                 <h3 class="text-lg font-bold text-forge-text group-hover:text-forge-accent-text transition-colors line-clamp-1">{ws.name}</h3>
                             </div>
                             <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-forge-bg text-forge-muted border border-forge-border/60 rounded shrink-0">

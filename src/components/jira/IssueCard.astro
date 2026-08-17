@@ -20,9 +20,13 @@ interface Props {
     labels?: Array<{ id: string; name: string; color: string }>;
   };
   canEdit?: boolean;
+  /** Falso cuando el tablero está ordenado por algo que no es el orden manual. */
+  arrastrable?: boolean;
+  /** El tipo resuelto del espacio: nombre y color tal como los dejó el equipo. */
+  tipo?: { key: string; name: string; color: string; isBuiltin: boolean } | null;
 }
 
-const { issue, canEdit = false } = Astro.props;
+const { issue, canEdit = false, arrastrable = canEdit, tipo = null } = Astro.props;
 
 import { useTranslations } from '../../i18n/ui';
 import LabelChip from '../labels/LabelChip.astro';
@@ -30,7 +34,7 @@ const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 ---
 <!-- Componente IssueCard.astro -->
-<div id={issue.id} draggable={canEdit ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-assignee={issue.assignee_username || 'Unassigned'} data-reporter={issue.reporter_username || 'System'} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-active-session={issue.active_session_start || ''} data-status={issue.status} data-t-due={t('card.due')} data-t-no-desc={t('modal.no_description')} data-labels={JSON.stringify(issue.labels || [])}
+<div id={issue.id} draggable={arrastrable ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-assignee={issue.assignee_username || 'Unassigned'} data-reporter={issue.reporter_username || 'System'} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-active-session={issue.active_session_start || ''} data-status={issue.status} data-t-due={t('card.due')} data-t-no-desc={t('modal.no_description')} data-labels={JSON.stringify(issue.labels || [])}
   class={`issue-card group bg-forge-panel border border-forge-border/40 p-4 rounded-xl shadow-sm hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.15)] hover:border-forge-secondary/50 transition-all duration-300 ease-out ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} mb-4 relative overflow-hidden
     ${issue.type === 'bug' ? 'before:bg-red-500' : 
       issue.type === 'story' ? 'before:bg-green-500' : 
@@ -62,8 +66,20 @@ const t = useTranslations(lang);
   )}
 
   <div class="flex items-center gap-2 pl-1">
-    <span class="issue-type-badge px-2 py-0.5 rounded-md text-[10px] font-bold tracking-widest bg-forge-bg text-forge-muted border border-forge-border uppercase shadow-sm">
-      {t(`type.${issue.type}` as any) || issue.type}
+    {/*
+      El nombre de un tipo de fábrica se traduce; el de uno propio no, porque
+      lo escribió alguien y traducir lo que escribió una persona es
+      inventárselo. Si la clave no corresponde a ningún tipo —un ticket viejo
+      de uno que se borró— se enseña la clave cruda: es fea, pero es
+      información, y una insignia en blanco no dice nada.
+    */}
+    <span class="issue-type-badge px-2 py-0.5 rounded-md text-[10px] font-bold tracking-widest bg-forge-bg border uppercase shadow-sm flex items-center gap-1.5"
+      data-type-key={issue.type}
+      style={tipo ? `border-color: ${tipo.color}55` : undefined}>
+      {tipo && <span class="w-1.5 h-1.5 rounded-full shrink-0" style={`background:${tipo.color}`} aria-hidden="true"></span>}
+      <span class="text-forge-muted">
+        {tipo ? (tipo.isBuiltin ? (t(`type.${tipo.key}` as any) || tipo.name) : tipo.name) : issue.type}
+      </span>
     </span>
   </div>
   

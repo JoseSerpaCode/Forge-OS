@@ -5,6 +5,7 @@ import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
 import { deVarias, listar as listarEtiquetas } from '../../../lib/labels';
+import { listar as listarTipos } from '../../../lib/issueTypes';
 
 const { sys_tag } = Astro.params;
 const user = Astro.locals.user!;
@@ -66,6 +67,53 @@ if (requestedSprintId && requestedSprintId !== 'backlog') {
 // Fetch all sprints for the dropdown
 const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace_id = ? ORDER BY start_date DESC, rowid DESC').all(workspace.id) as any[];
 
+/**
+ * Ordenar el tablero.
+ *
+ * Es una **vista**, no un cambio: se aplica en el `ORDER BY` de la consulta y
+ * no toca `position`, que es el orden que la gente colocó a mano arrastrando
+ * tarjetas. Reescribir `position` para «ordenar por prioridad» destruiría ese
+ * trabajo, y volver a «manual» ya no devolvería nada porque no quedaría a qué
+ * volver.
+ *
+ * La consecuencia hay que asumirla y decirla: con un orden que no es el manual,
+ * **arrastrar no puede funcionar**. Soltar una tarjeta escribiría un `position`
+ * que la vista ignora, así que volvería a su sitio sola y parecería que la
+ * aplicación está rota. Con un orden activo se desactiva el arrastre y se
+ * explica por qué.
+ *
+ * Cada orden se escribe **dos veces**, con y sin el prefijo de la tabla: uno va
+ * en el `ROW_NUMBER() OVER (...)` que recorta a cien por columna, donde la
+ * consulta tiene alias, y otro en el `ORDER BY` de fuera, donde ya no los hay.
+ * Se escriben a mano en vez de reescribir el SQL con una expresión regular:
+ * generar SQL a base de sustituciones es exactamente como se cuelan cosas donde
+ * no deben.
+ *
+ * `NULLS LAST` a mano con `IS NULL`: SQLite ordena los nulos primero, y un
+ * tablero ordenado por fecha de entrega que empieza por las tarjetas **sin**
+ * fecha entierra justo lo que se buscaba.
+ */
+const PRIORIDAD_SQL = (c: string) =>
+  // `CASE` y no alfabético: 'high' va antes que 'low' en el diccionario, lo que
+  // dejaría lo urgente en medio de la columna.
+  `CASE ${c}priority WHEN 'highest' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 WHEN 'lowest' THEN 4 ELSE 2 END ASC`;
+
+const ORDENES: Record<string, (c: string) => string> = {
+  manual:   (c) => `${c}position ASC, ${c}id ASC`,
+  priority: (c) => `${PRIORIDAD_SQL(c)}, ${c}position ASC`,
+  due:      (c) => `${c}due_date IS NULL ASC, ${c}due_date ASC, ${c}position ASC`,
+  created:  (c) => `${c}created_at DESC, ${c}position ASC`,
+  updated:  (c) => `${c}updated_at DESC, ${c}position ASC`,
+  title:    (c) => `${c}title COLLATE NOCASE ASC`,
+  points:   (c) => `${c}story_points DESC, ${c}position ASC`,
+};
+
+const ordenPedido = Astro.url.searchParams.get('sort') ?? 'manual';
+// Con `hasOwn` y no con `in`: `'toString' in ORDENES` es cierto por la cadena
+// de prototipos, y devolvería una función donde tiene que ir SQL.
+const ordenActivo = Object.hasOwn(ORDENES, ordenPedido) ? ordenPedido : 'manual';
+const ordenSQL = ORDENES[ordenActivo];
+
 let issuesQuery = `
   SELECT i.*, 
          i.logged_hours,
@@ -74,7 +122,7 @@ let issuesQuery = `
          u2.username as assignee_username,
          u2.avatar_url as assignee_avatar,
          (SELECT started_at FROM time_tracking_sessions WHERE issue_id = i.id AND user_id = ?) as active_session_start,
-         ROW_NUMBER() OVER (PARTITION BY i.status ORDER BY i.position ASC, i.id ASC) AS rn
+         ROW_NUMBER() OVER (PARTITION BY i.status ORDER BY ${ordenSQL('i.')}) AS rn
   FROM issues i
   LEFT JOIN users u1 ON i.reporter_id = u1.id
   LEFT JOIN users u2 ON i.assignee_id = u2.id
@@ -145,7 +193,7 @@ const pagedQuery = `
   SELECT * FROM (
     ${issuesQuery}
   ) WHERE rn <= ${COLUMN_LIMIT}
-  ORDER BY position ASC, id ASC
+  ORDER BY ${ordenSQL('')}
 `;
 const issues = db.prepare(pagedQuery).all(...queryParams) as any[];
 
@@ -155,6 +203,7 @@ const etiquetasPorIssue = deVarias('issue', issues.map((i) => i.id));
 for (const issue of issues) issue.labels = etiquetasPorIssue.get(issue.id) ?? [];
 
 const etiquetasDelEspacio = listarEtiquetas(workspace.id);
+const tiposDelEspacio = listarTipos(workspace.id);
 
 const activeSprintName = activeSprintId ? sprints.find(s => s.id === activeSprintId)?.name : 'Backlog';
 
@@ -213,6 +262,16 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
             <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? '(Active)' : s.status === 'completed' ? '(Completed)' : ''}</option>
           ))}
         </select>
+        <label class="sr-only" for="board-sort">{t('board.sort')}</label>
+        <select id="board-sort" class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
+          <option value="manual" selected={ordenActivo === 'manual'}>{t('board.sort_manual')}</option>
+          <option value="priority" selected={ordenActivo === 'priority'}>{t('board.sort_priority')}</option>
+          <option value="due" selected={ordenActivo === 'due'}>{t('board.sort_due')}</option>
+          <option value="points" selected={ordenActivo === 'points'}>{t('board.sort_points')}</option>
+          <option value="updated" selected={ordenActivo === 'updated'}>{t('board.sort_updated')}</option>
+          <option value="created" selected={ordenActivo === 'created'}>{t('board.sort_created')}</option>
+          <option value="title" selected={ordenActivo === 'title'}>{t('board.sort_title')}</option>
+        </select>
 
         {/* Filtro por etiqueta. Solo aparece si hay etiquetas: un desplegable
             con una única opción vacía es ruido. */}
@@ -256,7 +315,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={access.role} statusCounts={statusCounts} labels={etiquetasDelEspacio} sysTag={sys_tag} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={access.role} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} sortMode={ordenActivo} />
     </div>
   </div>
 
@@ -273,6 +332,55 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     </div>
   </dialog>
 
+  {/* Cerrar un sprint con trabajo dentro.
+      El servidor ya se negaba a cerrarlo en silencio y devolvía las tres
+      salidas posibles, pero nadie las enseñaba: la respuesta llegaba al tablero
+      y se pintaba el JSON crudo en un aviso. Esto es esa pregunta, hecha. */}
+  <dialog id="close-sprint-modal"
+    data-t-pending={t('sprint.close_pending')}
+    data-t-pending-one={t('sprint.close_pending_one')}
+    data-t-clean={t('sprint.close_clean')}
+    data-t-reopen={t('sprint.reopen_confirm')}
+    data-t-deactivate={t('sprint.deactivate_confirm')}
+    data-t-err-deactivate={t('sprint.err_deactivate')}
+    data-t-err-create={t('issue.err_create')}
+    data-t-err={t('sprint.err_close')}
+    data-t-no-target={t('sprint.err_no_target')}
+    class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-full max-w-[480px] text-forge-text shadow-xl backdrop:bg-black/60">
+    <h2 class="text-xl font-bold mb-1">{t('sprint.close_title')}</h2>
+    <p id="close-sprint-lead" class="text-sm text-forge-muted mb-5"></p>
+
+    <div class="space-y-2">
+      {[
+        { v: 'backlog', t: t('sprint.close_backlog'), d: t('sprint.close_backlog_desc') },
+        { v: 'next', t: t('sprint.close_next'), d: t('sprint.close_next_desc') },
+        { v: 'keep', t: t('sprint.close_keep'), d: t('sprint.close_keep_desc') },
+      ].map((o, i) => (
+        <label class="flex gap-3 items-start border border-forge-border rounded-xl p-3 cursor-pointer hover:border-forge-secondary/50 transition-colors has-[:checked]:border-forge-secondary has-[:checked]:bg-forge-secondary/5">
+          <input type="radio" name="close-strategy" value={o.v} checked={i === 0} class="mt-1 accent-forge-primary shrink-0">
+          <span class="min-w-0">
+            <span class="block text-sm font-bold text-forge-text">{o.t}</span>
+            <span class="block text-xs text-forge-muted mt-0.5 leading-relaxed">{o.d}</span>
+          </span>
+        </label>
+      ))}
+    </div>
+
+    <div id="close-sprint-target-wrap" class="hidden mt-4">
+      <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5" for="close-sprint-target">{t('sprint.close_target')}</label>
+      <select id="close-sprint-target" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary focus:outline-none">
+        {sprints.filter((sp: any) => sp.status !== 'completed').map((sp: any) => (
+          <option value={sp.id} data-current={sp.id === activeSprintId ? 'true' : 'false'}>{sp.name}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button type="button" class="px-4 py-2 text-sm font-bold text-forge-muted hover:text-forge-text" onclick="document.getElementById('close-sprint-modal').close()">{t('sprint.close_cancel')}</button>
+      <button type="button" id="btn-close-sprint-confirm" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">{t('sprint.close_confirm')}</button>
+    </div>
+  </dialog>
+
   <!-- New Issue Modal -->
   <dialog id="new-issue-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[500px] text-forge-text shadow-xl backdrop:bg-black/50">
     <h2 class="text-xl font-bold mb-4">{t('modal.create_issue')}</h2>
@@ -284,9 +392,9 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       <div>
         <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-type">{t('modal.type')}</label>
         <select id="new-issue-type" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
-          <option value="task">{t('type.task')}</option>
-          <option value="bug">{t('type.bug')}</option>
-          <option value="story">{t('type.story')}</option>
+          {tiposDelEspacio.map((ti) => (
+            <option value={ti.key}>{ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name}</option>
+          ))}
         </select>
       </div>
       <div>
@@ -339,11 +447,13 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       const val = (e.target as HTMLSelectElement).value;
       localStorage.setItem(`forge_last_sprint_${workspaceId}`, val);
       const url = new URL(window.location.href);
-      if (val === 'backlog') {
-        url.searchParams.delete('sprint');
-      } else {
-        url.searchParams.set('sprint', val);
-      }
+      // `?sprint=backlog` explícito, **no** quitar el parámetro.
+      //
+      // Sin parámetro, el servidor entiende «no ha elegido» y aplica la cookie
+      // del último sprint, así que devolvía al sprint del que se acababa de
+      // salir. Elegir «Backlog» no llevaba a ninguna parte y no había forma de
+      // volver a él.
+      url.searchParams.set('sprint', val);
       window.location.href = url.toString();
     });
 
@@ -353,6 +463,22 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     // se puede pegar en un mensaje y le abre a otro lo mismo que estás viendo.
     // Y a diferencia del sprint, no se recuerda entre visitas: un filtro
     // pegajoso hace creer que el tablero se ha vaciado.
+    /**
+     * El orden va en la URL, como el filtro de etiqueta.
+     *
+     * Así «el tablero ordenado por lo que vence antes» se puede pegar en un
+     * mensaje. Y como el filtro, **no se recuerda entre visitas**: un orden
+     * pegajoso hace creer que las tarjetas se han movido solas.
+     */
+    const selectorOrden = document.getElementById('board-sort') as HTMLSelectElement | null;
+    selectorOrden?.addEventListener('change', (e) => {
+      const val = (e.target as HTMLSelectElement).value;
+      const url = new URL(window.location.href);
+      if (val && val !== 'manual') url.searchParams.set('sort', val);
+      else url.searchParams.delete('sort');
+      window.location.href = url.toString();
+    });
+
     const filtroEtiqueta = document.getElementById('label-filter') as HTMLSelectElement | null;
     filtroEtiqueta?.addEventListener('change', (e) => {
       const val = (e.target as HTMLSelectElement).value;
@@ -424,9 +550,73 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       if (res.ok) {
         window.location.reload();
       } else {
-        window.showToast?.(await res.text(), 'error');
+        // El cuerpo de la respuesta es para el registro, no para la pantalla.
+        console.error('crear issue:', await res.text());
+        window.showToast?.(dialogoCierre?.getAttribute('data-t-err-create') || '', 'error');
       }
     });
+
+    const dialogoCierre = document.getElementById('close-sprint-modal') as HTMLDialogElement | null;
+    const destinoWrap = document.getElementById('close-sprint-target-wrap');
+    const destinoSel = document.getElementById('close-sprint-target') as HTMLSelectElement | null;
+
+    // «A qué sprint» solo tiene sentido con la opción de moverlas elegida.
+    dialogoCierre?.querySelectorAll<HTMLInputElement>('input[name="close-strategy"]').forEach((r) => {
+      r.addEventListener('change', () => {
+        destinoWrap?.classList.toggle('hidden', r.value !== 'next' || !r.checked);
+      });
+    });
+
+    function abrirDialogoCierre(pendientes: number, enviar: (c: Record<string, unknown>) => Promise<Response>) {
+      if (!dialogoCierre) return;
+      const lead = document.getElementById('close-sprint-lead');
+      const plantilla = pendientes === 1
+        ? dialogoCierre.getAttribute('data-t-pending-one') || ''
+        : (dialogoCierre.getAttribute('data-t-pending') || '').replace('{n}', String(pendientes));
+      if (lead) lead.textContent = plantilla;
+
+      // El sprint que se está cerrando no puede ser su propio destino.
+      let hayDestino = false;
+      destinoSel?.querySelectorAll('option').forEach((o) => {
+        const esActual = o.getAttribute('data-current') === 'true';
+        o.hidden = esActual;
+        o.disabled = esActual;
+        if (!esActual) hayDestino = true;
+      });
+      if (destinoSel && hayDestino && destinoSel.selectedOptions[0]?.disabled) {
+        const libre = Array.from(destinoSel.options).find((o) => !o.disabled);
+        if (libre) destinoSel.value = libre.value;
+      }
+      // Sin otro sprint al que pasarlas, la opción no se ofrece.
+      const radioNext = dialogoCierre.querySelector<HTMLInputElement>('input[value="next"]');
+      const filaNext = radioNext?.closest('label');
+      if (filaNext) filaNext.classList.toggle('hidden', !hayDestino);
+      if (!hayDestino && radioNext?.checked) {
+        dialogoCierre.querySelector<HTMLInputElement>('input[value="backlog"]')!.checked = true;
+        destinoWrap?.classList.add('hidden');
+      }
+
+      const confirmar = document.getElementById('btn-close-sprint-confirm');
+      const alPulsar = async () => {
+        const elegida = dialogoCierre.querySelector<HTMLInputElement>('input[name="close-strategy"]:checked')?.value || 'backlog';
+        const cuerpo: Record<string, unknown> = { strategy: elegida };
+        if (elegida === 'next') {
+          if (!destinoSel?.value) {
+            // @ts-ignore
+            window.showToast(dialogoCierre.getAttribute('data-t-no-target') || '', 'error');
+            return;
+          }
+          cuerpo.target_sprint_id = destinoSel.value;
+        }
+        const r = await enviar(cuerpo);
+        if (r.ok) { window.location.reload(); return; }
+        // @ts-ignore
+        window.showToast(dialogoCierre.getAttribute('data-t-err') || '', 'error');
+      };
+      confirmar?.addEventListener('click', alPulsar, { once: true });
+      dialogoCierre.addEventListener('close', () => confirmar?.removeEventListener('click', alPulsar), { once: true });
+      dialogoCierre.showModal();
+    }
 
     // SPRINT TOGGLE (START/COMPLETE/REOPEN)
     const toggleSprintBtn = document.getElementById('btn-toggle-sprint');
@@ -439,30 +629,45 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       if (currentStatus === 'active') newStatus = 'completed';
       if (currentStatus === 'completed') newStatus = 'active'; // Allow reopening if they are looking at a completed sprint
 
-      let promptText = `Are you sure you want to ${newStatus === 'completed' ? 'complete' : 'start/reopen'} this sprint?`;
-
-      if (newStatus === 'completed') {
-        const incompleteCards = document.querySelectorAll('.board-column:not([data-status="done"]) .issue-card').length;
-        if (incompleteCards > 0) {
-          promptText = `WARNING: There are ${incompleteCards} incomplete task(s). Are you sure you want to complete this sprint anyway?`;
-        }
-      }
-      
-      // @ts-ignore
-      window.forgeConfirm(promptText, async () => {
-        const res = await fetch(`/api/sprints/${sprintId}`, {
+      const cerrar = (cuerpo: Record<string, unknown>) =>
+        fetch(`/api/sprints/${sprintId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus, workspaceId })
+          body: JSON.stringify({ status: newStatus, workspaceId, ...cuerpo })
         });
 
-        if (res.ok) {
-          window.location.reload();
-        } else {
+      // Reabrir o arrancar no arrastra nada: se pregunta y ya.
+      if (newStatus !== 'completed') {
+        // @ts-ignore
+        window.forgeConfirm(dialogoCierre?.getAttribute('data-t-reopen') || '', async () => {
+          const res = await cerrar({});
+          if (res.ok) window.location.reload();
           // @ts-ignore
-          window.showToast(await res.text(), true);
-        }
-      });
+          else window.showToast(dialogoCierre?.getAttribute('data-t-err') || '', 'error');
+        });
+        return;
+      }
+
+      // Cerrar sí: puede haber trabajo sin terminar dentro.
+      //
+      // Quién cuenta las tareas pendientes importa. Antes las contaba esta
+      // página mirando las tarjetas dibujadas, y el tablero solo trae cien por
+      // columna: con un sprint grande decía «hay 100» cuando había 743, o «no
+      // queda nada» estando en el backlog. Ahora se intenta cerrar y es el
+      // servidor —que las cuenta todas— quien responde cuántas quedan.
+      const res = await cerrar({});
+      if (res.ok) { window.location.reload(); return; }
+
+      let datos: any = null;
+      try { datos = await res.clone().json(); } catch { /* no era JSON */ }
+
+      if (res.status === 409 && datos?.error_code === 'unfinished_issues') {
+        abrirDialogoCierre(datos.pending, cerrar);
+        return;
+      }
+
+      // @ts-ignore
+      window.showToast(dialogoCierre?.getAttribute('data-t-err') || '', 'error');
     });
 
     const deactivateSprintBtn = document.getElementById('btn-deactivate-sprint');
@@ -471,7 +676,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       const sprintId = btn.getAttribute('data-sprint-id');
       
       // @ts-ignore
-      window.forgeConfirm(`Deactivate this sprint? It will return to the planning stage.`, async () => {
+      window.forgeConfirm(dialogoCierre?.getAttribute('data-t-deactivate') || '', async () => {
         const res = await fetch(`/api/sprints/${sprintId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -481,8 +686,9 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         if (res.ok) {
           window.location.reload();
         } else {
+          console.error('desactivar sprint:', await res.text());
           // @ts-ignore
-          window.showToast(await res.text(), true);
+          window.showToast(dialogoCierre?.getAttribute('data-t-err-deactivate') || '', 'error');
         }
       });
     });

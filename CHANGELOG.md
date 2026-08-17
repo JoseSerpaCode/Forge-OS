@@ -6,6 +6,56 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.24.0] - 2026-08-16
+
+### Added
+
+- **Personas tiene página propia** (`/people`) con lo que le faltaba para servir de algo. Existían cinco endpoints para pedir, aceptar, rechazar, cancelar y quitar amistades, y ninguna pantalla donde **ver** ninguna de las tres listas: la única forma de enterarte de que alguien te había mandado una solicitud era entrar a su perfil por casualidad.
+- **Buscador de personas.** Hasta ahora una solicitud solo se podía enviar desde el perfil de la otra persona, y a ese perfil solo se llegaba escribiendo su nombre exacto: para encontrar a alguien había que saber ya quién era. Solo salen las cuentas con perfil público, y cada resultado dice en qué estado está para no ofrecer un botón que el servidor rechazaría.
+- **Los bloqueos se pueden deshacer.** Bloquear se podía; desbloquear, en la práctica no: el botón vive en el perfil de la persona bloqueada, y a ese perfil se llega escribiendo su nombre. Bloquear a alguien y olvidar cómo se llamaba dejaba el bloqueo puesto para siempre.
+- **Menú de la cuenta en la barra lateral.** El bloque de usuario llevaba directo a los ajustes, así que a tu propio perfil no apuntaba **ningún** enlace de la aplicación. Lleva un distintivo con las solicitudes sin responder: una solicitud sin aviso es una solicitud que caduca por olvido.
+- **El banner del perfil se cambia desde los ajustes.** Antes solo se podía pasando el ratón por encima de la imagen en el perfil público, sin que nada anunciara que era pulsable.
+- **Duplicar un ticket.** Lo interesante es lo que **no** copia: las horas registradas se quedan a cero —son el registro de un tiempo que alguien trabajó de verdad, y el tablero las suma para el total del sprint—, el estado vuelve a «Por hacer» y, si el sprint está cerrado, la copia va al backlog en vez de descuadrar lo que ese sprint dice que se hizo.
+- **Tipos de ticket propios, por espacio.** Eran tres, escritos a mano en cuatro sitios y en una restricción de la base de datos. Un equipo de mantenimiento no tiene «historias»; tiene incidencias y preventivos. Se les pone nombre, color y orden.
+- **Ordenar el tablero** por prioridad, fecha de entrega, puntos, título o fecha. Es una **vista**: no toca el orden manual que se colocó arrastrando tarjetas, así que volver a «manual» devuelve el tablero tal como estaba. Con un orden activo el arrastre se apaga y se dice por qué —soltar una tarjeta escribiría una posición que la vista ignora, y volvería sola a su sitio.
+- **Las tareas pendientes del hub se agrupan por espacio**, con la cuenta de cada uno y las vencidas aparte. Eran diez filas seguidas con los espacios mezclados y sin decir de cuál era cada una.
+
+### Changed
+
+- **La landing decía «dos órdenes» donde su propio bloque de código muestra tres líneas.** Aparecía en dos textos distintos. Ahora dice «tres comandos» en los dos, que es lo que hay que escribir de verdad.
+- El bloque de etiquetas de la landing no se entendía: «al filtrar por ella vuelven las tres cosas juntas» no decía dónde se filtra ni qué vuelve. Ahora nombra el caso —la misma «Parcial 2» en una tarea, unos apuntes y un archivo— y qué pasa al buscarla.
+- «Sí exige un sitio donde correr» pasa a «Hace falta una máquina donde ejecutarlo», y los tres titulares de «Por qué una herramienta más» pierden el punto final que llevaban.
+- La banda de cifras de la landing centra el contenido de cada columna. Alineada a la izquierda, la última —«MIT», tres letras— dejaba un hueco enorme a su derecha y la fila parecía descuadrada hacia un lado aunque las cuatro columnas midieran lo mismo. Y llevaba el aire de una sección entera arriba, así que flotaba entre dos vacíos sin verse a qué pertenecía.
+- Todo lo anterior, en **los dos idiomas**: la copia inglesa arrastraba las mismas contradicciones.
+- En los ajustes de la cuenta, las secciones de debajo de las notificaciones quedaban pegadas unas a otras. El contenedor que reparte el espacio cierra mucho antes, así que a partir de ahí el espaciado hay que ponerlo a mano.
+
+- Las pendientes del hub ordenan por **urgencia** y no por lo último tocado: lo que vence antes va primero. Ordenar por la última modificación subía justo lo que se acababa de mirar.
+- El desplegable de tipo del modal se rellenaba comparando el **texto** de la insignia con `task`, `bug` y `story`. En español «Tarea» no casa con nada, así que enseñaba el tipo equivocado. Ahora la clave viaja en un atributo.
+- Renombrar un tipo no cambia su clave, que es lo que llevan escrito todos los tickets. Regenerarla al renombrar dejaría cada ticket apuntando a un tipo que ya no existe, sin un solo error por ninguna parte.
+
+### Fixed
+
+- **Borrar un tipo de ticket pregunta a dónde van los tickets que lo llevan**, con el número delante. Las otras salidas eran borrarlos —perder trabajo por reorganizar un desplegable— o dejarlos apuntando a una clave muerta, que no da ningún error y solo se descubre cuando alguien filtra por tipo.
+- La migración que rehace la tabla `issues` renombra **al final**, no al principio. Renombrar primero corrompe la base en silencio: desde SQLite 3.25 el renombrado reescribe las cláusulas `REFERENCES` de las demás tablas, así que las cinco que apuntan a `issues` acababan apuntando a una tabla que se soltaba a continuación. No falla al migrar; falla semanas después al borrar un espacio.
+- Los índices de `issues` se rehacen tras la reconstrucción. Perderlos no da ningún error, solo un tablero cada vez más lento sin explicación.
+
+## [1.23.1] - 2026-08-16
+
+### Fixed
+
+- **No se podía volver al backlog.** Al elegirlo en el selector, la página quitaba `sprint` de la dirección. El servidor entiende esa ausencia como «no ha elegido nada» y aplica el último sprint recordado, así que devolvía justo al sprint del que se acababa de salir. Con un sprint creado, el backlog era inalcanzable. Ahora la elección viaja explícita.
+- **Al cerrar un sprint con trabajo dentro salía un aviso con `{"error_code":"unfinished_issues",...}`.** El servidor hacía lo correcto: negarse a cerrarlo en silencio y devolver las tres salidas posibles. Nadie las enseñaba, y la respuesta se pintaba tal cual. Ahora se pregunta qué hacer con lo que queda: devolverlo al backlog, pasarlo a otro sprint o dejarlo dentro.
+- La cuenta de tareas pendientes la da el servidor, no la pantalla. El tablero solo dibuja cien tarjetas por columna, así que contarlas ahí decía «100» cuando eran 743.
+- Otros dos botones —crear tarea y devolver un sprint a planificación— también enseñaban el cuerpo de la respuesta del servidor al usuario. Va al registro; a la pantalla, una frase.
+- **El icono del espacio salía como un churro de letras.** La columna guarda cuatro cosas distintas (una ruta, un data URI, una letra o nada) y la pantalla solo sabía dibujar el data URI. Al subir una imagen se guardaba una ruta, y la ruta se pintaba **como texto**. Ahora hay un solo componente que lo resuelve, usado en los tres sitios que antes tenían su propia copia.
+- **No se podía subir ningún archivo.** La subida va del navegador a Google directamente, y la política de contenidos no permitía ese destino, así que el `PUT` moría antes de salir. El mensaje era «No se ha podido subir el archivo», sin más.
+- **Al invitar a alguien no salía ninguna sugerencia**: era un campo de texto libre donde había que escribir el nombre exacto de memoria, y el error llegaba después de enviar.
+
+### Added
+
+- Buscador de personas al invitar. Solo lo puede pedir quien puede invitar; no salen las cuentas de invitado, que caducan, ni quienes ya están dentro.
+- Las frases del tablero relacionadas con sprints estaban escritas a mano en inglés. Ahora pasan por traducción, en los dos idiomas.
+
 ## [1.23.0] - 2026-08-15
 
 ### Changed

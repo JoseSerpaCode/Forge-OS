@@ -7,8 +7,23 @@ test('Task Table sorting functionality', async ({ page }) => {
   const dbPath = path.resolve('forge_test.db');
   const db = new Database(dbPath);
   
-  const user = db.prepare('SELECT id FROM users LIMIT 1').get() as any;
+  const user = db.prepare("SELECT id FROM users WHERE username = 'jose'").get() as any;
   if (!user) throw new Error('No user found to test with');
+
+  /**
+   * La tabla se siembra aquí en vez de contar con que ya haya tareas.
+   *
+   * El hub agrupa las pendientes por espacio, así que sin ninguna no pinta
+   * ninguna tabla: enseña el estado vacío. La prueba dependía de que la cuenta
+   * elegida tuviera trabajo asignado por casualidad, y ordenar una tabla que no
+   * existe no prueba nada aunque pase.
+   */
+  const ws = db.prepare('SELECT id, sys_tag FROM workspaces LIMIT 1').get() as any;
+  db.prepare("DELETE FROM issues WHERE title LIKE 'TTS %'").run();
+  const ins = db.prepare(`INSERT INTO issues (id, workspace_id, type, title, status, reporter_id, assignee_id, position, due_date)
+                          VALUES (?, ?, 'task', ?, 'todo', ?, ?, ?, ?)`);
+  ins.run(crypto.randomUUID(), ws.id, 'TTS zeta', user.id, user.id, 100000, '2030-01-01');
+  ins.run(crypto.randomUUID(), ws.id, 'TTS alfa', user.id, user.id, 200000, '2029-01-01');
   
   const sessionId = 'test-session-task-table';
   db.prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
@@ -27,15 +42,24 @@ test('Task Table sorting functionality', async ({ page }) => {
   console.log('Navigating to hub...');
   await page.goto('/');
   
-  // Wait for the task table to be visible
-  await expect(page.locator('.task-table-container')).toBeVisible();
+  /**
+   * Una tabla, no «la» tabla.
+   *
+   * El hub agrupa las pendientes por espacio, así que hay una tabla por espacio
+   * con trabajo asignado. Se comprueba sobre la que contiene las tareas de esta
+   * prueba: ordenar «todas las tablas a la vez» no es lo que hace la página, y
+   * el script de orden está acotado a cada `.task-table-container` justo para
+   * que cada grupo se ordene por su cuenta.
+   */
+  const tabla = page.locator('.task-table-container').filter({ hasText: 'TTS ' }).first();
+  await expect(tabla).toBeVisible();
 
   // Test sorting by name
-  const nameHeader = page.locator('th[data-sort="name"]');
+  const nameHeader = tabla.locator('th[data-sort="name"]');
   await nameHeader.click();
   
   // Get all rows text for the name column
-  let names = await page.locator('.task-table-body tr.task-row td:nth-child(2) a').allTextContents();
+  let names = await tabla.locator('.task-table-body tr.task-row td:nth-child(2) a').allTextContents();
   names = names.map(n => n.trim().toLowerCase());
   
   // Check if they are sorted ascending
@@ -51,7 +75,7 @@ test('Task Table sorting functionality', async ({ page }) => {
   // Click again to sort descending
   await nameHeader.click();
   
-  names = await page.locator('.task-table-body tr.task-row td:nth-child(2) a').allTextContents();
+  names = await tabla.locator('.task-table-body tr.task-row td:nth-child(2) a').allTextContents();
   names = names.map(n => n.trim().toLowerCase());
   
   // Check if they are sorted descending

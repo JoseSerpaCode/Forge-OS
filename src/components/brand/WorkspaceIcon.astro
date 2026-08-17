@@ -1,0 +1,49 @@
+---
+/**
+ * El icono de un espacio de trabajo.
+ *
+ * La columna `icon` guarda tres cosas distintas según cómo se creara el
+ * espacio, y ahí estaba el fallo: la pantalla solo sabía dibujar una de ellas.
+ *
+ *   - Una **ruta** `/api/storage/…`, que es lo que devuelve la subida de hoy.
+ *   - Un **data URI**, de cuando la imagen se guardaba entera en la base.
+ *   - Una **letra o un emoji** sueltos.
+ *   - Nada, y entonces se usa la inicial del nombre.
+ *
+ * Comprobar solo `startsWith('data:image')` dejaba fuera el primer caso, que es
+ * justamente el normal: al recargar, la ruta se pintaba **como texto** y salía
+ * un trozo de UUID en naranja donde debía ir la imagen.
+ *
+ * Va en un componente porque se dibuja en tres sitios —ajustes, hub y
+ * conmutador— y los tres tenían su propia copia de la comprobación.
+ */
+interface Props {
+  icon?: string | null;
+  name: string;
+  class?: string;
+  imgId?: string;
+  textId?: string;
+}
+
+const { icon, name, class: className = '', imgId, textId } = Astro.props;
+
+const valor = typeof icon === 'string' ? icon.trim() : '';
+
+/**
+ * ¿Esto es una imagen?
+ *
+ * Se acepta el data URI y las rutas propias. **No** una URL externa: el icono
+ * lo pinta cualquiera que entre en el hub, y una dirección de fuera convertiría
+ * cada visita en una petición a un servidor ajeno que además sabría quién la
+ * hizo. Si algún día hacen falta, que pasen por el proxy.
+ */
+const esImagen = valor.startsWith('data:image/') || valor.startsWith('/api/storage/');
+---
+
+{esImagen ? (
+  <img src={valor} class:list={['w-full h-full object-cover', className]} id={imgId} alt="" loading="lazy" />
+) : (
+  <div class:list={['font-black text-forge-accent-text', className]} id={textId}>
+    {valor || name.charAt(0).toUpperCase()}
+  </div>
+)}

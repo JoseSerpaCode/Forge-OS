@@ -1,0 +1,327 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { useTranslations } from '../i18n/ui';
+
+/**
+ * Personas.
+ *
+ * Empezó como una sección al final de los ajustes de la cuenta, debajo de las
+ * membresías y encima del botón de borrar la cuenta. Ahí no la encontraba
+ * nadie: hay que bajar toda la página para llegar, y lo que hay al lado —
+ * contraseña, notificaciones, borrar la cuenta— no tiene nada que ver.
+ *
+ * Tiene página propia porque son tres cosas distintas y ninguna cabía en una
+ * lista suelta: **buscar** a quién añadir, **responder** solicitudes y
+ * **deshacer** bloqueos. Las tres estaban sin sitio, y la tercera directamente
+ * no se podía hacer: el botón de desbloquear vive en el perfil de la persona
+ * bloqueada, y a ese perfil solo se llega escribiendo su nombre exacto.
+ */
+const user = Astro.locals.user!;
+if (!user) return Astro.redirect('/login');
+if (user.is_guest) return Astro.redirect('/register');
+
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+---
+
+<MainLayout title={t('friends.title')}>
+  <div
+    id="people-page"
+    class="max-w-3xl mx-auto mt-4 sm:mt-8 p-0 sm:p-6 pb-20"
+    data-t-error={t('friends.error')}
+    data-t-remove={t('friends.remove_confirm')}
+    data-t-unblock={t('friends.unblock_confirm')}
+    data-t-sent={t('friends.request_sent')}
+    data-t-none={t('friends.search_none')}
+  >
+    <div class="border-b border-forge-border/40 pb-5 mb-8">
+      <h1 class="text-2xl font-semibold text-forge-text">{t('friends.title')}</h1>
+      <p class="text-forge-muted text-sm mt-1">{t('friends.page_desc')}</p>
+    </div>
+
+    {/*
+      Buscar va **arriba del todo** y no al final.
+      Es lo único que se puede hacer estando la página vacía, que es como la ve
+      quien llega por primera vez. Una lista vacía con el buscador debajo es una
+      pantalla que no ofrece nada.
+    */}
+    <section class="mb-8">
+      <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2" for="people-search">
+        {t('friends.search')}
+      </label>
+      <div class="relative">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-3 top-1/2 -translate-y-1/2 text-forge-muted pointer-events-none" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          type="search"
+          id="people-search"
+          autocomplete="off"
+          placeholder={t('friends.search_ph')}
+          class="w-full bg-forge-panel border border-forge-border rounded-xl pl-10 pr-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all"
+        />
+      </div>
+      <p class="text-xs text-forge-muted mt-2">{t('friends.search_hint')}</p>
+      <ul id="people-search-results" class="mt-3 space-y-2"></ul>
+      <p id="people-search-empty" class="hidden text-sm text-forge-muted mt-3 px-1"></p>
+    </section>
+
+    <div id="people-loading" class="text-sm text-forge-muted">{t('friends.loading')}</div>
+
+    <section id="people-incoming" class="hidden mb-8">
+      <h2 class="text-[11px] font-bold uppercase tracking-widest text-forge-accent-text mb-3">{t('friends.incoming')}</h2>
+      <ul id="people-incoming-list" class="space-y-2"></ul>
+    </section>
+
+    <section id="people-friends" class="hidden mb-8">
+      <h2 class="text-[11px] font-bold uppercase tracking-widest text-forge-muted mb-3">{t('friends.yours')}</h2>
+      <ul id="people-friends-list" class="space-y-2"></ul>
+    </section>
+
+    <section id="people-outgoing" class="hidden mb-8">
+      <h2 class="text-[11px] font-bold uppercase tracking-widest text-forge-muted mb-3">{t('friends.outgoing')}</h2>
+      <ul id="people-outgoing-list" class="space-y-2"></ul>
+    </section>
+
+    {/* Los bloqueos van al final y plegados: es la parte que se consulta una
+        vez cada mucho, no la que se atiende. */}
+    <section id="people-blocked-wrap" class="hidden">
+      <details class="border border-forge-border rounded-xl bg-forge-panel overflow-hidden">
+        <summary class="px-4 py-3 text-sm font-bold text-forge-text cursor-pointer select-none hover:bg-forge-bg/50 transition-colors">
+          {t('friends.blocked')} <span id="people-blocked-count" class="text-forge-muted font-normal"></span>
+        </summary>
+        <ul id="people-blocked-list" class="divide-y divide-forge-border/40 border-t border-forge-border/40"></ul>
+      </details>
+    </section>
+
+    <div id="people-empty" class="hidden text-center py-10 px-6 border border-dashed border-forge-border rounded-xl bg-forge-bg/30">
+      <p class="text-sm text-forge-text font-semibold">{t('friends.empty')}</p>
+      <p class="text-xs text-forge-muted mt-1.5">{t('friends.empty_hint_search')}</p>
+    </div>
+  </div>
+</MainLayout>
+
+<script is:inline define:vars={{ etiquetas: {
+  accept: t('friends.accept'),
+  reject: t('friends.reject'),
+  cancel: t('friends.cancel'),
+  remove: t('friends.remove'),
+  unblock: t('friends.unblock'),
+  add: t('friends.add'),
+  awaiting: t('friends.awaiting'),
+  already_friends: t('friends.already'),
+} }}>
+  // Las etiquetas de los botones se construyen en JavaScript, así que tienen
+  // que cruzar del servidor al navegador por algún sitio. Van aquí y no en
+  // `data-*` porque son ocho y ensuciarían el marcado de la página entera.
+  window.__forgePeopleI18n = etiquetas;
+</script>
+
+<script>
+  (() => {
+    const raiz = document.getElementById('people-page');
+    if (!raiz) return;
+
+    const txt = (k: string) => raiz.dataset[k] || '';
+    const fallo = () => (window as any).showToast?.(txt('tError'), true);
+
+    // ── Una fila de persona, reutilizada por las cuatro listas ──────────────
+    //
+    // El nombre lo elige otra persona, así que va por `textContent` y nunca por
+    // `innerHTML`.
+    function fila(p: any, botones: Array<{ texto: string; principal?: boolean; alPulsar: () => void }>, nota?: string) {
+      const li = document.createElement('li');
+      li.className = 'flex items-center gap-3 px-4 py-3 bg-forge-panel border border-forge-border rounded-xl';
+
+      const avatar = document.createElement(p.avatarUrl ? 'img' : 'div');
+      avatar.className = 'w-9 h-9 rounded-full border border-forge-border bg-forge-bg object-cover shrink-0';
+      if (p.avatarUrl) {
+        (avatar as HTMLImageElement).src = p.avatarUrl;
+        (avatar as HTMLImageElement).alt = '';
+        (avatar as HTMLImageElement).loading = 'lazy';
+      } else {
+        avatar.className += ' flex items-center justify-center text-xs font-black text-forge-accent-text';
+        avatar.textContent = (p.username || '?').charAt(0).toUpperCase();
+      }
+      li.appendChild(avatar);
+
+      const centro = document.createElement('div');
+      centro.className = 'flex-1 min-w-0';
+      const nombre = document.createElement(p.hasProfile === false ? 'span' : 'a');
+      if (nombre instanceof HTMLAnchorElement) nombre.href = `/u/${encodeURIComponent(p.username)}`;
+      nombre.className = 'text-sm font-semibold text-forge-text hover:text-forge-accent-text transition-colors truncate block';
+      nombre.textContent = p.username;
+      centro.appendChild(nombre);
+      if (nota) {
+        const n = document.createElement('span');
+        n.className = 'text-xs text-forge-muted';
+        n.textContent = nota;
+        centro.appendChild(n);
+      }
+      li.appendChild(centro);
+
+      const acciones = document.createElement('div');
+      acciones.className = 'flex items-center gap-2 shrink-0';
+      for (const b of botones) {
+        const el = document.createElement('button');
+        el.className = b.principal
+          ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-forge-primary text-forge-on-accent hover:opacity-90 transition-opacity'
+          : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-forge-muted hover:text-forge-error hover:bg-forge-error/10 transition-colors';
+        el.textContent = b.texto;
+        el.addEventListener('click', b.alPulsar);
+        acciones.appendChild(el);
+      }
+      li.appendChild(acciones);
+      return li;
+    }
+
+    async function accion(url: string, metodo: string) {
+      const res = await fetch(url, { method: metodo });
+      if (!res.ok) { fallo(); return; }
+      cargar();
+      // La búsqueda visible también cambia de estado: dejar «Añadir» tras
+      // aceptar es una promesa que el servidor rechazaría.
+      if (buscador.value.trim().length >= 2) buscar(buscador.value.trim());
+    }
+
+    // ── Listas ──────────────────────────────────────────────────────────────
+    const T = (window as any).__forgePeopleI18n || {};
+    const bloques: Record<string, HTMLElement | null> = {
+      incoming: document.getElementById('people-incoming'),
+      friends: document.getElementById('people-friends'),
+      outgoing: document.getElementById('people-outgoing'),
+    };
+    const listas: Record<string, HTMLElement | null> = {
+      incoming: document.getElementById('people-incoming-list'),
+      friends: document.getElementById('people-friends-list'),
+      outgoing: document.getElementById('people-outgoing-list'),
+    };
+
+    async function cargar() {
+      try {
+        const [rAmigos, rBloqueos] = await Promise.all([
+          fetch('/api/friends'),
+          fetch('/api/friends/blocked'),
+        ]);
+        if (!rAmigos.ok) throw new Error(String(rAmigos.status));
+        const datos = await rAmigos.json();
+        const bloqueados = rBloqueos.ok ? (await rBloqueos.json()).blocked : [];
+
+        document.getElementById('people-loading')?.classList.add('hidden');
+
+        let total = 0;
+        for (const tipo of ['incoming', 'friends', 'outgoing'] as const) {
+          const gente = datos[tipo] || [];
+          total += gente.length;
+          listas[tipo]!.replaceChildren(...gente.map((p: any) => {
+            if (tipo === 'incoming') {
+              return fila(p, [
+                { texto: T.accept, principal: true, alPulsar: () => accion(`/api/friends/accept/${p.friendshipId}`, 'POST') },
+                { texto: T.reject, alPulsar: () => accion(`/api/friends/reject/${p.friendshipId}`, 'POST') },
+              ]);
+            }
+            if (tipo === 'outgoing') {
+              return fila(p, [
+                { texto: T.cancel, alPulsar: () => accion(`/api/friends/cancel/${p.friendshipId}`, 'POST') },
+              ], T.awaiting);
+            }
+            return fila(p, [
+              {
+                texto: T.remove,
+                alPulsar: () => (window as any).forgeConfirm(txt('tRemove'), () =>
+                  accion(`/api/friends/${p.friendshipId}`, 'DELETE')),
+              },
+            ]);
+          }));
+          bloques[tipo]!.classList.toggle('hidden', gente.length === 0);
+        }
+
+        const wrap = document.getElementById('people-blocked-wrap')!;
+        wrap.classList.toggle('hidden', bloqueados.length === 0);
+        document.getElementById('people-blocked-count')!.textContent = `(${bloqueados.length})`;
+        document.getElementById('people-blocked-list')!.replaceChildren(
+          ...bloqueados.map((p: any) => {
+            const li = fila(p, [{
+              texto: T.unblock,
+              alPulsar: () => (window as any).forgeConfirm(txt('tUnblock'), async () => {
+                const res = await fetch(`/api/users/${encodeURIComponent(p.username)}/block`, { method: 'DELETE' });
+                if (res.ok) cargar(); else fallo();
+              }),
+            }]);
+            li.className = 'flex items-center gap-3 px-4 py-3';
+            return li;
+          })
+        );
+
+        document.getElementById('people-empty')!.classList.toggle('hidden', total > 0 || bloqueados.length > 0);
+      } catch (e) {
+        console.error('personas:', e);
+        document.getElementById('people-loading')?.classList.add('hidden');
+        fallo();
+      }
+    }
+
+    // ── Búsqueda ────────────────────────────────────────────────────────────
+    const buscador = document.getElementById('people-search') as HTMLInputElement;
+    const resultados = document.getElementById('people-search-results')!;
+    const sinNada = document.getElementById('people-search-empty')!;
+    let ultimaPeticion = 0;
+
+    async function buscar(q: string) {
+      // Cada respuesta lleva su número de orden: sin esto, una consulta lenta
+      // de «jo» puede llegar después de la de «jose» y pintar sus resultados
+      // encima de los buenos.
+      const mia = ++ultimaPeticion;
+      const res = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q }),
+      });
+      if (mia !== ultimaPeticion) return;
+      if (!res.ok) { fallo(); return; }
+
+      const { results } = await res.json();
+      sinNada.classList.toggle('hidden', results.length > 0);
+      sinNada.textContent = txt('tNone');
+
+      resultados.replaceChildren(...results.map((p: any) => {
+        if (p.estado === 'friends') return fila(p, [], T.already_friends);
+        if (p.estado === 'sent') return fila(p, [
+          { texto: T.cancel, alPulsar: () => accion(`/api/friends/cancel/${p.friendshipId}`, 'POST') },
+        ], T.awaiting);
+        if (p.estado === 'received') return fila(p, [
+          { texto: T.accept, principal: true, alPulsar: () => accion(`/api/friends/accept/${p.friendshipId}`, 'POST') },
+          { texto: T.reject, alPulsar: () => accion(`/api/friends/reject/${p.friendshipId}`, 'POST') },
+        ]);
+        return fila(p, [{
+          texto: T.add,
+          principal: true,
+          alPulsar: async () => {
+            const r = await fetch('/api/friends/request', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ target_username: p.username }),
+            });
+            if (!r.ok) { fallo(); return; }
+            (window as any).showToast?.(txt('tSent'));
+            cargar();
+            buscar(q);
+          },
+        }]);
+      }));
+    }
+
+    let temporizador: number | undefined;
+    buscador?.addEventListener('input', () => {
+      window.clearTimeout(temporizador);
+      const q = buscador.value.trim();
+      if (q.length < 2) {
+        resultados.replaceChildren();
+        sinNada.classList.add('hidden');
+        return;
+      }
+      // Una consulta por tecla son ocho consultas para escribir «josesito».
+      temporizador = window.setTimeout(() => buscar(q), 250);
+    });
+
+    cargar();
+  })();
+</script>
