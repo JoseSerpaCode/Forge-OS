@@ -13,14 +13,13 @@ import { useTranslations } from '../../../i18n/ui';
 import { fecha, relativo } from '../../../lib/fechas';
 import { mapaPorClave } from '../../../lib/issueTypes';
 import TaskTable from '../../../components/dashboard/TaskTable.astro';
+import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
-const workspace = db.prepare('SELECT id, name, icon, description FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!workspace) return Astro.redirect('/404');
-
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspace.id, 'viewer');
-if (!access.granted) return new Response('Access Denied', { status: 403 });
+const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const workspace = acceso.ws;
 
 // ──── Stats ────
 const activeSprints = db.prepare(`

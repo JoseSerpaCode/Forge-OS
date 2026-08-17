@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../lib/guard';
 import { crearRecurso, listar, archivar, vincular, normalizarUrl, type TipoRecurso } from '../../../../lib/resources';
 import { abrirEspacio, json } from '../../../../lib/apiWorkspace';
 

@@ -42,7 +42,13 @@ const canEdit = userRole === 'owner' || userRole === 'editor';
  * que la gente lo intente tres veces.
  */
 const ordenManual = sortMode === 'manual';
-const sePuedeArrastrar = canEdit && ordenManual;
+// Las tarjetas siguen siendo arrastrables aunque el tablero esté ordenado.
+//
+// Antes se apagaba el arrastre y se ponía una banda de aviso encima del
+// tablero, permanente y en medio. Pero si alguien arrastra una tarjeta ya ha
+// dicho lo que quiere: colocarla a mano. En vez de explicarle por qué no puede,
+// se le ofrece volver al orden manual y seguir.
+const sePuedeArrastrar = canEdit;
 
 const columns = [
   { id: 'todo', title: t('status.todo') },
@@ -58,13 +64,7 @@ function getInitials(username: string) {
 }
 ---
 <div class="h-full flex flex-col relative">
-  {canEdit && !ordenManual && (
-    <p id="board-sort-notice" class="mb-3 text-xs text-forge-muted flex items-center gap-2" role="status">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 text-forge-accent-text" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-      {t('board.sort_no_drag')}
-    </p>
-  )}
-  <div class="flex gap-4 h-full overflow-x-auto pb-4 kanban-container" data-workspace={workspaceId} data-can-edit={sePuedeArrastrar.toString()} data-sort-mode={sortMode}>
+  <div class="flex gap-4 h-full overflow-x-auto pb-4 kanban-container" data-workspace={workspaceId} data-can-edit={sePuedeArrastrar.toString()} data-sort-mode={sortMode} data-t-no-drag={t('board.sort_no_drag')}>
     {columns.map(col => (
       <BoardColumn
         title={col.title}
@@ -147,6 +147,26 @@ function getInitials(username: string) {
   cards.forEach(card => {
     if (canEdit) {
       card.addEventListener('dragstart', (e: any) => {
+        /**
+         * Con un orden activo, arrastrar no puede funcionar: la posición que se
+         * guardaría es la que la vista no mira, así que la tarjeta volvería
+         * sola a su sitio y parecería que la aplicación está rota.
+         *
+         * Se corta el arrastre y se pregunta, en vez de dejar una banda de
+         * aviso permanente ocupando sitio para algo que solo importa en este
+         * instante.
+         */
+        if (container?.getAttribute('data-sort-mode') !== 'manual') {
+          e.preventDefault();
+          const volver = () => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('sort');
+            window.location.href = url.toString();
+          };
+          (window as any).forgeConfirm?.(container?.getAttribute('data-t-no-drag') || '', volver);
+          return;
+        }
+
         e.dataTransfer.setData('text/plain', card.id);
         card.classList.add('opacity-50');
         e.dataTransfer.effectAllowed = 'move';

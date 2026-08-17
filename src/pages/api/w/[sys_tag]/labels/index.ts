@@ -1,6 +1,4 @@
 import type { APIRoute } from 'astro';
-import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { borrar, crear, editar, listar } from '../../../../../lib/labels';
 import { abrirEspacio, json, cuerpo } from '../../../../../lib/apiWorkspace';
 

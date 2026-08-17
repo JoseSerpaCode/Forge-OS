@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { deEntidad, desvincular, vincular } from '../../../../../lib/driveFiles';
 import { deEntidad as etiquetasDe } from '../../../../../lib/labels';
 import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';

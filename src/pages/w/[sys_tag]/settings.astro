@@ -7,6 +7,7 @@ import LabelChip from '../../../components/labels/LabelChip.astro';
 import WorkspaceIcon from '../../../components/brand/WorkspaceIcon.astro';
 import { COLORES, listar as listarEtiquetas } from '../../../lib/labels';
 import { listar as listarTipos } from '../../../lib/issueTypes';
+import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
 const user = Astro.locals.user!;
 const t = useTranslations(Astro.locals.lang || 'en');
@@ -14,11 +15,9 @@ if (!user) return Astro.redirect('/login');
 
 const { sys_tag } = Astro.params;
 
-const ws = db.prepare('SELECT * FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!ws) return Astro.redirect('/404');
-
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'owner');
-if (!access.granted) return Astro.redirect(`/w/${sys_tag}`); // Only owners can access settings
+const acceso = abrirEspacioDePagina(sys_tag, user, 'owner');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const ws = acceso.ws;
 
 const etiquetas = listarEtiquetas(ws.id);
 
@@ -1095,7 +1094,7 @@ const wsPendingInvites = (db.prepare(`
       const userId = el.getAttribute('data-user-id');
       const wsId = el.getAttribute('data-ws-id');
       
-      window.forgeConfirm('Remove this user from the workspace?', async () => {
+      window.forgeConfirm(document.querySelector('[data-t-remove-member]')?.dataset.tRemoveMember || '', async () => {
         const res = await fetch(`/api/workspaces/${wsId}/members`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -1233,7 +1232,7 @@ const wsPendingInvites = (db.prepare(`
   document.querySelectorAll('.btn-delete-automation').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
-      window.forgeConfirm('Delete this automation rule?', async () => {
+      window.forgeConfirm(document.querySelector('[data-t-delete-automation]')?.dataset.tDeleteAutomation || '', async () => {
         const res = await fetch(`/api/automations/${id}`, { method: 'DELETE' });
         if (res.ok) window.location.reload();
       });

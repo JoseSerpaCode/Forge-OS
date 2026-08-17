@@ -2,6 +2,7 @@
 import Logo from '../brand/Logo.astro';
 import WorkspaceIcon from '../brand/WorkspaceIcon.astro';
 import { mapaPorClave } from '../../lib/issueTypes';
+import { nombreDeRol } from '../../lib/roles';
 // src/pages/index.astro
 import MainLayout from '../../layouts/MainLayout.astro';
 import db from '../../lib/db';
@@ -142,8 +143,16 @@ const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               {workspaces.map(ws => (
                 <div data-href={`/w/${ws.sys_tag}/board`} onclick="if(!event.defaultPrevented) window.location.href=this.getAttribute('data-href')" class="block bg-forge-panel border border-forge-border p-5 rounded-xl hover:border-forge-secondary hover:shadow-[0_4px_20px_rgba(0,229,255,0.1)] transition-all group flex flex-col h-full cursor-pointer relative">
-                  <div class="flex items-start justify-between mb-6">
-                    <div class="flex items-center gap-3">
+                  <div class="flex items-start justify-between mb-6 gap-2">
+                    {/*
+                      `min-w-0` en **todos** los eslabones de la cadena flex.
+                      El `truncate` del título ya estaba, y aun así un nombre
+                      largo desbordaba la tarjeta: por defecto un elemento flex
+                      no encoge por debajo de su contenido, así que basta con
+                      que un contenedor intermedio no lo lleve para que el
+                      recorte del hijo no sirva de nada.
+                    */}
+                    <div class="flex items-center gap-3 min-w-0">
                       <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border flex items-center justify-center text-forge-accent-text font-black text-lg shadow-sm shrink-0 overflow-hidden">
                         <WorkspaceIcon icon={ws.icon} name={ws.name} />
                       </div>
@@ -154,7 +163,7 @@ const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due
                     </div>
                     
                     <div class="shrink-0 ml-2">
-                      {ws.role && <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forge-bg border border-forge-border text-forge-muted tracking-wider uppercase">{ws.role}</span>}
+                      {ws.role && <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forge-bg border border-forge-border text-forge-muted tracking-wider uppercase">{nombreDeRol(ws.role, lang)}</span>}
                     </div>
                   </div>
                   
@@ -428,7 +437,7 @@ const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due
         e.stopPropagation();
         const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
         // @ts-ignore
-        window.forgeConfirm('DANGER: Are you sure you want to completely delete this workspace and ALL its contents? This cannot be undone.', async () => {
+        window.forgeConfirm(document.querySelector('[data-t-delete-workspace]')?.dataset.tDeleteWorkspace || '', async () => {
           const res = await fetch(`/api/workspaces/${id}`, { method: 'DELETE' });
           if (res.ok) {
             window.location.reload();

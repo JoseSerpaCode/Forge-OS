@@ -149,7 +149,7 @@ for (const p of pages) {
       if (!id) return;
       
       // @ts-ignore
-      window.forgeConfirm('Are you sure you want to delete this page and all its subpages?', async () => {
+      window.forgeConfirm(document.querySelector('[data-t-delete-page]')?.dataset.tDeletePage || '', async () => {
         const res = await fetch(`/api/pages/${id}`, { method: 'DELETE' });
         if (res.ok) {
           // Check if we are currently on the deleted page

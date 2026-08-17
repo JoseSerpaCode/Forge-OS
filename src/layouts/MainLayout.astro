@@ -128,12 +128,27 @@ Astro.response.headers.set('Pragma', 'no-cache');
       <span id="forge-toast-msg" class="text-sm font-semibold tracking-wide"></span>
     </div>
 
+    {/*
+      Los textos de las confirmaciones, en un solo sitio.
+      Los llamantes están dentro de `<script>` sin `define:vars`, así que `t()`
+      no les llega. Repartir un `data-*` por cada componente que confirma algo
+      son seis sitios que se desincronizan; aquí es uno, y el layout está en
+      todas las páginas.
+    */}
+    <div class="hidden"
+      data-t-delete-page={t('confirm.delete_page')}
+      data-t-remove-member={t('confirm.remove_member')}
+      data-t-delete-automation={t('confirm.delete_automation')}
+      data-t-delete-worklog={t('confirm.delete_worklog')}
+      data-t-delete-workspace={t('confirm.delete_workspace')}
+      data-t-leave-workspace={t('confirm.leave_workspace')}></div>
+
     <dialog id="forge-confirm-modal" class="bg-forge-panel/95 backdrop-blur-xl max-md:backdrop-blur-none border border-forge-border/50 rounded-2xl p-8 w-[420px] text-forge-text shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop:bg-black/50 backdrop:backdrop-blur-sm max-md:backdrop-blur-none z-[100] open:animate-in open:fade-in open:zoom-in-95 transition-all">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-10 h-10 rounded-full bg-forge-secondary/20 text-forge-accent-text flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
-        <h2 class="text-xl font-bold text-forge-text" id="forge-confirm-title">{t('confirm.title')}</h2>
+        <h2 class="text-xl font-bold text-forge-text" id="forge-confirm-title" data-original={t('confirm.title')}>{t('confirm.title')}</h2>
       </div>
       <p class="text-sm text-forge-muted mb-8 leading-relaxed" id="forge-confirm-msg">{t('confirm.default')}</p>
       <div class="flex justify-end gap-3">
@@ -206,7 +221,11 @@ Astro.response.headers.set('Pragma', 'no-cache');
         }
       }, true); // Use capture phase to ensure we intercept before other listeners
 
-      window.forgeConfirm = function(msg, callback, title = "Confirm") {
+      window.forgeConfirm = function(msg, callback, title) {
+        // El título por defecto estaba escrito en inglés dentro de la firma, así
+        // que el diálogo salía con la cabecera «Confirm», el mensaje en inglés y
+        // los botones en español. El del marcado ya está traducido.
+        if (!title) title = document.getElementById('forge-confirm-title')?.dataset.original || '';
         const modal = document.getElementById('forge-confirm-modal');
         const titleEl = document.getElementById('forge-confirm-title');
         const msgEl = document.getElementById('forge-confirm-msg');

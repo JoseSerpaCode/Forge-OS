@@ -112,10 +112,45 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect, locals }) 
         return redirect('/settings?error=oauth_taken', 302);
       }
 
-      db.prepare(`UPDATE users SET ${col} = ? WHERE id = ?`).run(
-        profile.providerUserId,
-        current.id
-      );
+      /**
+       * Al conectar también se guarda el correo, si la cuenta no tiene ninguno.
+       *
+       * Aquí solo se escribía el identificador del proveedor. Consecuencia: una
+       * cuenta creada con usuario y contraseña que luego conecta Google y GitHub
+       * se quedaba **sin correo** —el proveedor lo estaba dando en cada vuelta y
+       * se tiraba—. En Ajustes salía «Esta cuenta no tiene ninguna dirección de
+       * correo registrada» con dos proveedores conectados al lado, que no hay
+       * forma de entender.
+       *
+       * Tres condiciones, y las tres importan:
+       *
+       *  - **Solo si la cuenta no tiene correo.** Sobrescribir el que ya puso
+       *    alguien a mano sería cambiarle un dato de identidad sin pedírselo.
+       *  - **Solo si el proveedor lo da por verificado.** Un correo sin
+       *    verificar es una afirmación de un tercero, y aquí acaba sirviendo
+       *    para emparejar cuentas.
+       *  - **Solo si nadie más lo tiene.** La columna es única; sin esta
+       *    comprobación el `UPDATE` revienta y la conexión falla entera por un
+       *    añadido opcional.
+       */
+      const correo = profile.email && profile.emailVerified ? profile.email.toLowerCase() : null;
+      const sinCorreo = db.prepare('SELECT email FROM users WHERE id = ?').get(current.id) as { email: string | null } | undefined;
+      const libre = correo
+        ? !db.prepare('SELECT 1 FROM users WHERE email = ? AND id != ?').get(correo, current.id)
+        : false;
+
+      if (correo && libre && !sinCorreo?.email) {
+        db.prepare(`UPDATE users SET ${col} = ?, email = ? WHERE id = ?`).run(
+          profile.providerUserId,
+          correo,
+          current.id
+        );
+      } else {
+        db.prepare(`UPDATE users SET ${col} = ? WHERE id = ?`).run(
+          profile.providerUserId,
+          current.id
+        );
+      }
       return redirect('/settings?connected=' + provider, 302);
     }
 

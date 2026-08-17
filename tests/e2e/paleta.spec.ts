@@ -81,13 +81,26 @@ test('al cerrarla se limpia', async ({ page }) => {
   await expect(page.locator('#cmd-k-hits')).toBeVisible();
 
   await page.keyboard.press('Escape');
-  // Se espera el cierre antes de reabrir: el atajo va al elemento con el foco,
-  // y mientras el diálogo se cierra ese foco está en tránsito.
   await expect(page.locator('#cmd-k-palette')).toBeHidden();
-  await abrir(page);
-  // Reabrirla con la búsqueda de hace dos horas dentro es confuso.
+
+  /**
+   * Se comprueba el estado **sin reabrir**.
+   *
+   * La versión anterior reabría con el atajo, y eso falla una de cada tres
+   * corridas de la suite completa: la tecla va al elemento con el foco y, justo
+   * después de cerrar el diálogo, ese foco está en tránsito. Bajo carga la
+   * ventana se ensancha lo suficiente para perderla.
+   *
+   * Lo que hay que comprobar es que el contenido se limpió, y eso se ve en el
+   * DOM sin volver a abrir nada. Una prueba intermitente acaba ignorándose, y
+   * entonces no protege de nada.
+   */
   await expect(page.locator('#cmd-k-input')).toHaveValue('');
-  await expect(page.locator('#cmd-k-hits')).toBeHidden();
+  // Por la clase y no por `toBeVisible`: estos elementos viven **dentro** del
+  // diálogo, y con el diálogo cerrado Playwright los da por ocultos siempre.
+  // La aserción por visibilidad pasaba o fallaba por el motivo equivocado.
+  await expect(page.locator('#cmd-k-hits')).toHaveClass(/\bhidden\b/);
+  await expect(page.locator('#cmd-k-quick')).not.toHaveClass(/\bhidden\b/);
 });
 
 test('un título con HTML no se ejecuta', async ({ page }) => {

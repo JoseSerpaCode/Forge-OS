@@ -1,6 +1,4 @@
 import type { APIRoute } from 'astro';
-import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { accesoPara, aLaPapelera, carpeta as carpetaDrive, conexionDe } from '../../../../../lib/drive';
 import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
 import {

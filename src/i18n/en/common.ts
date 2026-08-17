@@ -234,4 +234,12 @@ export const en = {
   'cmd.searching': 'Searching…',
   'cmd.none': 'Nothing matches that.',
   'cmd.error': 'The search failed.',
+  'modal.logged_only': '{logged}h logged, no estimate',
+  'modal.auto_logged': 'Session logged automatically',
+  'confirm.delete_page': 'Delete this page and all its subpages? This cannot be undone.',
+  'confirm.remove_member': 'Remove this person from the workspace? Their tickets and pages stay.',
+  'confirm.delete_automation': 'Delete this automation? It stops running immediately.',
+  'confirm.delete_worklog': 'Delete this time entry? The hours come off the total.',
+  'confirm.delete_workspace': 'Delete this workspace and everything inside — tickets, pages, files and history? This cannot be undone.',
+  'confirm.leave_workspace': 'Leave this workspace? You will need a new invitation to get back in.',
 } as const;

@@ -9,6 +9,7 @@ const { workspaceId, workspaceName } = Astro.props;
 const user = Astro.locals.user!;
 import db from '../../lib/db';
 import { useTranslations } from '../../i18n/ui';
+import { nombreDeRol } from '../../lib/roles';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
@@ -226,7 +227,7 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
         )}
         <div class="flex-1 min-w-0 leading-tight">
           <div class="text-xs font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{user?.is_guest ? t('user.menu.guest') : (user?.username || t('user.menu.guest'))}</div>
-          <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? t('user.menu.unregistered') : userRole}</div>
+          <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? t('user.menu.unregistered') : nombreDeRol(userRole, lang)}</div>
         </div>
         {solicitudesPendientes > 0 && (
           <span class="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center" aria-label={t('friends.incoming')}>

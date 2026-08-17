@@ -24,6 +24,8 @@ const t = useTranslations(lang);
   data-t-load-failed={t('modal.load_failed')}
   data-t-no-desc={t('modal.no_description')}
   data-t-due={t('card.due')}
+  data-t-auto-log={t('modal.auto_logged')}
+  data-lang={lang}
   data-sys-tag={sysTag}
   data-t-attached-none={t('drive.attached_none')}
   data-t-detach={t('drive.detach')}
@@ -209,7 +211,7 @@ const t = useTranslations(lang);
         </div>
         <div class="space-y-1.5 flex flex-col justify-end">
           <div class="flex justify-between text-xs font-mono mb-1">
-            <span class="text-forge-muted" id="time-tracking-text" data-template={t('modal.logged_estimated')}>{t('modal.logged_estimated').replace('{logged}', '0').replace('{estimated}', '0')}</span>
+            <span class="text-forge-muted" id="time-tracking-text" data-template={t('modal.logged_estimated')} data-template-no-est={t('modal.logged_only')}>{t('modal.logged_estimated').replace('{logged}', '0').replace('{estimated}', '0')}</span>
             <span class="font-bold" id="time-tracking-percent">0%</span>
           </div>
           <div class="h-2.5 w-full bg-forge-bg rounded-full overflow-hidden border border-forge-border/30">
@@ -832,7 +834,7 @@ const t = useTranslations(lang);
         modal.setAttribute('data-log-id', logId);
         (document.getElementById('log-work-date') as HTMLInputElement).value = localDate;
         (document.getElementById('log-work-hours') as HTMLInputElement).value = hours;
-        (document.getElementById('log-work-desc') as HTMLTextAreaElement).value = 'Session auto-logged';
+        (document.getElementById('log-work-desc') as HTMLTextAreaElement).value = raiz?.dataset.tAutoLog || '';
         
         modal.showModal();
         
@@ -933,7 +935,27 @@ const t = useTranslations(lang);
     }
 
     logs.forEach(log => {
-      const date = new Date(log.work_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      // `undefined` como locale usa el del navegador, que no tiene por qué
+      // coincidir con el idioma elegido en la aplicación: se veía «Aug 17, 2026»
+      // con la interfaz en español.
+      const date = new Date(log.work_date).toLocaleDateString(
+        (raiz?.dataset.lang === 'es' ? 'es-ES' : 'en-US'),
+        { month: 'short', day: 'numeric', year: 'numeric' }
+      );
+      /**
+       * «Session auto-logged» se traduce al pintarla, no al guardarla.
+       *
+       * Esa frase la escribe el servidor en la columna `description` cuando un
+       * cronómetro se para solo, así que ya está en inglés dentro de la base en
+       * todas las filas que existen. Traducir solo lo nuevo dejaría la lista
+       * mezclando idiomas para siempre; traducir al pintar arregla también lo
+       * viejo sin tocar un solo dato.
+       */
+      const MARCA_AUTO = 'Session auto-logged';
+      const descripcion = log.description === MARCA_AUTO
+        ? (raiz?.dataset.tAutoLog || log.description)
+        : log.description;
+
       const div = document.createElement('div');
       div.className = 'flex items-start gap-3 p-3 bg-forge-bg/50 border border-forge-border/40 rounded-lg group';
       div.innerHTML = `
@@ -943,10 +965,10 @@ const t = useTranslations(lang);
             <span class="text-xs font-bold text-forge-text">${esc(log.username)}</span>
             <span class="text-[10px] font-mono text-forge-muted">${date}</span>
           </div>
-          <div class="text-xs text-forge-text/80 mt-1">${esc(log.description) || `<i class="opacity-50">${TXT.sinDescripcion}</i>`}</div>
+          <div class="text-xs text-forge-text/80 mt-1">${esc(descripcion) || `<i class="opacity-50">${TXT.sinDescripcion}</i>`}</div>
         </div>
         <div class="flex flex-col items-end gap-2 shrink-0">
-          <span class="text-xs font-mono font-bold text-forge-accent-text bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${log.hours_spent}h</span>
+          <span class="text-xs font-mono font-bold text-forge-accent-text bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${parseFloat(Number(log.hours_spent).toFixed(2))}h</span>
           ${role !== 'viewer' ? `
           <div class="hidden group-hover:flex items-center gap-2">
             <button class="edit-worklog-btn text-forge-muted hover:text-forge-accent-text transition-colors" data-id="${log.id}" data-hours="${log.hours_spent}" data-desc="${esc(log.description)}" data-date="${log.work_date}" title={t('modal.edit_log')}>
@@ -964,7 +986,7 @@ const t = useTranslations(lang);
       btn.addEventListener('click', async (e) => {
         const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
         // @ts-ignore
-        window.forgeConfirm('Delete this work log?', async () => {
+        window.forgeConfirm(document.querySelector('[data-t-delete-worklog]')?.dataset.tDeleteWorklog || '', async () => {
           const res = await fetch(`/api/worklogs/${id}`, { method: 'DELETE' });
           if (res.ok) {
             // @ts-ignore
@@ -1021,7 +1043,28 @@ const t = useTranslations(lang);
         const pct = document.getElementById('time-tracking-percent');
         const bar = document.getElementById('time-tracking-bar');
         
-        if (text) text.textContent = `${logged}h logged / ${est > 0 ? est + 'h estimated' : 'no estimate'}`;
+        /**
+         * Las horas se redondean a dos decimales antes de enseñarlas.
+         *
+         * Se suman fracciones de sesión —2.3603 + 0.1129— y en coma flotante
+         * eso da `2.4732000000000003`. Se pintaba tal cual, y quince decimales
+         * de basura numérica en la cara del usuario hacen dudar de todo el
+         * resto de la cifra.
+         *
+         * `parseFloat(toFixed(2))` y no solo `toFixed(2)`: así «2.50» sale como
+         * «2.5» y «3.00» como «3», que es como lo escribiría una persona.
+         */
+        const enHoras = (n: number) => parseFloat(n.toFixed(2));
+
+        if (text) {
+          // El texto va por plantilla traducida, no concatenado en inglés.
+          const plantilla = est > 0
+            ? (text.dataset.template || '{logged}h / {estimated}h')
+            : (text.dataset.templateNoEst || '{logged}h');
+          text.textContent = plantilla
+            .replace('{logged}', String(enHoras(logged)))
+            .replace('{estimated}', String(enHoras(est)));
+        }
         
         if (est > 0) {
           let percentage = Math.round((logged / est) * 100);

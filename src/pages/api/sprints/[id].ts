@@ -119,3 +119,89 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 };
+
+/**
+ * Borrar un sprint.
+ *
+ * No existía. Se podían crear sprints y cerrarlos, pero no quitarlos: un sprint
+ * creado por error —o dos llamados «a» mientras se probaba— se quedaban para
+ * siempre en el desplegable del tablero, ensuciando la única lista por la que se
+ * navega el trabajo.
+ *
+ * **Los tickets no se borran con él.** Un sprint es una agrupación temporal; el
+ * trabajo que contiene existe por su cuenta y puede llevar horas registradas,
+ * etiquetas y adjuntos. Borrarlos en cascada convertiría una operación de
+ * limpieza en una pérdida de datos irreversible.
+ *
+ * Por eso se pide la misma decisión que al cerrarlo: si quedan tickets dentro,
+ * hay que decir a dónde van. Sin `strategy` se responde 409 con la cuenta, para
+ * que la interfaz pueda preguntar con el número delante.
+ */
+export const DELETE: APIRoute = async ({ params, request, locals }) => {
+  const user = locals.user;
+  if (!user) return new Response('Unauthorized', { status: 401 });
+
+  const { id } = params;
+  if (!id) return new Response('Bad Request', { status: 400 });
+
+  try {
+    const sprint = db.prepare('SELECT workspace_id, name FROM sprints WHERE id = ?').get(id) as any;
+    if (!sprint) return new Response('Not Found', { status: 404 });
+
+    // Borrar un sprint reorganiza el trabajo de todo el equipo: es de dueños.
+    const access = checkWorkspaceAccess(user.id, user.is_sysadmin, sprint.workspace_id, 'owner');
+    if (!access.granted) {
+      if (access.reason === 'not_member') return new Response('Not Found', { status: 404 });
+      return new Response(access.error, { status: 403 });
+    }
+
+    let datos: any = null;
+    try { datos = await request.json(); } catch { /* sin cuerpo: se pregunta */ }
+    const estrategia = datos?.strategy;
+
+    const dentro = db.prepare('SELECT COUNT(*) AS n FROM issues WHERE sprint_id = ?').get(id) as any;
+
+    if (dentro.n > 0) {
+      const ESTRATEGIAS = ['backlog', 'next'];
+      if (!ESTRATEGIAS.includes(estrategia)) {
+        return new Response(JSON.stringify({
+          error_code: 'sprint_not_empty',
+          pending: dentro.n,
+          strategies: ESTRATEGIAS,
+          candidates: db.prepare(
+            "SELECT id, name FROM sprints WHERE workspace_id = ? AND id != ? AND status != 'completed' ORDER BY rowid DESC"
+          ).all(sprint.workspace_id, id),
+        }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (estrategia === 'next') {
+        const destino = db.prepare(
+          "SELECT id FROM sprints WHERE id = ? AND workspace_id = ? AND id != ?"
+        ).get(datos?.target_sprint_id, sprint.workspace_id, id) as any;
+        if (!destino) {
+          return new Response(JSON.stringify({ error_code: 'bad_target_sprint' }), {
+            status: 400, headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        db.prepare('UPDATE issues SET sprint_id = ? WHERE sprint_id = ?').run(destino.id, id);
+      } else {
+        db.prepare('UPDATE issues SET sprint_id = NULL WHERE sprint_id = ?').run(id);
+      }
+    }
+
+    // Las fotos del burndown sí se van: sin sprint no describen nada.
+    db.transaction(() => {
+      db.prepare('DELETE FROM sprint_snapshots WHERE sprint_id = ?').run(id);
+      db.prepare('DELETE FROM sprints WHERE id = ?').run(id);
+    })();
+
+    return new Response(JSON.stringify({ success: true, moved: dentro.n }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err: any) {
+    console.error('borrar sprint:', err);
+    return new Response(JSON.stringify({ error_code: 'internal' }), {
+      status: 500, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};

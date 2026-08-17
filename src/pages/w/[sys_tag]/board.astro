@@ -6,6 +6,7 @@ import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
 import { deVarias, listar as listarEtiquetas } from '../../../lib/labels';
 import { listar as listarTipos } from '../../../lib/issueTypes';
+import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
 const { sys_tag } = Astro.params;
 const user = Astro.locals.user!;
@@ -14,11 +15,9 @@ const t = useTranslations(lang);
 
 if (!user) return Astro.redirect('/login');
 
-const workspace = db.prepare('SELECT id, name FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!workspace) return Astro.redirect('/404');
-
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspace.id, 'viewer');
-if (!access.granted) return new Response('Access Denied', { status: 403 });
+const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const workspace = acceso.ws;
 
 // Read sprint from URL
 const requestedSprintId = Astro.url.searchParams.get('sprint');
@@ -215,17 +214,25 @@ const workspaceMembers = db.prepare(`
   WHERE wm.workspace_id = ?
 `).all(workspace.id) as any[];
 
-let totalLogged = 0;
-let totalEstimated = 0;
-if (activeSprintId) {
-  const totals = db.prepare(`
-    SELECT SUM(logged_hours) as total_logged, SUM(estimated_hours) as total_estimated
-    FROM issues
-    WHERE sprint_id = ?
-  `).get(activeSprintId) as any;
-  totalLogged = totals.total_logged || 0;
-  totalEstimated = totals.total_estimated || 0;
-}
+/**
+ * Horas del sprint **o del backlog**.
+ *
+ * Solo se calculaban con un sprint abierto, así que en el backlog el bloque
+ * desaparecía y la cabecera daba un salto. Pero el backlog también tiene
+ * trabajo estimado y horas registradas: es lo que hay pendiente de planificar, y
+ * saber cuánto es exactamente para lo que sirve mirarlo.
+ *
+ * `sprint_id IS NULL` y no un `sprint_id = ?`: en el backlog están justamente
+ * los tickets que no pertenecen a ninguno.
+ */
+const totales = db.prepare(`
+  SELECT SUM(logged_hours) AS total_logged, SUM(estimated_hours) AS total_estimated
+  FROM issues
+  WHERE workspace_id = ? AND ${activeSprintId ? 'sprint_id = ?' : 'sprint_id IS NULL'}
+`).get(...(activeSprintId ? [workspace.id, activeSprintId] : [workspace.id])) as any;
+
+const totalLogged = totales?.total_logged || 0;
+const totalEstimated = totales?.total_estimated || 0;
 const metaDescription = `${workspace.name} board on Forge OS. Track issues, sprints, and tasks efficiently.`;
 ---
 
@@ -251,7 +258,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           En horizontal, «0h registradas — sin estimar» no cabía junto a
           «TIEMPO» y se partía a mitad de frase, encima del rótulo.
         */}
-        {activeSprintId && (
+        {(
           <div class="hidden md:flex flex-col w-[12.5rem] shrink-0 bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-2 shadow-sm" id="sprint-time-container" data-logged={totalLogged} data-estimated={totalEstimated}>
             <span class="text-[9px] font-mono text-forge-muted font-bold tracking-widest uppercase leading-none">{t('dashboard.time') || 'Time'}</span>
             <span class="text-[11px] font-mono font-bold text-forge-accent-text leading-tight mt-1 mb-1.5 truncate" id="sprint-time-text">
@@ -295,7 +302,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           </select>
         )}
         
-        {access.role !== 'viewer' && activeSprintId && currentSprintObj && (
+        {acceso.rol !== 'viewer' && activeSprintId && currentSprintObj && (
           <div class="flex items-center gap-1 bg-forge-bg rounded-md border border-forge-border/50 p-1">
             <button id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class={`font-bold px-3 py-1 rounded text-xs transition-colors ${currentSprintObj.status === 'planned' ? 'bg-forge-success text-white hover:opacity-90' : currentSprintObj.status === 'active' ? 'bg-forge-primary text-forge-on-accent hover:opacity-90' : 'bg-forge-primary text-forge-on-accent hover:opacity-90'}`}>
               {currentSprintObj.status === 'planned' ? t('board.sprint_start') : currentSprintObj.status === 'active' ? t('board.sprint_complete') : t('board.sprint_reopen')}
@@ -308,13 +315,13 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           </div>
         )}
 
-        {(access.role === 'owner' || access.role === 'editor') && (
+        {(acceso.rol === 'owner' || acceso.rol === 'editor') && (
           <button id="btn-new-sprint" class="bg-forge-panel border border-forge-border hover:bg-forge-border/40 text-forge-text font-bold px-3 py-1.5 rounded-md text-sm transition-colors">
             + Sprint
           </button>
         )}
         
-        {access.role !== 'viewer' && (
+        {acceso.rol !== 'viewer' && (
           <button id="btn-new-issue" title={t('board.new_issue_hint')} class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity ml-2 relative group z-50">
             + Issue
             <!-- Tooltip -->
@@ -326,7 +333,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={access.role} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} sortMode={ordenActivo} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} sortMode={ordenActivo} />
     </div>
   </div>
 

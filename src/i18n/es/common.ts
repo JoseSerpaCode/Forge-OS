@@ -234,4 +234,12 @@ export const es = {
   'cmd.searching': 'Buscando…',
   'cmd.none': 'No hay nada que coincida.',
   'cmd.error': 'La búsqueda ha fallado.',
+  'modal.logged_only': '{logged}h registradas, sin estimar',
+  'modal.auto_logged': 'Sesión registrada automáticamente',
+  'confirm.delete_page': '¿Borrar esta página y todas las que cuelgan de ella? No hay vuelta atrás.',
+  'confirm.remove_member': '¿Sacar a esta persona del espacio? Sus tickets y páginas se quedan.',
+  'confirm.delete_automation': '¿Borrar esta automatización? Deja de ejecutarse de inmediato.',
+  'confirm.delete_worklog': '¿Borrar este registro de tiempo? Las horas se descuentan del total.',
+  'confirm.delete_workspace': '¿Borrar este espacio y todo lo que hay dentro —tickets, páginas, archivos e historial? No hay vuelta atrás.',
+  'confirm.leave_workspace': '¿Salir de este espacio? Para volver hará falta otra invitación.',
 } as const;

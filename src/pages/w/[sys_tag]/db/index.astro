@@ -11,11 +11,9 @@ const t = useTranslations(Astro.locals.lang || 'en');
 if (!user) return Astro.redirect('/login');
 if (user.is_guest) return Astro.redirect('/register');
 
-const workspace = db.prepare('SELECT id, name FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!workspace) return Astro.redirect('/404');
-
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspace.id, 'viewer');
-if (!access.granted) return new Response('Access Denied', { status: 403 });
+const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const workspace = acceso.ws;
 
 import { orm } from '../../../../lib/db/drizzle';
 import { dynamicDatabases } from '../../../../lib/db/schema';
@@ -24,13 +22,14 @@ import { plantillasTraducidas } from '../../../../lib/dbTemplates';
 import Icon from '../../../../components/icons/Icon.astro';
 import DbIcon from '../../../../components/icons/DbIcon.astro';
 import { ICONOS_ELEGIBLES, ICONO_POR_DEFECTO } from '../../../../lib/icons';
+import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
 
 const databases = orm.select().from(dynamicDatabases)
   .where(eq(dynamicDatabases.workspaceId, workspace.id))
   .orderBy(desc(dynamicDatabases.createdAt))
   .all() as any[];
 
-const canEdit = access.role !== 'viewer';
+const canEdit = acceso.rol !== 'viewer';
 
 // Las plantillas se traducen aquí y viajan ya en texto: el script del modal solo
 // rellena campos. Los nombres de columna se convierten en datos al crear la

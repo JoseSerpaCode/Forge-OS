@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { buscar, busquedasRecientes, olvidarBusquedas, recordarBusqueda } from '../../../../../lib/driveFiles';
 import { deVarias as etiquetasDeVarias } from '../../../../../lib/labels';
 import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
