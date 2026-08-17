@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",
-    "@astrojs/node": "^11.0.3",
+    "@astrojs/node": "^11.1.2",
     "@editorjs/checklist": "^1.6.0",
     "@editorjs/code": "^2.9.4",
     "@editorjs/delimiter": "^1.4.2",
