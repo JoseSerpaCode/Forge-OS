@@ -23,6 +23,7 @@ const t = useTranslations(lang);
   data-t-loading-logs={t('modal.loading_logs')}
   data-t-load-failed={t('modal.load_failed')}
   data-t-no-desc={t('modal.no_description')}
+  data-t-due={t('card.due')}
   data-sys-tag={sysTag}
   data-t-attached-none={t('drive.attached_none')}
   data-t-detach={t('drive.detach')}
@@ -620,6 +621,7 @@ const t = useTranslations(lang);
   function repintarTarjeta(issueId: string) {
     const card = document.getElementById(issueId);
     if (!card) return;
+    const raizModal = document.getElementById('issue-details-modal');
 
     // Fecha límite. El bloque puede no existir todavía si el ticket no tenía
     // fecha, así que se crea; y si se ha quitado la fecha, se retira.
@@ -631,7 +633,12 @@ const t = useTranslations(lang);
         fechaEl.className = 'card-due text-[10px] font-mono mb-2 text-forge-muted';
         card.querySelector('h4')?.insertAdjacentElement('afterend', fechaEl);
       }
-      const etiqueta = card.dataset.tDue || 'Due:';
+      // La etiqueta sale del contenedor del modal, no de la tarjeta.
+      //
+      // Estaba en un `data-t-due` de **cada** tarjeta: la misma cadena repetida
+      // hasta cuatrocientas veces en el HTML de un tablero lleno, para leerla
+      // una vez al abrir uno.
+      const etiqueta = raizModal?.dataset.tDue || 'Due:';
       fechaEl.textContent = `${etiqueta} ${new Date(iso + 'T00:00:00').toLocaleDateString()}`;
       // El rojo de vencida se recalcula aquí: si no, una fecha movida al futuro
       // seguiría pintada en rojo hasta recargar.

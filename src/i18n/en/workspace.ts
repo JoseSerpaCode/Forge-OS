@@ -152,4 +152,9 @@ export const en = {
   'ws.settings.policy_disabled': 'Disabled',
   'ws.settings.policy_friends': 'Friends Only',
   'ws.settings.policy_open': 'Open to All',
+  'activity.issue_moved': 'moved issue',
+  'activity.issue_created': 'created issue',
+  'activity.issue_updated': 'updated issue',
+  'activity.page_updated': 'edited page',
+  'activity.page_created': 'created page',
 } as const;

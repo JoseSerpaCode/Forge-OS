@@ -1,6 +1,7 @@
 ---
 import Logo from '../brand/Logo.astro';
 import WorkspaceIcon from '../brand/WorkspaceIcon.astro';
+import { mapaPorClave } from '../../lib/issueTypes';
 // src/pages/index.astro
 import MainLayout from '../../layouts/MainLayout.astro';
 import db from '../../lib/db';
@@ -90,6 +91,18 @@ for (const tarea of myTasks) {
   grupo.tareas.push(tarea);
 }
 const gruposPendientes = [...porEspacio.values()];
+
+/**
+ * Los tipos de cada espacio, indexados por `espacio:clave`.
+ *
+ * El hub mezcla tareas de varios espacios y cada uno tiene sus propios tipos,
+ * así que «incidencia» puede ser roja en uno y no existir en otro. Se consulta
+ * una vez por espacio con tareas, no una por tarea.
+ */
+const tiposPendientes = new Map<string, { key: string; name: string; color: string; isBuiltin: boolean }>();
+for (const wsId of new Set(myTasks.map((t) => t.workspace_id))) {
+  for (const [clave, tipo] of mapaPorClave(wsId)) tiposPendientes.set(`${wsId}:${clave}`, tipo);
+}
 
 // Vencidas: comparando solo la fecha, no la hora. Una entrega «de hoy» no está
 // vencida a las nueve de la mañana.
@@ -222,7 +235,7 @@ const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due
                       {g.tareas.length === 1 ? t('hub.one_task') : t('hub.n_tasks').replace('{n}', String(g.tareas.length))}
                     </span>
                   </a>
-                  <TaskTable tasks={g.tareas} sys_tag={g.sysTag} />
+                  <TaskTable tasks={g.tareas} sys_tag={g.sysTag} tipos={tiposPendientes} />
                 </div>
               ))}
 

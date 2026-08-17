@@ -152,4 +152,9 @@ export const es = {
   'ws.settings.policy_disabled': 'Deshabilitada',
   'ws.settings.policy_friends': 'Solo Amigos',
   'ws.settings.policy_open': 'Abierto a Todos',
+  'activity.issue_moved': 'movió un ticket',
+  'activity.issue_created': 'creó un ticket',
+  'activity.issue_updated': 'actualizó un ticket',
+  'activity.page_updated': 'editó una página',
+  'activity.page_created': 'creó una página',
 } as const;

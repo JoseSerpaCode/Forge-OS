@@ -1,6 +1,7 @@
 ---
 const user = Astro.locals.user!;
 import { useTranslations } from '../../i18n/ui';
+import { fechaHora } from '../../lib/fechas';
 import pkg from '../../../package.json';
 import { NotificationService } from '../../lib/NotificationService';
 const lang = Astro.locals.lang || 'en';
@@ -101,7 +102,7 @@ const currentUrl = Astro.url.pathname;
                   <span class="text-xs font-bold text-forge-text">{n.title}</span>
                 </div>
                 <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">{n.message}</p>
-                <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">{new Date(n.created_at).toLocaleString()}</p>
+                <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">{fechaHora(n.created_at, lang)}</p>
               </a>
             </li>
           ))}

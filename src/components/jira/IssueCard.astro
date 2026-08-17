@@ -34,12 +34,15 @@ const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 ---
 <!-- Componente IssueCard.astro -->
-<div id={issue.id} draggable={arrastrable ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-assignee={issue.assignee_username || 'Unassigned'} data-reporter={issue.reporter_username || 'System'} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-active-session={issue.active_session_start || ''} data-status={issue.status} data-t-due={t('card.due')} data-t-no-desc={t('modal.no_description')} data-labels={JSON.stringify(issue.labels || [])}
-  class={`issue-card group bg-forge-panel border border-forge-border/40 p-4 rounded-xl shadow-sm hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.15)] hover:border-forge-secondary/50 transition-all duration-300 ease-out ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} mb-4 relative overflow-hidden
-    ${issue.type === 'bug' ? 'before:bg-red-500' : 
-      issue.type === 'story' ? 'before:bg-green-500' : 
-      'before:bg-blue-500'} before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:transition-all group-hover:before:w-2
-  `}>
+{/*
+  Tres `data-*` que estaban aquí ya no están: `data-assignee`, `data-reporter` y
+  `data-active-session` no los leía nadie, y `data-t-due` y `data-t-no-desc`
+  repetían la **misma cadena** en cada tarjeta —hasta cuatrocientas por
+  tablero—. Los dos textos los pone ahora el modal, que es quien los usa.
+*/}
+<div id={issue.id} draggable={arrastrable ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-status={issue.status} data-labels={JSON.stringify(issue.labels || [])}
+  class={`issue-card group bg-forge-panel border border-forge-border/40 p-4 rounded-xl shadow-sm hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.15)] hover:border-forge-secondary/50 transition-all duration-300 ease-out ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} mb-4 relative overflow-hidden before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:transition-all group-hover:before:w-2`}
+  style={`--franja: ${tipo?.color ?? '#0091FF'}`}>
   <div class="flex justify-between items-start mb-3 pl-1">
     <span class="font-mono text-[10px] text-forge-accent-text uppercase tracking-wider">{issue.id.substring(0,8)}</span>
     <div class="w-6 h-6 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center overflow-hidden shrink-0" title={issue.assignee_username || 'Unassigned'}>
@@ -116,3 +119,22 @@ const t = useTranslations(lang);
     </div>
   )}
 </div>
+
+<style>
+  /*
+    La franja toma el color del tipo del ticket.
+
+    Antes era un mapa fijo —`bug` rojo, `story` verde, cualquier otra cosa
+    azul— escrito en las clases. Con tipos propios eso deja de tener sentido:
+    un tipo que el equipo pintó de morado salía con la franja azul, mientras el
+    punto de su insignia, cuarenta líneas más abajo, sí usaba el color bueno.
+
+    Va por variable CSS y no por clase de Tailwind porque Tailwind genera sus
+    clases leyendo el código: un color que solo se conoce en tiempo de
+    ejecución nunca acaba en la hoja de estilos.
+  */
+  .issue-card::before {
+    content: '';
+    background: var(--franja);
+  }
+</style>

@@ -1,10 +1,32 @@
 ---
 // src/components/dashboard/TaskTable.astro
-const { tasks, sys_tag, emptyMessage } = Astro.props;
+/**
+ * `tipos` resuelve la clave que guarda cada ticket a su nombre y su color.
+ *
+ * La columna `issues.type` guarda una clave (`task`, `incidencia`). Aquí se
+ * pintaba tal cual —`{task.type || 'task'}`— así que salía «task» en minúscula
+ * sin traducir, y un tipo propio salía con su clave interna en vez de con el
+ * nombre que le puso el equipo.
+ *
+ * Lo resuelve quien llama, no este componente: en el hub las tareas vienen de
+ * varios espacios y cada uno tiene sus tipos, así que la búsqueda es por
+ * espacio. `lib/issueTypes.mapaPorClave()` existía justamente para esto y no la
+ * usaba nadie.
+ */
+interface Props {
+  tasks: any[];
+  sys_tag?: string;
+  emptyMessage?: string;
+  tipos?: Map<string, { key: string; name: string; color: string; isBuiltin: boolean }>;
+}
+const { tasks, sys_tag, emptyMessage, tipos } = Astro.props as Props;
 
 import { useTranslations } from '../../i18n/ui';
+import { fecha } from '../../lib/fechas';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+
+const tipoDe = (task: any) => tipos?.get(`${task.workspace_id ?? ''}:${task.type}`) ?? tipos?.get(task.type) ?? null;
 
 const statusColor: Record<string, string> = {
   todo: 'bg-forge-muted/20 text-forge-muted',
@@ -41,8 +63,25 @@ const statusColor: Record<string, string> = {
           
           return (
             <tr class="hover:bg-forge-bg transition-colors group cursor-pointer task-row" data-href={href} data-type={task.type || 'task'} data-name={task.title} data-date={task.due_date || ''} data-status={task.status}>
-              <td class="p-3 w-20">
-                <span class="text-[10px] uppercase font-bold px-2 py-1 rounded border border-forge-border bg-forge-bg text-forge-muted shadow-sm">{task.type || 'task'}</span>
+              <td class="p-3 w-24">
+                {(() => {
+                  const ti = tipoDe(task);
+                  // El nombre de un tipo de fábrica se traduce; el de uno propio
+                  // no, porque lo escribió alguien. Sin tipo resuelto se enseña
+                  // la clave, que es fea pero es información.
+                  const nombre = ti
+                    ? (ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name)
+                    : (task.type || 'task');
+                  return (
+                    <span
+                      class="text-[10px] uppercase font-bold px-2 py-1 rounded border bg-forge-bg text-forge-muted shadow-sm inline-flex items-center gap-1.5"
+                      style={ti ? `border-color: ${ti.color}55` : undefined}
+                    >
+                      {ti && <span class="w-1.5 h-1.5 rounded-full shrink-0" style={`background:${ti.color}`} aria-hidden="true"></span>}
+                      {nombre}
+                    </span>
+                  );
+                })()}
               </td>
               <td class="p-3 max-w-[250px] truncate">
                 <a href={href} class="text-forge-text font-medium group-hover:text-forge-accent-text transition-colors block truncate" onclick="event.stopPropagation();">
@@ -53,11 +92,18 @@ const statusColor: Record<string, string> = {
                 </div>
               </td>
               <td class="p-3 text-xs text-forge-muted whitespace-nowrap">
-                {task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}
+                {task.due_date ? fecha(task.due_date, lang) : '—'}
               </td>
               <td class="p-3 w-28">
                 <span class={`text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap ${statusColor[task.status] || 'bg-forge-muted/20 text-forge-muted'}`}>
-                  {t(`status.${task.status?.replace('-', '_') || 'todo'}` as any) || task.status?.replace(/_/g, ' ') || 'todo'}
+                  {/*
+                    Sin `|| respaldo`: `useTranslations` devuelve **la clave**
+                    cuando no la encuentra, y una clave es una cadena no vacía,
+                    así que el respaldo no entraba nunca y lo que se veía era
+                    `status.review`. Ahora la clave tiene que existir, y hay una
+                    prueba que lo comprueba enumerando las columnas del tablero.
+                  */}
+                  {t(`status.${task.status?.replace('-', '_') || 'todo'}` as any)}
                 </span>
               </td>
             </tr>
