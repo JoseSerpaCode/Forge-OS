@@ -644,7 +644,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         fetch(`/api/sprints/${sprintId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus, workspaceId, ...cuerpo })
+          body: JSON.stringify({ status: newStatus, ...cuerpo })
         });
 
       // Reabrir o arrancar no arrastra nada: se pregunta y ya.
@@ -691,7 +691,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         const res = await fetch(`/api/sprints/${sprintId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'planned', workspaceId })
+          body: JSON.stringify({ status: 'planned' })
         });
 
         if (res.ok) {
