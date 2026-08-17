@@ -310,13 +310,15 @@ const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due
   </dialog>
 
   <script>
-    const btnOpen = document.getElementById('btn-create-ws-modal');
     const modal = document.getElementById('new-ws-modal') as HTMLDialogElement;
     const btnSave = document.getElementById('btn-save-ws');
     const nameInput = document.getElementById('ws-name') as HTMLInputElement;
     const tagInput = document.getElementById('ws-tag') as HTMLInputElement;
 
-    btnOpen?.addEventListener('click', () => modal?.showModal());
+    // Los dos botones que abren este diálogo lo hacen con un `onclick` en el
+    // marcado. Aquí había un `getElementById('btn-create-ws-modal')` que no
+    // existe en ninguna parte, con su `?.addEventListener` detrás: código
+    // muerto que parecía ser quien abría el modal.
 
     const ayuda = document.getElementById('ws-tag-help');
     const txtAyudaTag = modal?.dataset.tHelp || '';

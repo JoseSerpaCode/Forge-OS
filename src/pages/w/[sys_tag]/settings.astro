@@ -528,7 +528,31 @@ const wsPendingInvites = (db.prepare(`
     <h2 class="text-xl font-bold mb-4">{t('ws.settings.modal_add_member')}</h2>
     <div class="mb-4">
       <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="add-member-username">{t('ws.settings.modal_username')}</label>
-      <input type="text" id="add-member-username" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder={t('ws.settings.modal_username_ph')}>
+      {/*
+        El campo y la lista van juntos y en posición relativa: la lista se
+        superpone al resto del diálogo en vez de empujarlo, que con un `dialog`
+        de alto automático hace saltar el botón de enviar mientras escribes.
+      */}
+      <div class="relative">
+        <input
+          type="text"
+          id="add-member-username"
+          autocomplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="add-member-results"
+          class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none"
+          placeholder={t('ws.settings.modal_username_ph')}
+        >
+        {/*
+          Aquí se pintan las sugerencias.
+          Faltaba: el script las buscaba bien y salía por `if (!lista) return`
+          sin un solo error, así que el campo se comportaba exactamente igual
+          que antes de tener buscador.
+        */}
+        <div id="add-member-results" role="listbox" class="hidden absolute left-0 right-0 top-full mt-1 z-10 max-h-56 overflow-y-auto bg-forge-panel border border-forge-border rounded-lg shadow-xl p-1"></div>
+      </div>
     </div>
     <div class="mb-4">
       <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="add-member-role">{t('ws.settings.modal_role')}</label>
