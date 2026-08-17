@@ -937,7 +937,7 @@ const t = useTranslations(lang);
       const div = document.createElement('div');
       div.className = 'flex items-start gap-3 p-3 bg-forge-bg/50 border border-forge-border/40 rounded-lg group';
       div.innerHTML = `
-        <img src="${esc(log.avatar_url) || '/default-avatar.svg'}" alt="" class="w-6 h-6 rounded-full border border-forge-border object-cover shrink-0 mt-0.5" />
+        <img src="${esc(log.avatar_url) || '/default-avatar.svg'}" alt="" class="w-6 h-6 rounded-full border border-forge-border object-cover shrink-0 mt-0.5" loading="lazy" decoding="async" />
         <div class="flex-1 min-w-0">
           <div class="flex justify-between items-center">
             <span class="text-xs font-bold text-forge-text">${esc(log.username)}</span>

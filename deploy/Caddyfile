@@ -18,9 +18,22 @@ forge-os.online, www.forge-os.online {
 	@astro path /_astro/*
 	header @astro Cache-Control "public, max-age=31536000, immutable"
 
-	# La API nunca se cachea. /api/storage/ sirve archivos tras comprobar
-	# permisos: cachearlos en una capa compartida los expondría a quien no debe.
-	@api path /api/*
+	# La API nunca se cachea, **salvo** /api/storage/.
+	#
+	# El motivo de la regla era no exponer archivos privados en una caché
+	# compartida. Eso ya lo impide el `private` que pone el propio endpoint
+	# (src/pages/api/storage/[filename].ts): `private` prohíbe a un CDN o a un
+	# proxy guardarlos, y solo autoriza al navegador de quien ya pasó la
+	# comprobación de permisos.
+	#
+	# Lo que hacía este `no-store` era además prohibírselo al navegador, así que
+	# cada avatar se volvía a descargar en **cada carga de página**. Con hasta
+	# cien tarjetas por columna en un tablero y 1 GB de salida al mes, eso se
+	# paga. Ahora /api/storage/ conserva su propia cabecera de 24 horas.
+	@api {
+		path /api/*
+		not path /api/storage/*
+	}
 	header @api Cache-Control "private, no-store"
 
 	reverse_proxy 127.0.0.1:4321 {

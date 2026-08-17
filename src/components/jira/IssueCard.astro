@@ -47,7 +47,7 @@ const t = useTranslations(lang);
     <span class="font-mono text-[10px] text-forge-accent-text uppercase tracking-wider">{issue.id.substring(0,8)}</span>
     <div class="w-6 h-6 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center overflow-hidden shrink-0" title={issue.assignee_username || 'Unassigned'}>
       {issue.assignee_avatar ? (
-        <img src={issue.assignee_avatar} alt={issue.assignee_username} class="w-full h-full object-cover" />
+        <img src={issue.assignee_avatar} alt={issue.assignee_username} class="w-full h-full object-cover" loading="lazy" decoding="async" />
       ) : (
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       )}

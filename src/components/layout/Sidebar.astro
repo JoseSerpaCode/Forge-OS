@@ -218,7 +218,7 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
         title={t('user.menu.open')}
       >
         {user?.avatar_url && !user.is_guest ? (
-          <img src={user.avatar_url} class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg object-cover shrink-0" alt="" />
+          <img src={user.avatar_url} class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg object-cover shrink-0" alt="" loading="lazy" decoding="async" />
         ) : (
           <div class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg flex items-center justify-center text-forge-accent-text shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

@@ -365,7 +365,7 @@ const priorityColor: Record<string, string> = {
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center gap-2">
-                    <img src={member.avatar_url || '/default-avatar.svg'} class="w-5 h-5 rounded-full border border-forge-border" alt={member.username} />
+                    <img src={member.avatar_url || '/default-avatar.svg'} class="w-5 h-5 rounded-full border border-forge-border" alt={member.username} loading="lazy" decoding="async" />
                     <span class="text-xs font-medium text-forge-text truncate max-w-[100px]">{member.username}</span>
                   </div>
                   <span class="text-[10px] font-mono text-forge-muted">{member.openCount} {t('dashboard.open')}</span>
@@ -423,7 +423,7 @@ const priorityColor: Record<string, string> = {
                   src={act.avatar_url || '/default-avatar.svg'} 
                   class="w-6 h-6 rounded-full border border-forge-border bg-forge-bg shrink-0 mt-0.5" 
                   alt={act.username}
-                />
+                loading="lazy" decoding="async" />
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-forge-text">
                     <span class="font-bold">{act.username || 'System'}</span>

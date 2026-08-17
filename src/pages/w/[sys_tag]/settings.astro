@@ -479,7 +479,7 @@ const wsPendingInvites = (db.prepare(`
               <div class="flex justify-between items-start mb-2">
                 <div class="flex items-center gap-2">
                   <div class="w-6 h-6 rounded-full overflow-hidden bg-forge-panel shrink-0 border border-forge-border">
-                    <img src={log.avatar_url || '/default-avatar.svg'} alt={log.username} class="w-full h-full object-cover" />
+                    <img src={log.avatar_url || '/default-avatar.svg'} alt={log.username} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                   <span class="text-sm font-bold text-forge-text">{log.username || 'System'}</span>
                   <span class="text-xs text-forge-muted uppercase tracking-wider bg-forge-panel px-1.5 py-0.5 rounded border border-forge-border/50">{log.action}</span>
