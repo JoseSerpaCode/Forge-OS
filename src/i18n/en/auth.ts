@@ -1,0 +1,76 @@
+/**
+ * Traducciones de auth.
+ *
+ * `ui.ts` era un solo fichero de 2.048 líneas y 939 claves por idioma, y era el
+ * segundo que más cambiaba del repositorio. Cualquier trabajo en paralelo
+ * chocaba ahí: dos ramas que añaden una clave tocan la misma zona del mismo
+ * fichero. Partido por dominio, cada una toca el suyo.
+ *
+ * El orden de las claves y sus valores son los mismos que tenía; esto fue un
+ * corte mecánico, no una reescritura.
+ */
+
+export const en = {
+  'auth.login': 'Sign In',
+  'auth.register': 'Register',
+  'account.delete.title': 'Delete account',
+  'account.delete.lead': 'This is permanent. There is no undo and no grace period.',
+  'account.delete.keeps': 'What stays with your team',
+  'account.delete.keeps_note': 'Issues you reported, pages you wrote and logged hours stay in shared workspaces, credited to a deleted account. Your teammates do not lose their history.',
+  'account.delete.goes': 'What is destroyed',
+  'account.delete.goes_note': 'Your profile, sessions, notifications, friendships and blocks. Workspaces where nobody else is left are deleted whole, with everything inside them.',
+  'account.delete.blocked': 'Transfer ownership first',
+  'account.delete.blocked_note': 'You are the only owner of these workspaces and other people are still in them. Make somebody else an owner, or remove the others, and come back.',
+  'account.delete.ws_deleted': 'These workspaces will be deleted entirely:',
+  'account.delete.n_issues': 'issues reported',
+  'account.delete.n_pages': 'pages written',
+  'account.delete.n_logs': 'hours logged',
+  'account.delete.confirm_label': 'Type your username to confirm',
+  'account.delete.password_label': 'Your password',
+  'account.delete.button': 'Delete my account permanently',
+  'account.delete.open': 'Delete account…',
+  'account.delete.cancel': 'Cancel',
+  'account.delete.n_issues_one': 'issue reported',
+  'account.delete.n_pages_one': 'page written',
+  'account.delete.n_logs_one': 'hour logged',
+  'account.delete.type_this': 'Type this to confirm:',
+  'account.delete.would_happen': 'If you unblock the above, this is what would happen',
+  'auth.login.title': 'Welcome back',
+  'auth.login.sub': 'Sign in to your workspace.',
+  'auth.register.title': 'Create your account',
+  'auth.register.sub': 'Free, self-hosted, and yours to keep.',
+  'auth.email.label': 'Email',
+  'auth.email.hint': 'Used to recover your account. Never shown on your profile.',
+  'auth.captcha.label': 'What is',
+  'auth.captcha.hint': 'A quick check that you are not a script.',
+  'auth.back': 'Home',
+  'auth.oauth.google': 'Google',
+  'auth.oauth.github': 'GitHub',
+  'auth.oauth.pending': 'Provider sign-in is wired up but not configured yet — it needs credentials for each provider.',
+  'auth.email': 'or with a username',
+  'auth.or': 'or',
+  'auth.try': 'Try it without an account',
+  'auth.try.caveat': 'Creates a temporary workspace that expires after 30 days. Nothing is lost when you sign up.',
+  'auth.username.hint': 'At least 3 characters.',
+  'auth.password.hint': 'At least 6 characters.',
+  'auth.working.login': 'Signing in…',
+  'auth.working.register': 'Creating account…',
+  'auth.error.generic': 'Something went wrong. Try again.',
+  'auth.reason.guest_limit': 'Too many temporary workspaces have been created from your connection in the last hour. A real account has no such limit — and it does not expire.',
+  'auth.transfer.title': 'Keep your guest workspaces',
+  'auth.transfer.body.login': 'Pick the workspaces you want to move to your account. The ones you leave unchecked are deleted for good.',
+  'auth.transfer.body.register': 'Pick the workspaces you want to move to your new account. The ones you leave unchecked are deleted for good.',
+  'auth.transfer.discard': 'Discard all',
+  'auth.transfer.continue': 'Continue',
+  'auth.side.claim': 'Everything your team writes, plans and tracks — in',
+  'auth.side.p1': 'One Node process over one SQLite file.',
+  'auth.side.p2': 'No third parties reading your work.',
+  'auth.side.p3': 'MIT licensed. Take it and run it yourself.',
+  'auth.username': 'Username',
+  'auth.password': 'Password',
+  'auth.submit': 'Submit',
+  'auth.signup': 'Sign Up',
+  'auth.no_account': 'Don\'t have an account? Register',
+  'auth.have_account': 'Already have an account? Login',
+  'auth.invalid': 'Invalid credentials',
+} as const;

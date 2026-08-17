@@ -100,21 +100,71 @@ describe('el script no habla con marcado que no existe', () => {
 });
 
 describe('las traducciones no se quedan a medias', () => {
-  const ui = fs.readFileSync(path.join(RAIZ, 'i18n/ui.ts'), 'utf-8');
-  const [en, es] = ui.split('  es: {');
-  const claves = (b: string) => new Set([...b.matchAll(/^\s+'([a-z][\w.]*)':/gm)].map((m) => m[1]));
+  /**
+   * Se leen los ficheros de dominio, no `ui.ts`.
+   *
+   * `ui.ts` era un solo diccionario y esta prueba lo partía por la cadena
+   * `  es: {`. Al repartir las claves por dominio, esa marca desapareció: la
+   * expresión dejó de encontrar nada y la prueba **pasó comparando dos
+   * conjuntos vacíos**. Una prueba que pasa por no encontrar nada es peor que
+   * no tenerla, porque además da confianza.
+   *
+   * De ahí el `toBeGreaterThan` de abajo: si algún día vuelve a no encontrar
+   * claves, falla en vez de aprobar en silencio.
+   */
+  const dominios = fs.readdirSync(path.join(RAIZ, 'i18n/en')).filter((f) => f.endsWith('.ts'));
+
+  const claves = (idioma: 'en' | 'es') => {
+    const todas = new Map<string, string>();
+    for (const d of dominios) {
+      const txt = fs.readFileSync(path.join(RAIZ, 'i18n', idioma, d), 'utf-8');
+      for (const m of txt.matchAll(/^\s+'([a-z0-9][\w.]*)':/gm)) todas.set(m[1], d);
+    }
+    return todas;
+  };
+
+  it('hay ficheros de dominio y claves dentro', () => {
+    expect(dominios.length).toBeGreaterThan(3);
+    expect(claves('en').size).toBeGreaterThan(500);
+    expect(claves('es').size).toBeGreaterThan(500);
+  });
+
+  it('los dos idiomas tienen los mismos ficheros de dominio', () => {
+    const es = fs.readdirSync(path.join(RAIZ, 'i18n/es')).filter((f) => f.endsWith('.ts'));
+    expect(es.sort()).toEqual(dominios.sort());
+  });
 
   it('cada clave está en los dos idiomas', () => {
-    const soloEs = [...claves(es)].filter((k) => !claves(en).has(k));
-    const soloEn = [...claves(en)].filter((k) => !claves(es).has(k));
+    const en = claves('en');
+    const es = claves('es');
+    const soloEs = [...es.keys()].filter((k) => !en.has(k));
+    const soloEn = [...en.keys()].filter((k) => !es.has(k));
     expect({ soloEs, soloEn }).toEqual({ soloEs: [], soloEn: [] });
   });
 
+  it('cada clave está en el mismo dominio en los dos idiomas', () => {
+    // Si `board.sort` vive en `board.ts` en inglés y en `common.ts` en español,
+    // el siguiente que la busque solo encontrará una mitad.
+    const en = claves('en');
+    const es = claves('es');
+    const descolocadas = [...en.entries()]
+      .filter(([k, d]) => es.has(k) && es.get(k) !== d)
+      .map(([k, d]) => `${k}: en/${d} vs es/${es.get(k)}`);
+    expect(descolocadas).toEqual([]);
+  });
+
   it('ninguna clave está dos veces: la segunda gana en silencio', () => {
-    for (const [nombre, bloque] of [['inglés', en], ['español', es]] as const) {
-      const todas = [...bloque.matchAll(/^\s+'([a-z][\w.]*)':/gm)].map((m) => m[1]);
-      const dup = todas.filter((k, i) => todas.indexOf(k) !== i);
-      expect(dup, `duplicadas en ${nombre}`).toEqual([]);
+    for (const idioma of ['en', 'es'] as const) {
+      const vistas = new Set<string>();
+      const dup: string[] = [];
+      for (const d of dominios) {
+        const txt = fs.readFileSync(path.join(RAIZ, 'i18n', idioma, d), 'utf-8');
+        for (const m of txt.matchAll(/^\s+'([a-z0-9][\w.]*)':/gm)) {
+          if (vistas.has(m[1])) dup.push(`${m[1]} (${d})`);
+          vistas.add(m[1]);
+        }
+      }
+      expect(dup, `duplicadas en ${idioma}`).toEqual([]);
     }
   });
 });
