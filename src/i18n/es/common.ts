@@ -227,4 +227,11 @@ export const es = {
   'modal.date_worked': 'Fecha de Trabajo',
   'modal.work_desc': 'Descripción del Trabajo (Opcional)',
   'modal.work_desc_placeholder': '¿En qué trabajaste?',
+  'cmd.placeholder': 'Busca espacios, tickets, páginas, personas…',
+  'cmd.quick': 'Acciones rápidas',
+  'cmd.go_hub': 'Ir a mi hub',
+  'cmd.go_settings': 'Ajustes de la cuenta',
+  'cmd.searching': 'Buscando…',
+  'cmd.none': 'No hay nada que coincida.',
+  'cmd.error': 'La búsqueda ha fallado.',
 } as const;
