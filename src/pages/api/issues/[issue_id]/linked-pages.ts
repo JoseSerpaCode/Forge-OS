@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
-import crypto from 'crypto';
 
 // GET /api/issues/[issue_id]/linked-pages → list linked KB pages
 export const GET: APIRoute = async ({ params, locals }) => {

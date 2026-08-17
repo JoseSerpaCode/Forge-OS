@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import Database from 'better-sqlite3';
+import { test, } from '@playwright/test';
 
 test('selection color is correct', async ({ page }) => {
   // We can just create a simple HTML file to test CSS selection specificity

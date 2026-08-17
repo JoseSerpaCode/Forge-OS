@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
 import { WorkspaceService } from '../../../../lib/WorkspaceService';
-import { ApiError, handleApiError } from '../../../../lib/errors';
+import { handleApiError } from '../../../../lib/errors';
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
   const user = locals.user!;

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, } from '@playwright/test';
 import Database from 'better-sqlite3';
 import path from 'path';
 

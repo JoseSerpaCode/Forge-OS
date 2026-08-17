@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, blob } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 export const dynamicDatabases = sqliteTable('dynamic_databases', {

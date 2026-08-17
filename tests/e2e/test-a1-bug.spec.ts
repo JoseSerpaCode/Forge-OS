@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, } from '@playwright/test';
 
 test('A1 bug: clicking New Rule button', async ({ page }) => {
   // Login

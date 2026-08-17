@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { IssueService } from '../../../lib/IssueService';
-import { ApiError, handleApiError } from '../../../lib/errors';
+import { handleApiError } from '../../../lib/errors';
 import { checkWorkspaceAccess } from '../../../lib/guard';
-import db from '../../../lib/db';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const { id } = params;
