@@ -1206,4 +1206,68 @@ try {
   console.error('[DB] Guest cleanup failed:', e);
 }
 
+/**
+ * Fotos diarias de los sprints activos.
+ *
+ * Sin esto, `sprint_snapshots` estaba **permanentemente vacía**: el módulo que
+ * la llena (`lib/sprintSnapshots.ts`) se escribió, se probó y no lo llamaba
+ * nadie. El CHANGELOG anunció el arreglo del burndown en la v1.12.0 y doce
+ * versiones después el endpoint seguía recalculando desde el estado actual.
+ *
+ * Va aquí, junto a la limpieza de invitados, porque es el mismo tipo de tarea y
+ * el mismo sitio donde ya se hace: al arrancar y luego cada día. No hace falta
+ * un cron ni un timer aparte para una foto que cuesta una consulta por sprint
+ * activo.
+ *
+ * Dos detalles que no se ven:
+ *
+ *  - `tomarFoto` es idempotente por día, así que reiniciar el servicio cinco
+ *    veces en una tarde no ensucia nada: refresca la foto de hoy y no toca las
+ *    anteriores.
+ *  - El intervalo lleva `unref()`. Sin él, un temporizador vivo mantiene el
+ *    proceso de Node arrancado y los tests que importan este módulo se quedan
+ *    colgados al terminar sin que nada explique por qué.
+ */
+function fotografiarHoy() {
+  try {
+    const activos = db.prepare("SELECT id FROM sprints WHERE status = 'active'").all() as Array<{ id: string }>;
+    if (activos.length === 0) return;
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const medir = db.prepare(`
+      SELECT
+        COUNT(*) AS issuesTotal,
+        SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS issuesDone,
+        COALESCE(SUM(story_points), 0) AS pointsTotal,
+        COALESCE(SUM(CASE WHEN status = 'done' THEN story_points ELSE 0 END), 0) AS pointsDone
+      FROM issues WHERE sprint_id = ?
+    `);
+    const guardar = db.prepare(`
+      INSERT INTO sprint_snapshots (id, sprint_id, taken_on, points_total, points_done, issues_total, issues_done)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(sprint_id, taken_on) DO UPDATE SET
+        points_total = excluded.points_total,
+        points_done  = excluded.points_done,
+        issues_total = excluded.issues_total,
+        issues_done  = excluded.issues_done
+    `);
+
+    const tx = db.transaction(() => {
+      for (const s of activos) {
+        const m = medir.get(s.id) as any;
+        guardar.run(crypto.randomUUID(), s.id, hoy, m.pointsTotal, m.pointsDone, m.issuesTotal, m.issuesDone);
+      }
+    });
+    tx();
+  } catch (e) {
+    // No es fatal: sin foto de hoy el burndown enseña hasta ayer.
+    console.error('[DB] Foto diaria de sprints fallida:', e);
+  }
+}
+
+if (process.env.NODE_ENV !== 'test') {
+  fotografiarHoy();
+  setInterval(fotografiarHoy, 6 * 60 * 60 * 1000).unref();
+}
+
 export default db;
