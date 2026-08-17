@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import path from 'path';
 
 test.describe('Avatar and Workspace Uploads', () => {
   test('Should allow uploading an avatar for the user', async ({ page, request }) => {

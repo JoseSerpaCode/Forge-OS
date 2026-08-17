@@ -73,7 +73,15 @@ describe('tablero: cerrar sprint con trabajo pendiente', () => {
 });
 
 describe('claves de traducción del diálogo', () => {
-  const ui = fs.readFileSync('src/i18n/ui.ts', 'utf-8');
+  // Las claves viven repartidas por dominio desde que `ui.ts` se partió; se leen
+  // los ficheros, no el ensamblador.
+  const leer = (idioma: 'en' | 'es') => {
+    const dir = `src/i18n/${idioma}`;
+    return fs.readdirSync(dir)
+      .filter((f) => f.endsWith('.ts'))
+      .map((f) => fs.readFileSync(`${dir}/${f}`, 'utf-8'))
+      .join('\n');
+  };
   const usadas = [...board.matchAll(/t\('(sprint\.[a-z_]+)'\)/g)].map((m) => m[1]);
 
   it('el tablero usa claves y no texto suelto', () => {
@@ -81,7 +89,8 @@ describe('claves de traducción del diálogo', () => {
   });
 
   it('cada clave existe en los dos idiomas', () => {
-    const [, en, es] = ui.split(/^\s{2}(?:en|es): \{/m);
+    const en = leer('en');
+    const es = leer('es');
     for (const k of new Set(usadas)) {
       expect(en, `falta ${k} en inglés`).toContain(`'${k}':`);
       expect(es, `falta ${k} en español`).toContain(`'${k}':`);

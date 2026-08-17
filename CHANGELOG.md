@@ -6,6 +6,35 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.25.0] - 2026-08-17
+
+### Fixed
+
+- **El burndown llevaba doce versiones sin arreglarse, y el changelog decía que sí.** La entrada de la 1.12.0 anunciaba que se dejaba de recalcular la curva desde el estado actual. El módulo que hace eso se escribió y se probó, pero **no lo llamaba nadie**: la tabla de fotos estaba permanentemente vacía y el endpoint seguía con su `COUNT(*)` y su comentario «mock … for MVP purposes». Ahora el endpoint lee la serie real y algo la alimenta a diario.
+- El motivo de fondo no era el coste de recalcular, era que **la historia cambiaba**: si a un ticket le subían los puntos, la curva de la semana pasada se redibujaba distinta hoy. Una gráfica de progreso que cambia hacia atrás no sirve para mirar atrás.
+- **Toda tarea en revisión mostraba el texto `status.review`** en el hub y en el panel del espacio: la base guarda `review` y la clave se llamaba `status.in_review`.
+- **Un ticket de tipo Epic mostraba `type.epic`.** Es uno de los cuatro tipos de fábrica y se siembra en cada espacio, pero no tenía traducción.
+- **La misma notificación mostraba dos horas distintas**, una en el HTML servido y otra tras refrescarse: se leía la fecha de cinco maneras y solo cuatro trataban bien el UTC de SQLite.
+- **Las fechas y los tiempos relativos salían siempre en inglés** («Aug 17, 2026», «5m ago») aunque la interfaz estuviera en español, y las acciones de la actividad reciente estaban escritas a mano.
+- **La tabla de tareas pintaba la clave del tipo** en vez de su nombre, y **la franja de color de la tarjeta** seguía con el mapa fijo de antes de los tipos propios: un tipo morado salía azul.
+
+### Performance
+
+- **Caddy prohibía cachear los avatares.** El endpoint pone `private, max-age=86400` —correcto: `private` ya impide que un CDN los guarde— y el Caddyfile lo pisaba con `no-store` sobre todo `/api/*`, así que se redescargaban en cada carga. Con 1 GB de salida al mes, eso se paga.
+- **El avatar subido desde el perfil no se redimensionaba**: iba la foto del móvil entera para servirse a 24×24 píxeles.
+- Once imágenes sin `loading="lazy"`, incluida la de cada tarjeta del tablero.
+- **Cinco `data-*` menos por tarjeta.** Tres no los leía nadie y dos eran la misma cadena repetida hasta cuatrocientas veces por tablero.
+
+### Added
+
+- `src/lib/fechas.ts`: una sola forma de leer lo que guarda SQLite, con formato y tiempo relativo traducidos.
+- Comprobaciones que enumeran las claves construidas sobre la marcha, los contratos entre navegador y API, y un proyecto de Playwright para teléfono.
+- Linter (Biome) en CI.
+
+### Changed
+
+- `src/i18n/ui.ts` queda partido en nueve dominios por idioma. Era el segundo fichero que más cambiaba del repositorio y el punto donde chocaba cualquier trabajo en paralelo.
+
 ## [1.24.0] - 2026-08-16
 
 ### Added
@@ -298,7 +327,7 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Un solo sprint activo por espacio, garantizado por la base de datos.** La regla vivía solo en la aplicación, y una regla que solo vive en el código se salta con dos peticiones a la vez: las dos pasan la comprobación antes de que ninguna escriba. Ahora lo impide un índice único parcial. La migración deja los datos en paz consigo mismos antes de crearlo: si ya había varios activos, conserva el más reciente.
 - **Cerrar un sprint obliga a decir qué pasa con lo que no se terminó**: moverlo al siguiente, devolverlo al backlog o dejarlo donde está. Antes se cerraba en silencio y el trabajo pendiente se quedaba dentro, invisible para el sprint siguiente. Sin decidir, el servidor responde 409 con **cuántos** tickets hay pendientes, para poder preguntar con el número delante.
 - **Reordenar el backlog con la posición calculada en el servidor.** El cliente dice entre qué dos tickets quiere dejar el suyo; el número lo pone el servidor. Y cuando el hueco entre dos posiciones se queda sin precisión de coma flotante, se reindexa la lista y se sigue, sin que nadie vea nada moverse.
-- **Fotos diarias del sprint** (`sprint_snapshots`) para el burndown. Se recalculaba desde los datos actuales en cada carga, así que la curva de la semana pasada se redibujaba distinta hoy si a un ticket le cambiaban los puntos. La foto de hoy se refresca; las de días anteriores no se tocan.
+- **Fotos diarias del sprint** (`sprint_snapshots`) para el burndown. *(Corrección: esto se quedó a medias. Se creó la tabla y el módulo, pero nada los llamaba y el endpoint siguió recalculando. Enchufado de verdad en la 1.25.0.)* Se recalculaba desde los datos actuales en cada carga, así que la curva de la semana pasada se redibujaba distinta hoy si a un ticket le cambiaban los puntos. La foto de hoy se refresca; las de días anteriores no se tocan.
 - `sprints` gana `completed_at`, `created_by`, `created_at` y `updated_at`.
 
 ## [1.11.1] - 2026-08-13

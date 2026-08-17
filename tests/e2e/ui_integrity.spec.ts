@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { getTestDb } from './test-utils';
-import path from 'path';
 
 test.describe('UI Integrity & DB Sync', () => {
   test('Debe permitir cambiar el username en Settings y reflejarse en SQLite', async ({ page }) => {

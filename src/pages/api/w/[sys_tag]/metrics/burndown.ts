@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../../lib/guard';
+import { serie, tomarFoto } from '../../../../../lib/sprintSnapshots';
 
 export const GET: APIRoute = async ({ request, params, locals }) => {
   const user = locals.user!;
@@ -36,25 +37,54 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
       });
     }
 
-    // 4. Calculate burndown using COUNT instead of story_points
-    // We mock the daily burndown history for MVP purposes or calculate from audit logs.
-    // For V1 MVP as approved: we use a simplified approach since we don't have historical issue state tracking yet,
-    // or we fetch the total count and how many are done.
-    // A real burndown requires historical data. For now, we return the total issues and completed issues.
-    
-    const totalIssues = db.prepare("SELECT COUNT(id) as count FROM issues WHERE sprint_id = ? AND workspace_id = ?").get(sprintId, workspace.id) as any;
-    const doneIssues = db.prepare("SELECT COUNT(id) as count FROM issues WHERE sprint_id = ? AND workspace_id = ? AND status = 'done'").get(sprintId, workspace.id) as any;
+    /**
+     * El burndown sale de las fotos diarias, no de un recuento de ahora.
+     *
+     * Aquí había un `COUNT(*)` del estado actual con un comentario que decía
+     * «mock ... for MVP purposes». El módulo que arregla eso —
+     * `lib/sprintSnapshots.ts`— se escribió, se probó y **nunca se enchufó**:
+     * el CHANGELOG anunciaba el arreglo en la v1.12.0 y el endpoint siguió
+     * devolviendo lo mismo doce versiones.
+     *
+     * El problema de recalcular no es el coste, es que **la historia cambia**:
+     * si a un ticket le suben los puntos o se mueve de sprint, la curva de la
+     * semana pasada se redibuja distinta hoy. Una gráfica de progreso que
+     * cambia hacia atrás no sirve para mirar atrás.
+     */
+    const fotos = serie(sprintId);
+
+    /**
+     * La foto de hoy se refresca al mirar.
+     *
+     * El disparador diario deja la de cada día, pero si alguien abre Métricas a
+     * media tarde después de cerrar cinco tickets, la curva tiene que
+     * enseñarlos. `tomarFoto` es idempotente por día: refresca la de hoy y no
+     * toca ninguna anterior. Así también se llena el primer día de un sprint,
+     * antes de que el disparador haya pasado por él.
+     */
+    const hoy = tomarFoto(sprintId);
+    const serieCompleta = [...fotos.filter((f) => f.takenOn !== hoy.takenOn), hoy]
+      .sort((a, b) => a.takenOn.localeCompare(b.takenOn));
 
     const burndownData = {
-      total_issues: totalIssues.count,
-      completed_issues: doneIssues.count,
       sprint_start: sprint.start_date,
-      sprint_end: sprint.end_date
+      sprint_end: sprint.end_date,
+      // Se mantienen los dos campos que ya consumía la gráfica, para no
+      // romperla mientras se le añade la serie.
+      total_issues: hoy.issuesTotal,
+      completed_issues: hoy.issuesDone,
+      series: serieCompleta.map((f) => ({
+        date: f.takenOn,
+        points_total: f.pointsTotal,
+        points_done: f.pointsDone,
+        issues_total: f.issuesTotal,
+        issues_done: f.issuesDone,
+      })),
     };
 
-    return new Response(JSON.stringify(burndownData), { 
-      status: 200, 
-      headers: { 'Content-Type': 'application/json' } 
+    return new Response(JSON.stringify(burndownData), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (err: any) {
     console.error('Burndown API Error:', err);

@@ -126,3 +126,42 @@ test('sólo un propietario puede tocar los tipos', async ({ page }) => {
   const ajeno = await page.request.get('/api/w/no-existe-jamas/issue-types');
   expect(ajeno.status()).toBe(404);
 });
+
+test('la franja de la tarjeta usa el color del tipo, no un mapa fijo', async ({ page }) => {
+  await entrar(page);
+  await page.goto(`/w/${ESPACIO}/board?sprint=backlog`);
+  const ws = await page.locator('.kanban-container').getAttribute('data-workspace');
+
+  // Un tipo propio en un color que el mapa antiguo no contemplaba.
+  const creado = await page.request.post(`/api/w/${ESPACIO}/issue-types`, {
+    data: { name: 'Morado', color: '#8E4EC6' },
+  });
+  expect([200, 201, 409]).toContain(creado.status());
+
+  await page.request.post('/api/issues', {
+    data: { title: 'Con franja morada', workspace_id: ws, type: 'morado' },
+  });
+  await page.reload();
+
+  const tarjeta = page.locator('.issue-card', { hasText: 'Con franja morada' }).first();
+  await expect(tarjeta).toBeVisible();
+
+  // La franja es un `::before` cuyo color viene de una variable CSS: con el
+  // mapa antiguo (`bug` rojo, `story` verde, el resto azul) este tipo habría
+  // salido azul aunque el equipo lo pintara de morado.
+  const color = await tarjeta.evaluate((el) =>
+    getComputedStyle(el, '::before').backgroundColor
+  );
+  expect(color).toBe('rgb(142, 78, 198)');
+});
+
+test('la tabla de tareas pinta el nombre del tipo, no su clave', async ({ page }) => {
+  await entrar(page);
+  await page.goto(`/w/${ESPACIO}`);
+
+  const tabla = page.locator('.task-table-container').first();
+  if (await tabla.count() === 0) return;
+  const texto = await tabla.textContent();
+  // Antes salía la clave en minúscula —«task», «morado»— sin traducir.
+  expect(texto).not.toMatch(/\bmorado\b/);
+});

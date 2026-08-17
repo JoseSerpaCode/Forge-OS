@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { getTestDb } from './test-utils';
-import path from 'path';
 
 test.describe('Forge OS - Full System Omnibus Validation', () => {
 

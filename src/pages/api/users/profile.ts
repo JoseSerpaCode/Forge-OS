@@ -1,5 +1,4 @@
 import type { APIRoute } from 'astro';
-import db from '../../../lib/db';
 
 /**
  * Legacy convenience endpoint for profile-only updates.

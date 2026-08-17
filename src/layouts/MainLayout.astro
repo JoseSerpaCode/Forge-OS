@@ -106,7 +106,7 @@ Astro.response.headers.set('Pragma', 'no-cache');
       });
     </script>
   </head>
-  <body class="bg-forge-bg text-forge-text flex h-screen overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin}>
+  <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-screen overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin}>
     <Sidebar workspaceId={workspaceId} workspaceName={workspaceName} />
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity opacity-0 backdrop-blur-sm max-md:backdrop-blur-none cursor-pointer"></div>
     <div class="flex-1 flex flex-col min-w-0">
@@ -146,23 +146,32 @@ Astro.response.headers.set('Pragma', 'no-cache');
     <dialog id="cmd-k-palette" class="bg-forge-panel/95 backdrop-blur-md max-md:backdrop-blur-none border border-forge-border rounded-xl p-0 w-full max-w-[550px] text-forge-text shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[200] overflow-hidden m-auto mb-auto mt-[15vh] transition-all open:animate-in open:fade-in open:zoom-in-95 backdrop:bg-black/40 backdrop:backdrop-blur-sm max-md:backdrop-blur-none">
       <div class="flex items-center px-4 py-4 border-b border-forge-border/50 bg-forge-bg/30">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text mr-3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="cmd-k-input" aria-label={t('cmd.palette.label')} class="w-full bg-transparent border-none text-forge-text text-lg focus:outline-none placeholder-forge-muted/70 font-medium" placeholder="Search commands, workspaces, jump to..." autocomplete="off">
+        <input type="text" id="cmd-k-input" aria-label={t('cmd.palette.label')} class="w-full bg-transparent border-none text-forge-text text-lg focus:outline-none placeholder-forge-muted/70 font-medium" placeholder={t('cmd.placeholder')} autocomplete="off" role="combobox" aria-expanded="false" aria-controls="cmd-k-results" aria-autocomplete="list">
         <span class="text-[10px] font-mono text-forge-muted bg-forge-bg px-2 py-1 rounded border border-forge-border ml-2 font-bold tracking-widest shadow-sm">ESC</span>
       </div>
-      <div class="max-h-[350px] overflow-y-auto p-2" id="cmd-k-results">
-        <div class="px-3 py-2 text-[10px] font-bold text-forge-muted uppercase tracking-widest mt-1">Quick Actions</div>
+      <div class="max-h-[350px] overflow-y-auto p-2" id="cmd-k-results" role="listbox">
+        <div id="cmd-k-quick">
+        <div class="px-3 py-2 text-[10px] font-bold text-forge-muted uppercase tracking-widest mt-1">{t('cmd.quick')}</div>
         <a href="/" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-forge-secondary/15 hover:text-forge-accent-text transition-all cursor-pointer text-sm font-medium group">
           <div class="w-8 h-8 rounded bg-forge-bg border border-forge-border flex items-center justify-center group-hover:border-forge-secondary/50 group-hover:text-forge-accent-text text-forge-muted transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           </div>
-          Go to Dashboard
+          {t('cmd.go_hub')}
         </a>
         <a href="/settings" class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-forge-secondary/15 hover:text-forge-accent-text transition-all cursor-pointer text-sm font-medium group mt-1">
           <div class="w-8 h-8 rounded bg-forge-bg border border-forge-border flex items-center justify-center group-hover:border-forge-secondary/50 group-hover:text-forge-accent-text text-forge-muted transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           </div>
-          Account Settings
+          {t('cmd.go_settings')}
         </a>
+        </div>
+        {/* Aquí se pintan los resultados de la búsqueda. La paleta tenía este
+            hueco sin nada detrás: `#cmd-k-input` no llevaba ni un listener en
+            todo el proyecto, solo un `.focus()`. Escribir no hacía nada. */}
+        <div id="cmd-k-hits" class="hidden"
+          data-t-searching={t('cmd.searching')}
+          data-t-none={t('cmd.none')}
+          data-t-error={t('cmd.error')}></div>
       </div>
     </dialog>
 
@@ -278,6 +287,121 @@ Astro.response.headers.set('Pragma', 'no-cache');
       document.getElementById('cmd-k-palette')?.addEventListener('click', function(e) {
         if (e.target === this) this.close();
       });
-    </script>
+    
+      /**
+       * La paleta, conectada.
+       *
+       * Tenía un `<input>`, un contenedor de resultados y dos enlaces fijos en
+       * inglés. `#cmd-k-input` no llevaba **ni un listener** en todo el
+       * proyecto —solo un `.focus()` al abrirla—, así que escribir no hacía
+       * absolutamente nada. La búsqueda global ya existía y la barra superior
+       * ya la usaba; solo faltaba enchufarla aquí.
+       *
+       * Va contra `/api/sys/state`, la misma que la barra: una búsqueda con dos
+       * implementaciones acaba dando resultados distintos en cada sitio.
+       */
+      (function () {
+        var input = document.getElementById('cmd-k-input');
+        var hits = document.getElementById('cmd-k-hits');
+        var quick = document.getElementById('cmd-k-quick');
+        var palette = document.getElementById('cmd-k-palette');
+        if (!input || !hits || !quick || !palette) return;
+
+        var espera, ultima = 0, seleccion = -1;
+
+        function pinta(html, mostrar) {
+          hits.innerHTML = html;
+          hits.classList.toggle('hidden', !mostrar);
+          quick.classList.toggle('hidden', mostrar);
+          input.setAttribute('aria-expanded', String(!!mostrar));
+          seleccion = -1;
+        }
+
+        function aviso(texto) {
+          return '<p class="px-3 py-6 text-sm text-forge-muted text-center">' + texto + '</p>';
+        }
+
+        function opciones() {
+          return Array.prototype.slice.call(hits.querySelectorAll('a[role="option"]'));
+        }
+
+        function resalta(i) {
+          var lista = opciones();
+          if (!lista.length) return;
+          seleccion = (i + lista.length) % lista.length;
+          lista.forEach(function (el, n) {
+            var activo = n === seleccion;
+            el.classList.toggle('bg-forge-secondary/15', activo);
+            el.setAttribute('aria-selected', String(activo));
+            if (activo) el.scrollIntoView({ block: 'nearest' });
+          });
+        }
+
+        input.addEventListener('input', function () {
+          clearTimeout(espera);
+          var q = input.value.trim();
+          if (q.length < 2) { pinta('', false); return; }
+
+          pinta(aviso(hits.dataset.tSearching || ''), true);
+          // Una consulta por tecla son ocho para escribir «informe».
+          espera = setTimeout(function () {
+            var mia = ++ultima;
+            fetch('/api/sys/state?q=' + encodeURIComponent(q))
+              .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+              .then(function (datos) {
+                // Una consulta lenta de «inf» puede llegar después de la de
+                // «informe» y pintar sus resultados encima de los buenos.
+                if (mia !== ultima) return;
+                if (!datos.length) { pinta(aviso(hits.dataset.tNone || ''), true); return; }
+
+                var html = datos.map(function (item) {
+                  // `textContent` no vale aquí porque se arma HTML, así que el
+                  // título se escapa: lo escribe otra persona.
+                  var titulo = String(item.title == null ? '' : item.title)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                  var url = /^\/[^\/]/.test(item.url || '') ? item.url : '/';
+                  return '<a href="' + url + '" role="option" aria-selected="false" ' +
+                    'class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-forge-secondary/15 transition-colors text-sm">' +
+                    '<span class="text-[10px] font-mono uppercase tracking-wider text-forge-muted w-16 shrink-0">' + item.type + '</span>' +
+                    '<span class="truncate">' + titulo + '</span></a>';
+                }).join('');
+                pinta(html, true);
+              })
+              .catch(function () {
+                if (mia === ultima) pinta(aviso(hits.dataset.tError || ''), true);
+              });
+          }, 220);
+        });
+
+        // Flechas y Enter: una paleta que obliga a soltar el teclado para
+        // elegir no es una paleta.
+        input.addEventListener('keydown', function (e) {
+          var lista = opciones();
+          if (e.key === 'ArrowDown') { e.preventDefault(); resalta(seleccion + 1); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); resalta(seleccion - 1); }
+          else if (e.key === 'Enter' && seleccion >= 0 && lista[seleccion]) {
+            e.preventDefault();
+            window.location.href = lista[seleccion].getAttribute('href');
+          }
+        });
+
+        // Al cerrarla se limpia: reabrirla con la búsqueda de hace dos horas
+        // dentro es confuso.
+        palette.addEventListener('close', function () {
+          input.value = '';
+          pinta('', false);
+          /**
+           * Devolver el foco al documento.
+           *
+           * Al cerrar con Escape, el foco se quedaba dentro del diálogo ya
+           * cerrado. Consecuencia: el atajo de teclado dejaba de funcionar
+           * —el `keydown` no llegaba a `document`— y quien navega con teclado
+           * se quedaba sin punto de partida. Reabrir la paleta requería
+           * pulsar antes en cualquier sitio con el ratón.
+           */
+          if (document.body) document.body.focus();
+        });
+      })();
+</script>
   </body>
 </html>

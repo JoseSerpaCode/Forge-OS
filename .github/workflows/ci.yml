@@ -34,6 +34,12 @@ jobs:
       # parallel workers applied migrations to a fresh database at once and the
       # job died with "duplicate column name". Fixed in db.ts, which now
       # serialises migrations in an IMMEDIATE transaction.
+      # Antes de las pruebas: tarda un segundo y coge imports y variables sin
+      # usar, que es la basura que deja un refactor a medias. No formatea nada
+      # —solo revisa— para no llenar el historial de cambios de espacios.
+      - name: Lint
+        run: npx biome check src tests
+
       - name: Run Vitest
         run: npx vitest run
 

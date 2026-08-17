@@ -75,7 +75,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
             <!-- Banner Background (gradient or image) -->
             <div class="h-48 w-full rounded-t-2xl relative border-b border-forge-border overflow-hidden group/banner">
                 {profile.banner_url ? (
-                    <img src={profile.banner_url} alt="Banner" class="w-full h-full object-cover" id="profile-banner-img" />
+                    <img src={profile.banner_url} alt="Banner" class="w-full h-full object-cover" id="profile-banner-img" loading="lazy" decoding="async" />
                 ) : (
                     <div class="w-full h-full bg-gradient-to-r from-forge-secondary/30 via-forge-primary/20 to-forge-bg relative" id="profile-banner-fallback">
                         <div class="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent"></div>
@@ -96,7 +96,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
             <div class="px-8 pb-8 relative">
                 <!-- Avatar overlapping banner -->
                 <div class="absolute -top-16 left-8 group/avatar">
-                    <img src={profile.avatar_url || '/default-avatar.svg'} alt={profile.username} id="profile-avatar-img" class="w-32 h-32 rounded-2xl border-4 border-forge-panel bg-forge-bg shadow-xl object-cover" />
+                    <img src={profile.avatar_url || '/default-avatar.svg'} alt={profile.username} id="profile-avatar-img" class="w-32 h-32 rounded-2xl border-4 border-forge-panel bg-forge-bg shadow-xl object-cover" loading="lazy" decoding="async" />
                     <div class="absolute inset-0 rounded-2xl ring-1 ring-inset ring-forge-border pointer-events-none"></div>
                     {isOwnProfile && (
                         <div class="absolute inset-0 bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity rounded-2xl flex items-center justify-center cursor-pointer" onclick="document.getElementById('avatar-upload').click()">
@@ -297,15 +297,55 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
             return res.ok;
         }
 
-        async function uploadFile(file) {
+        /**
+         * Redimensiona antes de subir.
+         *
+         * Esto mandaba el archivo **tal cual**: quien cambiaba su avatar desde
+         * su perfil —en vez de desde /settings, que sí redimensiona— subía la
+         * foto de 4 MB del móvil entera. Luego se sirve a 24×24 píxeles en cada
+         * tarjeta del tablero. Con 1 GB de salida al mes, doscientas cargas de
+         * esa página se llevan la cuota.
+         *
+         * El servidor acepta hasta 10 MB sin procesar nada, así que el recorte
+         * tiene que pasar aquí.
+         */
+        async function uploadFile(file, maxAncho = 512) {
+            const blob = await redimensionar(file, maxAncho);
+            if (!blob) return null;
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', blob, 'imagen.webp');
             const res = await fetch('/api/upload', { method: 'POST', body: formData });
             if (res.ok) {
                 const data = await res.json();
                 return data.url;
             }
             return null;
+        }
+
+        function redimensionar(file, maxAncho) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let { width, height } = img;
+                        if (width > maxAncho) {
+                            height = Math.round(height * (maxAncho / width));
+                            width = maxAncho;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
+                        canvas.toBlob((b) => resolve(b), 'image/webp', 0.85);
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = ev.target?.result;
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+            });
         }
 
         document.getElementById('avatar-upload')?.addEventListener('change', async (e) => {
@@ -320,7 +360,8 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
         document.getElementById('banner-upload')?.addEventListener('change', async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
-            const url = await uploadFile(file);
+            // El banner ocupa el ancho de la tarjeta de perfil, no 96 píxeles.
+            const url = await uploadFile(file, 1600);
             if (url && await updateProfile({ banner_url: url })) {
                 let img = document.getElementById('profile-banner-img');
                 if (img) img.src = url;

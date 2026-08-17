@@ -1,0 +1,76 @@
+/**
+ * Traducciones de auth.
+ *
+ * `ui.ts` era un solo fichero de 2.048 líneas y 939 claves por idioma, y era el
+ * segundo que más cambiaba del repositorio. Cualquier trabajo en paralelo
+ * chocaba ahí: dos ramas que añaden una clave tocan la misma zona del mismo
+ * fichero. Partido por dominio, cada una toca el suyo.
+ *
+ * El orden de las claves y sus valores son los mismos que tenía; esto fue un
+ * corte mecánico, no una reescritura.
+ */
+
+export const es = {
+  'auth.login': 'Iniciar sesión',
+  'auth.register': 'Registrarse',
+  'account.delete.title': 'Eliminar la cuenta',
+  'account.delete.lead': 'Es permanente. No hay deshacer ni periodo de gracia.',
+  'account.delete.keeps': 'Lo que se queda con tu equipo',
+  'account.delete.keeps_note': 'Los tickets que reportaste, las páginas que escribiste y las horas registradas siguen en los espacios compartidos, a nombre de una cuenta eliminada. Tus compañeros no pierden su historia.',
+  'account.delete.goes': 'Lo que se destruye',
+  'account.delete.goes_note': 'Tu perfil, tus sesiones, tus notificaciones, tus amistades y tus bloqueos. Los espacios donde no queda nadie más se borran enteros, con todo lo que tengan dentro.',
+  'account.delete.blocked': 'Antes hay que traspasar la propiedad',
+  'account.delete.blocked_note': 'Eres la única persona propietaria de estos espacios y todavía hay más gente dentro. Haz propietaria a otra persona, o saca a las demás, y vuelve.',
+  'account.delete.ws_deleted': 'Estos espacios se borrarán enteros:',
+  'account.delete.n_issues': 'tickets reportados',
+  'account.delete.n_pages': 'páginas escritas',
+  'account.delete.n_logs': 'horas registradas',
+  'account.delete.confirm_label': 'Escribe tu nombre de usuario para confirmar',
+  'account.delete.password_label': 'Tu contraseña',
+  'account.delete.button': 'Eliminar mi cuenta para siempre',
+  'account.delete.open': 'Eliminar la cuenta…',
+  'account.delete.cancel': 'Cancelar',
+  'account.delete.n_issues_one': 'ticket reportado',
+  'account.delete.n_pages_one': 'página escrita',
+  'account.delete.n_logs_one': 'hora registrada',
+  'account.delete.type_this': 'Escribe esto para confirmar:',
+  'account.delete.would_happen': 'Si desbloqueas lo de arriba, esto es lo que pasaría',
+  'auth.login.title': 'Hola de nuevo',
+  'auth.login.sub': 'Entra a tu espacio de trabajo.',
+  'auth.register.title': 'Crea tu cuenta',
+  'auth.register.sub': 'Gratis, autoalojada y tuya.',
+  'auth.email.label': 'Correo',
+  'auth.email.hint': 'Sirve para recuperar tu cuenta. No se muestra en tu perfil.',
+  'auth.captcha.label': '¿Cuánto es',
+  'auth.captcha.hint': 'Una comprobación rápida de que no eres un script.',
+  'auth.back': 'Inicio',
+  'auth.oauth.google': 'Google',
+  'auth.oauth.github': 'GitHub',
+  'auth.oauth.pending': 'La entrada por proveedor está montada pero aún sin configurar: faltan las credenciales de cada uno.',
+  'auth.email': 'o con un usuario',
+  'auth.or': 'o',
+  'auth.try': 'Probar sin cuenta',
+  'auth.try.caveat': 'Crea un espacio temporal que caduca a los 30 días. No se pierde nada al registrarte.',
+  'auth.username.hint': 'Al menos 3 caracteres.',
+  'auth.password.hint': 'Al menos 6 caracteres.',
+  'auth.working.login': 'Entrando…',
+  'auth.working.register': 'Creando la cuenta…',
+  'auth.error.generic': 'Algo ha fallado. Inténtalo otra vez.',
+  'auth.reason.guest_limit': 'Se han creado demasiados espacios temporales desde tu conexión en la última hora. Una cuenta de verdad no tiene ese límite, y además no caduca.',
+  'auth.transfer.title': 'Conserva tus espacios de invitado',
+  'auth.transfer.body.login': 'Elige los espacios que quieres llevarte a tu cuenta. Los que dejes sin marcar se borran para siempre.',
+  'auth.transfer.body.register': 'Elige los espacios que quieres llevarte a tu cuenta nueva. Los que dejes sin marcar se borran para siempre.',
+  'auth.transfer.discard': 'Descartar todos',
+  'auth.transfer.continue': 'Continuar',
+  'auth.side.claim': 'Todo lo que tu equipo escribe, planifica y sigue — en',
+  'auth.side.p1': 'Un proceso de Node sobre un archivo SQLite.',
+  'auth.side.p2': 'Nadie más leyendo tu trabajo.',
+  'auth.side.p3': 'Licencia MIT. Cógelo y móntatelo tú.',
+  'auth.username': 'Usuario',
+  'auth.password': 'Contraseña',
+  'auth.submit': 'Ingresar',
+  'auth.signup': 'Regístrate',
+  'auth.no_account': '¿No tienes cuenta? Regístrate',
+  'auth.have_account': '¿Ya tienes cuenta? Inicia sesión',
+  'auth.invalid': 'Credenciales inválidas',
+} as const;

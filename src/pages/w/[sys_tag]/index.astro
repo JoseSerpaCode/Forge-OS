@@ -10,6 +10,8 @@ const user = Astro.locals.user!;
 if (!user) return Astro.redirect('/login');
 
 import { useTranslations } from '../../../i18n/ui';
+import { fecha, relativo } from '../../../lib/fechas';
+import { mapaPorClave } from '../../../lib/issueTypes';
 import TaskTable from '../../../components/dashboard/TaskTable.astro';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -136,33 +138,33 @@ const myTasks = db.prepare(`
   LIMIT 5
 `).all(workspace.id, user.id) as any[];
 
-// Date formatting helpers passed to template
-const formatDate = (dateStr: string | null) => {
-  if (!dateStr) return '';
-  const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-};
+/**
+ * Las fechas y los relativos salen de `lib/fechas`.
+ *
+ * Aquí había tres funciones propias: una que leía la fecha bien pero formateaba
+ * clavado a `'en-US'`, otra que devolvía `"5m ago"` en inglés fijo aunque la
+ * interfaz estuviera en español, y un mapa de acciones —`'moved issue'`,
+ * `'created issue'`— también en inglés a mano.
+ */
+const formatDate = (dateStr: string | null) => fecha(dateStr, lang);
+const formatRelative = (dateStr: string) => relativo(dateStr, lang);
 
-const formatRelative = (dateStr: string) => {
-  const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
-  const diff = Date.now() - d.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-};
-
+/**
+ * Qué hizo cada quien, traducido.
+ *
+ * El respaldo deja de ser `action.toLowerCase().replace('_',' ')` —que enseñaba
+ * `issue moved` a la cara— y pasa a ser la propia acción en crudo solo si no
+ * hay clave, que es visible como error en vez de parecer una frase.
+ */
 const actionLabel = (action: string) => {
-  const map: Record<string, string> = {
-    ISSUE_MOVED: 'moved issue',
-    ISSUE_CREATED: 'created issue',
-    ISSUE_UPDATED: 'updated issue',
-    PAGE_UPDATED: 'edited page',
-    PAGE_CREATED: 'created page',
-  };
-  return map[action] || action.toLowerCase().replace('_', ' ');
+  const clave = `activity.${action.toLowerCase()}` as any;
+  const texto = t(clave);
+  return texto === clave ? action : texto;
 };
+
+// Los tipos de este espacio, para que la tabla pinte el nombre y el color en
+// vez de la clave interna.
+const tiposDelEspacio = mapaPorClave(workspace.id);
 
 const statusColor: Record<string, string> = {
   todo: 'bg-forge-muted/20 text-forge-muted',
@@ -363,7 +365,7 @@ const priorityColor: Record<string, string> = {
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center gap-2">
-                    <img src={member.avatar_url || '/default-avatar.svg'} class="w-5 h-5 rounded-full border border-forge-border" alt={member.username} />
+                    <img src={member.avatar_url || '/default-avatar.svg'} class="w-5 h-5 rounded-full border border-forge-border" alt={member.username} loading="lazy" decoding="async" />
                     <span class="text-xs font-medium text-forge-text truncate max-w-[100px]">{member.username}</span>
                   </div>
                   <span class="text-[10px] font-mono text-forge-muted">{member.openCount} {t('dashboard.open')}</span>
@@ -401,7 +403,7 @@ const priorityColor: Record<string, string> = {
           </a>
         </div>
         <div class="flex-1 overflow-x-auto -mx-5 px-5">
-          <TaskTable tasks={myTasks} sys_tag={sys_tag} />
+          <TaskTable tasks={myTasks} sys_tag={sys_tag} tipos={tiposDelEspacio} />
         </div>
       </div>
 
@@ -421,7 +423,7 @@ const priorityColor: Record<string, string> = {
                   src={act.avatar_url || '/default-avatar.svg'} 
                   class="w-6 h-6 rounded-full border border-forge-border bg-forge-bg shrink-0 mt-0.5" 
                   alt={act.username}
-                />
+                loading="lazy" decoding="async" />
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-forge-text">
                     <span class="font-bold">{act.username || 'System'}</span>

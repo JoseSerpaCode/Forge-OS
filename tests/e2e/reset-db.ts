@@ -1,9 +1,7 @@
-import fs from 'fs';
+
 import path from 'path';
-import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 
-import { execSync } from 'child_process';
 import db from '../../src/lib/db';
 
 export default function resetDb() {

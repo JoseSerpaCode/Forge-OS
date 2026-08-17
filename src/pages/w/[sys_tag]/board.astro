@@ -235,19 +235,30 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
   description={metaDescription}
 >
   <div class="h-full flex flex-col pt-4 overflow-hidden">
-    <header class="mb-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-      <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-bold text-forge-text">{workspace.name} Board</h1>
+    {/*
+      La barra se amontonaba.
+      El título ocupaba dos líneas con un nombre de espacio largo, el bloque de
+      tiempo quedaba estrujado a 14rem con el texto partido a mitad de frase, y
+      los seis controles caían en dos filas pegadas. Ahora el título se recorta
+      —el nombre completo está en la barra lateral y en la pestaña—, el bloque
+      de tiempo tiene su ancho y los controles respiran al envolverse.
+    */}
+    <header class="mb-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-x-4 gap-y-3">
+      <div class="flex items-center gap-4 min-w-0">
+        <h1 class="text-2xl font-bold text-forge-text truncate max-w-[15rem]" title={`${workspace.name} Board`}>{workspace.name} Board</h1>
+        {/*
+          La etiqueta encima y la cifra debajo, no una al lado de la otra.
+          En horizontal, «0h registradas — sin estimar» no cabía junto a
+          «TIEMPO» y se partía a mitad de frase, encima del rótulo.
+        */}
         {activeSprintId && (
-          <div class="hidden md:flex flex-col min-w-[14rem] bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-1.5 shadow-sm" id="sprint-time-container" data-logged={totalLogged} data-estimated={totalEstimated}>
-            <div class="flex justify-between items-center text-[10px] font-mono mb-1.5">
-              <span class="text-forge-muted font-bold tracking-wider uppercase">{t('dashboard.time') || 'Time'}</span>
-              <span class="font-bold text-forge-accent-text" id="sprint-time-text">
-                {totalEstimated > 0 
-                  ? `${totalLogged}h / ${totalEstimated}h` 
-                  : `${totalLogged}h ${t('dashboard.logged') || 'logged'} — ${t('dashboard.no_estimate') || 'no estimate'}`}
-              </span>
-            </div>
+          <div class="hidden md:flex flex-col w-[12.5rem] shrink-0 bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-2 shadow-sm" id="sprint-time-container" data-logged={totalLogged} data-estimated={totalEstimated}>
+            <span class="text-[9px] font-mono text-forge-muted font-bold tracking-widest uppercase leading-none">{t('dashboard.time') || 'Time'}</span>
+            <span class="text-[11px] font-mono font-bold text-forge-accent-text leading-tight mt-1 mb-1.5 truncate" id="sprint-time-text">
+              {totalEstimated > 0
+                ? `${totalLogged}h / ${totalEstimated}h`
+                : `${totalLogged}h ${t('dashboard.logged') || 'logged'}`}
+            </span>
             <div class="h-1.5 w-full bg-forge-panel rounded-full overflow-hidden border border-forge-border">
               <div id="sprint-time-bar" class={`h-full transition-all ${totalEstimated > 0 && (totalLogged / totalEstimated) > 1 ? 'bg-forge-error' : 'bg-forge-secondary'}`} style={`width: ${totalEstimated > 0 ? Math.min((totalLogged / totalEstimated) * 100, 100) : 0}%`}></div>
             </div>
@@ -255,7 +266,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         )}
       </div>
 
-      <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto">
+      <div class="flex flex-wrap gap-x-2 gap-y-2.5 items-center w-full xl:w-auto xl:justify-end">
         <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
           <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
           {sprints.map(s => (
@@ -287,7 +298,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         {access.role !== 'viewer' && activeSprintId && currentSprintObj && (
           <div class="flex items-center gap-1 bg-forge-bg rounded-md border border-forge-border/50 p-1">
             <button id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class={`font-bold px-3 py-1 rounded text-xs transition-colors ${currentSprintObj.status === 'planned' ? 'bg-forge-success text-white hover:opacity-90' : currentSprintObj.status === 'active' ? 'bg-forge-primary text-forge-on-accent hover:opacity-90' : 'bg-forge-primary text-forge-on-accent hover:opacity-90'}`}>
-              {currentSprintObj.status === 'planned' ? 'Start' : currentSprintObj.status === 'active' ? 'Complete' : 'Reopen'}
+              {currentSprintObj.status === 'planned' ? t('board.sprint_start') : currentSprintObj.status === 'active' ? t('board.sprint_complete') : t('board.sprint_reopen')}
             </button>
             {currentSprintObj.status === 'active' && (
               <button id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="text-forge-muted hover:text-forge-error px-2 py-1 rounded transition-colors" title={t('board.deactivate')}>
@@ -633,7 +644,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         fetch(`/api/sprints/${sprintId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus, workspaceId, ...cuerpo })
+          body: JSON.stringify({ status: newStatus, ...cuerpo })
         });
 
       // Reabrir o arrancar no arrastra nada: se pregunta y ya.
@@ -680,7 +691,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         const res = await fetch(`/api/sprints/${sprintId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'planned', workspaceId })
+          body: JSON.stringify({ status: 'planned' })
         });
 
         if (res.ok) {
