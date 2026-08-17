@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,43 +18,40 @@ import path from 'node:path';
 
 const DB = path.join(process.cwd(), `forge_mig38_${process.pid}.db`);
 
-function baseVieja() {
-  /**
-   * El «antes» no se escribe a mano: se copia del esquema real.
-   *
-   * Una base inventada con las cuatro tablas del caso se parece poco a la de
-   * producción —le faltan columnas, índices y las otras veinte tablas—, así que
-   * una migración podría pasar aquí y fallar allí. `forge.db` está justo en la
-   * versión anterior, que es el estado desde el que se migra de verdad.
-   *
-   * Se copia con `.backup` y no con `cp`: la base está en WAL y copiar el
-   * archivo da algo incompleto.
-   */
-  const origen = path.join(process.cwd(), 'forge.db');
-  const tmp = new Database(origen, { readonly: true });
-  tmp.exec(`VACUUM INTO '${DB}'`);
-  tmp.close();
+const SEMILLA = path.join(process.cwd(), `forge_mig38_semilla_${process.pid}.db`);
 
+/**
+ * El «antes» se fabrica, no se copia de `forge.db`.
+ *
+ * La primera versión partía de `forge.db` para tener el esquema real. En local
+ * funciona; en CI no existe —`*.db` está en `.gitignore`— y la prueba moría con
+ * `SQLITE_CANTOPEN`. Una prueba que solo corre en la máquina de quien la
+ * escribió no protege de nada.
+ *
+ * Así que el esquema real se obtiene del propio código: se crea una base vacía,
+ * que nace con **todas** las migraciones aplicadas, y luego se rebobina
+ * `issues` a su forma anterior. Sigue siendo el esquema de verdad —las
+ * veintitantas tablas, sus índices y sus triggers— sin depender de ningún
+ * archivo que no esté en el repositorio.
+ */
+async function baseVieja() {
+  // 1. Una base nueva con el esquema completo, hecho por las migraciones.
+  process.env.DATABASE_URL = SEMILLA;
+  process.env.NODE_ENV = 'test';
+  await import('../src/lib/db');
+
+  const semilla = new Database(SEMILLA);
+  semilla.exec(`VACUUM INTO '${DB}'`);
+  semilla.close();
+
+  // 2. Se rebobina la copia a la versión 37.
   const db = new Database(DB);
   db.pragma('foreign_keys = OFF');
 
-  // Se vacía para partir de datos conocidos, pero el **esquema** es el real.
   for (const t of ['work_logs', 'issue_labels', 'time_tracking_sessions', 'issue_page_links', 'issues', 'sprints', 'labels', 'issue_types']) {
     try { db.exec(`DELETE FROM ${t}`); } catch { /* la tabla puede no existir */ }
   }
 
-  /**
-   * Se rebobina a la versión 37.
-   *
-   * La copia sale de `forge.db`, que ya está migrada: usarla tal cual haría que
-   * esta prueba no probara nada, porque la migración no tendría trabajo que
-   * hacer. Se devuelve `issues` a su forma anterior —con la `CHECK` que impedía
-   * los tipos propios— y se borra la marca de la 38.
-   *
-   * El resto del esquema se deja como está, que es justo el motivo de partir de
-   * la base real: las otras veinticinco tablas, sus índices y sus triggers son
-   * los de verdad, no cuatro inventadas para el caso.
-   */
   db.exec('DROP TABLE IF EXISTS issue_types');
   db.exec('DROP TABLE IF EXISTS issues');
   db.exec(`
@@ -91,6 +88,7 @@ function baseVieja() {
   const esquema = db.prepare("SELECT sql FROM sqlite_master WHERE name='issues'").get() as any;
   if (!esquema.sql.includes('CHECK(type IN')) throw new Error('se esperaba la CHECK vieja en issues');
 
+  // 3. Datos con relaciones colgando, que es lo que la migración puede perder.
   db.prepare("INSERT OR IGNORE INTO users (id, username, password_hash, is_sysadmin) VALUES ('u1','mig_uno','x',0)").run();
   db.prepare("INSERT OR IGNORE INTO workspaces (id, name, sys_tag, created_by) VALUES ('w1','Uno','mig-w1','u1')").run();
   db.prepare("INSERT OR IGNORE INTO workspaces (id, name, sys_tag, created_by) VALUES ('w2','Dos','mig-w2','u1')").run();
@@ -107,6 +105,7 @@ function baseVieja() {
   ins.run('i3','w2',null,null,'story','De otro espacio',null,'done','medium',0,0,0,100000,'u1',null,'2020-01-01 00:00:00','2020-01-01 00:00:00',null);
 
   db.prepare("INSERT INTO issue_labels (issue_id, label_id) VALUES ('i1','l1')").run();
+  // El trigger de `work_logs` es quien pone `logged_hours` a 3.5.
   db.prepare("INSERT INTO work_logs (id, issue_id, user_id, hours_spent) VALUES ('wl1','i1','u1',3.5)").run();
   db.close();
 }
@@ -115,17 +114,22 @@ let db: any;
 
 beforeAll(async () => {
   fs.rmSync(DB, { force: true });
-  baseVieja();
+  await baseVieja();
+
+  // `db.ts` ya está en la caché de módulos apuntando a la semilla. Sin soltarlo,
+  // la segunda importación no vuelve a ejecutarse y no se migra nada: la prueba
+  // pasaría comprobando una base que nadie tocó.
+  vi.resetModules();
   process.env.DATABASE_URL = DB;
-  process.env.NODE_ENV = 'test';
-  // Importar el módulo aplica las migraciones pendientes.
   await import('../src/lib/db');
   db = new Database(DB);
 });
 
 afterAll(() => {
   db?.close();
-  for (const s of ['', '-wal', '-shm']) fs.rmSync(DB + s, { force: true });
+  for (const base of [DB, SEMILLA]) {
+    for (const s of ['', '-wal', '-shm']) fs.rmSync(base + s, { force: true });
+  }
 });
 
 describe('la tabla se rehace sin perder nada', () => {
