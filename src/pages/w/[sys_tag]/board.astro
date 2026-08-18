@@ -312,6 +312,13 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
               </button>
             )}
+            {/* Borrar el sprint. Solo propietarios: reorganiza el trabajo de
+                todo el equipo. Los tickets no se van con él. */}
+            {acceso.rol === 'owner' && (
+              <button id="btn-delete-sprint" data-sprint-id={activeSprintId} class="text-forge-muted hover:text-forge-error px-2 py-1 rounded transition-colors" title={t('board.delete_sprint')} aria-label={t('board.delete_sprint')}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+            )}
           </div>
         )}
 
@@ -362,6 +369,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     data-t-deactivate={t('sprint.deactivate_confirm')}
     data-t-err-deactivate={t('sprint.err_deactivate')}
     data-t-err-create={t('issue.err_create')}
+    data-t-err-delete={t('sprint.err_delete')}
     data-t-err={t('sprint.err_close')}
     data-t-no-target={t('sprint.err_no_target')}
     class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-full max-w-[480px] text-forge-text shadow-xl backdrop:bg-black/60">
@@ -585,7 +593,11 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       });
     });
 
-    function abrirDialogoCierre(pendientes: number, enviar: (c: Record<string, unknown>) => Promise<Response>) {
+    function abrirDialogoCierre(
+      pendientes: number,
+      enviar: (c: Record<string, unknown>) => Promise<Response>,
+      borrando = false
+    ) {
       if (!dialogoCierre) return;
       const lead = document.getElementById('close-sprint-lead');
       const plantilla = pendientes === 1
@@ -605,6 +617,19 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         const libre = Array.from(destinoSel.options).find((o) => !o.disabled);
         if (libre) destinoSel.value = libre.value;
       }
+      /**
+       * Al borrar, «dejarlas aquí» no es una opción.
+       *
+       * Cerrando un sprint tiene sentido: los tickets se quedan dentro de un
+       * sprint terminado. Borrándolo no existe ese dentro, así que ofrecerlo
+       * sería ofrecer perderlos.
+       */
+      const filaKeep = dialogoCierre.querySelector<HTMLInputElement>('input[value="keep"]')?.closest('label');
+      if (filaKeep) filaKeep.classList.toggle('hidden', borrando);
+      if (borrando && dialogoCierre.querySelector<HTMLInputElement>('input[value="keep"]')?.checked) {
+        dialogoCierre.querySelector<HTMLInputElement>('input[value="backlog"]')!.checked = true;
+      }
+
       // Sin otro sprint al que pasarlas, la opción no se ofrece.
       const radioNext = dialogoCierre.querySelector<HTMLInputElement>('input[value="next"]');
       const filaNext = radioNext?.closest('label');
@@ -686,6 +711,47 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
       // @ts-ignore
       window.showToast(dialogoCierre?.getAttribute('data-t-err') || '', 'error');
+    });
+
+    /**
+     * Borrar el sprint.
+     *
+     * No existía forma de hacerlo: los sprints creados por error se quedaban
+     * para siempre en el desplegable, que es la única lista por la que se
+     * navega el trabajo.
+     *
+     * Si tiene tickets dentro, el servidor se niega y devuelve cuántos son y a
+     * qué sprints pueden pasar. Los tickets **no** se borran con el sprint: son
+     * trabajo con horas, etiquetas y adjuntos, y borrarlos en cascada
+     * convertiría una limpieza en una pérdida irreversible.
+     */
+    document.getElementById('btn-delete-sprint')?.addEventListener('click', async (e) => {
+      const sprintId = (e.currentTarget as HTMLElement).getAttribute('data-sprint-id');
+      if (!sprintId) return;
+
+      const borrar = (cuerpo: Record<string, unknown> | null) =>
+        fetch(`/api/sprints/${sprintId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cuerpo ?? {}),
+        });
+
+      const res = await borrar(null);
+      if (res.ok) { window.location.href = window.location.pathname + '?sprint=backlog'; return; }
+
+      let datos: any = null;
+      try { datos = await res.clone().json(); } catch { /* no era JSON */ }
+
+      if (res.status === 409 && datos?.error_code === 'sprint_not_empty') {
+        // Se reutiliza el diálogo de cerrar sprint: la pregunta es la misma
+        // —«¿a dónde van estos tickets?»— y tener dos diálogos que preguntan lo
+        // mismo con otras palabras es como se separan los comportamientos.
+        abrirDialogoCierre(datos.pending, borrar, true);
+        return;
+      }
+
+      // @ts-ignore
+      window.showToast(dialogoCierre?.getAttribute('data-t-err-delete') || '', 'error');
     });
 
     const deactivateSprintBtn = document.getElementById('btn-deactivate-sprint');

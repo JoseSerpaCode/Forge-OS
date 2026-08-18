@@ -89,4 +89,6 @@ export const en = {
   'labels.err_bad_color': 'That colour is not one of the available ones.',
   'labels.err_generic': 'The label could not be saved.',
   'board.truncated': 'pick a sprint to narrow this down',
+  'board.delete_sprint': 'Delete sprint',
+  'sprint.err_delete': 'The sprint could not be deleted.',
 } as const;

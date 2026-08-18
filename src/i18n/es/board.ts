@@ -89,4 +89,6 @@ export const es = {
   'labels.err_bad_color': 'Ese color no es de los disponibles.',
   'labels.err_generic': 'No se ha podido guardar la etiqueta.',
   'board.truncated': 'elige un sprint para acotar',
+  'board.delete_sprint': 'Borrar sprint',
+  'sprint.err_delete': 'No se ha podido borrar el sprint.',
 } as const;
