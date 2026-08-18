@@ -60,6 +60,10 @@ test.describe('Sprint Organizer & Isolation', () => {
     await expect(selector).toHaveValue('backlog');
 
     // 2. Create Sprint
+    // Crear un sprint vive en el menú de sprint desde que la barra pasó de
+    // ocho controles: sacarlo de la fila es lo que hace que «+ Issue» —eso sí
+    // es de cada día— deje de caer a una segunda línea.
+    await page.click('#btn-sprint-menu');
     await page.click('#btn-new-sprint');
     await expect(page.locator('#new-sprint-modal')).toBeVisible();
     

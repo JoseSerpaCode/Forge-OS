@@ -323,7 +323,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           porque se usan una vez cada mucho, no en cada visita. Lo que se usa a
           diario se queda fuera.
         */}
-        {acceso.rol !== 'viewer' && activeSprintId && currentSprintObj && (
+        {acceso.rol !== 'viewer' && (
           <div class="relative" id="sprint-menu-root">
             <button
               id="btn-sprint-menu"
@@ -338,36 +338,48 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
             </button>
 
             <div id="sprint-menu" role="menu" class="hidden absolute right-0 top-full mt-1 min-w-[13rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1">
-              <button type="button" role="menuitem" id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class="sprint-menu-item">
-                {currentSprintObj.status === 'planned' ? t('board.sprint_start') : currentSprintObj.status === 'active' ? t('board.sprint_complete') : t('board.sprint_reopen')}
-              </button>
-
-              {currentSprintObj.status === 'active' && (
-                <button type="button" role="menuitem" id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item">
-                  {t('board.deactivate')}
-                </button>
+              {/* Crear un sprint también es una acción de sprint, y tampoco es
+                  algo de cada día: sacarlo de la barra es lo que hace que
+                  «+ Issue» —eso sí es de cada día— deje de caer a otra fila. */}
+              {(acceso.rol === 'owner' || acceso.rol === 'editor') && (
+                <>
+                  <button type="button" role="menuitem" id="btn-new-sprint" class="sprint-menu-item">
+                    {t('board.create_sprint')}
+                  </button>
+                  <div class="h-px bg-forge-border/50 my-1"></div>
+                </>
               )}
 
-              {acceso.rol === 'owner' && (
+              {/* Lo que sigue solo tiene sentido con un sprint delante: en el
+                  backlog no hay nada que completar ni que borrar. */}
+              {activeSprintId && currentSprintObj && (
                 <>
-                  <div class="h-px bg-forge-border/50 my-1"></div>
-                  {/* Borrar reorganiza el trabajo de todo el equipo, así que es
-                      de dueños. Los tickets no se van con él. */}
-                  <button type="button" role="menuitem" id="btn-delete-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item hover:text-forge-error">
-                    {t('board.delete_sprint')}
+                  <button type="button" role="menuitem" id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class="sprint-menu-item">
+                    {currentSprintObj.status === 'planned' ? t('board.sprint_start') : currentSprintObj.status === 'active' ? t('board.sprint_complete') : t('board.sprint_reopen')}
                   </button>
+
+                  {currentSprintObj.status === 'active' && (
+                    <button type="button" role="menuitem" id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item">
+                      {t('board.deactivate')}
+                    </button>
+                  )}
+
+                  {acceso.rol === 'owner' && (
+                    <>
+                      <div class="h-px bg-forge-border/50 my-1"></div>
+                      {/* Borrar reorganiza el trabajo de todo el equipo, así que
+                          es de dueños. Los tickets no se van con él. */}
+                      <button type="button" role="menuitem" id="btn-delete-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item hover:text-forge-error">
+                        {t('board.delete_sprint')}
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>
           </div>
         )}
 
-        {(acceso.rol === 'owner' || acceso.rol === 'editor') && (
-          <button id="btn-new-sprint" class="bg-forge-panel border border-forge-border hover:bg-forge-border/40 text-forge-text font-bold px-3 py-1.5 rounded-md text-sm transition-colors">
-            + Sprint
-          </button>
-        )}
-        
         {acceso.rol !== 'viewer' && (
           <button id="btn-new-issue" title={t('board.new_issue_hint')} class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity ml-2 relative group z-50">
             + Issue
