@@ -1021,7 +1021,8 @@ const wsPendingInvites = (db.prepare(`
     if (res.ok) {
       window.showToast('Workspace updated!');
     } else {
-      window.showToast(await res.text(), true);
+      console.error('ajustes del espacio:', await res.text());
+      window.showToast(window.forgeMsg?.errGuardarAjustes || '', true);
     }
   });
 
@@ -1041,7 +1042,8 @@ const wsPendingInvites = (db.prepare(`
       if (res.ok) {
         window.showToast('Role updated');
       } else {
-        window.showToast(await res.text(), true);
+        console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
         window.location.reload(); // reset select
       }
     });
@@ -1063,7 +1065,8 @@ const wsPendingInvites = (db.prepare(`
         window.showToast('Request accepted');
         window.location.reload();
       } else {
-        window.showToast(await res.text(), true);
+        console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
       }
     });
   });
@@ -1083,7 +1086,8 @@ const wsPendingInvites = (db.prepare(`
         el.closest('div.bg-forge-bg')?.remove();
         window.showToast('Request rejected');
       } else {
-        window.showToast(await res.text(), true);
+        console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
       }
     });
   });
@@ -1094,7 +1098,7 @@ const wsPendingInvites = (db.prepare(`
       const userId = el.getAttribute('data-user-id');
       const wsId = el.getAttribute('data-ws-id');
       
-      window.forgeConfirm(document.querySelector('[data-t-remove-member]')?.dataset.tRemoveMember || '', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarQuitarMiembro || '', async () => {
         const res = await fetch(`/api/workspaces/${wsId}/members`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -1104,7 +1108,8 @@ const wsPendingInvites = (db.prepare(`
           el.closest('div')?.parentElement?.remove();
           window.showToast('User removed');
         } else {
-          window.showToast(await res.text(), true);
+          console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
         }
       });
     });
@@ -1129,7 +1134,8 @@ const wsPendingInvites = (db.prepare(`
       document.getElementById('add-member-username').value = '';
       document.getElementById('add-member-modal').close();
     } else {
-      window.showToast(await res.text(), true);
+      console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
     }
   });
 
@@ -1158,7 +1164,8 @@ const wsPendingInvites = (db.prepare(`
     if (res.ok) {
       window.location.href = '/';
     } else {
-      window.showToast(await res.text(), true);
+      console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
     }
   });
 
@@ -1225,14 +1232,15 @@ const wsPendingInvites = (db.prepare(`
     if (res.ok) {
       window.location.reload();
     } else {
-      window.showToast(await res.text(), true);
+      console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
     }
   });
 
   document.querySelectorAll('.btn-delete-automation').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
-      window.forgeConfirm(document.querySelector('[data-t-delete-automation]')?.dataset.tDeleteAutomation || '', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarBorrarAutomatizacion || '', async () => {
         const res = await fetch(`/api/automations/${id}`, { method: 'DELETE' });
         if (res.ok) window.location.reload();
       });

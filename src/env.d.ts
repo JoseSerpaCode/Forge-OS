@@ -26,6 +26,18 @@ declare namespace App {
 
 interface Window {
   showToast?: (message: string, type?: boolean | 'success' | 'error') => void;
+
+  /**
+   * Los textos que necesitan los scripts del cliente.
+   *
+   * Los llamantes viven dentro de `<script>` sin `define:vars`, así que `t()` no
+   * les llega. Antes cada componente llevaba sus propios `data-*`; con dieciséis
+   * mensajes eso eran dieciséis atributos sueltos que se desincronizan.
+   *
+   * Lo pone `MainLayout`, así que existe en toda página con sesión. Se declara
+   * como opcional porque un script podría correr antes de que se asigne.
+   */
+  forgeMsg?: Record<string, string>;
   /** Diálogo de confirmación de la aplicación (MainLayout). Se usa en lugar del
       `confirm()` del navegador, que se puede bloquear tras el primer aviso y
       deja los botones sin hacer nada en silencio. */

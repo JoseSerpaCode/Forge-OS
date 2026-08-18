@@ -126,7 +126,8 @@ for (const p of pages) {
         window.location.href = `/w/${sysTag}/p/${data.id}`;
       }
     } else {
-      window.showToast?.('Error creating page: ' + await res.text(), true);
+      console.error('crear página:', await res.text());
+      window.showToast?.(window.forgeMsg?.errCrearPagina || '', true);
     }
   }
 
@@ -149,7 +150,7 @@ for (const p of pages) {
       if (!id) return;
       
       // @ts-ignore
-      window.forgeConfirm(document.querySelector('[data-t-delete-page]')?.dataset.tDeletePage || '', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarBorrarPagina || '', async () => {
         const res = await fetch(`/api/pages/${id}`, { method: 'DELETE' });
         if (res.ok) {
           // Check if we are currently on the deleted page
@@ -162,7 +163,8 @@ for (const p of pages) {
           }
         } else {
           // @ts-ignore
-          window.showToast('Failed to delete: ' + await res.text(), true);
+          console.error('borrar página:', await res.text());
+          window.showToast?.(window.forgeMsg?.errBorrarPagina || '', true);
         }
       });
     });

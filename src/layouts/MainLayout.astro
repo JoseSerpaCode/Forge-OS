@@ -128,20 +128,6 @@ Astro.response.headers.set('Pragma', 'no-cache');
       <span id="forge-toast-msg" class="text-sm font-semibold tracking-wide"></span>
     </div>
 
-    {/*
-      Los textos de las confirmaciones, en un solo sitio.
-      Los llamantes están dentro de `<script>` sin `define:vars`, así que `t()`
-      no les llega. Repartir un `data-*` por cada componente que confirma algo
-      son seis sitios que se desincronizan; aquí es uno, y el layout está en
-      todas las páginas.
-    */}
-    <div class="hidden"
-      data-t-delete-page={t('confirm.delete_page')}
-      data-t-remove-member={t('confirm.remove_member')}
-      data-t-delete-automation={t('confirm.delete_automation')}
-      data-t-delete-worklog={t('confirm.delete_worklog')}
-      data-t-delete-workspace={t('confirm.delete_workspace')}
-      data-t-leave-workspace={t('confirm.leave_workspace')}></div>
 
     <dialog id="forge-confirm-modal" class="bg-forge-panel/95 backdrop-blur-xl max-md:backdrop-blur-none border border-forge-border/50 rounded-2xl p-8 w-[420px] text-forge-text shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop:bg-black/50 backdrop:backdrop-blur-sm max-md:backdrop-blur-none z-[100] open:animate-in open:fade-in open:zoom-in-95 transition-all">
       <div class="flex items-center gap-3 mb-4">
@@ -189,6 +175,34 @@ Astro.response.headers.set('Pragma', 'no-cache');
           data-t-error={t('cmd.error')}></div>
       </div>
     </dialog>
+
+    {/*
+      Los textos que necesitan los scripts, en un solo sitio.
+
+      Los llamantes viven dentro de `<script>` sin `define:vars`, así que `t()`
+      no les llega. La primera versión de esto repartía un `data-*` por cada
+      componente que confirmaba o avisaba de algo; con dieciséis mensajes eso
+      son dieciséis atributos sueltos que se desincronizan. Un objeto en
+      `window` lo resuelve una vez para toda la aplicación.
+    */}
+    <script is:inline define:vars={{ mensajes: {
+      confirmarBorrarPagina: t('confirm.delete_page'),
+      confirmarQuitarMiembro: t('confirm.remove_member'),
+      confirmarBorrarAutomatizacion: t('confirm.delete_automation'),
+      confirmarBorrarRegistro: t('confirm.delete_worklog'),
+      confirmarBorrarEspacio: t('confirm.delete_workspace'),
+      confirmarSalirEspacio: t('confirm.leave_workspace'),
+      errCrearPagina: t('err.create_page'),
+      errBorrarPagina: t('err.delete_page'),
+      errBorrarEspacio: t('err.delete_ws'),
+      errSalirEspacio: t('err.leave_ws'),
+      errGuardarRegistro: t('err.save_worklog'),
+      errGuardarAjustes: t('err.save_settings'),
+      errGenerico: t('err.generic'),
+      errRed: t('err.network'),
+    } }}>
+      window.forgeMsg = mensajes;
+    </script>
 
     <script is:inline>
       window.showToast = function(msg, type = false) {

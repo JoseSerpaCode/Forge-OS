@@ -886,7 +886,8 @@ const t = useTranslations(lang);
         window.dispatchEvent(new CustomEvent('worklog-changed', { detail: { hoursDelta: parseFloat(hours) } }));
       } else {
         // @ts-ignore
-        if (window.showToast) window.showToast(await res.text(), true);
+        console.error('registro de tiempo:', await res.text());
+        if (window.showToast) window.showToast(window.forgeMsg?.errGuardarRegistro || '', true);
       }
     } catch (e) {
       console.error(e);
@@ -986,7 +987,7 @@ const t = useTranslations(lang);
       btn.addEventListener('click', async (e) => {
         const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
         // @ts-ignore
-        window.forgeConfirm(document.querySelector('[data-t-delete-worklog]')?.dataset.tDeleteWorklog || '', async () => {
+        window.forgeConfirm(window.forgeMsg?.confirmarBorrarRegistro || '', async () => {
           const res = await fetch(`/api/worklogs/${id}`, { method: 'DELETE' });
           if (res.ok) {
             // @ts-ignore

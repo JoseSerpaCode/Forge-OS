@@ -940,13 +940,14 @@ const oauthNotice =
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
       // @ts-ignore
-      window.forgeConfirm(document.querySelector('[data-t-delete-workspace]')?.dataset.tDeleteWorkspace || '', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarBorrarEspacio || '', async () => {
         const res = await fetch(`/api/workspaces/${id}`, { method: 'DELETE' });
         if (res.ok) {
           window.location.reload();
         } else {
           // @ts-ignore
-          window.showToast('Failed to delete: ' + await res.text(), true);
+          console.error('borrar espacio:', await res.text());
+          window.showToast(window.forgeMsg?.errBorrarEspacio || '', true);
         }
       });
     });
@@ -959,7 +960,7 @@ const oauthNotice =
       const userId = e.currentTarget.getAttribute('data-user-id');
       
       // @ts-ignore
-      window.forgeConfirm(document.querySelector('[data-t-leave-workspace]')?.dataset.tLeaveWorkspace || '', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarSalirEspacio || '', async () => {
         const res = await fetch(`/api/workspaces/${wsId}/members`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -970,7 +971,8 @@ const oauthNotice =
           window.location.reload();
         } else {
           // @ts-ignore
-          window.showToast('Failed to leave: ' + await res.text(), true);
+          console.error('salir del espacio:', await res.text());
+          window.showToast(window.forgeMsg?.errSalirEspacio || '', true);
         }
       });
     });

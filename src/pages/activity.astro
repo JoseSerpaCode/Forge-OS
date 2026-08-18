@@ -348,7 +348,8 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
         if (res.ok) {
           window.location.reload();
         } else {
-          alert(await res.text());
+          console.error(await res.text());
+          window.showToast?.(window.forgeMsg?.errGenerico || '', true);
         }
       } catch (e) { console.error(e); }
     });
@@ -366,7 +367,8 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
         if (res.ok) {
           window.location.reload();
         } else {
-          alert(await res.text());
+          console.error(await res.text());
+          window.showToast?.(window.forgeMsg?.errGenerico || '', true);
         }
       } catch (e) { console.error(e); }
     });
@@ -384,7 +386,8 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
         if (res.ok) {
           window.location.reload();
         } else {
-          alert(await res.text());
+          console.error(await res.text());
+          window.showToast?.(window.forgeMsg?.errGenerico || '', true);
         }
       } catch (e) { console.error(e); }
     });

@@ -242,4 +242,10 @@ export const es = {
   'confirm.delete_worklog': '¿Borrar este registro de tiempo? Las horas se descuentan del total.',
   'confirm.delete_workspace': '¿Borrar este espacio y todo lo que hay dentro —tickets, páginas, archivos e historial? No hay vuelta atrás.',
   'confirm.leave_workspace': '¿Salir de este espacio? Para volver hará falta otra invitación.',
+  'err.create_page': 'No se ha podido crear la página.',
+  'err.delete_page': 'No se ha podido borrar la página.',
+  'err.delete_ws': 'No se ha podido borrar el espacio.',
+  'err.leave_ws': 'No se ha podido salir del espacio.',
+  'err.save_worklog': 'No se ha podido guardar el registro de tiempo.',
+  'err.save_settings': 'No se han podido guardar los ajustes.',
 } as const;
