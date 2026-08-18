@@ -5,6 +5,7 @@ import { NotificationService } from './NotificationService';
 import crypto from 'crypto';
 import { finalizeIssueSessions } from '../pages/api/issues/[id]/timer';
 import { ApiError } from './errors';
+import { escaparLike } from './texto';
 
 export { ApiError } from './errors';
 
@@ -281,7 +282,7 @@ export class IssueService {
 
     const usados = db.prepare(
       "SELECT title FROM issues WHERE workspace_id = ? AND (title = ? OR title LIKE ?)"
-    ).all(workspaceId, base, `${base.replace(/[%_]/g, (c) => `\\${c}`)} (copia%`) as Array<{ title: string }>;
+    ).all(workspaceId, base, `${escaparLike(base)} (copia%`) as Array<{ title: string }>;
 
     const nombres = new Set(usados.map((u) => u.title));
     const recorta = (t: string) => (t.length > 200 ? `${t.slice(0, 197)}...` : t);

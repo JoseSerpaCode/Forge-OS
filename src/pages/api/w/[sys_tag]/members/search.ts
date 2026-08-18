@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
 import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
+import { escaparLike } from '../../../../../lib/texto';
 
 /**
  * Personas a las que se puede invitar a este espacio.
@@ -34,7 +35,7 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
 
   // Los comodines de SQL se buscan como texto: sin escapar, `%` sacaría a todo
   // el mundo.
-  const patron = `%${texto.replace(/[%_]/g, (c) => `\\${c}`)}%`;
+  const patron = `%${escaparLike(texto)}%`;
 
   const usuarios = db.prepare(`
     SELECT u.id, u.username, u.avatar_url AS avatarUrl
@@ -53,7 +54,7 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
       LENGTH(u.username),
       u.username COLLATE NOCASE
     LIMIT 8
-  `).all(patron, ws.id, `${texto.replace(/[%_]/g, (c) => `\\${c}`)}%`) as any[];
+  `).all(patron, ws.id, `${escaparLike(texto)}%`) as any[];
 
   return json({ users: usuarios });
 };

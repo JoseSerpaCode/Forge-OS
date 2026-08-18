@@ -215,7 +215,19 @@ Astro.response.headers.set('Pragma', 'no-cache');
     */}
     <script>
       import { subirImagen, ANCHOS } from '../lib/client/imagen';
+      import { escaparHtml, hrefSeguro } from '../lib/texto';
+
       (window as any).forgeImagen = { subir: subirImagen, ANCHOS };
+
+      /**
+       * Escapado, para los scripts que no pueden importar.
+       *
+       * `<script is:inline define:vars>` no admite imports —restricción de
+       * Astro—, y ahí es donde vivían dos de las cuatro copias de `esc`. Que
+       * difirieran entre sí era lo peor: una escapaba `&<>"` y otra además `'`,
+       * así que el mismo texto salía distinto según por dónde pasara.
+       */
+      (window as any).forgeTexto = { escapar: escaparHtml, href: hrefSeguro };
     </script>
 
     <script is:inline>
@@ -403,13 +415,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
 
                 var html = datos.map(function (item) {
                   // `textContent` no vale aquí porque se arma HTML, así que el
-                  // título se escapa: lo escribe otra persona.
-                  var titulo = String(item.title == null ? '' : item.title)
-                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                  var url = /^\/[^\/]/.test(item.url || '') ? item.url : '/';
+                  // título se escapa: lo escribe otra persona. Y la URL pasa por
+                  // `href`, porque escapar no protege de un `javascript:`.
+                  var titulo = window.forgeTexto.escapar(item.title);
+                  var url = window.forgeTexto.href(item.url);
                   return '<a href="' + url + '" role="option" aria-selected="false" ' +
                     'class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-forge-secondary/15 transition-colors text-sm">' +
-                    '<span class="text-[10px] font-mono uppercase tracking-wider text-forge-muted w-16 shrink-0">' + item.type + '</span>' +
+                    '<span class="text-[10px] font-mono uppercase tracking-wider text-forge-muted w-16 shrink-0">' + window.forgeTexto.escapar(item.type) + '</span>' +
                     '<span class="truncate">' + titulo + '</span></a>';
                 }).join('');
                 pinta(html, true);

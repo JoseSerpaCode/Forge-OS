@@ -1,5 +1,6 @@
 import db from './db';
 import crypto from 'crypto';
+import { escaparLike } from './texto';
 
 /**
  * Los archivos y carpetas de un espacio, tal y como los ve Forge.
@@ -288,7 +289,7 @@ export function buscar(
   texto: string,
   opciones: { labelId?: string | null; limite?: number } = {}
 ): Archivo[] {
-  const patron = `%${texto.replace(/[%_]/g, (c) => `\\${c}`)}%`;
+  const patron = `%${escaparLike(texto)}%`;
   const filtro = opciones.labelId
     ? 'AND EXISTS (SELECT 1 FROM file_labels fl WHERE fl.file_id = f.id AND fl.label_id = ?)'
     : '';

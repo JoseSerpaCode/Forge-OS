@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import { escaparLike } from '../../../lib/texto';
 
 /**
  * La lista de amigos y de solicitudes.
@@ -116,7 +117,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (texto.length < 2) return json({ results: [] });
 
   // Los comodines de SQL se buscan como texto: sin escapar, `%` saca a todos.
-  const escapado = texto.replace(/[%_]/g, (c) => `\\${c}`);
+  const escapado = escaparLike(texto);
 
   const filas = db.prepare(`
     SELECT

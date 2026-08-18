@@ -283,3 +283,54 @@ describe('el cuerpo de una respuesta no acaba en la pantalla', () => {
     expect(claves.length, 'el diccionario está vacío').toBeGreaterThan(8);
   });
 });
+
+describe('el escapado vive en un solo sitio', () => {
+  /**
+   * Había cuatro copias de `escapeHtml` con **tres juegos de caracteres
+   * distintos** y cuatro de `escapeLike`. Que difieran es peor que que se
+   * repitan: el mismo texto salía distinto según por dónde pasara, y una de
+   * ellas no escapaba la comilla simple, así que un valor dentro de un atributo
+   * con comillas simples se salía de él.
+   */
+  const FUENTES = [...ASTRO, ...ficheros(RAIZ, ['.ts'])];
+
+  it('nadie vuelve a escribir su propio escapador de HTML', () => {
+    const copias: string[] = [];
+    for (const f of FUENTES) {
+      if (f.endsWith('lib/texto.ts')) continue;
+      const txt = soloCodigo(fs.readFileSync(f, 'utf-8'));
+      // El patrón inconfundible: sustituir `<` por su entidad.
+      if (/replace\(\s*\/<\/g\s*,\s*['"]&lt;/.test(txt) || /'<'\s*:\s*'&lt;'/.test(txt)) {
+        copias.push(rel(f));
+      }
+    }
+    expect(copias, `escapadores propios en:\n  ${copias.join('\n  ')}`).toEqual([]);
+  });
+
+  it('nadie vuelve a escribir su propio escapador de LIKE', () => {
+    const copias: string[] = [];
+    for (const f of FUENTES) {
+      if (f.endsWith('lib/texto.ts')) continue;
+      const txt = soloCodigo(fs.readFileSync(f, 'utf-8'));
+      if (/replace\(\s*\/\[%_/.test(txt)) copias.push(rel(f));
+    }
+    expect(copias, `escapadores de LIKE propios en:\n  ${copias.join('\n  ')}`).toEqual([]);
+  });
+
+  it('no se escapa al guardar', () => {
+    /**
+     * `entries.ts` escapaba el valor de cada celda **antes de meterlo en la
+     * base**, contra la regla que el propio proyecto documenta. No aportaba
+     * nada —la tabla se pinta con `{val}` en Astro, que escapa solo— y sí
+     * acumulaba: un `<` se guardaba como `&lt;` y al reeditar como `&amp;lt;`.
+     * Quien escribía un signo de menor no podía.
+     */
+    for (const f of ficheros(path.join(RAIZ, 'pages/api'), ['.ts'])) {
+      const txt = soloCodigo(fs.readFileSync(f, 'utf-8'));
+      expect(
+        /escaparHtml|escapeHtml/.test(txt),
+        `${rel(f)} escapa HTML en el servidor: eso va al pintar, no al guardar`
+      ).toBe(false);
+    }
+  });
+});

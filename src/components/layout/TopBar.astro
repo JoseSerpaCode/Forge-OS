@@ -235,6 +235,7 @@ const currentUrl = Astro.url.pathname;
 </dialog>
 
 <script>
+  import { escaparHtml, hrefSeguro } from '../../lib/texto';
   // Event listener for / key
   const globalSearch = document.getElementById('global-search') as HTMLInputElement;
 
@@ -298,15 +299,6 @@ const currentUrl = Astro.url.pathname;
    * esta barra apuntan dentro de la aplicación, así que exigir que empiecen por
    * una sola barra es a la vez suficiente y exacto.
    */
-  const safeHref = (u: any) =>
-    typeof u === 'string' && u.startsWith('/') && !u.startsWith('//') ? u : '#';
-
-  const esc = (s: any) => String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 
   document.addEventListener('keydown', (e) => {
     // Open search with '/' key
@@ -393,7 +385,7 @@ const currentUrl = Astro.url.pathname;
                  if (item.type === 'issue') icon = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
                  if (item.type === 'page') icon = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>';
                  
-                 html += `<li><a href="${esc(item.url || '#')}" data-type="${esc(item.type)}" data-insert="${esc(item.insert || '')}" tabindex="0" class="search-item px-3 py-2 hover:bg-forge-panel rounded cursor-pointer text-sm text-forge-text border-l-2 border-transparent hover:border-forge-secondary transition-all flex items-center gap-2.5 focus:bg-forge-panel focus:outline-none focus:border-forge-secondary">${isHint ? '<span class="text-forge-muted shrink-0">' + icon + '</span>' : '<span class="text-forge-muted shrink-0">' + icon + '</span>'} <span class="truncate flex-1 font-medium">${esc(item.title)}</span> <span class="text-[10px] text-forge-muted uppercase tracking-wider shrink-0 px-1.5 py-0.5 bg-forge-bg rounded">${esc(item.type)}</span></a></li>`;
+                 html += `<li><a href="${escaparHtml(item.url || '#')}" data-type="${escaparHtml(item.type)}" data-insert="${escaparHtml(item.insert || '')}" tabindex="0" class="search-item px-3 py-2 hover:bg-forge-panel rounded cursor-pointer text-sm text-forge-text border-l-2 border-transparent hover:border-forge-secondary transition-all flex items-center gap-2.5 focus:bg-forge-panel focus:outline-none focus:border-forge-secondary">${isHint ? '<span class="text-forge-muted shrink-0">' + icon + '</span>' : '<span class="text-forge-muted shrink-0">' + icon + '</span>'} <span class="truncate flex-1 font-medium">${escaparHtml(item.title)}</span> <span class="text-[10px] text-forge-muted uppercase tracking-wider shrink-0 px-1.5 py-0.5 bg-forge-bg rounded">${escaparHtml(item.type)}</span></a></li>`;
                });
                searchResults.innerHTML = html;
                
@@ -463,12 +455,12 @@ const currentUrl = Astro.url.pathname;
 
             notifList.innerHTML += `
               <li class="relative group/notif p-3 border-b border-forge-border transition-colors ${n.is_read ? 'opacity-60' : 'bg-forge-bg'} ${n.type !== 'invite' ? 'hover:bg-forge-panel' : ''}">
-                <a href="${n.type !== 'invite' ? esc(safeHref(n.link_url)) : '#'}" data-id="${esc(n.id)}" class="btn-notif-link block ${n.type !== 'invite' ? 'pr-6' : ''}">
+                <a href="${n.type !== 'invite' ? escaparHtml(hrefSeguro(n.link_url)) : '#'}" data-id="${escaparHtml(n.id)}" class="btn-notif-link block ${n.type !== 'invite' ? 'pr-6' : ''}">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="w-2 h-2 rounded-full shrink-0 ${colorClass}"></span>
-                    <span class="text-xs font-bold text-forge-text">${esc(n.title)}</span>
+                    <span class="text-xs font-bold text-forge-text">${escaparHtml(n.title)}</span>
                   </div>
-                  <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">${esc(n.message)}</p>
+                  <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">${escaparHtml(n.message)}</p>
                 </a>
                 ${actionHtml}
                 ${n.type !== 'invite' ? `
@@ -610,13 +602,13 @@ const currentUrl = Astro.url.pathname;
       //
       // `link_url` pasa por `safeHref`: escapar no sirve contra `javascript:`.
       li.innerHTML = `
-        <a href="${esc(safeHref(data.link_url))}" class="block" data-notif-id="${esc(String(data.id ?? ''))}">
+        <a href="${escaparHtml(hrefSeguro(data.link_url))}" class="block" data-notif-id="${escaparHtml(String(data.id ?? ''))}">
           <div class="flex items-center gap-2 mb-1">
             <span class="w-2 h-2 rounded-full shrink-0 ${colorClass}"></span>
-            <span class="text-xs font-bold text-forge-text">${esc(String(data.title ?? ''))}</span>
+            <span class="text-xs font-bold text-forge-text">${escaparHtml(String(data.title ?? ''))}</span>
           </div>
-          <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">${esc(String(data.message ?? ''))}</p>
-          <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">${esc(new Date(data.created_at).toLocaleString())}</p>
+          <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">${escaparHtml(String(data.message ?? ''))}</p>
+          <p class="text-[9px] text-forge-muted pl-4 mt-1 font-mono">${escaparHtml(new Date(data.created_at).toLocaleString())}</p>
         </a>
       `;
       list.prepend(li);

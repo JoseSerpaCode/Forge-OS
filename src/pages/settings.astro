@@ -953,7 +953,9 @@ const oauthNotice =
     const botonCancelar = document.getElementById('btn-cancel-delete');
     if (!abrir || !panel) return;
 
-    const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    // La copia local escapaba `&<>"` pero no la comilla simple, así que un
+    // valor dentro de un atributo con comillas simples se salía de él.
+    const esc = (v) => window.forgeTexto.escapar(v);
 
     function pintar(p) {
       const bloqueado = p.blocking && p.blocking.length > 0;

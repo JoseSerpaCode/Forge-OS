@@ -45,6 +45,12 @@ interface Window {
    * Va por `window` porque dos de los tres llamantes están en `<script
    * is:inline define:vars>`, que no admite imports. Lo pone `MainLayout`.
    */
+  /** Escapado de texto, para los `<script is:inline>` que no pueden importar. */
+  forgeTexto?: {
+    escapar: (valor: unknown) => string;
+    href: (url: unknown) => string;
+  };
+
   forgeImagen?: {
     subir: (file: File, opciones: { maxAncho: number; nombre?: string; entidad?: { tipo: string; id: string } }) =>
       Promise<{ ok: true; url: string } | { ok: false; motivo: string }>;
