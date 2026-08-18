@@ -6,18 +6,16 @@ import EditorClient from '../../../../components/notion/EditorClient.astro';
 import { deEntidad, listar as listarEtiquetas } from '../../../../lib/labels';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
+import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
 
 const user = Astro.locals.user!;
 const t = useTranslations(Astro.locals.lang || 'en');
 if (!user) return Astro.redirect('/login');
 
 const { sys_tag, page_id } = Astro.params;
-const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!ws) return Astro.redirect('/404');
-
-// Guard check for read access
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'viewer');
-if (!access.granted) return new Response(access.error, { status: 403 });
+const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const ws = acceso.ws;
 
 // Determine edit capabilities
 const editAccess = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'editor');

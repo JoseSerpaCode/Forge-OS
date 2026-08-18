@@ -128,12 +128,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
       <span id="forge-toast-msg" class="text-sm font-semibold tracking-wide"></span>
     </div>
 
+
     <dialog id="forge-confirm-modal" class="bg-forge-panel/95 backdrop-blur-xl max-md:backdrop-blur-none border border-forge-border/50 rounded-2xl p-8 w-[420px] text-forge-text shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop:bg-black/50 backdrop:backdrop-blur-sm max-md:backdrop-blur-none z-[100] open:animate-in open:fade-in open:zoom-in-95 transition-all">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-10 h-10 rounded-full bg-forge-secondary/20 text-forge-accent-text flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
-        <h2 class="text-xl font-bold text-forge-text" id="forge-confirm-title">{t('confirm.title')}</h2>
+        <h2 class="text-xl font-bold text-forge-text" id="forge-confirm-title" data-original={t('confirm.title')}>{t('confirm.title')}</h2>
       </div>
       <p class="text-sm text-forge-muted mb-8 leading-relaxed" id="forge-confirm-msg">{t('confirm.default')}</p>
       <div class="flex justify-end gap-3">
@@ -175,6 +176,60 @@ Astro.response.headers.set('Pragma', 'no-cache');
       </div>
     </dialog>
 
+    {/*
+      Los textos que necesitan los scripts, en un solo sitio.
+
+      Los llamantes viven dentro de `<script>` sin `define:vars`, así que `t()`
+      no les llega. La primera versión de esto repartía un `data-*` por cada
+      componente que confirmaba o avisaba de algo; con dieciséis mensajes eso
+      son dieciséis atributos sueltos que se desincronizan. Un objeto en
+      `window` lo resuelve una vez para toda la aplicación.
+    */}
+    <script is:inline define:vars={{ mensajes: {
+      confirmarBorrarPagina: t('confirm.delete_page'),
+      confirmarQuitarMiembro: t('confirm.remove_member'),
+      confirmarBorrarAutomatizacion: t('confirm.delete_automation'),
+      confirmarBorrarRegistro: t('confirm.delete_worklog'),
+      confirmarBorrarEspacio: t('confirm.delete_workspace'),
+      confirmarSalirEspacio: t('confirm.leave_workspace'),
+      errCrearPagina: t('err.create_page'),
+      errBorrarPagina: t('err.delete_page'),
+      errBorrarEspacio: t('err.delete_ws'),
+      errSalirEspacio: t('err.leave_ws'),
+      errGuardarRegistro: t('err.save_worklog'),
+      errGuardarAjustes: t('err.save_settings'),
+      errGenerico: t('err.generic'),
+      errRed: t('err.network'),
+    } }}>
+      window.forgeMsg = mensajes;
+    </script>
+
+    {/*
+      El subidor de imágenes, expuesto en `window`.
+
+      Dos de los tres sitios que suben imágenes usan `<script is:inline
+      define:vars>`, que **no admite imports**: es una restricción de Astro, no
+      una elección. Sin este puente, la única forma de compartir el código sería
+      no compartirlo, que es como acabaron existiendo tres implementaciones con
+      tres comportamientos —una de ellas sin redimensionar nada.
+    */}
+    <script>
+      import { subirImagen, ANCHOS } from '../lib/client/imagen';
+      import { escaparHtml, hrefSeguro } from '../lib/texto';
+
+      (window as any).forgeImagen = { subir: subirImagen, ANCHOS };
+
+      /**
+       * Escapado, para los scripts que no pueden importar.
+       *
+       * `<script is:inline define:vars>` no admite imports —restricción de
+       * Astro—, y ahí es donde vivían dos de las cuatro copias de `esc`. Que
+       * difirieran entre sí era lo peor: una escapaba `&<>"` y otra además `'`,
+       * así que el mismo texto salía distinto según por dónde pasara.
+       */
+      (window as any).forgeTexto = { escapar: escaparHtml, href: hrefSeguro };
+    </script>
+
     <script is:inline>
       window.showToast = function(msg, type = false) {
         const toast = document.getElementById('forge-toast');
@@ -206,7 +261,11 @@ Astro.response.headers.set('Pragma', 'no-cache');
         }
       }, true); // Use capture phase to ensure we intercept before other listeners
 
-      window.forgeConfirm = function(msg, callback, title = "Confirm") {
+      window.forgeConfirm = function(msg, callback, title) {
+        // El título por defecto estaba escrito en inglés dentro de la firma, así
+        // que el diálogo salía con la cabecera «Confirm», el mensaje en inglés y
+        // los botones en español. El del marcado ya está traducido.
+        if (!title) title = document.getElementById('forge-confirm-title')?.dataset.original || '';
         const modal = document.getElementById('forge-confirm-modal');
         const titleEl = document.getElementById('forge-confirm-title');
         const msgEl = document.getElementById('forge-confirm-msg');
@@ -356,13 +415,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
 
                 var html = datos.map(function (item) {
                   // `textContent` no vale aquí porque se arma HTML, así que el
-                  // título se escapa: lo escribe otra persona.
-                  var titulo = String(item.title == null ? '' : item.title)
-                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                  var url = /^\/[^\/]/.test(item.url || '') ? item.url : '/';
+                  // título se escapa: lo escribe otra persona. Y la URL pasa por
+                  // `href`, porque escapar no protege de un `javascript:`.
+                  var titulo = window.forgeTexto.escapar(item.title);
+                  var url = window.forgeTexto.href(item.url);
                   return '<a href="' + url + '" role="option" aria-selected="false" ' +
                     'class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-forge-secondary/15 transition-colors text-sm">' +
-                    '<span class="text-[10px] font-mono uppercase tracking-wider text-forge-muted w-16 shrink-0">' + item.type + '</span>' +
+                    '<span class="text-[10px] font-mono uppercase tracking-wider text-forge-muted w-16 shrink-0">' + window.forgeTexto.escapar(item.type) + '</span>' +
                     '<span class="truncate">' + titulo + '</span></a>';
                 }).join('');
                 pinta(html, true);

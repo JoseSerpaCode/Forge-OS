@@ -157,4 +157,5 @@ export const es = {
   'activity.issue_updated': 'actualizó un ticket',
   'activity.page_updated': 'editó una página',
   'activity.page_created': 'creó una página',
+  'ws.settings.role_sysadmin': 'Administrador',
 } as const;

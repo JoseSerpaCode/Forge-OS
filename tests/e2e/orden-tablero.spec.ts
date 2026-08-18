@@ -98,17 +98,39 @@ test('ordenar NO reescribe el orden manual', async ({ page }) => {
   expect(await titulos(page)).toEqual(['Zeta sin prioridad', 'Alfa urgente', 'Media tarea']);
 });
 
-test('con un orden activo no se puede arrastrar, y se dice por qué', async ({ page }) => {
+test('con un orden activo, arrastrar ofrece volver al orden manual', async ({ page }) => {
   await entrar(page);
 
-  await page.goto(`/w/${ESPACIO}/board?sprint=backlog`);
-  await expect(page.locator('.issue-card').first()).toHaveAttribute('draggable', 'true');
-
+  /**
+   * Antes esto era una banda de aviso permanente encima del tablero y las
+   * tarjetas con `draggable="false"`. Ocupaba sitio todo el rato para algo que
+   * solo importa en el instante en que alguien intenta mover una tarjeta —y si
+   * lo intenta, ya ha dicho lo que quiere: colocarla a mano.
+   *
+   * Ahora las tarjetas siguen siendo arrastrables, el arrastre se corta al
+   * empezar y se ofrece volver al orden manual.
+   */
   await page.goto(`/w/${ESPACIO}/board?sprint=backlog&sort=priority`);
-  // Soltar una tarjeta escribiría un `position` que la vista ni mira: la
-  // tarjeta volvería sola a su sitio y parecería un fallo.
-  await expect(page.locator('.issue-card').first()).toHaveAttribute('draggable', 'false');
-  await expect(page.locator('#board-sort-notice')).toContainText(/orden|sorted/i);
+
+  // Ya no hay banda de aviso ocupando la cabecera.
+  await expect(page.locator('#board-sort-notice')).toHaveCount(0);
+
+  const tarjeta = page.locator('.issue-card').first();
+  await expect(tarjeta).toHaveAttribute('draggable', 'true');
+
+  // Se dispara el arrastre a mano: Playwright no simula el gesto completo sin
+  // un destino, y lo que se comprueba es la reacción al **empezar**.
+  await tarjeta.dispatchEvent('dragstart', { dataTransfer: await page.evaluateHandle(() => new DataTransfer()) });
+
+  const dialogo = page.locator('#forge-confirm-modal');
+  await expect(dialogo).toBeVisible();
+  await expect(dialogo).toContainText(/orden manual|manual order/i);
+
+  // Y confirmar lleva de vuelta al orden manual, donde sí se puede colocar.
+  await Promise.all([
+    page.waitForURL((u) => !u.search.includes('sort=')),
+    page.click('#btn-forge-confirm-ok'),
+  ]);
 });
 
 test('el selector cambia la URL, y volver a manual la limpia', async ({ page }) => {

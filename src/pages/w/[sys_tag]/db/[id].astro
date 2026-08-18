@@ -27,16 +27,15 @@ const TXT = {
 if (!user) return Astro.redirect('/login');
 if (user.is_guest) return Astro.redirect('/register');
 
-const workspace = db.prepare('SELECT id, name FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!workspace) return Astro.redirect('/404');
-
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspace.id, 'viewer');
-if (!access.granted) return new Response('Access Denied', { status: 403 });
-const canEdit = access.role !== 'viewer';
+const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const workspace = acceso.ws;
+const canEdit = acceso.rol !== 'viewer';
 
 import { orm } from '../../../../lib/db/drizzle';
 import { dynamicDatabases, dynamicEntries, dynamicViews } from '../../../../lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
 
 const database = orm.select().from(dynamicDatabases)
   .where(and(eq(dynamicDatabases.id, id as string), eq(dynamicDatabases.workspaceId, workspace.id)))

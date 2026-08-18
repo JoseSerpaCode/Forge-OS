@@ -38,14 +38,6 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
 };
 
 // Helper to escape HTML tags to prevent XSS (Same lesson as Editor.js)
-const escapeHtml = (unsafe: string) => {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-};
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   const { sys_tag, id } = params;
@@ -83,7 +75,17 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
         if (col.options && !col.options.includes(strVal)) {
           return new Response(`Validation Error: Column ${col.name} value must be one of [${col.options.join(', ')}]`, { status: 400 });
         }
-        validPayload[col.id] = escapeHtml(strVal);
+        /**
+         * Se guarda tal cual. El escapado va **al pintar**.
+         *
+         * Aquí se escapaba antes de meterlo en la base, contra la regla que el
+         * propio proyecto documenta en `lib/sanitizer.ts`. No aportaba
+         * seguridad —la tabla se pinta con `{val}` en Astro, que escapa solo— y
+         * sí acumulaba: un `<` se guardaba como `&lt;`, y al reeditar la fila
+         * como `&amp;lt;`. Quien escribía un signo de menor lo veía convertido
+         * en `&lt;` y no había forma de escribirlo de verdad.
+         */
+        validPayload[col.id] = strVal;
       } 
       else if (col.type === 'file') {
         // Lo que se guarda es el id de un archivo de **este** espacio. Sin
@@ -96,8 +98,9 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
         validPayload[col.id] = fileId;
       }
       else {
-        // Text type or fallback
-        validPayload[col.id] = escapeHtml(String(val));
+        // Texto libre, guardado tal cual. El escapado va al pintar; ver la nota
+        // de arriba sobre por qué escapar aquí acumulaba `&amp;lt;`.
+        validPayload[col.id] = String(val);
       }
     }
 

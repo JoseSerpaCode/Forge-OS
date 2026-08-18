@@ -24,7 +24,7 @@ export const es = {
   'board.sort_updated': 'Modificado hace poco',
   'board.sort_created': 'Creado hace poco',
   'board.sort_title': 'Título',
-  'board.sort_no_drag': 'Con el tablero ordenado no se pueden arrastrar las tarjetas. Vuelve al orden manual para colocarlas.',
+  'board.sort_no_drag': 'Las tarjetas solo se colocan a mano en el orden manual. ¿Volvemos a él y sigues?',
   'sprint.close_title': 'Cerrar el sprint',
   'sprint.close_pending': 'Quedan {n} tareas sin terminar. ¿Qué pasa con ellas?',
   'sprint.close_pending_one': 'Queda 1 tarea sin terminar. ¿Qué pasa con ella?',
@@ -89,4 +89,6 @@ export const es = {
   'labels.err_bad_color': 'Ese color no es de los disponibles.',
   'labels.err_generic': 'No se ha podido guardar la etiqueta.',
   'board.truncated': 'elige un sprint para acotar',
+  'board.delete_sprint': 'Borrar sprint',
+  'sprint.err_delete': 'No se ha podido borrar el sprint.',
 } as const;

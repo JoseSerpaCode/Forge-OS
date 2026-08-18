@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
-import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { borrar, crear, editar, listar } from '../../../../../lib/labels';
+import { abrirEspacio, json, cuerpo } from '../../../../../lib/apiWorkspace';
 
 /**
  * Etiquetas de un espacio.
@@ -15,30 +14,8 @@ import { borrar, crear, editar, listar } from '../../../../../lib/labels';
  * propietario para eso convierte una tarea de limpieza corriente en un trámite.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function abrirEspacio(sysTag: string | undefined, user: any, rol: 'viewer' | 'editor') {
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
 
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, rol);
-  if (!acceso.granted) {
-    // 404 y no 403 para quien no es miembro: un 403 confirma que el espacio
-    // existe, y eso ya es información sobre un sitio donde no pinta nada.
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
-
-async function cuerpo(request: Request): Promise<any | null> {
-  try {
-    return await request.json();
-  } catch {
-    return null;
-  }
-}
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const { ws, error } = abrirEspacio(params.sys_tag, locals.user!, 'viewer');

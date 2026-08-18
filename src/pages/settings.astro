@@ -631,65 +631,28 @@ const oauthNotice =
   }
 
   /**
-   * Redimensionar y subir una imagen.
+   * Subir una imagen.
    *
-   * Era el cuerpo del manejador del avatar, escrito en línea y con las cinco
-   * frases en inglés a mano («Uploading avatar...», «Image is too massive»).
-   * El banner necesita exactamente lo mismo, así que o se sacaba a una función
-   * o eran dos copias que se separan a la primera corrección.
-   *
-   * El redimensionado ocurre **aquí**, antes de subir: una foto de móvil son
-   * cuatro megas, y lo que se ve son 96 píxeles de avatar. Subirla entera gasta
-   * disco del servidor y salida de red cada vez que alguien la mira.
+   * El redimensionado y la subida viven en `lib/client/imagen.ts`, que es el
+   * mismo código que usan el perfil público y los ajustes del espacio. Aquí
+   * solo queda traducir el motivo del fallo, que depende del idioma y por tanto
+   * de la página.
    */
-  async function subirImagen(file, { maxAncho, nombre }) {
-    if (file.size > 10 * 1024 * 1024) {
-      window.showToast?.(txtImg.grande, true);
-      return null;
-    }
+  async function subirImagen(file, maxAncho, nombre) {
+    const r = await window.forgeImagen.subir(file, {
+      maxAncho,
+      nombre,
+      entidad: { tipo: 'user', id: userId },
+    });
+    if (r.ok) { window.showToast?.(txtImg.listo); return r.url; }
 
-    const bitmap = await new Promise((ok, err) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => ok(img);
-        img.onerror = err;
-        img.src = ev.target?.result;
-      };
-      reader.onerror = err;
-      reader.readAsDataURL(file);
-    }).catch(() => null);
-
-    if (!bitmap) { window.showToast?.(txtImg.invalida, true); return null; }
-
-    let { width, height } = bitmap;
-    if (width > maxAncho) { height = Math.round(height * (maxAncho / width)); width = maxAncho; }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    canvas.getContext('2d')?.drawImage(bitmap, 0, 0, width, height);
-
-    const blob = await new Promise((ok) => canvas.toBlob(ok, 'image/webp', 0.85));
-    if (!blob) { window.showToast?.(txtImg.fallo, true); return null; }
-
-    const formData = new FormData();
-    formData.append('entity_type', 'user');
-    formData.append('entity_id', userId);
-    formData.append('file', blob, nombre);
-
-    window.showToast?.(txtImg.subiendo);
-    try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!res.ok) { window.showToast?.(txtImg.fallo, true); return null; }
-      const data = await res.json();
-      window.showToast?.(txtImg.listo);
-      return data.url;
-    } catch (e) {
-      console.error('subir imagen:', e);
-      window.showToast?.(txtImg.fallo, true);
-      return null;
-    }
+    const motivos = {
+      demasiado_grande: txtImg.grande,
+      ilegible: txtImg.invalida,
+      fallo_subida: txtImg.fallo,
+    };
+    window.showToast?.(motivos[r.motivo] || txtImg.fallo, true);
+    return null;
   }
 
   let newAvatarUrl = null;
@@ -698,7 +661,7 @@ const oauthNotice =
     if (!file) return;
     // 512 basta: el avatar más grande que se pinta es de 96 px, y el doble
     // cubre las pantallas de densidad alta.
-    const url = await subirImagen(file, { maxAncho: 512, nombre: 'avatar.webp' });
+    const url = await subirImagen(file, window.forgeImagen.ANCHOS.avatar, 'avatar.webp');
     if (!url) return;
     newAvatarUrl = url;
 
@@ -734,7 +697,7 @@ const oauthNotice =
     const file = e.target.files?.[0];
     if (!file) return;
     // Ancho completo de una tarjeta de perfil; 1600 cubre pantallas grandes.
-    const url = await subirImagen(file, { maxAncho: 1600, nombre: 'banner.webp' });
+    const url = await subirImagen(file, window.forgeImagen.ANCHOS.banner, 'banner.webp');
     if (!url || !(await guardarBanner(url))) return;
 
     const contenedor = document.getElementById('banner-preview-container');
@@ -940,13 +903,14 @@ const oauthNotice =
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
       // @ts-ignore
-      window.forgeConfirm('DANGER: Are you sure you want to completely delete this workspace and ALL its contents? This cannot be undone.', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarBorrarEspacio || '', async () => {
         const res = await fetch(`/api/workspaces/${id}`, { method: 'DELETE' });
         if (res.ok) {
           window.location.reload();
         } else {
           // @ts-ignore
-          window.showToast('Failed to delete: ' + await res.text(), true);
+          console.error('borrar espacio:', await res.text());
+          window.showToast(window.forgeMsg?.errBorrarEspacio || '', true);
         }
       });
     });
@@ -959,7 +923,7 @@ const oauthNotice =
       const userId = e.currentTarget.getAttribute('data-user-id');
       
       // @ts-ignore
-      window.forgeConfirm('Are you sure you want to leave this workspace?', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarSalirEspacio || '', async () => {
         const res = await fetch(`/api/workspaces/${wsId}/members`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -970,7 +934,8 @@ const oauthNotice =
           window.location.reload();
         } else {
           // @ts-ignore
-          window.showToast('Failed to leave: ' + await res.text(), true);
+          console.error('salir del espacio:', await res.text());
+          window.showToast(window.forgeMsg?.errSalirEspacio || '', true);
         }
       });
     });
@@ -988,7 +953,9 @@ const oauthNotice =
     const botonCancelar = document.getElementById('btn-cancel-delete');
     if (!abrir || !panel) return;
 
-    const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    // La copia local escapaba `&<>"` pero no la comilla simple, así que un
+    // valor dentro de un atributo con comillas simples se salía de él.
+    const esc = (v) => window.forgeTexto.escapar(v);
 
     function pintar(p) {
       const bloqueado = p.blocking && p.blocking.length > 0;

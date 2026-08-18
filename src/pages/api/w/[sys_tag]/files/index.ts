@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
-import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { accesoPara, aLaPapelera, carpeta as carpetaDrive, conexionDe } from '../../../../../lib/drive';
+import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
 import {
   archivo, archivosDe, carpeta, carpetasDe, crearCarpeta, marcarPerdido, olvidar,
 } from '../../../../../lib/driveFiles';
@@ -14,20 +13,7 @@ import {
  * nunca del cuerpo.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function abrirEspacio(sysTag: string | undefined, user: any, rol: 'viewer' | 'editor') {
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
-
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, rol);
-  if (!acceso.granted) {
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
 
 /** La carpeta pedida, comprobando que es de este espacio. `null` = la raíz. */
 function carpetaPedida(valor: string | null, workspaceId: string) {

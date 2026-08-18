@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
-import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { asignar, deEntidad, esTipoEntidad, quitar } from '../../../../../lib/labels';
+import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
 
 /**
  * Poner y quitar etiquetas.
@@ -14,23 +13,10 @@ import { asignar, deEntidad, esTipoEntidad, quitar } from '../../../../../lib/la
  * equipo.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function abrirEspacio(sysTag: string | undefined, user: any) {
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
-
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'editor');
-  if (!acceso.granted) {
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
 
 async function leer(params: any, request: Request, locals: any) {
-  const { ws, error } = abrirEspacio(params.sys_tag, locals.user!);
+  const { ws, error } = abrirEspacio(params.sys_tag, locals.user!, 'editor');
   if (error) return { error };
 
   let datos: any;

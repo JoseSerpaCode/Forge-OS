@@ -245,3 +245,92 @@ describe('las claves que se construyen sobre la marcha también existen', () => 
     expect(sinClave, `códigos sin 'err.<code>': ${sinClave.join(', ')}`).toEqual([]);
   });
 });
+
+describe('el cuerpo de una respuesta no acaba en la pantalla', () => {
+  /**
+   * `showToast(await res.text())` es el patrón que enseñó al usuario un
+   * `{"error_code":"unfinished_issues","pending":1,...}` en un aviso.
+   *
+   * El cuerpo de un error es para el registro: puede ser JSON, puede ser texto
+   * plano, puede estar en inglés, y en ningún caso está escrito para que lo lea
+   * una persona. Lo que va a pantalla es una frase traducida.
+   *
+   * Se comprueba sobre el código, sin comentarios, porque los comentarios que
+   * explican por qué se quitó mencionan el patrón.
+   */
+  it('ningún showToast ni alert recibe res.text() directamente', () => {
+    const fallos: string[] = [];
+    for (const f of ASTRO) {
+      const txt = soloCodigo(fs.readFileSync(f, 'utf-8'));
+      for (const m of txt.matchAll(/(showToast|alert)\s*\??\.?\(?[^;\n]*await\s+res\.text\(\)/g)) {
+        const linea = txt.slice(0, m.index).split('\n').length;
+        fallos.push(`${rel(f)}:${linea}`);
+      }
+    }
+    expect(
+      fallos,
+      `el cuerpo del servidor llega a pantalla en:\n  ${fallos.join('\n  ')}`
+    ).toEqual([]);
+  });
+
+  it('los mensajes de los scripts salen del diccionario común', () => {
+    // `window.forgeMsg` lo pone MainLayout con `t()`. Si alguien vuelve a
+    // escribir una frase a mano dentro de un `<script>`, esto no lo ve —no todo
+    // se puede automatizar— pero al menos el diccionario tiene que existir.
+    const layout = fs.readFileSync(path.join(RAIZ, 'layouts/MainLayout.astro'), 'utf-8');
+    expect(layout).toContain('window.forgeMsg = mensajes');
+    const claves = [...layout.matchAll(/^\s{6}(\w+): t\(/gm)].map((m) => m[1]);
+    expect(claves.length, 'el diccionario está vacío').toBeGreaterThan(8);
+  });
+});
+
+describe('el escapado vive en un solo sitio', () => {
+  /**
+   * Había cuatro copias de `escapeHtml` con **tres juegos de caracteres
+   * distintos** y cuatro de `escapeLike`. Que difieran es peor que que se
+   * repitan: el mismo texto salía distinto según por dónde pasara, y una de
+   * ellas no escapaba la comilla simple, así que un valor dentro de un atributo
+   * con comillas simples se salía de él.
+   */
+  const FUENTES = [...ASTRO, ...ficheros(RAIZ, ['.ts'])];
+
+  it('nadie vuelve a escribir su propio escapador de HTML', () => {
+    const copias: string[] = [];
+    for (const f of FUENTES) {
+      if (f.endsWith('lib/texto.ts')) continue;
+      const txt = soloCodigo(fs.readFileSync(f, 'utf-8'));
+      // El patrón inconfundible: sustituir `<` por su entidad.
+      if (/replace\(\s*\/<\/g\s*,\s*['"]&lt;/.test(txt) || /'<'\s*:\s*'&lt;'/.test(txt)) {
+        copias.push(rel(f));
+      }
+    }
+    expect(copias, `escapadores propios en:\n  ${copias.join('\n  ')}`).toEqual([]);
+  });
+
+  it('nadie vuelve a escribir su propio escapador de LIKE', () => {
+    const copias: string[] = [];
+    for (const f of FUENTES) {
+      if (f.endsWith('lib/texto.ts')) continue;
+      const txt = soloCodigo(fs.readFileSync(f, 'utf-8'));
+      if (/replace\(\s*\/\[%_/.test(txt)) copias.push(rel(f));
+    }
+    expect(copias, `escapadores de LIKE propios en:\n  ${copias.join('\n  ')}`).toEqual([]);
+  });
+
+  it('no se escapa al guardar', () => {
+    /**
+     * `entries.ts` escapaba el valor de cada celda **antes de meterlo en la
+     * base**, contra la regla que el propio proyecto documenta. No aportaba
+     * nada —la tabla se pinta con `{val}` en Astro, que escapa solo— y sí
+     * acumulaba: un `<` se guardaba como `&lt;` y al reeditar como `&amp;lt;`.
+     * Quien escribía un signo de menor no podía.
+     */
+    for (const f of ficheros(path.join(RAIZ, 'pages/api'), ['.ts'])) {
+      const txt = soloCodigo(fs.readFileSync(f, 'utf-8'));
+      expect(
+        /escaparHtml|escapeHtml/.test(txt),
+        `${rel(f)} escapa HTML en el servidor: eso va al pintar, no al guardar`
+      ).toBe(false);
+    }
+  });
+});

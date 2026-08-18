@@ -24,7 +24,7 @@ export const en = {
   'board.sort_updated': 'Recently updated',
   'board.sort_created': 'Recently created',
   'board.sort_title': 'Title',
-  'board.sort_no_drag': 'Cards cannot be dragged while the board is sorted. Switch back to manual order to rearrange them.',
+  'board.sort_no_drag': 'Cards can only be rearranged in manual order. Switch back to manual and keep going?',
   'sprint.close_title': 'Close the sprint',
   'sprint.close_pending': 'There are {n} unfinished tasks. What happens to them?',
   'sprint.close_pending_one': 'There is 1 unfinished task. What happens to it?',
@@ -89,4 +89,6 @@ export const en = {
   'labels.err_bad_color': 'That colour is not one of the available ones.',
   'labels.err_generic': 'The label could not be saved.',
   'board.truncated': 'pick a sprint to narrow this down',
+  'board.delete_sprint': 'Delete sprint',
+  'sprint.err_delete': 'The sprint could not be deleted.',
 } as const;

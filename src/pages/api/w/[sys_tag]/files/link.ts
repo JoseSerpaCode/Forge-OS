@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../../lib/guard';
 import { deEntidad, desvincular, vincular } from '../../../../../lib/driveFiles';
 import { deEntidad as etiquetasDe } from '../../../../../lib/labels';
+import { abrirEspacio, json } from '../../../../../lib/apiWorkspace';
 
 /**
  * Colgar un archivo de un ticket o de una página.
@@ -13,20 +13,7 @@ import { deEntidad as etiquetasDe } from '../../../../../lib/labels';
  * a partir de ahí se puede encontrar filtrando en Archivos.
  */
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function abrirEspacio(sysTag: string | undefined, user: any, rol: 'viewer' | 'editor') {
-  const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(sysTag) as any;
-  if (!ws) return { error: new Response('Not Found', { status: 404 }) };
-
-  const acceso = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, rol);
-  if (!acceso.granted) {
-    if (acceso.reason === 'not_member') return { error: new Response('Not Found', { status: 404 }) };
-    return { error: new Response(acceso.error, { status: 403 }) };
-  }
-  return { ws };
-}
 
 async function leer(request: Request) {
   let datos: any;

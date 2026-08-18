@@ -24,6 +24,8 @@ const t = useTranslations(lang);
   data-t-load-failed={t('modal.load_failed')}
   data-t-no-desc={t('modal.no_description')}
   data-t-due={t('card.due')}
+  data-t-auto-log={t('modal.auto_logged')}
+  data-lang={lang}
   data-sys-tag={sysTag}
   data-t-attached-none={t('drive.attached_none')}
   data-t-detach={t('drive.detach')}
@@ -209,7 +211,7 @@ const t = useTranslations(lang);
         </div>
         <div class="space-y-1.5 flex flex-col justify-end">
           <div class="flex justify-between text-xs font-mono mb-1">
-            <span class="text-forge-muted" id="time-tracking-text" data-template={t('modal.logged_estimated')}>{t('modal.logged_estimated').replace('{logged}', '0').replace('{estimated}', '0')}</span>
+            <span class="text-forge-muted" id="time-tracking-text" data-template={t('modal.logged_estimated')} data-template-no-est={t('modal.logged_only')}>{t('modal.logged_estimated').replace('{logged}', '0').replace('{estimated}', '0')}</span>
             <span class="font-bold" id="time-tracking-percent">0%</span>
           </div>
           <div class="h-2.5 w-full bg-forge-bg rounded-full overflow-hidden border border-forge-border/30">
@@ -305,6 +307,7 @@ const t = useTranslations(lang);
 
 
 <script>
+  import { escaparHtml } from '../../lib/texto';
   const closeBtn = document.getElementById('close-modal-btn');
   const modal = document.getElementById('issue-details-modal');
   const backdrop = document.getElementById('issue-details-backdrop');
@@ -832,7 +835,7 @@ const t = useTranslations(lang);
         modal.setAttribute('data-log-id', logId);
         (document.getElementById('log-work-date') as HTMLInputElement).value = localDate;
         (document.getElementById('log-work-hours') as HTMLInputElement).value = hours;
-        (document.getElementById('log-work-desc') as HTMLTextAreaElement).value = 'Session auto-logged';
+        (document.getElementById('log-work-desc') as HTMLTextAreaElement).value = raiz?.dataset.tAutoLog || '';
         
         modal.showModal();
         
@@ -884,7 +887,8 @@ const t = useTranslations(lang);
         window.dispatchEvent(new CustomEvent('worklog-changed', { detail: { hoursDelta: parseFloat(hours) } }));
       } else {
         // @ts-ignore
-        if (window.showToast) window.showToast(await res.text(), true);
+        console.error('registro de tiempo:', await res.text());
+        if (window.showToast) window.showToast(window.forgeMsg?.errGuardarRegistro || '', true);
       }
     } catch (e) {
       console.error(e);
@@ -922,34 +926,49 @@ const t = useTranslations(lang);
     if (!container) return;
     container.innerHTML = '';
     
-    const esc = (str: any) => {
-      if (typeof str !== 'string') return str;
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-    };
-    
     if (logs.length === 0) {
       container.classList.add('hidden');
       return;
     }
 
     logs.forEach(log => {
-      const date = new Date(log.work_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      // `undefined` como locale usa el del navegador, que no tiene por qué
+      // coincidir con el idioma elegido en la aplicación: se veía «Aug 17, 2026»
+      // con la interfaz en español.
+      const date = new Date(log.work_date).toLocaleDateString(
+        (raiz?.dataset.lang === 'es' ? 'es-ES' : 'en-US'),
+        { month: 'short', day: 'numeric', year: 'numeric' }
+      );
+      /**
+       * «Session auto-logged» se traduce al pintarla, no al guardarla.
+       *
+       * Esa frase la escribe el servidor en la columna `description` cuando un
+       * cronómetro se para solo, así que ya está en inglés dentro de la base en
+       * todas las filas que existen. Traducir solo lo nuevo dejaría la lista
+       * mezclando idiomas para siempre; traducir al pintar arregla también lo
+       * viejo sin tocar un solo dato.
+       */
+      const MARCA_AUTO = 'Session auto-logged';
+      const descripcion = log.description === MARCA_AUTO
+        ? (raiz?.dataset.tAutoLog || log.description)
+        : log.description;
+
       const div = document.createElement('div');
       div.className = 'flex items-start gap-3 p-3 bg-forge-bg/50 border border-forge-border/40 rounded-lg group';
       div.innerHTML = `
-        <img src="${esc(log.avatar_url) || '/default-avatar.svg'}" alt="" class="w-6 h-6 rounded-full border border-forge-border object-cover shrink-0 mt-0.5" loading="lazy" decoding="async" />
+        <img src="${escaparHtml(log.avatar_url) || '/default-avatar.svg'}" alt="" class="w-6 h-6 rounded-full border border-forge-border object-cover shrink-0 mt-0.5" loading="lazy" decoding="async" />
         <div class="flex-1 min-w-0">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-forge-text">${esc(log.username)}</span>
+            <span class="text-xs font-bold text-forge-text">${escaparHtml(log.username)}</span>
             <span class="text-[10px] font-mono text-forge-muted">${date}</span>
           </div>
-          <div class="text-xs text-forge-text/80 mt-1">${esc(log.description) || `<i class="opacity-50">${TXT.sinDescripcion}</i>`}</div>
+          <div class="text-xs text-forge-text/80 mt-1">${escaparHtml(descripcion) || `<i class="opacity-50">${TXT.sinDescripcion}</i>`}</div>
         </div>
         <div class="flex flex-col items-end gap-2 shrink-0">
-          <span class="text-xs font-mono font-bold text-forge-accent-text bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${log.hours_spent}h</span>
+          <span class="text-xs font-mono font-bold text-forge-accent-text bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${parseFloat(Number(log.hours_spent).toFixed(2))}h</span>
           ${role !== 'viewer' ? `
           <div class="hidden group-hover:flex items-center gap-2">
-            <button class="edit-worklog-btn text-forge-muted hover:text-forge-accent-text transition-colors" data-id="${log.id}" data-hours="${log.hours_spent}" data-desc="${esc(log.description)}" data-date="${log.work_date}" title={t('modal.edit_log')}>
+            <button class="edit-worklog-btn text-forge-muted hover:text-forge-accent-text transition-colors" data-id="${log.id}" data-hours="${log.hours_spent}" data-desc="${escaparHtml(log.description)}" data-date="${log.work_date}" title={t('modal.edit_log')}>
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
             </button>
             <button class="delete-worklog-btn text-forge-error hover:text-forge-error transition-colors" data-id="${log.id}" title={t('modal.delete_log')}><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
@@ -964,7 +983,7 @@ const t = useTranslations(lang);
       btn.addEventListener('click', async (e) => {
         const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
         // @ts-ignore
-        window.forgeConfirm('Delete this work log?', async () => {
+        window.forgeConfirm(window.forgeMsg?.confirmarBorrarRegistro || '', async () => {
           const res = await fetch(`/api/worklogs/${id}`, { method: 'DELETE' });
           if (res.ok) {
             // @ts-ignore
@@ -1021,7 +1040,28 @@ const t = useTranslations(lang);
         const pct = document.getElementById('time-tracking-percent');
         const bar = document.getElementById('time-tracking-bar');
         
-        if (text) text.textContent = `${logged}h logged / ${est > 0 ? est + 'h estimated' : 'no estimate'}`;
+        /**
+         * Las horas se redondean a dos decimales antes de enseñarlas.
+         *
+         * Se suman fracciones de sesión —2.3603 + 0.1129— y en coma flotante
+         * eso da `2.4732000000000003`. Se pintaba tal cual, y quince decimales
+         * de basura numérica en la cara del usuario hacen dudar de todo el
+         * resto de la cifra.
+         *
+         * `parseFloat(toFixed(2))` y no solo `toFixed(2)`: así «2.50» sale como
+         * «2.5» y «3.00» como «3», que es como lo escribiría una persona.
+         */
+        const enHoras = (n: number) => parseFloat(n.toFixed(2));
+
+        if (text) {
+          // El texto va por plantilla traducida, no concatenado en inglés.
+          const plantilla = est > 0
+            ? (text.dataset.template || '{logged}h / {estimated}h')
+            : (text.dataset.templateNoEst || '{logged}h');
+          text.textContent = plantilla
+            .replace('{logged}', String(enHoras(logged)))
+            .replace('{estimated}', String(enHoras(est)));
+        }
         
         if (est > 0) {
           let percentage = Math.round((logged / est) * 100);

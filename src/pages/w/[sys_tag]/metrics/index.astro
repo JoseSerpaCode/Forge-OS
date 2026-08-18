@@ -1,7 +1,7 @@
 ---
 import MainLayout from '../../../../layouts/MainLayout.astro';
 import db from '../../../../lib/db';
-import { checkWorkspaceAccess } from '../../../../lib/guard';
+import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
 
 const { sys_tag } = Astro.params;
 const user = Astro.locals.user!;
@@ -10,12 +10,12 @@ const t = useTranslations(Astro.locals.lang || 'en');
 
 if (!user) return Astro.redirect('/login');
 
-const workspace = db.prepare('SELECT id, name FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!workspace) return Astro.redirect('/404');
-if (user.is_guest === 1) return Astro.redirect(`/w/${sys_tag}/board`);
+const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const workspace = acceso.ws;
 
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspace.id, 'viewer');
-if (!access.granted) return new Response('Access Denied', { status: 403 });
+// Un invitado no ve métricas: se le manda al tablero, que sí puede usar.
+if (user.is_guest) return Astro.redirect(`/w/${sys_tag}/board`);
 
 // Fetch sprints for the scope selector
 const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace_id = ? ORDER BY start_date DESC, rowid DESC').all(workspace.id) as any[];

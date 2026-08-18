@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",
-    "@astrojs/node": "^11.0.3",
+    "@astrojs/node": "^11.1.2",
     "@editorjs/checklist": "^1.6.0",
     "@editorjs/code": "^2.9.4",
     "@editorjs/delimiter": "^1.4.2",
@@ -35,7 +35,7 @@
     "@editorjs/warning": "^1.4.1",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.2.0",
+    "astro": "^7.2.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "chart.js": "^4.5.1",
@@ -44,7 +44,7 @@
     "editorjs-drag-drop": "^1.1.16",
     "editorjs-undo": "^2.0.28",
     "express": "^5.2.1",
-    "isomorphic-dompurify": "^3.21.0",
+    "isomorphic-dompurify": "^3.22.0",
     "socket.io": "^4.8.3",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
@@ -56,10 +56,10 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.2.0",
     "drizzle-kit": "^0.31.10",
     "socket.io-client": "^4.8.3",
-    "tsx": "^4.23.8",
+    "tsx": "^4.23.12",
     "vitest": "^4.1.10"
   }
 }

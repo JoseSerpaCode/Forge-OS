@@ -7,6 +7,7 @@ import LabelChip from '../../../components/labels/LabelChip.astro';
 import WorkspaceIcon from '../../../components/brand/WorkspaceIcon.astro';
 import { COLORES, listar as listarEtiquetas } from '../../../lib/labels';
 import { listar as listarTipos } from '../../../lib/issueTypes';
+import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
 const user = Astro.locals.user!;
 const t = useTranslations(Astro.locals.lang || 'en');
@@ -14,11 +15,9 @@ if (!user) return Astro.redirect('/login');
 
 const { sys_tag } = Astro.params;
 
-const ws = db.prepare('SELECT * FROM workspaces WHERE sys_tag = ?').get(sys_tag) as any;
-if (!ws) return Astro.redirect('/404');
-
-const access = checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'owner');
-if (!access.granted) return Astro.redirect(`/w/${sys_tag}`); // Only owners can access settings
+const acceso = abrirEspacioDePagina(sys_tag, user, 'owner');
+if (!acceso.ok) return Astro.redirect(acceso.redirigir);
+const ws = acceso.ws;
 
 const etiquetas = listarEtiquetas(ws.id);
 
@@ -919,77 +918,43 @@ const wsPendingInvites = (db.prepare(`
   let newIconUrl = null;
   const iconInput = document.getElementById('ws-icon-file-input');
   
-  iconInput?.addEventListener('change', (e) => {
+  iconInput?.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        return window.showToast('Image is too massive, keep it under 10MB', true);
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_SIZE = 512;
-          let width = img.width;
-          let height = img.height;
+    if (!file) return;
 
-          if (width > height && width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          } else if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
+    /**
+     * El redimensionado y la subida viven en `lib/client/imagen.ts`.
+     *
+     * Esta copia recortaba a 512 px de **ancho y alto** —las otras dos solo el
+     * ancho, que es lo correcto para no deformar— y comprimía a 0.80 en vez de
+     * 0.85, sin ninguna razón escrita. Con tres versiones, corregir una dejaba
+     * las otras dos atrás. Ya pasó.
+     */
+    const r = await window.forgeImagen.subir(file, {
+      maxAncho: window.forgeImagen.ANCHOS.icono,
+      nombre: 'icon.webp',
+      entidad: { tipo: 'workspace', id: wsId },
+    });
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) ctx.drawImage(img, 0, 0, width, height);
+    if (!r.ok) {
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      return;
+    }
 
-          canvas.toBlob(async (blob) => {
-            if (blob) {
-              const formData = new FormData();
-              formData.append('entity_type', 'workspace');
-              formData.append('entity_id', wsId);
-              formData.append('file', blob, 'icon.webp');
-
-              if (window.showToast) window.showToast('Uploading icon...');
-
-              try {
-                const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (res.ok) {
-                  const data = await res.json();
-                  newIconUrl = data.url;
-                  
-                  let iconPreview = document.getElementById('ws-icon-preview-img');
-                  if (iconPreview) {
-                    iconPreview.src = newIconUrl;
-                  } else {
-                    const container = document.getElementById('ws-icon-preview-container');
-                    const defaultText = document.getElementById('ws-icon-preview-text');
-                    if (defaultText) defaultText.style.display = 'none';
-                    
-                    const newImg = document.createElement('img');
-                    newImg.src = newIconUrl;
-                    newImg.id = 'ws-icon-preview-img';
-                    newImg.className = 'w-full h-full object-cover z-0';
-                    container?.insertBefore(newImg, container.firstChild);
-                  }
-                  if (window.showToast) window.showToast('Icon uploaded!');
-                } else {
-                  if (window.showToast) window.showToast('Failed to upload icon', true);
-                }
-              } catch (err) {
-                console.error(err);
-              }
-            }
-          }, 'image/webp', 0.8);
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
+    newIconUrl = r.url;
+    const iconPreview = document.getElementById('ws-icon-preview-img');
+    if (iconPreview) {
+      iconPreview.src = newIconUrl;
+    } else {
+      const container = document.getElementById('ws-icon-preview-container');
+      document.getElementById('ws-icon-preview-text')?.style.setProperty('display', 'none');
+      const newImg = document.createElement('img');
+      newImg.src = newIconUrl;
+      newImg.id = 'ws-icon-preview-img';
+      newImg.className = 'w-full h-full object-cover z-0';
+      newImg.loading = 'lazy';
+      newImg.decoding = 'async';
+      container?.insertBefore(newImg, container.firstChild);
     }
   });
 
@@ -1022,7 +987,8 @@ const wsPendingInvites = (db.prepare(`
     if (res.ok) {
       window.showToast('Workspace updated!');
     } else {
-      window.showToast(await res.text(), true);
+      console.error('ajustes del espacio:', await res.text());
+      window.showToast(window.forgeMsg?.errGuardarAjustes || '', true);
     }
   });
 
@@ -1042,7 +1008,8 @@ const wsPendingInvites = (db.prepare(`
       if (res.ok) {
         window.showToast('Role updated');
       } else {
-        window.showToast(await res.text(), true);
+        console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
         window.location.reload(); // reset select
       }
     });
@@ -1064,7 +1031,8 @@ const wsPendingInvites = (db.prepare(`
         window.showToast('Request accepted');
         window.location.reload();
       } else {
-        window.showToast(await res.text(), true);
+        console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
       }
     });
   });
@@ -1084,7 +1052,8 @@ const wsPendingInvites = (db.prepare(`
         el.closest('div.bg-forge-bg')?.remove();
         window.showToast('Request rejected');
       } else {
-        window.showToast(await res.text(), true);
+        console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
       }
     });
   });
@@ -1095,7 +1064,7 @@ const wsPendingInvites = (db.prepare(`
       const userId = el.getAttribute('data-user-id');
       const wsId = el.getAttribute('data-ws-id');
       
-      window.forgeConfirm('Remove this user from the workspace?', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarQuitarMiembro || '', async () => {
         const res = await fetch(`/api/workspaces/${wsId}/members`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -1105,7 +1074,8 @@ const wsPendingInvites = (db.prepare(`
           el.closest('div')?.parentElement?.remove();
           window.showToast('User removed');
         } else {
-          window.showToast(await res.text(), true);
+          console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
         }
       });
     });
@@ -1130,7 +1100,8 @@ const wsPendingInvites = (db.prepare(`
       document.getElementById('add-member-username').value = '';
       document.getElementById('add-member-modal').close();
     } else {
-      window.showToast(await res.text(), true);
+      console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
     }
   });
 
@@ -1159,7 +1130,8 @@ const wsPendingInvites = (db.prepare(`
     if (res.ok) {
       window.location.href = '/';
     } else {
-      window.showToast(await res.text(), true);
+      console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
     }
   });
 
@@ -1226,14 +1198,15 @@ const wsPendingInvites = (db.prepare(`
     if (res.ok) {
       window.location.reload();
     } else {
-      window.showToast(await res.text(), true);
+      console.error(await res.text());
+      window.showToast(window.forgeMsg?.errGenerico || '', true);
     }
   });
 
   document.querySelectorAll('.btn-delete-automation').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const id = e.currentTarget.getAttribute('data-id');
-      window.forgeConfirm('Delete this automation rule?', async () => {
+      window.forgeConfirm(window.forgeMsg?.confirmarBorrarAutomatizacion || '', async () => {
         const res = await fetch(`/api/automations/${id}`, { method: 'DELETE' });
         if (res.ok) window.location.reload();
       });

@@ -157,4 +157,5 @@ export const en = {
   'activity.issue_updated': 'updated issue',
   'activity.page_updated': 'edited page',
   'activity.page_created': 'created page',
+  'ws.settings.role_sysadmin': 'Instance admin',
 } as const;
