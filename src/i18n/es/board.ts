@@ -91,4 +91,5 @@ export const es = {
   'board.truncated': 'elige un sprint para acotar',
   'board.delete_sprint': 'Borrar sprint',
   'sprint.err_delete': 'No se ha podido borrar el sprint.',
+  'board.sprint_actions': 'Sprint',
 } as const;

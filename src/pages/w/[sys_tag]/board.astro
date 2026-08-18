@@ -231,8 +231,17 @@ const totales = db.prepare(`
   WHERE workspace_id = ? AND ${activeSprintId ? 'sprint_id = ?' : 'sprint_id IS NULL'}
 `).get(...(activeSprintId ? [workspace.id, activeSprintId] : [workspace.id])) as any;
 
-const totalLogged = totales?.total_logged || 0;
-const totalEstimated = totales?.total_estimated || 0;
+/**
+ * Redondeado a dos decimales antes de pintarlo.
+ *
+ * Se suman fracciones de sesión y en coma flotante eso da `11.032300000000001`.
+ * Es el mismo fallo que ya se arregló en el modal del ticket y que aquí seguía:
+ * arreglar una copia y no la otra es lo que pasa cuando el mismo cálculo vive
+ * en dos sitios.
+ */
+const enHoras = (n: number) => parseFloat((n || 0).toFixed(2));
+const totalLogged = enHoras(totales?.total_logged || 0);
+const totalEstimated = enHoras(totales?.total_estimated || 0);
 const metaDescription = `${workspace.name} board on Forge OS. Track issues, sprints, and tasks efficiently.`;
 ---
 
@@ -250,16 +259,16 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       —el nombre completo está en la barra lateral y en la pestaña—, el bloque
       de tiempo tiene su ancho y los controles respiran al envolverse.
     */}
-    <header class="mb-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-x-4 gap-y-3">
+    <header class="mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-x-4 gap-y-3">
       <div class="flex items-center gap-4 min-w-0">
-        <h1 class="text-2xl font-bold text-forge-text truncate max-w-[15rem]" title={`${workspace.name} Board`}>{workspace.name} Board</h1>
+        <h1 class="text-2xl font-bold text-forge-text truncate max-w-[11rem] lg:max-w-[15rem]" title={`${workspace.name} Board`}>{workspace.name} Board</h1>
         {/*
           La etiqueta encima y la cifra debajo, no una al lado de la otra.
           En horizontal, «0h registradas — sin estimar» no cabía junto a
           «TIEMPO» y se partía a mitad de frase, encima del rótulo.
         */}
         {(
-          <div class="hidden md:flex flex-col w-[12.5rem] shrink-0 bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-2 shadow-sm" id="sprint-time-container" data-logged={totalLogged} data-estimated={totalEstimated}>
+          <div class="hidden lg:flex flex-col w-[11rem] shrink-0 bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-2 shadow-sm" id="sprint-time-container" data-logged={totalLogged} data-estimated={totalEstimated}>
             <span class="text-[9px] font-mono text-forge-muted font-bold tracking-widest uppercase leading-none">{t('dashboard.time') || 'Time'}</span>
             <span class="text-[11px] font-mono font-bold text-forge-accent-text leading-tight mt-1 mb-1.5 truncate" id="sprint-time-text">
               {totalEstimated > 0
@@ -302,23 +311,54 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           </select>
         )}
         
+        {/*
+          Las acciones del sprint, en un menú.
+
+          Estaban las tres sueltas en la barra: completar, desactivar y borrar.
+          Con el selector de sprint, el de orden, el de etiquetas y los dos
+          botones de crear, eso son **ocho controles** en una fila que no da
+          para ocho: se partía en dos y el «+ Issue» acababa solo abajo.
+
+          Van juntas porque son la misma cosa —el estado de este sprint— y
+          porque se usan una vez cada mucho, no en cada visita. Lo que se usa a
+          diario se queda fuera.
+        */}
         {acceso.rol !== 'viewer' && activeSprintId && currentSprintObj && (
-          <div class="flex items-center gap-1 bg-forge-bg rounded-md border border-forge-border/50 p-1">
-            <button id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class={`font-bold px-3 py-1 rounded text-xs transition-colors ${currentSprintObj.status === 'planned' ? 'bg-forge-success text-white hover:opacity-90' : currentSprintObj.status === 'active' ? 'bg-forge-primary text-forge-on-accent hover:opacity-90' : 'bg-forge-primary text-forge-on-accent hover:opacity-90'}`}>
-              {currentSprintObj.status === 'planned' ? t('board.sprint_start') : currentSprintObj.status === 'active' ? t('board.sprint_complete') : t('board.sprint_reopen')}
+          <div class="relative" id="sprint-menu-root">
+            <button
+              id="btn-sprint-menu"
+              type="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="sprint-menu"
+              class="flex items-center gap-1.5 bg-forge-bg border border-forge-border rounded-md px-3 py-1.5 text-sm text-forge-text hover:border-forge-secondary transition-colors"
+            >
+              {t('board.sprint_actions')}
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            {currentSprintObj.status === 'active' && (
-              <button id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="text-forge-muted hover:text-forge-error px-2 py-1 rounded transition-colors" title={t('board.deactivate')}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+
+            <div id="sprint-menu" role="menu" class="hidden absolute right-0 top-full mt-1 min-w-[13rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1">
+              <button type="button" role="menuitem" id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class="sprint-menu-item">
+                {currentSprintObj.status === 'planned' ? t('board.sprint_start') : currentSprintObj.status === 'active' ? t('board.sprint_complete') : t('board.sprint_reopen')}
               </button>
-            )}
-            {/* Borrar el sprint. Solo propietarios: reorganiza el trabajo de
-                todo el equipo. Los tickets no se van con él. */}
-            {acceso.rol === 'owner' && (
-              <button id="btn-delete-sprint" data-sprint-id={activeSprintId} class="text-forge-muted hover:text-forge-error px-2 py-1 rounded transition-colors" title={t('board.delete_sprint')} aria-label={t('board.delete_sprint')}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-              </button>
-            )}
+
+              {currentSprintObj.status === 'active' && (
+                <button type="button" role="menuitem" id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item">
+                  {t('board.deactivate')}
+                </button>
+              )}
+
+              {acceso.rol === 'owner' && (
+                <>
+                  <div class="h-px bg-forge-border/50 my-1"></div>
+                  {/* Borrar reorganiza el trabajo de todo el equipo, así que es
+                      de dueños. Los tickets no se van con él. */}
+                  <button type="button" role="menuitem" id="btn-delete-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item hover:text-forge-error">
+                    {t('board.delete_sprint')}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -581,6 +621,43 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         window.showToast?.(dialogoCierre?.getAttribute('data-t-err-create') || '', 'error');
       }
     });
+
+    /**
+     * El menú de acciones del sprint.
+     *
+     * Mismo comportamiento que el de la cuenta: cierra al pulsar fuera y con
+     * Escape, devolviendo el foco. Sin lo segundo, quien navega con teclado
+     * queda atrapado dentro de un menú abierto.
+     */
+    (() => {
+      const boton = document.getElementById('btn-sprint-menu');
+      const menu = document.getElementById('sprint-menu');
+      if (!boton || !menu) return;
+
+      const cerrar = () => {
+        menu.classList.add('hidden');
+        boton.setAttribute('aria-expanded', 'false');
+      };
+
+      boton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const abierto = !menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', abierto);
+        boton.setAttribute('aria-expanded', String(!abierto));
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target as Node)) cerrar();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !menu.classList.contains('hidden')) {
+          cerrar();
+          boton.focus();
+        }
+      });
+      // Al elegir una acción el menú sobra: lo que sigue es un diálogo.
+      menu.addEventListener('click', () => cerrar());
+    })();
 
     const dialogoCierre = document.getElementById('close-sprint-modal') as HTMLDialogElement | null;
     const destinoWrap = document.getElementById('close-sprint-target-wrap');
@@ -850,3 +927,23 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     });
   </script>
 </MainLayout>
+
+<style>
+  .sprint-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--forge-text);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .sprint-menu-item:hover {
+    background: var(--forge-bg);
+    color: var(--forge-accent-text);
+  }
+</style>

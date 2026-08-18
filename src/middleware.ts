@@ -187,7 +187,18 @@ function applySecurityHeaders(response: Response): Response {
     //
     // Solo el origen de la subida, no `*.googleapis.com`: lo demás que hable
     // con Google lo hace el servidor, no el navegador.
-    "connect-src 'self' ws: wss: https://storage.googleapis.com",
+    // Los dos hosts de Google que hacen falta para subir a Drive.
+    //
+    // `www.googleapis.com` es donde vive la **sesión de subida reanudable**: el
+    // servidor la abre y Google devuelve en la cabecera `location` una URL de
+    // ese host, a la que el navegador manda el archivo directamente. Faltaba, y
+    // la CSP cortaba el `PUT` sin más explicación que «No se ha podido subir el
+    // archivo».
+    //
+    // `storage.googleapis.com` se queda porque una sesión reanudable puede
+    // redirigir ahí a mitad de la subida, y perderlo rompería justo los
+    // archivos grandes, que son los que más duele volver a subir.
+    "connect-src 'self' ws: wss: https://www.googleapis.com https://storage.googleapis.com",
     "frame-ancestors 'none'"
   ].join('; ');
   
