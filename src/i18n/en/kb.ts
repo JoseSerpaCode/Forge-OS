@@ -23,4 +23,7 @@ export const en = {
   'kb.empty_title': 'No pages yet.',
   'kb.empty_desc': 'No pages found in this workspace.',
   'kb.empty_cta': 'Click "New Page" in the sidebar to create one.',
+  'kb.open_tree': 'Open page index',
+  'kb.editor_tips': 'Editor tips',
+  'kb.shortcuts': 'Editor shortcuts',
 } as const;

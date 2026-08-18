@@ -23,4 +23,7 @@ export const es = {
   'kb.empty_title': 'Aún no hay páginas.',
   'kb.empty_desc': 'No se encontraron páginas en este workspace.',
   'kb.empty_cta': 'Haz clic en "Nueva Página" en la barra lateral para crear una.',
+  'kb.open_tree': 'Abrir el índice de páginas',
+  'kb.editor_tips': 'Ayuda del editor',
+  'kb.shortcuts': 'Atajos del editor',
 } as const;

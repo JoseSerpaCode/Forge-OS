@@ -36,7 +36,23 @@ for (const p of pages) {
 }
 ---
 
-<aside id="page-tree-aside" data-workspace-id={workspaceId} class="w-64 bg-forge-panel border border-forge-border rounded-lg m-4 flex flex-col h-[calc(100%-2rem)] shrink-0 transition-all duration-300 relative">
+{/*
+  En móvil el árbol es un **cajón**, no una columna.
+
+  Era un `w-64` con `m-4`: 288 px fijos que en una pantalla de 360 dejaban 72
+  para el editor, y menos su propio padding, **ocho píxeles de área de
+  escritura**. La base de conocimiento estaba, literalmente, inutilizable en un
+  teléfono.
+
+  Fuera de pantalla por defecto y superpuesto al abrirse, en vez de empujar el
+  contenido: el editor necesita el ancho entero, y en un móvil no se lee el
+  índice y el texto a la vez.
+*/}
+<aside
+  id="page-tree-aside"
+  data-workspace-id={workspaceId}
+  class="fixed md:relative inset-y-0 left-0 z-40 w-72 md:w-64 max-w-[85vw] bg-forge-panel border border-forge-border md:rounded-lg m-0 md:m-4 flex flex-col h-full md:h-[calc(100%-2rem)] md:shrink-0 -translate-x-full md:translate-x-0 transition-transform md:transition-all duration-300"
+>
   <div class="p-4 border-b border-forge-border flex items-center justify-between">
     <h2 class="font-bold text-forge-text uppercase tracking-widest text-sm flex items-center gap-2 transition-opacity duration-300" id="page-tree-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
@@ -70,6 +86,22 @@ for (const p of pages) {
     </ul>
   </div>
 </aside>
+
+{/* Cierra el cajón al pulsar fuera. Sin esto, en un móvil hay que acertar con
+    el botón para volver al texto. */}
+<div id="page-tree-backdrop" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
+
+{/* Abre el cajón. Solo en móvil: en escritorio el árbol ya está a la vista. */}
+<button
+  id="btn-open-tree"
+  type="button"
+  aria-controls="page-tree-aside"
+  aria-expanded="false"
+  class="md:hidden fixed bottom-5 left-5 z-30 w-12 h-12 rounded-full bg-forge-primary text-forge-on-accent shadow-lg flex items-center justify-center"
+  aria-label={t('kb.open_tree')}
+>
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+</button>
 
 <script>
   // Handle toggling of folders
@@ -171,6 +203,42 @@ for (const p of pages) {
     });
   });
 
+  /**
+   * El cajón en móvil.
+   *
+   * El colapso de escritorio —de 256 px a 64— no sirve aquí: 64 px siguen
+   * siendo un quinto de la pantalla para algo que solo se mira al cambiar de
+   * página. En móvil el árbol está fuera y se trae encima cuando hace falta.
+   */
+  (() => {
+    const cajon = document.getElementById('page-tree-aside');
+    const fondo = document.getElementById('page-tree-backdrop');
+    const abrir = document.getElementById('btn-open-tree');
+    if (!cajon || !fondo || !abrir) return;
+
+    const mostrar = (si: boolean) => {
+      cajon.classList.toggle('-translate-x-full', !si);
+      fondo.classList.toggle('hidden', !si);
+      abrir.setAttribute('aria-expanded', String(si));
+      // Con el cajón abierto, el fondo no debe poder desplazarse: es lo que
+      // hace que al cerrarlo se haya perdido el sitio donde se estaba leyendo.
+      document.body.style.overflow = si ? 'hidden' : '';
+    };
+
+    abrir.addEventListener('click', () => mostrar(true));
+    fondo.addEventListener('click', () => mostrar(false));
+
+    // Escape cierra, como cualquier otra cosa que se superpone.
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !fondo.classList.contains('hidden')) mostrar(false);
+    });
+
+    // Al elegir una página el cajón sobra: lo siguiente es leerla.
+    cajon.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) mostrar(false);
+    });
+  })();
+
   // Toggle PageTree Sidebar logic
   const toggleBtn = document.getElementById('btn-toggle-tree');
   const aside = document.getElementById('page-tree-aside');
@@ -180,6 +248,15 @@ for (const p of pages) {
 
   let isCollapsed = false;
   toggleBtn?.addEventListener('click', () => {
+    // En móvil este botón cierra el cajón, no lo encoge: un árbol de 64 px no
+    // es útil, es un trozo de pantalla ocupado.
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      aside?.classList.add('-translate-x-full');
+      document.getElementById('page-tree-backdrop')?.classList.add('hidden');
+      document.body.style.overflow = '';
+      return;
+    }
+
     isCollapsed = !isCollapsed;
     if (isCollapsed) {
       aside?.classList.remove('w-64');
