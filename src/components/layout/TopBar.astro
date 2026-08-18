@@ -61,6 +61,23 @@ const currentUrl = Astro.url.pathname;
     </div>
   </div>
   <div class="flex items-center gap-3">
+    {/*
+      Buscar, en móvil.
+
+      Por debajo de 768 la búsqueda global se esconde entera y la paleta Cmd+K
+      necesita un teclado, así que en un teléfono **no quedaba ninguna forma de
+      buscar**. La paleta ya sabe buscar y ya está en todas las páginas: solo le
+      faltaba una puerta que se pueda tocar.
+    */}
+    <button
+      type="button"
+      id="btn-search-mobile"
+      class="md:hidden text-forge-muted hover:text-forge-accent-text transition-colors p-1.5 rounded hover:bg-forge-bg"
+      aria-label={t('a11y.global_search')}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    </button>
+
     {user?.is_guest === 1 && (
       <a href="/register" class="hidden sm:flex items-center justify-center px-3 py-1.5 bg-forge-primary text-forge-on-accent rounded text-xs font-bold hover:bg-forge-primary/90 transition-colors">
         {t('auth.login') || 'Sign In'} / {t('auth.register') || 'Register'}
