@@ -3,6 +3,7 @@ import { useTranslations } from '../../i18n/ui';
 import db from '../../lib/db';
 import PageTreeItem from './PageTreeItem.astro';
 import { checkWorkspaceAccess } from '../../lib/guard';
+import { paginasDeEspacio } from '../../lib/consultas';
 
 interface Props {
   workspaceId: string;
@@ -20,7 +21,7 @@ const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspaceId, 'vie
 if (!access.granted) return new Response(access.error, { status: 403 });
 
 // One single query for the whole tree
-const pages = db.prepare('SELECT id, parent_page_id, title, icon FROM pages WHERE workspace_id = ? ORDER BY created_at ASC').all(workspaceId) as any[];
+const pages = paginasDeEspacio(workspaceId);
 
 const childrenMap = new Map<string, any[]>();
 const rootPages: any[] = [];

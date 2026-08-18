@@ -2,6 +2,7 @@
 const user = Astro.locals.user!;
 import { useTranslations } from '../../i18n/ui';
 import { fechaHora } from '../../lib/fechas';
+import { colorDeNotificacion } from '../../lib/notificaciones';
 import pkg from '../../../package.json';
 import { NotificationService } from '../../lib/NotificationService';
 const lang = Astro.locals.lang || 'en';
@@ -98,7 +99,7 @@ const currentUrl = Astro.url.pathname;
             <li class={`p-3 border-b border-forge-border/40 transition-colors ${n.is_read ? 'opacity-70 bg-forge-bg/20' : 'bg-forge-secondary/5'}`}>
               <a href={n.link_url || '#'} class="block" data-notif-id={n.id}>
                 <div class="flex items-start gap-3">
-                  <span class={`w-2 h-2 rounded-full shrink-0 ${n.type === 'assign' ? 'bg-forge-info' : n.type === 'mention' ? 'bg-forge-warning' : n.type === 'system' ? 'bg-forge-error' : 'bg-forge-primary'}`}></span>
+                  <span class={`w-2 h-2 rounded-full shrink-0 ${colorDeNotificacion(n.type, !!n.is_read)}`}></span>
                   <span class="text-xs font-bold text-forge-text">{n.title}</span>
                 </div>
                 <p class="text-[11px] text-forge-muted line-clamp-2 pl-4 leading-tight">{n.message}</p>
@@ -236,6 +237,7 @@ const currentUrl = Astro.url.pathname;
 
 <script>
   import { escaparHtml, hrefSeguro } from '../../lib/texto';
+  import { colorDeNotificacion } from '../../lib/notificaciones';
   // Event listener for / key
   const globalSearch = document.getElementById('global-search') as HTMLInputElement;
 
@@ -451,7 +453,7 @@ const currentUrl = Astro.url.pathname;
               `;
             }
 
-            const colorClass = n.type === 'assign' ? 'bg-forge-info' : n.type === 'mention' ? 'bg-forge-warning' : n.type === 'system' ? 'bg-forge-error' : 'bg-forge-primary';
+            const colorClass = colorDeNotificacion(n.type, false);
 
             notifList.innerHTML += `
               <li class="relative group/notif p-3 border-b border-forge-border transition-colors ${n.is_read ? 'opacity-60' : 'bg-forge-bg'} ${n.type !== 'invite' ? 'hover:bg-forge-panel' : ''}">
@@ -589,7 +591,7 @@ const currentUrl = Astro.url.pathname;
     if (list) {
       const li = document.createElement('li');
       li.className = 'p-3 border-b border-forge-border/40 transition-colors bg-forge-secondary/5';
-      const colorClass = data.type === 'assign' ? 'bg-forge-info' : data.type === 'mention' ? 'bg-forge-warning' : data.type === 'system' ? 'bg-forge-error' : 'bg-forge-primary';
+      const colorClass = colorDeNotificacion(data.type, false);
       // Escapado, como el resto de la barra.
       //
       // El texto de una notificación lo compone el servidor a partir de datos

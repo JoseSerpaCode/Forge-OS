@@ -3,6 +3,7 @@ import Logo from '../brand/Logo.astro';
 import WorkspaceIcon from '../brand/WorkspaceIcon.astro';
 import { mapaPorClave } from '../../lib/issueTypes';
 import { nombreDeRol } from '../../lib/roles';
+import { espaciosDelHub, tareasPendientes } from '../../lib/consultas';
 // src/pages/index.astro
 import MainLayout from '../../layouts/MainLayout.astro';
 import db from '../../lib/db';
@@ -17,29 +18,7 @@ const lang = Astro.locals.lang || 'en';
 const proveedorNuevaCuenta = Astro.url.searchParams.get('cuenta_nueva');
 const t = useTranslations(lang);
 
-// La rama de sysadmin lee todos los espacios de la instancia. Va acotada: el
-// hub es una portada, no un panel de administración, y sin tope el coste de
-// abrirlo crece con el producto entero. Los 100 más recientes son de sobra para
-// lo que esta pantalla hace; enumerarlos todos es trabajo de una vista de
-// administración, que no existe todavía.
-const workspacesQuery = user.is_sysadmin === 1 
-  ? `SELECT w.id, w.name, w.sys_tag, w.icon, 'sysadmin' as role,
-      (SELECT json_group_array(json_object('id', u.id, 'username', u.username, 'avatar_url', u.avatar_url))
-       FROM (SELECT u2.id, u2.username, u2.avatar_url FROM workspace_members wm JOIN users u2 ON wm.user_id = u2.id WHERE wm.workspace_id = w.id LIMIT 5) u) as members_json,
-      (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = w.id) as totalMembers
-     FROM workspaces w WHERE w.sys_tag NOT LIKE 'guest-%'
-     ORDER BY w.created_at DESC LIMIT 100`
-  : `SELECT w.id, w.name, w.sys_tag, w.icon, wm.ws_role as role,
-      (SELECT json_group_array(json_object('id', u.id, 'username', u.username, 'avatar_url', u.avatar_url))
-       FROM (SELECT u2.id, u2.username, u2.avatar_url FROM workspace_members wm2 JOIN users u2 ON wm2.user_id = u2.id WHERE wm2.workspace_id = w.id LIMIT 5) u) as members_json,
-      (SELECT COUNT(*) FROM workspace_members WHERE workspace_id = w.id) as totalMembers
-     FROM workspaces w JOIN workspace_members wm ON w.id = wm.workspace_id WHERE wm.user_id = ?`;
-
-const workspaces = user.is_sysadmin === 1 ? db.prepare(workspacesQuery).all() as any[] : db.prepare(workspacesQuery).all(user.id) as any[];
-
-for (const ws of workspaces) {
-  ws.members = JSON.parse(ws.members_json || '[]');
-}
+const workspaces = espaciosDelHub(user.id, user.is_sysadmin === 1);
 
 // 2. Obtener Tareas Asignadas a mí (My Tasks)
 /**
@@ -64,18 +43,7 @@ for (const ws of workspaces) {
  */
 const TOPE_PENDIENTES = 12;
 
-const pendientes = db.prepare(`
-  SELECT i.id, i.title, i.status, i.sprint_id, i.type, i.due_date, i.priority,
-         w.sys_tag, w.id AS workspace_id, w.icon AS workspace_icon, w.name AS workspace_name
-  FROM issues i
-  JOIN workspaces w ON i.workspace_id = w.id
-  WHERE i.assignee_id = ? AND i.status != 'done'
-  ORDER BY
-    i.due_date IS NULL ASC,
-    i.due_date ASC,
-    CASE i.priority WHEN 'highest' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 WHEN 'lowest' THEN 4 ELSE 2 END ASC,
-    i.updated_at DESC
-`).all(user.id) as any[];
+const pendientes = tareasPendientes(user.id);
 
 const totalPendientes = pendientes.length;
 const myTasks = pendientes.slice(0, TOPE_PENDIENTES);

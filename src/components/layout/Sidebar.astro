@@ -10,13 +10,13 @@ const user = Astro.locals.user!;
 import db from '../../lib/db';
 import { useTranslations } from '../../i18n/ui';
 import { nombreDeRol } from '../../lib/roles';
+import { solicitudesPendientes as contarSolicitudes, rolEnEspacio, sysTagDeEspacio } from '../../lib/consultas';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
 let sys_tag = Astro.params.sys_tag;
 if (!sys_tag && user?.last_workspace_id) {
-  const ws = db.prepare('SELECT sys_tag FROM workspaces WHERE sys_tag = ?').get(user.last_workspace_id) as any;
-  if (ws) sys_tag = ws.sys_tag;
+  sys_tag = sysTagDeEspacio(user.last_workspace_id) ?? sys_tag;
 }
 
 const currentPath = Astro.url.pathname;
@@ -31,14 +31,7 @@ const currentPath = Astro.url.pathname;
  * Los invitados no reciben ninguna: `canInteractSocially` lo impide en los dos
  * sentidos, así que ni se consulta.
  */
-const solicitudesPendientes = user && !user.is_guest
-  ? (db.prepare(`
-      SELECT COUNT(*) AS n FROM friendships
-      WHERE (user_a_id = ? OR user_b_id = ?)
-        AND status = 'pending'
-        AND action_user_id != ?
-    `).get(user.id, user.id, user.id) as { n: number }).n
-  : 0;
+const pendientes = contarSolicitudes(user?.id ?? '', !!user?.is_guest);
 
 
 // Determine active sections
@@ -57,8 +50,7 @@ const isActivity = currentPath.startsWith('/activity');
 // Get user's workspace role
 let userRole = user?.is_sysadmin === 1 ? 'sysadmin' : 'viewer';
 if (workspaceId && user?.is_sysadmin !== 1) {
-  const membership = db.prepare('SELECT ws_role FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(workspaceId, user?.id) as any;
-  if (membership) userRole = membership.ws_role;
+  userRole = rolEnEspacio(workspaceId, user?.id ?? '') ?? userRole;
 }
 const isOwner = userRole === 'owner' || userRole === 'sysadmin';
 ---
@@ -229,9 +221,9 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
           <div class="text-xs font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{user?.is_guest ? t('user.menu.guest') : (user?.username || t('user.menu.guest'))}</div>
           <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? t('user.menu.unregistered') : nombreDeRol(userRole, lang)}</div>
         </div>
-        {solicitudesPendientes > 0 && (
+        {pendientes > 0 && (
           <span class="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center" aria-label={t('friends.incoming')}>
-            {solicitudesPendientes > 9 ? '9+' : solicitudesPendientes}
+            {pendientes > 9 ? '9+' : pendientes}
           </span>
         )}
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted shrink-0" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
@@ -254,8 +246,8 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
             <a href="/people" role="menuitem" class="user-menu-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span class="flex-1">{t('friends.title')}</span>
-              {solicitudesPendientes > 0 && (
-                <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center">{solicitudesPendientes > 9 ? '9+' : solicitudesPendientes}</span>
+              {pendientes > 0 && (
+                <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center">{pendientes > 9 ? '9+' : pendientes}</span>
               )}
             </a>
             <a href="/settings" role="menuitem" class="user-menu-item">

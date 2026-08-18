@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { checkRateLimit } from '../../../lib/rateLimit';
 import { getClientIp } from '../../../lib/clientIp';
+import { adoptarTrabajoDeInvitado } from '../../../lib/adopcionInvitado';
 
 export const POST: APIRoute = async ({ request, cookies, locals }) => {
   try {
@@ -31,31 +32,12 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
     const currentUser = locals.user;
     if (currentUser && currentUser.is_guest === 1) {
-      if (Array.isArray(keep_workspaces) && keep_workspaces.length > 0) {
-         for (const wsId of keep_workspaces) {
-             const isMember = db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(wsId, currentUser.id);
-             if (isMember) {
-                db.prepare('UPDATE workspaces SET created_by = ? WHERE id = ? AND created_by = ?').run(user.id, wsId, currentUser.id);
-                db.prepare('UPDATE issues SET reporter_id = ? WHERE reporter_id = ? AND workspace_id = ?').run(user.id, currentUser.id, wsId);
-                db.prepare('UPDATE issues SET assignee_id = ? WHERE assignee_id = ? AND workspace_id = ?').run(user.id, currentUser.id, wsId);
-                db.prepare('UPDATE pages SET created_by = ? WHERE created_by = ? AND workspace_id = ?').run(user.id, currentUser.id, wsId);
-                db.prepare('INSERT OR IGNORE INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)').run(wsId, user.id, 'owner');
-             }
-         }
-      }
-      
-      // Only delete workspaces CREATED by the guest (not ones they were invited to)
-      const guestOwnedWorkspaces = db.prepare('SELECT id FROM workspaces WHERE created_by = ?').all(currentUser.id) as any[];
-      for (const uw of guestOwnedWorkspaces) {
-          if (!Array.isArray(keep_workspaces) || !keep_workspaces.includes(uw.id)) {
-              db.prepare('DELETE FROM workspaces WHERE id = ?').run(uw.id);
-          }
-      }
-      // Remove guest from any workspaces they were invited to (not owned)
-      db.prepare('DELETE FROM workspace_members WHERE user_id = ?').run(currentUser.id);
-      
-      // Guest will be unlinked (their cookie replaced), but since we deleted their workspaces, we leave the guest account orphaned to be cleaned up or just delete it if not constrained.
-      // We safely deleted workspaces above which cascades to issues, sprints, pages. So the guest account should be clean.
+      // Qué se conserva del trabajo hecho como invitado y qué se tira lo decide
+      // `lib/adopcionInvitado.ts`. Estaba aquí, con once consultas en línea
+      // dentro del controlador de entrada y sin transacción: un fallo a mitad
+      // dejaba el espacio con el dueño cambiado y los tickets a nombre de una
+      // cuenta a punto de borrarse.
+      adoptarTrabajoDeInvitado(currentUser.id, user.id, keep_workspaces);
     }
     
     // Rotación de Sesión de Seguridad
