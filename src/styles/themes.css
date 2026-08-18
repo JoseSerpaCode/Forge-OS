@@ -189,6 +189,42 @@
       line-height: 1.45;
     }
 
+    /* ── Lo que solo aparece al pasar el ratón, en un móvil no existe ────────
+     *
+     * En táctil no hay hover. Diecinueve controles del producto se pintaban con
+     * `opacity-0 group-hover:opacity-100` —o `invisible`, o `hidden`— y entre
+     * ellos estaban **borrar una página**, **borrar una fila** de una base
+     * dinámica, cambiar el avatar, cambiar el banner y las acciones del árbol de
+     * páginas. No eran incómodos de usar: no se podían usar.
+     *
+     * Se arregla aquí y no en cada componente por dos motivos. Uno, son
+     * diecinueve sitios y arreglarlos de uno en uno deja fuera el siguiente que
+     * alguien escriba. Dos, el patrón es correcto en escritorio —una interfaz
+     * que no enseña todos los botones a la vez se lee mejor— y lo que falla es
+     * solo el medio.
+     *
+     * El `:hover` de escritorio se conserva intacto: esta regla vive dentro de
+     * la consulta de ancho máximo. */
+    .group:hover .group-hover\:opacity-100,
+    .opacity-0.group-hover\:opacity-100,
+    [class*="group-hover:opacity-100"] {
+      opacity: 1 !important;
+    }
+    [class*="group-hover:visible"] {
+      visibility: visible !important;
+    }
+    /* `hidden group-hover:flex` y sus variantes: el elemento ni siquiera está
+     * en el flujo hasta que llega un ratón que no va a llegar. */
+    .hidden[class*="group-hover\:flex"] {
+      display: flex !important;
+    }
+    .hidden[class*="group-hover\:block"] {
+      display: block !important;
+    }
+    .hidden[class*="group-hover\:inline"] {
+      display: inline !important;
+    }
+
     /* Área táctil.
 
        WCAG 2.5.8 pide 24×24 CSS px como mínimo, y las guías de Apple y Google
