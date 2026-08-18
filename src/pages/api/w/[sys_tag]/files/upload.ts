@@ -77,9 +77,21 @@ export const POST: APIRoute = async ({ params, request, locals, url }) => {
     // Drive necesita el origen para dejar que el `PUT` salga del navegador.
     origen: url.origin,
   });
-  if (!sesion) return json({ error_code: 'drive_unreachable' }, 502);
+  if (!sesion.ok) {
+    /**
+     * Cada motivo con su código, porque cada uno se resuelve distinto.
+     *
+     * Un Drive lleno no es un fallo de la aplicación: es algo que quien conectó
+     * la cuenta puede arreglar en cinco minutos, y decírselo es la diferencia
+     * entre eso y pensar que Forge está roto. El 507 es el código que existe
+     * exactamente para «no queda sitio».
+     */
+    if (sesion.motivo === 'sin_espacio') return json({ error_code: 'drive_full' }, 507);
+    if (sesion.motivo === 'sin_permiso') return json({ error_code: 'drive_revoked' }, 502);
+    return json({ error_code: 'drive_unreachable' }, 502);
+  }
 
-  return json({ upload_url: sesion, name: nombre, folder_id: folderId });
+  return json({ upload_url: sesion.url, name: nombre, folder_id: folderId });
 };
 
 /** Paso 3: comprobar lo subido y darlo de alta. */

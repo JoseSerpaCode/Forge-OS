@@ -297,10 +297,23 @@ export async function compartirPorEnlace(accessToken: string, folderId: string):
  * `Origin` va en la petición porque Drive lo usa para permitir que el `PUT`
  * llegue desde el navegador; sin él, el navegador lo bloquea por CORS.
  */
+/**
+ * El resultado de abrir una sesión, con el motivo cuando falla.
+ *
+ * Antes devolvía `string | null`, así que **todos** los fallos eran el mismo:
+ * el endpoint respondía `drive_unreachable` y el usuario veía «No se ha podido
+ * subir el archivo» tanto si Google estaba caído como si su Drive estaba lleno.
+ * Son dos situaciones opuestas —una se espera, la otra se resuelve haciendo
+ * sitio— y confundirlas hace pensar que la aplicación está rota.
+ */
+export type SesionDeSubida =
+  | { ok: true; url: string }
+  | { ok: false; motivo: 'sin_espacio' | 'sin_permiso' | 'inalcanzable' };
+
 export async function abrirSesionDeSubida(
   accessToken: string,
   datos: { nombre: string; mimeType: string; carpetaDrive: string; origen: string }
-): Promise<string | null> {
+): Promise<SesionDeSubida> {
   try {
     const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id', {
       method: 'POST',
@@ -316,12 +329,29 @@ export async function abrirSesionDeSubida(
       }),
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return null;
-    return res.headers.get('location');
-  } catch {
-    return null;
+
+    if (!res.ok) {
+      // Google explica el motivo en el cuerpo. Leerlo cuesta una lectura y es
+      // la diferencia entre «no se pudo» y «tu Drive está lleno».
+      const cuerpo = await res.text().catch(() => '');
+      if (/storageQuotaExceeded|quotaExceeded/i.test(cuerpo)) {
+        return { ok: false, motivo: 'sin_espacio' };
+      }
+      if (res.status === 401 || res.status === 403) {
+        return { ok: false, motivo: 'sin_permiso' };
+      }
+      console.error('drive: sesión de subida', res.status, cuerpo.slice(0, 300));
+      return { ok: false, motivo: 'inalcanzable' };
+    }
+
+    const url = res.headers.get('location');
+    return url ? { ok: true, url } : { ok: false, motivo: 'inalcanzable' };
+  } catch (e) {
+    console.error('drive: sesión de subida', e);
+    return { ok: false, motivo: 'inalcanzable' };
   }
 }
+
 
 export type ArchivoDrive = {
   id: string;

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { getTestDb } from './test-utils';
 
 /**
  * Cerrar un sprint con trabajo dentro, y volver al backlog.
@@ -68,8 +69,17 @@ test('el selector puede volver al backlog', async ({ page }) => {
 
 test('cerrar con trabajo pendiente pregunta en vez de escupir JSON', async ({ page }) => {
   await entrar(page);
-  await page.goto(`/w/${ESPACIO}/board`);
-  const ws = await page.locator('.kanban-container').getAttribute('data-workspace');
+
+  /**
+   * El id del espacio se lee de la base, no visitando el tablero.
+   *
+   * Esa visita solo servía para sacarlo de un `data-*`, y chocaba con la
+   * navegación que deja la prueba anterior de este mismo fichero: Playwright
+   * abortaba el `goto` con «interrupted by another navigation». Una navegación
+   * que solo existe para leer un dato es una navegación que sobra.
+   */
+  const ws = (getTestDb().prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(ESPACIO) as any)?.id;
+  expect(ws, 'el espacio lo crea el beforeAll').toBeTruthy();
 
   // Sprint propio de esta prueba: reutilizar el de la anterior la ataría a que
   // aquella lo dejara abierto, y ya lo cierra.
@@ -87,7 +97,18 @@ test('cerrar con trabajo pendiente pregunta en vez de escupir JSON', async ({ pa
 
   await page.goto(`/w/${ESPACIO}/board?sprint=${sprintId}`);
 
+  /**
+   * Las acciones del sprint viven en un menú desde que la barra pasó de ocho
+   * controles: completar, desactivar y borrar estaban sueltos y la fila se
+   * partía en dos. Hay que abrirlo antes de pulsar nada.
+   */
+  const abrirMenu = async () => {
+    await page.click('#btn-sprint-menu');
+    await expect(page.locator('#sprint-menu')).toBeVisible();
+  };
+
   // Arrancar el sprint: solo se cierra lo que está en marcha.
+  await abrirMenu();
   const toggle = page.locator('#btn-toggle-sprint');
   if ((await toggle.getAttribute('data-current-status')) === 'planned') {
     await toggle.click();
@@ -95,6 +116,7 @@ test('cerrar con trabajo pendiente pregunta en vez de escupir JSON', async ({ pa
     await page.waitForLoadState('networkidle');
   }
 
+  await abrirMenu();
   await page.locator('#btn-toggle-sprint').click();
 
   const dialogo = page.locator('#close-sprint-modal');
