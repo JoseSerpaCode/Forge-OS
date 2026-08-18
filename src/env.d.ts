@@ -38,6 +38,18 @@ interface Window {
    * como opcional porque un script podría correr antes de que se asigne.
    */
   forgeMsg?: Record<string, string>;
+
+  /**
+   * Redimensionar y subir una imagen.
+   *
+   * Va por `window` porque dos de los tres llamantes están en `<script
+   * is:inline define:vars>`, que no admite imports. Lo pone `MainLayout`.
+   */
+  forgeImagen?: {
+    subir: (file: File, opciones: { maxAncho: number; nombre?: string; entidad?: { tipo: string; id: string } }) =>
+      Promise<{ ok: true; url: string } | { ok: false; motivo: string }>;
+    ANCHOS: { avatar: number; banner: number; icono: number };
+  };
   /** Diálogo de confirmación de la aplicación (MainLayout). Se usa en lugar del
       `confirm()` del navegador, que se puede bloquear tras el primer aviso y
       deja los botones sin hacer nada en silencio. */

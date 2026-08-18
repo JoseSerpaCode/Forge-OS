@@ -204,6 +204,20 @@ Astro.response.headers.set('Pragma', 'no-cache');
       window.forgeMsg = mensajes;
     </script>
 
+    {/*
+      El subidor de imágenes, expuesto en `window`.
+
+      Dos de los tres sitios que suben imágenes usan `<script is:inline
+      define:vars>`, que **no admite imports**: es una restricción de Astro, no
+      una elección. Sin este puente, la única forma de compartir el código sería
+      no compartirlo, que es como acabaron existiendo tres implementaciones con
+      tres comportamientos —una de ellas sin redimensionar nada.
+    */}
+    <script>
+      import { subirImagen, ANCHOS } from '../lib/client/imagen';
+      (window as any).forgeImagen = { subir: subirImagen, ANCHOS };
+    </script>
+
     <script is:inline>
       window.showToast = function(msg, type = false) {
         const toast = document.getElementById('forge-toast');

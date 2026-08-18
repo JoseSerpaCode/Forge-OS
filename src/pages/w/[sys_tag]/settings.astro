@@ -918,77 +918,43 @@ const wsPendingInvites = (db.prepare(`
   let newIconUrl = null;
   const iconInput = document.getElementById('ws-icon-file-input');
   
-  iconInput?.addEventListener('change', (e) => {
+  iconInput?.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        return window.showToast('Image is too massive, keep it under 10MB', true);
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_SIZE = 512;
-          let width = img.width;
-          let height = img.height;
+    if (!file) return;
 
-          if (width > height && width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          } else if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
+    /**
+     * El redimensionado y la subida viven en `lib/client/imagen.ts`.
+     *
+     * Esta copia recortaba a 512 px de **ancho y alto** —las otras dos solo el
+     * ancho, que es lo correcto para no deformar— y comprimía a 0.80 en vez de
+     * 0.85, sin ninguna razón escrita. Con tres versiones, corregir una dejaba
+     * las otras dos atrás. Ya pasó.
+     */
+    const r = await window.forgeImagen.subir(file, {
+      maxAncho: window.forgeImagen.ANCHOS.icono,
+      nombre: 'icon.webp',
+      entidad: { tipo: 'workspace', id: wsId },
+    });
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) ctx.drawImage(img, 0, 0, width, height);
+    if (!r.ok) {
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      return;
+    }
 
-          canvas.toBlob(async (blob) => {
-            if (blob) {
-              const formData = new FormData();
-              formData.append('entity_type', 'workspace');
-              formData.append('entity_id', wsId);
-              formData.append('file', blob, 'icon.webp');
-
-              if (window.showToast) window.showToast('Uploading icon...');
-
-              try {
-                const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (res.ok) {
-                  const data = await res.json();
-                  newIconUrl = data.url;
-                  
-                  let iconPreview = document.getElementById('ws-icon-preview-img');
-                  if (iconPreview) {
-                    iconPreview.src = newIconUrl;
-                  } else {
-                    const container = document.getElementById('ws-icon-preview-container');
-                    const defaultText = document.getElementById('ws-icon-preview-text');
-                    if (defaultText) defaultText.style.display = 'none';
-                    
-                    const newImg = document.createElement('img');
-                    newImg.src = newIconUrl;
-                    newImg.id = 'ws-icon-preview-img';
-                    newImg.className = 'w-full h-full object-cover z-0';
-                    container?.insertBefore(newImg, container.firstChild);
-                  }
-                  if (window.showToast) window.showToast('Icon uploaded!');
-                } else {
-                  if (window.showToast) window.showToast('Failed to upload icon', true);
-                }
-              } catch (err) {
-                console.error(err);
-              }
-            }
-          }, 'image/webp', 0.8);
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
+    newIconUrl = r.url;
+    const iconPreview = document.getElementById('ws-icon-preview-img');
+    if (iconPreview) {
+      iconPreview.src = newIconUrl;
+    } else {
+      const container = document.getElementById('ws-icon-preview-container');
+      document.getElementById('ws-icon-preview-text')?.style.setProperty('display', 'none');
+      const newImg = document.createElement('img');
+      newImg.src = newIconUrl;
+      newImg.id = 'ws-icon-preview-img';
+      newImg.className = 'w-full h-full object-cover z-0';
+      newImg.loading = 'lazy';
+      newImg.decoding = 'async';
+      container?.insertBefore(newImg, container.firstChild);
     }
   });
 

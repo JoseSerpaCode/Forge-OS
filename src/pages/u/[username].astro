@@ -243,6 +243,9 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
     <script is:inline define:vars={{
         targetUsername: profile.username,
         friendshipId,
+        // El id de la cuenta que se está mirando, para que la subida sepa a
+        // quién pertenece la imagen.
+        perfilUserId: profile.id,
         errFriend: t('err.friend.not_possible'),
         errGeneric: t('auth.error.generic'),
     }}>
@@ -298,54 +301,21 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
         }
 
         /**
-         * Redimensiona antes de subir.
+         * La subida vive en `lib/client/imagen.ts`.
          *
-         * Esto mandaba el archivo **tal cual**: quien cambiaba su avatar desde
-         * su perfil —en vez de desde /settings, que sí redimensiona— subía la
-         * foto de 4 MB del móvil entera. Luego se sirve a 24×24 píxeles en cada
-         * tarjeta del tablero. Con 1 GB de salida al mes, doscientas cargas de
-         * esa página se llevan la cuota.
-         *
-         * El servidor acepta hasta 10 MB sin procesar nada, así que el recorte
-         * tiene que pasar aquí.
+         * Esta página tenía su propia versión que **no redimensionaba nada**:
+         * mandaba el archivo tal cual, así que cambiar el avatar desde aquí
+         * —en vez de desde Ajustes— subía la foto de cuatro megas del móvil
+         * para servirla a 24×24 píxeles en cada tarjeta del tablero.
          */
-        async function uploadFile(file, maxAncho = 512) {
-            const blob = await redimensionar(file, maxAncho);
-            if (!blob) return null;
-
-            const formData = new FormData();
-            formData.append('file', blob, 'imagen.webp');
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            if (res.ok) {
-                const data = await res.json();
-                return data.url;
-            }
-            return null;
-        }
-
-        function redimensionar(file, maxAncho) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        let { width, height } = img;
-                        if (width > maxAncho) {
-                            height = Math.round(height * (maxAncho / width));
-                            width = maxAncho;
-                        }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
-                        canvas.toBlob((b) => resolve(b), 'image/webp', 0.85);
-                    };
-                    img.onerror = () => resolve(null);
-                    img.src = ev.target?.result;
-                };
-                reader.onerror = () => resolve(null);
-                reader.readAsDataURL(file);
+        async function uploadFile(file, maxAncho) {
+            const r = await window.forgeImagen.subir(file, {
+                maxAncho: maxAncho || window.forgeImagen.ANCHOS.avatar,
+                entidad: { tipo: 'user', id: perfilUserId },
             });
+            if (r.ok) return r.url;
+            window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+            return null;
         }
 
         document.getElementById('avatar-upload')?.addEventListener('change', async (e) => {
@@ -361,7 +331,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
             const file = e.target.files?.[0];
             if (!file) return;
             // El banner ocupa el ancho de la tarjeta de perfil, no 96 píxeles.
-            const url = await uploadFile(file, 1600);
+            const url = await uploadFile(file, window.forgeImagen.ANCHOS.banner);
             if (url && await updateProfile({ banner_url: url })) {
                 let img = document.getElementById('profile-banner-img');
                 if (img) img.src = url;
