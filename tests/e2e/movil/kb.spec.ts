@@ -95,3 +95,42 @@ test('se puede borrar una página sin ratón', async ({ page }) => {
   await expect(borrar).toBeVisible();
   await expect(borrar).toBeInViewport();
 });
+
+test('se puede crear la primera página desde un teléfono', async ({ page }) => {
+  await entrar(page);
+
+  /*
+   * Esta prueba existe por una regresión que metí yo.
+   *
+   * El botón que abre el índice vivía flotando; lo moví a la fila del título
+   * del editor para que dejara de chocar con el contenido — y el índice de la
+   * base de conocimiento **no tiene editor**. Esa pantalla se quedó sin ninguna
+   * forma de abrir el árbol, o sea sin ninguna forma de crear la primera
+   * página en móvil, mientras el texto de la pantalla vacía seguía señalando
+   * un botón que ya no existía.
+   *
+   * Lo que se fija no es dónde está el botón, sino que **desde el índice se
+   * pueda llegar a crear una página**. Así el botón se puede mover otra vez sin
+   * que esto se rompa en silencio.
+   */
+  const db = getTestDb();
+  const yo = db.prepare("SELECT id FROM users WHERE username = 'jose'").get() as any;
+  db.prepare('INSERT OR IGNORE INTO workspaces (id, name, sys_tag, created_by) VALUES (?,?,?,?)')
+    .run(crypto.randomUUID(), 'KB vacía', 'ws-kb-vacia', yo.id);
+  const ws = db.prepare("SELECT id FROM workspaces WHERE sys_tag = 'ws-kb-vacia'").get() as any;
+  db.prepare("INSERT OR IGNORE INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?,?,'owner')")
+    .run(ws.id, yo.id);
+  db.prepare('DELETE FROM pages WHERE workspace_id = ?').run(ws.id);
+
+  await page.goto('/w/ws-kb-vacia/p');
+
+  const abrir = page.locator('#btn-open-tree');
+  await expect(abrir, 'no hay forma de abrir el índice desde la pantalla vacía').toBeVisible();
+
+  await abrir.click();
+  await expect(page.locator('#page-tree-aside')).toBeInViewport();
+
+  // Y dentro está lo que hace falta: crear una página.
+  await expect(page.locator('#page-tree-aside').getByRole('button', { name: /página nueva|new page/i }))
+    .toBeVisible();
+});

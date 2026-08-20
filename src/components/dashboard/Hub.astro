@@ -164,7 +164,7 @@ const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due
               ))}
 
               <!-- Dotted New Workspace Card -->
-              <button type="button" onclick="document.getElementById('new-ws-modal').showModal()" class="flex flex-col items-center justify-center h-full min-h-[140px] border-2 border-dashed border-forge-border/60 hover:border-forge-secondary/50 rounded-xl hover:bg-forge-secondary/5 transition-all text-forge-muted hover:text-forge-accent-text group">
+              <button type="button" onclick="document.getElementById('new-ws-modal').showModal()" class="flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-0 h-full min-h-[64px] sm:min-h-[140px] border-2 border-dashed border-forge-border/60 hover:border-forge-secondary/50 rounded-xl hover:bg-forge-secondary/5 transition-all text-forge-muted hover:text-forge-accent-text group">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2 group-hover:scale-110 transition-transform"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 <span class="font-medium text-sm">{t('hub.banner_create_ws')}</span>
               </button>

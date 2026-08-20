@@ -22,7 +22,7 @@ export const en = {
   'kb.saved': 'Saved',
   'kb.empty_title': 'No pages yet.',
   'kb.empty_desc': 'No pages found in this workspace.',
-  'kb.empty_cta_movil': 'Open the page index with the button at the bottom left and create the first one.',
+  'kb.empty_cta_movil': 'Open the page index with the button above and create the first one.',
   'kb.empty_cta': 'Click "New Page" in the sidebar to create one.',
   'kb.open_tree': 'Open page index',
   'kb.editor_tips': 'Editor tips',
