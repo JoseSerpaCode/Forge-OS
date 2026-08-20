@@ -66,8 +66,27 @@ function formatDate(dateStr: string | undefined) {
       </nav>
     )}
 
+    {/* El índice se abre desde aquí, no desde un botón flotante.
+
+        Flotando chocaba con todo: abajo quedaba fuera del área visible por el
+        `100vh` del armazón, y arriba se comía el título de la página. Dos
+        intentos, dos colisiones — la señal de que el sitio equivocado era
+        «flotando», no «arriba» o «abajo».
+
+        En la fila del título no se superpone a nada, y queda a la izquierda del
+        título igual que el árbol está a la izquierda del texto en escritorio. */}
     <!-- Title & Delete -->
-    <div class="flex items-center justify-between mb-4 group relative">
+    <div class="flex items-center justify-between gap-2 mb-4 group relative">
+      <button
+        type="button"
+        id="btn-open-tree"
+        aria-controls="page-tree-aside"
+        aria-expanded="false"
+        class="md:hidden shrink-0 w-10 h-10 rounded-lg border border-forge-border text-forge-muted hover:text-forge-accent-text flex items-center justify-center"
+        aria-label={t('kb.open_tree')}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
       <input type="text" id="editor-title" aria-label={t('a11y.page_title')} 
         value={initialTitle}
         readonly={!canEdit}

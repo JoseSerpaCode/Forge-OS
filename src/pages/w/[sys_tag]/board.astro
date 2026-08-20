@@ -353,7 +353,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
 
-            <div id="sprint-menu" role="menu" class="hidden absolute left-0 right-auto sm:left-auto sm:right-0 top-full mt-1 min-w-[13rem] max-w-[calc(100vw-2rem)] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1">
+            <div id="sprint-menu" role="menu" class="hidden menu-sprint absolute sm:right-0 top-full mt-1 min-w-[13rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1">
               {/* Crear un sprint también es una acción de sprint, y tampoco es
                   algo de cada día: sacarlo de la barra es lo que hace que
                   «+ Issue» —eso sí es de cada día— deje de caer a otra fila. */}
@@ -957,6 +957,31 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 </MainLayout>
 
 <style>
+  /*
+    En móvil el menú no se ancla al botón, sino a la pantalla.
+
+    El botón vive en una rejilla de dos columnas y en cuál cae depende de
+    cuántos controles haya delante — el filtro de etiquetas solo aparece si el
+    espacio tiene alguna. Anclado a la izquierda del botón se salía por la
+    derecha cuando caía en la columna derecha; anclado a la derecha se salía por
+    la izquierda cuando caía en la izquierda. Se probaron las dos y cada una
+    falla en la mitad de los tableros.
+
+    Fijado a los dos bordes ya no depende de dónde esté el botón. `top: auto`
+    es imprescindible: `top-full` significa «100 % de la altura», que en
+    `absolute` es «justo debajo del botón» y en `fixed` es «el borde de abajo
+    de la pantalla».
+  */
+  @media (max-width: 40rem) {
+    .menu-sprint {
+      position: fixed;
+      left: 1rem;
+      right: 1rem;
+      top: auto;
+      min-width: 0;
+    }
+  }
+
   .sprint-menu-item {
     display: block;
     width: 100%;

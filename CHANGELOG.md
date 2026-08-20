@@ -6,6 +6,15 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.26.1] - 2026-08-20
+
+### Fixed
+
+- **La barra de navegación de móvil no se veía en un teléfono real.** Era el último hijo de una columna de `100vh`, y `100vh` en un navegador móvil **no es la altura visible**: es la que habría con las barras del navegador retraídas. El contenedor era más alto que la pantalla y la barra caía por debajo del corte. En el emulador no pasaba, porque allí el viewport y `innerHeight` coinciden — por eso las pruebas estaban en verde. Ahora la barra va `fixed`, anclada a lo que se ve, y el armazón mide `100dvh`.
+- **Al cerrar el teclado, la página se quedaba corrida hacia un lado**, con el texto cortado por la izquierda. Faltaba `interactive-widget=resizes-content` en la etiqueta `viewport`: sin eso el navegador no encoge la maqueta al abrir el teclado, la deja igual y desplaza el viewport visual por encima.
+- **El menú del sprint se salía de la pantalla.** Se ancló primero a la derecha del botón y luego a la izquierda, y cada versión fallaba en la mitad de los tableros: en qué columna de la rejilla cae el botón depende de si el espacio tiene etiquetas, porque el filtro «Todas las etiquetas» solo se pinta entonces. Ahora se fija a los dos bordes de la pantalla y deja de depender del botón.
+- **El botón que abre el índice de la base de conocimiento pasa a la fila del título.** Flotando chocaba con el contenido las dos veces que se intentó — abajo quedaba fuera del área visible, arriba tapaba el título de la página. Dos colisiones seguidas eran la señal de que el sitio equivocado era «flotando», no «arriba» o «abajo».
+
 ## [1.26.0] - 2026-08-19
 
 ### Added

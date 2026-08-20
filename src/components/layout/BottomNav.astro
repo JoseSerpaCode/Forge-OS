@@ -203,8 +203,31 @@ const pestanas = enEspacio
     atributo del componente, así que suben por encima de las dos y las pestañas
     se apilan como tienen que apilarse.
   */
+  /*
+    Anclada al viewport, no al final del contenedor.
+
+    Era el último hijo de una columna flex de `100vh`, y en un navegador móvil
+    `100vh` **no es la altura visible**: es la que habría con las barras del
+    navegador retraídas. Así que el contenedor era más alto que la pantalla y la
+    barra caía por debajo del corte — en producción, en un teléfono real, no se
+    veía en absoluto. En el emulador sí, porque allí el viewport y `innerHeight`
+    coinciden y el fallo no existe.
+
+    `fixed` la saca de esa dependencia: se pega al borde de lo que se ve, pase
+    lo que pase con la altura del documento o con las barras del navegador
+    apareciendo y desapareciendo.
+
+    El `env(safe-area-inset-bottom)` es para el indicador de inicio de los
+    iPhone sin botón, que si no se come la fila de etiquetas.
+  */
   .nav-movil {
     display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   /*

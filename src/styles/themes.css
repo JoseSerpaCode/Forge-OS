@@ -128,6 +128,17 @@
   dialog {
     margin: auto;
   }
+
+  /* `h-dvh` en el armazón sigue a la altura **visible**, que es lo que cambia
+     cuando el navegador móvil retrae sus barras. `100vh` da la altura con las
+     barras escondidas y deja el final del documento fuera de la pantalla.
+     Esta reserva es para navegadores anteriores a 2022, que no conocen `dvh`
+     y se quedarían sin ninguna altura. */
+  @supports not (height: 100dvh) {
+    body {
+      height: 100vh;
+    }
+  }
 }
 
 

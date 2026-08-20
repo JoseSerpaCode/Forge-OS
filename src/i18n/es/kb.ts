@@ -22,7 +22,7 @@ export const es = {
   'kb.saved': 'Guardado',
   'kb.empty_title': 'Aún no hay páginas.',
   'kb.empty_desc': 'No se encontraron páginas en este workspace.',
-  'kb.empty_cta_movil': 'Ábrelo con el botón del índice, arriba a la izquierda, y crea la primera.',
+  'kb.empty_cta_movil': 'Ábrelo con el botón del índice, abajo a la izquierda, y crea la primera.',
   'kb.empty_cta': 'Haz clic en "Nueva Página" en la barra lateral para crear una.',
   'kb.open_tree': 'Abrir el índice de páginas',
   'kb.editor_tips': 'Ayuda del editor',
