@@ -80,3 +80,41 @@ for (const { nombre, ruta } of pantallas) {
     expect(medidas.documento, `desborda por ${medidas.culpable}`).toBeLessThanOrEqual(medidas.ventana + 1);
   });
 }
+
+test('nada empuja la vista de lado, ni por código', async ({ page }) => {
+  await entrar(page);
+  const wsId = conContenido();
+
+  const db = getTestDb();
+  db.prepare('DELETE FROM pages WHERE workspace_id = ?').run(wsId);
+  const pid = crypto.randomUUID();
+  const yo = db.prepare("SELECT id FROM users WHERE username = 'jose'").get() as any;
+  db.prepare('INSERT INTO pages (id, workspace_id, title, content_json, created_by) VALUES (?,?,?,?,?)')
+    .run(pid, wsId, 'Proyecto 2', JSON.stringify({ blocks: [{ type: 'header', data: { text: 'Integrantes:', level: 1 } }] }), yo.id);
+
+  await page.goto(`/w/${ESPACIO}/p/${pid}`);
+  await page.waitForLoadState('networkidle');
+
+  /*
+   * `overflow: hidden` frena el dedo pero no al código: un `scrollIntoView()`
+   * —y Editor.js hace uno por cada bloque que enfoca— corre el contenedor de
+   * lado igual, y ahí se queda. Se veía como la página entera desplazada, con
+   * el texto cortado por la izquierda y la barra inferior arrastrada con ella.
+   *
+   * Se intenta a la fuerza, que es lo único que reproduce el fallo: mirar el
+   * ancho del documento no basta porque el desbordamiento venía de un elemento
+   * colocado en negativo, no de uno demasiado ancho.
+   */
+  const movido = await page.evaluate(() => {
+    const sitios = [document.documentElement, document.body];
+    for (const el of sitios) {
+      el.scrollLeft = 500;
+      if (el.scrollLeft !== 0) return `${el.tagName.toLowerCase()} se fue a ${el.scrollLeft}`;
+    }
+    return '';
+  });
+  expect(movido, 'la vista se puede empujar de lado').toBe('');
+
+  // Y el menú lateral de escritorio no se queda plantado fuera de la pantalla.
+  await expect(page.locator('#app-sidebar')).toBeHidden();
+});

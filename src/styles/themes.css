@@ -139,6 +139,20 @@
       height: 100vh;
     }
   }
+
+  /* `clip` y no `hidden` en horizontal.
+
+     `overflow: hidden` impide arrastrar con el dedo pero **no** el
+     desplazamiento por código: un `scrollIntoView()` —y Editor.js llama a uno
+     por cada bloque que enfoca— corre el contenedor de lado igual, y ahí se
+     queda. Se veía como la página entera desplazada, con el texto cortado por
+     la izquierda y la barra inferior arrastrada con ella.
+
+     `clip` no admite desplazamiento de ninguna de las dos formas. Solo en
+     horizontal: en vertical hace falta que las cosas se puedan desplazar. */
+  body {
+    overflow-x: clip;
+  }
 }
 
 

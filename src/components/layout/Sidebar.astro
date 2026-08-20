@@ -55,7 +55,14 @@ if (workspaceId && user?.is_sysadmin !== 1) {
 const isOwner = userRole === 'owner' || userRole === 'sysadmin';
 ---
 
-<aside id="app-sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-60 bg-forge-panel border-r border-forge-border flex flex-col h-full shrink-0 transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0">
+{/* Fuera del DOM en móvil, no solo fuera de la pantalla.
+
+    Seguía renderizándose con `-translate-x-full`, o sea 240 px de contenido
+    plantados en `left: -240`. Desde que la barra inferior sustituyó a la
+    hamburguesa ya no hay forma de abrirlo, así que era peso muerto que además
+    ensancha la región desplazable del documento: el navegador deja llevar la
+    vista hasta él, y la página aparece corrida con el texto cortado. */}
+<aside id="app-sidebar" class="hidden md:flex fixed md:static inset-y-0 left-0 z-50 w-60 bg-forge-panel border-r border-forge-border flex-col h-full shrink-0 transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0">
   
   <!-- Logo -->
   <div class="h-14 px-4 border-b border-forge-border flex items-center hover:bg-forge-bg transition-colors shrink-0">
