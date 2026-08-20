@@ -4,6 +4,7 @@ import WorkspaceIcon from '../../components/brand/WorkspaceIcon.astro';
 import db from '../../lib/db';
 import { useTranslations, defaultLang } from '../../i18n/ui';
 import { canInteractSocially, socialBlockReason } from '../../lib/social';
+import { fecha } from '../../lib/fechas';
 
 const { username } = Astro.params;
 const currentUser = Astro.locals.user;
@@ -169,10 +170,13 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
 
                 <!-- User Details -->
                 <div class="mt-4">
-                    <h1 class="text-4xl font-extrabold text-forge-text tracking-tight leading-tight mb-1">@{profile.username}</h1>
+                    {/* `break-all`: un nombre de usuario no tiene espacios por
+                        donde partir, así que a 4xl sobre 360 px se salía de la
+                        tarjeta y quedaba «@JoseSerpaCod» cortado a media letra. */}
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-forge-text tracking-tight leading-tight mb-1 break-all">@{profile.username}</h1>
                     <p class="text-forge-accent-text text-sm font-bold flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        Member since {new Date(profile.created_at).toLocaleDateString()}
+                        {t('profile.member_since')} {fecha(profile.created_at, lang)}
                     </p>
                 </div>
                 
@@ -180,14 +184,14 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                 <div class="mt-6 relative group/bio">
                     <div class="bg-forge-bg/50 border border-forge-border/40 rounded-xl p-5 shadow-inner min-h-[80px]">
                         {isOwnProfile ? (
-                            <textarea id="profile-bio-input" aria-label={t('a11y.bio')} class="w-full bg-transparent text-forge-text resize-y focus:outline-none placeholder:text-forge-muted" placeholder="Write something about yourself...">{profile.bio || ''}</textarea>
+                            <textarea id="profile-bio-input" aria-label={t('a11y.bio')} class="w-full bg-transparent text-forge-text resize-y focus:outline-none placeholder:text-forge-muted" placeholder={t('profile.bio_placeholder') as string}>{profile.bio || ''}</textarea>
                         ) : (
                             <p class="text-forge-text leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
                         )}
                     </div>
                     {isOwnProfile && (
                         <div class="flex justify-end mt-2">
-                            <button id="save-bio-btn" class="px-4 py-1.5 bg-forge-primary text-forge-on-accent text-xs font-bold rounded shadow hover:opacity-90 hidden">Save Bio</button>
+                            <button id="save-bio-btn" data-t-save={t('profile.save_bio')} class="px-4 py-1.5 bg-forge-primary text-forge-on-accent text-xs font-bold rounded shadow hover:opacity-90 hidden">{t('profile.save_bio')}</button>
                         </div>
                     )}
                 </div>
@@ -362,7 +366,7 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                 if (await updateProfile({ bio: bioInput.value })) {
                     saveBioBtn.classList.add('hidden');
                 }
-                saveBioBtn.innerText = 'Save Bio';
+                saveBioBtn.innerText = saveBioBtn.dataset.tSave || 'Save bio';
                 saveBioBtn.disabled = false;
             });
         }

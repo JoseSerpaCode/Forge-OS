@@ -45,7 +45,15 @@ if (targetPageId) {
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
       </div>
       <div class="text-forge-text font-bold text-lg mb-2">{t('kb.empty_desc')}</div>
-      <div class="text-forge-muted text-sm">{t('kb.empty_cta')}</div>
+      {/* Dos textos porque son dos sitios distintos.
+
+          El original mandaba a «Nueva Página» en la barra lateral. En un
+          teléfono no hay barra lateral: el árbol vive en un cajón que se abre
+          con el botón redondo de abajo a la izquierda. Mandar a alguien a un
+          sitio que no existe en su pantalla es peor que no decirle nada, porque
+          se pone a buscarlo. */}
+      <div class="text-forge-muted text-sm md:hidden">{t('kb.empty_cta_movil')}</div>
+      <div class="text-forge-muted text-sm hidden md:block">{t('kb.empty_cta')}</div>
     </div>
   </div>
 </MainLayout>

@@ -90,6 +90,37 @@ const t = useTranslations(lang);
     </span>
   </div>
   
+  {/*
+    Mover un ticket, en móvil.
+
+    El arrastrar y soltar del tablero es HTML5 —`dragstart`, `dragover`,
+    `drop`— y **no dispara con eventos táctiles**. En un teléfono no había forma
+    de mover una tarjeta de columna: ni arrastrando, ni desde el modal, que ni
+    siquiera tiene selector de estado. La función simplemente no existía, y nada
+    lo decía.
+
+    Un desplegable en la tarjeta y no un arrastre táctil imitado: reproducir el
+    arrastre con `touchmove` sobre un carril que además se desplaza en
+    horizontal es pelearse con el gesto de desplazamiento del sistema, y se
+    pierden las dos cosas.
+  */}
+  {canEdit && (
+    <select
+      class="mover-issue sm:hidden w-full mt-1 mb-3 bg-forge-bg border border-forge-border rounded-md px-2 py-1.5 text-xs text-forge-text focus:outline-none focus:border-forge-secondary"
+      data-issue-id={issue.id}
+      aria-label={t('card.move_to')}
+    >
+      {[
+        { v: 'todo', t: t('status.todo') },
+        { v: 'in_progress', t: t('status.in_progress') },
+        { v: 'review', t: t('status.review') },
+        { v: 'done', t: t('status.done') },
+      ].map((o) => (
+        <option value={o.v} selected={issue.status === o.v}>{o.t}</option>
+      ))}
+    </select>
+  )}
+
   {canEdit && issue.status !== 'done' && (
     <div class="mt-3 flex justify-end">
       {issue.active_session_start ? (

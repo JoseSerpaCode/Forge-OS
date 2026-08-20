@@ -52,8 +52,10 @@ function formatDate(dateStr: string | undefined) {
 }
 ---
 
-<div class="flex-1 flex flex-col h-full bg-forge-bg overflow-y-auto">
-  <div class="max-w-3xl mx-auto w-full px-8 py-12 flex flex-col min-h-full">
+<div class="flex-1 min-w-0 flex flex-col h-full bg-forge-bg overflow-y-auto">
+  {/* En móvil el contenido usa el ancho entero: 64 px de padding lateral sobre
+    360 son casi un quinto de la pantalla. */}
+  <div class="max-w-3xl mx-auto w-full px-4 sm:px-8 py-6 sm:py-12 flex flex-col min-h-full">
     
     <!-- Breadcrumbs -->
     {parentTitle && (
@@ -69,10 +71,17 @@ function formatDate(dateStr: string | undefined) {
       <input type="text" id="editor-title" aria-label={t('a11y.page_title')} 
         value={initialTitle}
         readonly={!canEdit}
-        class="text-4xl font-bold bg-transparent text-forge-text focus:outline-none focus:border-b focus:border-forge-secondary border-b border-transparent w-full transition-colors pb-1"
+        class="text-2xl sm:text-4xl font-bold bg-transparent text-forge-text focus:outline-none focus:border-b focus:border-forge-secondary border-b border-transparent w-full transition-colors pb-1"
         placeholder="Untitled" autocomplete="off" />
+      {/*
+        Borrar la página estaba **fuera de la pantalla y solo con el ratón
+        encima**: `-right-12` la sacaba del viewport en móvil, y `opacity-0
+        group-hover` la hacía inalcanzable en táctil, donde no hay hover.
+        Dentro del flujo y siempre visible en móvil; en escritorio se mantiene
+        el comportamiento discreto de aparecer al acercarse.
+      */}
       {canEdit && (
-        <button id="btn-delete-page" class="absolute -right-12 w-8 h-8 rounded flex items-center justify-center text-forge-muted hover:bg-red-500/20 hover:text-forge-error transition-colors opacity-0 group-hover:opacity-100" title={t('kb.delete_page')}>
+        <button id="btn-delete-page" class="shrink-0 sm:absolute sm:-right-12 w-9 h-9 rounded flex items-center justify-center text-forge-muted hover:bg-red-500/20 hover:text-forge-error transition-colors sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100" title={t('kb.delete_page')} aria-label={t('kb.delete_page')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       )}
@@ -93,13 +102,21 @@ function formatDate(dateStr: string | undefined) {
         ) : null}
       </div>
       <div class="ml-auto flex items-center gap-2">
-        <div class="relative group">
-          <button class="text-forge-muted hover:text-forge-primary px-2 py-1.5 rounded-md transition-colors" aria-label="Editor Tips">
+        {/*
+          Los atajos del editor se esconden en móvil.
+
+          El panel se abría solo con el ratón encima —inalcanzable en táctil— y
+          lo que lista son **atajos de teclado**, que en un teléfono no aplican.
+          Hacerlo pulsable sería ofrecer una ayuda que no ayuda; esconderlo deja
+          sitio para lo que sí se usa.
+        */}
+        <div class="relative group hidden md:block">
+          <button class="text-forge-muted hover:text-forge-primary px-2 py-1.5 rounded-md transition-colors" aria-label={t('kb.editor_tips')}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
           </button>
           
           <div class="absolute right-0 top-full mt-2 w-56 bg-forge-panel border border-forge-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-3 text-xs text-forge-text pointer-events-none">
-            <h4 class="font-bold text-forge-primary mb-2 border-b border-forge-border pb-1">Editor Shortcuts</h4>
+            <h4 class="font-bold text-forge-primary mb-2 border-b border-forge-border pb-1">{t('kb.shortcuts')}</h4>
             <ul class="space-y-2 text-forge-muted">
               <li class="flex justify-between items-center"><span>Add Block</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">TAB / +</span></li>
               <li class="flex justify-between items-center"><span>Move Block</span> <span class="text-[10px]">Drag <span class="bg-forge-bg px-1 py-0.5 rounded font-bold border border-forge-border/50">::</span></span></li>
@@ -512,6 +529,35 @@ function formatDate(dateStr: string | undefined) {
 
   .codex-editor__redactor {
     padding-bottom: 100px !important;
+  }
+
+  /**
+   * En móvil, el editor usa el ancho entero.
+   *
+   * Editor.js reserva a la izquierda un carril fijo para su barra de
+   * herramientas —el `+` y el manejador de bloque— pensado para pantallas
+   * anchas. A 393 px eso deja el texto en 25, así que escribir es imposible.
+   *
+   * Por debajo de 768 el carril se quita y la barra se coloca sobre el propio
+   * bloque, que es como funcionan los editores en un teléfono.
+   */
+  @media (max-width: 767px) {
+    .codex-editor--narrow .codex-editor__redactor {
+      margin-right: 0 !important;
+    }
+    .codex-editor__redactor {
+      margin-left: 0 !important;
+      padding-left: 0 !important;
+    }
+    .ce-block__content,
+    .ce-toolbar__content {
+      max-width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+    .ce-toolbar__actions {
+      right: 0 !important;
+    }
   }
   .ce-block--selected .ce-block__content {
     background-color: color-mix(in srgb, var(--forge-accent-primary) 15%, transparent) !important;

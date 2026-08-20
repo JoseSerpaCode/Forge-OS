@@ -43,7 +43,7 @@ if (page.parent_page_id) {
 ---
 
 <MainLayout hideFooter={true} title={`${page.title} | ${t('sidebar.knowledge')}`} workspaceId={ws.id}>
-  <div class="flex h-full overflow-hidden">
+  <div class="flex h-full overflow-hidden min-w-0">
     <PageTree workspaceId={ws.id} sysTag={sys_tag!} currentPageId={page.id} />
     
     <EditorClient 

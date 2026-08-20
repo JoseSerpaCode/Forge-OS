@@ -1,0 +1,38 @@
+---
+/**
+ * El valor de una celda, pintado según el tipo de su columna.
+ *
+ * Existe porque la misma celda se pinta ahora en dos sitios: la tabla de
+ * escritorio y la ficha de móvil. Las tres reglas que lleva dentro —un archivo
+ * que ya no resuelve no se enseña como un id crudo, una selección va en
+ * insignia, un vacío va en cursiva y no en blanco— se escribieron una vez para
+ * la tabla, y copiarlas a la ficha era garantizar que la próxima corrección
+ * llegara solo a una de las dos.
+ */
+interface Props {
+  tipo: string;
+  valor: any;
+  /** Los archivos del espacio, por id. Resolver aquí evita una consulta por celda. */
+  archivos: Map<string, { name: string; webViewLink?: string | null }>;
+}
+const { tipo, valor, archivos } = Astro.props;
+
+import { useTranslations } from '../../i18n/ui';
+const t = useTranslations(Astro.locals.lang || 'en');
+
+const archivo = tipo === 'file' && valor ? archivos.get(valor) : null;
+const vacio = valor === null || valor === undefined || valor === '';
+---
+{tipo === 'file' ? (
+  !archivo ? (
+    <span class="text-forge-muted italic">{t('db.no_file')}</span>
+  ) : archivo.webViewLink ? (
+    <a href={archivo.webViewLink} target="_blank" rel="noopener noreferrer" class="text-forge-accent-text hover:underline">{archivo.name}</a>
+  ) : (
+    <span>{archivo.name}</span>
+  )
+) : tipo === 'select' && !vacio ? (
+  <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-forge-secondary/10 text-forge-accent-text border border-forge-secondary/20">{valor}</span>
+) : (
+  <span class={vacio ? 'text-forge-muted italic' : ''}>{vacio ? t('db.empty_cell') : valor}</span>
+)}

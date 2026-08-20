@@ -2,6 +2,8 @@
 interface Props {
   title: string;
   status: string;
+  /** La que se ve en móvil. Las demás se esconden por debajo de `sm`. */
+  activaEnMovil?: boolean;
   /** Cuántos hay de verdad en esta columna, contados en la base. */
   total?: number;
   /** Cuántos se han pintado. Si es menor que `total`, se avisa. */
@@ -10,7 +12,7 @@ interface Props {
 
 import { useTranslations } from '../../i18n/ui';
 
-const { title, status, total, shown } = Astro.props;
+const { title, status, total, shown, activaEnMovil = false } = Astro.props;
 const t = useTranslations(Astro.locals.lang || 'en');
 
 // El contador del encabezado lo pisa el JavaScript al arrastrar tarjetas, pero
@@ -19,7 +21,22 @@ const t = useTranslations(Astro.locals.lang || 'en');
 const headerCount = typeof total === 'number' ? total : 0;
 const truncated = typeof total === 'number' && typeof shown === 'number' && total > shown;
 ---
-<div class="board-column flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden min-w-[320px] shadow-sm relative group/boardcol" data-status={status} data-total={headerCount} data-shown={shown ?? 0}>
+{/*
+  En móvil se ve una columna, no cuatro.
+
+  Eran cuatro `min-w-[320px]`: 1328 px de carril en los 393 que hay, sin anclaje
+  ni indicador. Se desplazaba a ciegas y siempre se acababa entre dos columnas,
+  viendo media de cada una.
+
+  El paso intermedio fue `w-[85vw]` con anclaje, que arregla el desplazamiento
+  pero no el modelo: seguían siendo cuatro columnas de escritorio puestas en
+  fila. Ahora se enseña **la columna elegida a ancho completo** y el conmutador
+  de arriba dice cuáles son las otras y cuánto hay en cada una — que es la
+  información que el carril escondía.
+
+  En `sm` y por encima no cambia nada: las cuatro columnas, como siempre.
+*/}
+<div class:list={["board-column shrink-0 max-sm:w-full sm:w-auto sm:shrink sm:flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden sm:min-w-[320px] shadow-sm relative group/boardcol", !activaEnMovil && "max-sm:hidden"]} data-status={status} data-total={headerCount} data-shown={shown ?? 0}>
   <!-- Subtle top accent line for column -->
   <div class="h-1 w-full bg-gradient-to-r from-forge-secondary/10 via-forge-secondary/40 to-forge-secondary/10 opacity-0 group-hover/boardcol:opacity-100 transition-opacity"></div>
   <div class="bg-forge-panel/70 backdrop-blur-sm max-md:backdrop-blur-none border-b border-forge-border/40 p-4 font-bold text-[13px] tracking-wide text-forge-text uppercase flex items-center justify-between">

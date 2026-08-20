@@ -30,7 +30,10 @@ const version = pkg.version;
       </div>
       
       <!-- Link columns -->
-      <div class="grid grid-cols-3 gap-12 lg:gap-20 w-full lg:w-auto">
+      {/* Tres columnas sobre 360 px dejan 90 px por columna: «OPEN SOURCE» se parte
+    en dos líneas y cada enlace debajo también. Dos columnas en móvil y tres a
+    partir de `sm`. */}
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-8 sm:gap-12 lg:gap-20 w-full lg:w-auto">
         <div>
           <h3 class="font-semibold text-forge-text mb-5 text-xs uppercase tracking-wider">{t('footer.opensource')}</h3>
           <ul class="space-y-3">

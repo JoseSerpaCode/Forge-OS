@@ -1,0 +1,333 @@
+---
+/**
+ * La navegación de móvil.
+ *
+ * Hasta ahora un teléfono navegaba con el mismo menú lateral del escritorio,
+ * metido en un cajón detrás de una hamburguesa arriba a la izquierda: la
+ * esquina más lejos del pulgar de toda la pantalla. Cada salto entre el tablero
+ * y las páginas costaba abrir el cajón, buscar en una lista de once entradas y
+ * cerrarlo.
+ *
+ * Aquí abajo van las tres a las que de verdad se salta —el panel, el tablero y
+ * las páginas— y una cuarta que abre el resto. El cajón lateral sigue existiendo
+ * y sigue siendo el único menú a partir de `md`; esto solo lo sustituye por
+ * debajo, que es donde no servía.
+ *
+ * Las mismas consultas que el cajón, y por eso salen de `lib/consultas`: dos
+ * componentes preguntando lo mismo con dos SQL distintos es cómo se acaba
+ * enseñando un rol en un sitio y otro en el otro.
+ */
+interface Props {
+  workspaceId?: string;
+  workspaceName?: string;
+}
+const { workspaceId } = Astro.props;
+
+import { useTranslations } from '../../i18n/ui';
+import { solicitudesPendientes, rolEnEspacio, sysTagDeEspacio } from '../../lib/consultas';
+
+const user = Astro.locals.user!;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+let sysTag = Astro.params.sys_tag;
+if (!sysTag && user?.last_workspace_id) {
+  sysTag = sysTagDeEspacio(user.last_workspace_id) ?? sysTag;
+}
+
+const ruta = Astro.url.pathname;
+const pendientes = solicitudesPendientes(user?.id ?? '', !!user?.is_guest);
+
+let rol = user?.is_sysadmin === 1 ? 'sysadmin' : 'viewer';
+if (workspaceId && user?.is_sysadmin !== 1) {
+  rol = rolEnEspacio(workspaceId, user?.id ?? '') ?? rol;
+}
+const esPropietario = rol === 'owner' || rol === 'sysadmin';
+
+/**
+ * Fuera de un espacio la barra no se esconde: cambia de destinos.
+ *
+ * Una barra que aparece y desaparece según la página obliga a mirar antes de
+ * tocar, y con eso ya ha perdido lo que la hace útil. En el hub, la actividad o
+ * el perfil las tres primeras pestañas son las globales.
+ */
+const enEspacio = Boolean(sysTag);
+
+/*
+ * Etiquetas propias, no las del menú lateral.
+ *
+ * Se reusaban `sidebar.dashboard`, `sidebar.kanban` y `sidebar.knowledge`, que
+ * en español son «Panel Principal», «Tablero Kanban» y «Base de Conocimiento».
+ * En una barra de cuatro huecos sobre 360 px eso son 90 px por etiqueta: las
+ * tres se desbordaban y se pisaban entre sí. En el lateral caben porque hay una
+ * columna entera; aquí no, y una etiqueta que invade la de al lado es peor que
+ * una corta.
+ */
+const pestanas = enEspacio
+  ? [
+      { href: `/w/${sysTag}`, etiqueta: t('nav.panel'), icono: 'panel',
+        activa: ruta === `/w/${sysTag}` || ruta === `/w/${sysTag}/` },
+      { href: `/w/${sysTag}/board`, etiqueta: t('nav.board'), icono: 'tablero',
+        activa: ruta.includes('/board') || ruta.includes('/backlog') },
+      { href: `/w/${sysTag}/p`, etiqueta: t('nav.pages'), icono: 'paginas',
+        activa: ruta.endsWith('/p') || ruta.includes('/p/') },
+    ]
+  : [
+      { href: '/', etiqueta: t('nav.hub'), icono: 'panel', activa: ruta === '/' },
+      { href: '/activity', etiqueta: t('sidebar.activity'), icono: 'tablero',
+        activa: ruta.startsWith('/activity') },
+      { href: '/people', etiqueta: t('friends.title'), icono: 'paginas',
+        activa: ruta.startsWith('/people') },
+    ];
+---
+
+<nav class="nav-movil shrink-0 bg-forge-panel border-t border-forge-border" aria-label={t('a11y.primary_nav')}>
+  {pestanas.map((p) => (
+    <a
+      href={p.href}
+      class:list={['tab-movil', p.activa ? 'text-forge-accent-text' : 'text-forge-muted']}
+      aria-current={p.activa ? 'page' : undefined}
+    >
+      {p.icono === 'panel' && (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
+      )}
+      {p.icono === 'tablero' && (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"></rect><rect x="9.5" y="4" width="5" height="11" rx="1.5"></rect><rect x="16" y="4" width="5" height="14" rx="1.5"></rect></svg>
+      )}
+      {p.icono === 'paginas' && (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg>
+      )}
+      <span class:list={['tab-texto', p.activa && 'font-semibold']}>{p.etiqueta}</span>
+    </a>
+  ))}
+
+  <button type="button" id="btn-nav-mas" class="tab-movil text-forge-muted relative" aria-haspopup="dialog" aria-expanded="false">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>
+    <span class="tab-texto">{t('nav.more')}</span>
+    {pendientes > 0 && (
+      <span class="absolute top-1.5 right-1/4 min-w-[16px] h-4 px-1 rounded-full bg-forge-primary text-forge-on-accent text-[11px] font-black flex items-center justify-center" aria-hidden="true">{pendientes > 9 ? '9+' : pendientes}</span>
+    )}
+  </button>
+</nav>
+
+<dialog id="nav-mas" class="hoja-mas bg-forge-panel text-forge-text border-t border-forge-border rounded-t-2xl p-0 backdrop:bg-black/60" aria-label={t('nav.more')}>
+  <div class="flex flex-col pb-4">
+    <div class="w-10 h-1 rounded-full bg-forge-border mx-auto my-3 shrink-0"></div>
+
+    {enEspacio && (
+      <>
+        <p class="px-4 pb-2 text-xs font-bold uppercase tracking-widest text-forge-muted">{t('nav.this_space')}</p>
+        <a href={`/w/${sysTag}/db`} class="fila-hoja">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="3"></ellipse><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path></svg>
+          <span class="flex-1">{t('sidebar.databases')}</span>
+        </a>
+        <a href={`/w/${sysTag}/files`} class="fila-hoja">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2-2h3.6l2 2H18a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path></svg>
+          <span class="flex-1">{t('drive.sidebar')}</span>
+        </a>
+        <a href={`/w/${sysTag}/metrics`} class="fila-hoja">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M21 19H3"></path></svg>
+          <span class="flex-1">{t('sidebar.metrics')}</span>
+        </a>
+        {esPropietario && (
+          <a href={`/w/${sysTag}/settings`} class="fila-hoja">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.55.63.95 1.21 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span class="flex-1">{t('sidebar.settings')}</span>
+          </a>
+        )}
+        <div class="h-px bg-forge-border mx-4 my-2"></div>
+      </>
+    )}
+
+    <a href="/" class="fila-hoja">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+      <span class="flex-1">{t('sidebar.switch_ws')}</span>
+    </a>
+
+    {user?.is_guest === 1 ? (
+      <a href="/register" class="fila-hoja text-forge-accent-text font-semibold">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="m10 17 5-5-5-5"></path><path d="M15 12H3"></path></svg>
+        <span class="flex-1">{t('user.menu.register')}</span>
+      </a>
+    ) : (
+      <>
+        <a href={`/u/${user?.username}`} class="fila-hoja">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          <span class="flex-1">{t('user.menu.profile')}</span>
+        </a>
+        <a href="/people" class="fila-hoja">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span class="flex-1">{t('friends.title')}</span>
+          {pendientes > 0 && (
+            <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-xs font-black flex items-center justify-center">{pendientes > 9 ? '9+' : pendientes}</span>
+          )}
+        </a>
+      </>
+    )}
+
+    <a href="/settings" class="fila-hoja">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M5.6 5.6l2.1 2.1"></path><path d="M16.3 16.3l2.1 2.1"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="M5.6 18.4l2.1-2.1"></path><path d="M16.3 7.7l2.1-2.1"></path><circle cx="12" cy="12" r="3.5"></circle></svg>
+      <span class="flex-1">{t('user.menu.account')}</span>
+    </a>
+
+    <button type="button" id="btn-acerca-movil" class="fila-hoja w-full text-left">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+      <span class="flex-1">{t('nav.about')}</span>
+    </button>
+
+    <div class="flex gap-2 px-4 pt-3">
+      <button type="button" id="btn-tema-movil" class="flex-1 h-11 flex items-center justify-center gap-2 bg-forge-bg border border-forge-border rounded-lg text-sm font-semibold text-forge-text" aria-label={t('a11y.toggle_theme')}>
+        <svg id="tema-movil-claro" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"></path></svg>
+        <svg id="tema-movil-oscuro" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        {/* Etiqueta corta y la frase entera en `aria-label`: «Cambiar entre
+            claro y oscuro» partía el botón en dos líneas y estiraba la fila. */}
+        {t('nav.theme')}
+      </button>
+      <form method="post" action="/api/lang" class="flex-1">
+        <input type="hidden" name="current_path" value={ruta} />
+        <button type="submit" name="lang" value={lang === 'en' ? 'es' : 'en'} class="w-full h-11 flex items-center justify-center bg-forge-bg border border-forge-border rounded-lg text-sm font-semibold text-forge-text">
+          {lang === 'en' ? 'Español' : 'English'}
+        </button>
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  /*
+    El display va aquí y no en una clase de Tailwind a propósito.
+
+    `themes.css` fuerza por debajo de 48rem `a, button { display: inline-flex;
+    align-items: center }` para garantizar el área táctil, y esa regla gana a
+    `.flex` por especificidad. Los estilos con ámbito de Astro llevan el
+    atributo del componente, así que suben por encima de las dos y las pestañas
+    se apilan como tienen que apilarse.
+  */
+  .nav-movil {
+    display: flex;
+  }
+
+  /*
+    El corte va aquí y no en `md:hidden` por lo mismo: el estilo con ámbito gana
+    a la utilidad, así que la barra se quedaba puesta también en escritorio,
+    debajo del pie. Lo cazó la prueba de escritorio; las de móvil seguían en
+    verde, porque allí tiene que estar. Poner las dos reglas en el mismo sitio
+    es lo que evita que se vuelvan a contradecir.
+  */
+  @media (min-width: 48rem) {
+    .nav-movil {
+      display: none;
+    }
+  }
+
+  .tab-movil {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex: 1 1 0%;
+    min-height: 3.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .tab-texto {
+    font-size: 0.75rem;
+    line-height: 1;
+    /* Cinturón: si una traducción se pasa de largo, se recorta en vez de
+       invadir la pestaña de al lado. */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 2px;
+  }
+
+  .fila-hoja {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    min-height: 3.25rem;
+    padding: 0 1rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .fila-hoja:active {
+    background: var(--forge-bg);
+  }
+
+  /*
+    La hoja se ancla abajo. `dialog` viene con `margin: auto` de la base, que la
+    centraría en vertical: sería un cuadro flotando en medio, no algo que sale
+    del borde por el que ha entrado el dedo.
+  */
+  .hoja-mas {
+    margin: auto auto 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+</style>
+
+<script>
+  import { alternarTema, temaActual } from '../../lib/client/tema';
+
+  const hoja = document.getElementById('nav-mas') as HTMLDialogElement | null;
+  const abrir = document.getElementById('btn-nav-mas');
+
+  if (hoja && abrir) {
+    abrir.addEventListener('click', () => {
+      hoja.showModal();
+      abrir.setAttribute('aria-expanded', 'true');
+    });
+
+    // `close` y no el `click` de cerrar: la hoja también se cierra con Escape y
+    // tocando fuera, y el estado del botón tiene que reflejar las tres.
+    hoja.addEventListener('close', () => abrir.setAttribute('aria-expanded', 'false'));
+
+    // Tocar el fondo cierra. `<dialog>` no lo trae: el clic llega al propio
+    // diálogo porque el `::backdrop` no es un elemento aparte.
+    hoja.addEventListener('click', (e) => {
+      if (e.target === hoja) hoja.close();
+    });
+  }
+
+  /*
+   * «Acerca de» reutiliza el modal de la barra superior en vez de duplicarlo.
+   *
+   * Su botón lleva `hidden sm:block`, así que en móvil no se ve —y ahora que
+   * `.hidden` vuelve a funcionar, de verdad no se ve—. Pero el elemento sigue
+   * en el DOM con su manejador puesto, y un `click()` programático dispara
+   * igual: es un modal menos que mantener por duplicado.
+   */
+  const btnAcerca = document.getElementById('btn-acerca-movil');
+  btnAcerca?.addEventListener('click', () => {
+    hoja?.close();
+    (document.getElementById('btn-show-docs') as HTMLButtonElement | null)?.click();
+  });
+
+  const btnTema = document.getElementById('btn-tema-movil');
+  const iconoClaro = document.getElementById('tema-movil-claro');
+  const iconoOscuro = document.getElementById('tema-movil-oscuro');
+
+  if (btnTema) {
+    const pintarIcono = () => {
+      const claro = temaActual() === 'light';
+      iconoOscuro?.classList.toggle('hidden', !claro);
+      iconoClaro?.classList.toggle('hidden', claro);
+    };
+    pintarIcono();
+    btnTema.addEventListener('click', () => {
+      alternarTema();
+      pintarIcono();
+    });
+  }
+</script>

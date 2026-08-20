@@ -189,6 +189,51 @@
       line-height: 1.45;
     }
 
+    /* ── Lo que solo aparece al pasar el ratón, en un móvil no existe ────────
+     *
+     * En táctil no hay hover. Diecinueve controles del producto se pintaban con
+     * `opacity-0 group-hover:opacity-100` —o `invisible`, o `hidden`— y entre
+     * ellos estaban **borrar una página**, **borrar una fila** de una base
+     * dinámica, cambiar el avatar, cambiar el banner y las acciones del árbol de
+     * páginas. No eran incómodos de usar: no se podían usar.
+     *
+     * Se arregla aquí y no en cada componente por dos motivos. Uno, son
+     * diecinueve sitios y arreglarlos de uno en uno deja fuera el siguiente que
+     * alguien escriba. Dos, el patrón es correcto en escritorio —una interfaz
+     * que no enseña todos los botones a la vez se lee mejor— y lo que falla es
+     * solo el medio.
+     *
+     * El `:hover` de escritorio se conserva intacto: esta regla vive dentro de
+     * la consulta de ancho máximo. */
+    /* `:not(.pointer-events-none)` separa las dos cosas que usan este patrón.
+       Un **control** que aparece al pasar el ratón tiene que poder pulsarse, así
+       que recibe el puntero. Un **tooltip** explica el control de al lado y
+       nunca lo recibe, justo para no robarle el clic.
+
+       Sin la exclusión, esta regla dejaba los tooltips pegados en pantalla de
+       forma permanente: en el tablero, el cartel «New Issue C» flotaba encima
+       del conmutador de estado tapando dos columnas. Y en un teléfono un
+       tooltip no explica nada — no hay ratón que acercar. */
+    .group:hover .group-hover\:opacity-100,
+    .opacity-0.group-hover\:opacity-100:not(.pointer-events-none),
+    [class*="group-hover:opacity-100"]:not(.pointer-events-none) {
+      opacity: 1 !important;
+    }
+    [class*="group-hover:visible"] {
+      visibility: visible !important;
+    }
+    /* `hidden group-hover:flex` y sus variantes: el elemento ni siquiera está
+     * en el flujo hasta que llega un ratón que no va a llegar. */
+    .hidden[class*="group-hover\:flex"] {
+      display: flex !important;
+    }
+    .hidden[class*="group-hover\:block"] {
+      display: block !important;
+    }
+    .hidden[class*="group-hover\:inline"] {
+      display: inline !important;
+    }
+
     /* Área táctil.
 
        WCAG 2.5.8 pide 24×24 CSS px como mínimo, y las guías de Apple y Google
@@ -197,9 +242,33 @@
 
        No se aplica a los `input` ocultos de los interruptores (`.sr-only`),
        cuyo objetivo real es la etiqueta hermana. */
+    /* El área táctil se garantiza sin pisar el `display` que el elemento ya
+       tenga elegido. Esto es lo que costó dos rondas de fallos:
+
+       `a, button { display: inline-flex }` tiene especificidad 0,1,1 y vive en
+       esta capa, después de las utilidades de Tailwind, así que ganaba a
+       cualquier utilidad de display, que es 0,1,0. Dos consecuencias, las dos
+       invisibles hasta que se mira un teléfono:
+
+       1. **`.hidden` dejaba de esconder.** En la barra superior salían los
+          cinco controles con `hidden sm:block` —información, tema, idioma,
+          registro—, justo los que se esconden por no caber.
+       2. **Las tarjetas que son enlaces se volvían filas.** Un `<a class="block">`
+          con una etiqueta encima y una cifra debajo pasaba a `inline-flex` con
+          `align-items: center`, y los dos hijos se ponían uno al lado del otro:
+          en el panel salía «ISSUES PENDIENTES 1» pegado, en vez del contador
+          grande debajo de su rótulo.
+
+       El `min-height` va a todos —no rompe nada— y el `display` solo a los que
+       no traen uno puesto, que son exactamente los enlaces de texto en línea
+       para los que se escribió la regla. */
     a:not(.sr-only),
     button:not(.sr-only) {
       min-height: 2.75rem;
+    }
+
+    a:not(.sr-only):not(.hidden):not(.block):not(.inline):not(.inline-block):not(.flex):not(.inline-flex):not(.grid):not(.inline-grid):not(.contents):not(.table):not(.flow-root):not(.list-item),
+    button:not(.sr-only):not(.hidden):not(.block):not(.inline):not(.inline-block):not(.flex):not(.inline-flex):not(.grid):not(.inline-grid):not(.contents):not(.table):not(.flow-root):not(.list-item) {
       display: inline-flex;
       align-items: center;
     }
@@ -233,8 +302,8 @@
        `:has(> svg:only-child)` los distingue con exactitud, sin ensanchar los
        enlaces de texto que van dentro de un párrafo. Donde no esté soportado no
        pasa nada: se queda como estaba. */
-    a:has(> svg:only-child),
-    button:has(> svg:only-child) {
+    a:has(> svg:only-child):not(.hidden),
+    button:has(> svg:only-child):not(.hidden) {
       min-width: 2.75rem;
       justify-content: center;
     }

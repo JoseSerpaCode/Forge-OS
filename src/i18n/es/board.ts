@@ -92,4 +92,6 @@ export const es = {
   'board.delete_sprint': 'Borrar sprint',
   'sprint.err_delete': 'No se ha podido borrar el sprint.',
   'board.sprint_actions': 'Sprint',
+  'board.status_filter': 'Filtrar por estado',
+  'card.move_to': 'Mover a',
 } as const;

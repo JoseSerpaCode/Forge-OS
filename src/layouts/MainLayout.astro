@@ -2,6 +2,7 @@
 import '../styles/themes.css';
 import TopBar from '../components/layout/TopBar.astro';
 import Sidebar from '../components/layout/Sidebar.astro';
+import BottomNav from '../components/layout/BottomNav.astro';
 import Footer from '../components/layout/Footer.astro';
 import GuestBanner from '../components/layout/GuestBanner.astro';
 import { useTranslations } from '../i18n/ui';
@@ -90,20 +91,57 @@ Astro.response.headers.set('Pragma', 'no-cache');
       }
     </script>
     {/*
-      Socket.IO sirve las dos variantes; la sin minificar pesa 37 KB frente a
-      los ~19 KB de esta. Medido con Lighthouse: 18 KB y 150 ms de ahorro,
-      el único punto que penalizaba el rendimiento del Hub.
+      Socket.IO se carga **cuando la pestaña está a la vista**, no al abrirla.
+
+      Se cargaba en todas las páginas con sesión y abría su conexión de
+      inmediato. Eso cuesta en los dos extremos: en la `e2-micro` cada conexión
+      abierta es memoria del proceso que no se recupera hasta que la pestaña se
+      cierra, y en un móvil una conexión persistente mantiene la radio
+      despierta, que es de las cosas que más batería gastan.
+
+      Lo único que hace es recibir notificaciones. Retrasarlo al primer momento
+      de inactividad no pierde ninguna —el servidor las guarda y la campana las
+      lee al abrirse— y quita 19 KB y una conexión del camino crítico de cada
+      carga.
+
+      Con la pestaña en segundo plano no se conecta en absoluto: abrir diez
+      pestañas para leer algo no debería costar diez conexiones.
+
+      La variante minificada pesa 19 KB frente a los 37 de la normal. Medido con
+      Lighthouse en su día: 18 KB y 150 ms.
     */}
-    <script src="/socket.io/socket.io.min.js" is:inline></script>
     <script is:inline>
-      window.socket = io();
-      window.socket.on('user_notification', (data) => {
-        if (window.showToast) {
-          window.showToast(data.title + ': ' + data.message);
+      (function () {
+        var iniciado = false;
+
+        function conectar() {
+          if (iniciado || document.visibilityState !== 'visible') return;
+          iniciado = true;
+
+          var s = document.createElement('script');
+          s.src = '/socket.io/socket.io.min.js';
+          s.onload = function () {
+            window.socket = io();
+            window.socket.on('user_notification', function (data) {
+              if (window.showToast) window.showToast(data.title + ': ' + data.message);
+              // La campana escucha este evento para pintarlas sin recargar.
+              window.dispatchEvent(new CustomEvent('forge_new_notif', { detail: data }));
+            });
+          };
+          document.head.appendChild(s);
         }
-        // Emit custom event so TopBar can catch it
-        window.dispatchEvent(new CustomEvent('forge_new_notif', { detail: data }));
-      });
+
+        // `requestIdleCallback` espera a que el navegador no tenga nada mejor
+        // que hacer. Safari no lo tiene, de ahí el respaldo por temporizador.
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(conectar, { timeout: 4000 });
+        } else {
+          setTimeout(conectar, 2500);
+        }
+
+        // Si la pestaña nace en segundo plano, se conecta al traerla delante.
+        document.addEventListener('visibilitychange', conectar);
+      })();
     </script>
   </head>
   <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-screen overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin}>
@@ -112,12 +150,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
     <div class="flex-1 flex flex-col min-w-0">
       <TopBar title={title} workspaceName={workspaceName} />
       <main class="flex-1 overflow-auto flex flex-col relative min-h-0">
-        <div class="max-w-[1440px] w-full mx-auto px-6 py-6 flex-1 shrink-0">
+        <div class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1 shrink-0">
           <GuestBanner />
           <slot />
         </div>
         {!hideFooter && <Footer />}
       </main>
+      <BottomNav workspaceId={workspaceId} workspaceName={workspaceName} />
     </div>
     
     <!-- Global UI Components -->
@@ -359,6 +398,17 @@ Astro.response.headers.set('Pragma', 'no-cache');
        * Va contra `/api/sys/state`, la misma que la barra: una búsqueda con dos
        * implementaciones acaba dando resultados distintos en cada sitio.
        */
+      // El botón de buscar de la barra, en móvil, abre esta misma paleta: es
+      // la única forma de buscar por debajo de 768, donde la búsqueda de la
+      // barra se esconde y el atajo de teclado no existe.
+      document.getElementById('btn-search-mobile')?.addEventListener('click', function () {
+        var p = document.getElementById('cmd-k-palette');
+        if (p && !p.hasAttribute('open')) {
+          p.showModal();
+          document.getElementById('cmd-k-input').focus();
+        }
+      });
+
       (function () {
         var input = document.getElementById('cmd-k-input');
         var hits = document.getElementById('cmd-k-hits');
@@ -411,6 +461,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
                 // Una consulta lenta de «inf» puede llegar después de la de
                 // «informe» y pintar sus resultados encima de los buenos.
                 if (mia !== ultima) return;
+                // Y una consulta cualquiera puede llegar después de **cerrar**
+                // la paleta: `pinta` volvía a mostrar los resultados y a
+                // esconder las acciones rápidas sobre un diálogo ya cerrado, así
+                // que al reabrirlo aparecía la búsqueda anterior a medias. En
+                // pantalla dura un instante y no da ningún error; se veía como
+                // una prueba que fallaba una de cada ocho corridas.
+                if (!palette.open) return;
                 if (!datos.length) { pinta(aviso(hits.dataset.tNone || ''), true); return; }
 
                 var html = datos.map(function (item) {
@@ -447,6 +504,11 @@ Astro.response.headers.set('Pragma', 'no-cache');
         // Al cerrarla se limpia: reabrirla con la búsqueda de hace dos horas
         // dentro es confuso.
         palette.addEventListener('close', function () {
+          // Se cancela lo que estuviera en vuelo antes de limpiar: el temporizador
+          // pendiente y, subiendo el contador, cualquier respuesta que aún venga
+          // de camino.
+          clearTimeout(espera);
+          ultima++;
           input.value = '';
           pinta('', false);
           /**

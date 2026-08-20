@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.26.0] - 2026-08-19
+
+### Added
+
+- **Rediseño móvil del espacio de trabajo, fase 4 del plan.** Móvil deja de ser el escritorio encogido: barra inferior de cuatro pestañas (Panel, Tablero, Páginas, Más) que sustituye a la hamburguesa, con una hoja para lo que no cabe.
+- **Tablero en móvil.** Una columna a ancho completo con un conmutador de estado, en vez de cuatro columnas de 320px en 360 de pantalla. Mover un ticket se hace desde un desplegable en la tarjeta, porque el arrastre HTML5 del tablero no dispara con eventos táctiles.
+- **Modal de ticket en móvil.** Los cuatro pares de campos se apilan en vez de partirse en columnas de 150px, y la cabecera se envuelve en vez de abrir un desplazamiento horizontal.
+- **Tabla dinámica en móvil.** Cada fila pasa a ficha, con el campo principal de título y el resto plegado tras «N campos más».
+
+### Fixed
+
+- **La regla que garantiza el área táctil resucitaba `.hidden`.** `a, button { display: inline-flex }` en `themes.css` ganaba a las utilidades de Tailwind por especificidad, así que por debajo de 768px `.hidden` dejaba de esconder nada: en el móvil aparecían los controles de información, tema, idioma y registro que el código manda ocultar por no caber. La misma regla forzaba `display` sobre enlaces que ya traían el suyo, y las tarjetas del panel que son enlaces —rótulo arriba, cifra debajo— se volvían filas.
+- **Varios `z-50` puestos para ganar a un tooltip también ganaban al panel de notificaciones y al cajón lateral.** El botón «+ Nuevo ticket» se pintaba encima del panel de avisos abierto, y el botón que abre el árbol de páginas quedaba por delante de su propio cajón.
+- **El modal «Acerca de» estaba a 650px fijos**, se salía de una pantalla de 360, ofrecía una pestaña de atajos de teclado a quien no tiene teclado, y tres de sus cadenas seguían en inglés dentro de una interfaz en español.
+- **Un intermitente real en la paleta de comandos**: una búsqueda que llegaba después de cerrar el diálogo lo repintaba con la consulta anterior. Fallaba una de cada ocho corridas de la suite completa; con la protección puesta, cinco corridas seguidas en verde.
+- El menú del sprint se desplegaba fuera de la pantalla al anclarse a un botón que ahora vive en la columna izquierda de una rejilla en móvil.
+- El tablero vacío ofrecía «Presiona [C] para crear una nueva tarea» en un teléfono sin teclado.
+- «1 campos más», «Ajustes del Workspace» junto a «Espacio» en otra pantalla, y «Knowledge Base» sin traducir dentro del modal «Acerca de».
+
 ## [1.25.0] - 2026-08-17
 
 ### Fixed

@@ -102,31 +102,46 @@ test('los diálogos tampoco se salen de la pantalla', async ({ page }) => {
 });
 
 test.describe('la navegación funciona sin ratón ni teclado', () => {
-  test('el menú lateral se abre y se cierra', async ({ page }) => {
+  test('se llega a las secciones desde la barra inferior', async ({ page }) => {
+    /**
+     * Antes esto comprobaba el cajón lateral, que era el único menú de móvil.
+     * Ya no lo es: la navegación bajó al pulgar en cuatro pestañas y la
+     * hamburguesa se retiró, porque tener los dos menús a la vez obliga a
+     * aprenderse dos mapas de la misma aplicación.
+     *
+     * Se mantiene lo que la prueba siempre quiso decir —«se puede llegar a las
+     * secciones sin ratón ni teclado»— comprobándolo sobre el menú que hay.
+     */
     await entrar(page);
-    // En móvil la barra lateral es un cajón: sin el botón no hay forma de
-    // llegar a ninguna sección.
-    const boton = page.locator('#sidebar-toggle');
-    await expect(boton).toBeVisible();
 
-    const barra = page.locator('aside').first();
-    await boton.tap();
+    const barra = page.locator('nav.nav-movil');
     await expect(barra).toBeInViewport();
+    await expect(page.locator('#sidebar-toggle')).toBeHidden();
+
+    const pestanas = barra.locator('.tab-movil');
+    await expect(pestanas).toHaveCount(4);
+    for (const p of await pestanas.all()) {
+      await expect(p).toBeInViewport();
+    }
   });
 
   test('se puede buscar sin teclado', async ({ page }) => {
     /**
-     * Hueco conocido, pendiente del rediseño móvil.
+     * Esto llevaba un `test.fail()` desde que se creó el proyecto de móvil: por
+     * debajo de 768 la búsqueda global se esconde entera y la paleta Cmd+K
+     * necesita teclado, así que **no quedaba ninguna forma de buscar**.
      *
-     * `test.fail()` no es una excusa: afirma que **hoy falla**. Si alguien lo
-     * arregla y no quita esta línea, la prueba falla por pasar, que es
-     * exactamente lo que hay que enterarse.
+     * Ahora hay un botón en la barra que abre la misma paleta.
      */
-    test.fail();
     await entrar(page);
-    // La búsqueda global se esconde por debajo de 640px y la paleta Cmd+K
-    // necesita teclado: en un teléfono no queda ninguna forma de buscar.
-    const buscar = page.locator('#btn-search-mobile, #global-search, input[type="search"]').first();
+    const buscar = page.locator('#btn-search-mobile');
     await expect(buscar).toBeVisible();
+
+    await buscar.tap();
+    await expect(page.locator('#cmd-k-palette')).toBeVisible();
+
+    // Y busca de verdad, no es solo una caja que se abre.
+    await page.fill('#cmd-k-input', 'jose');
+    await expect(page.locator('#cmd-k-hits')).toBeVisible();
   });
 });
