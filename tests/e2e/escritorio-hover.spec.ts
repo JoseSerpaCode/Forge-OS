@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { getTestDb } from './test-utils';
 
 /**
  * En escritorio, los controles discretos siguen siéndolo.
