@@ -6,6 +6,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.26.2] - 2026-08-20
+
+### Fixed
+
+- **La página se podía empujar de lado, y se quedaba así.** `overflow: hidden` frena el dedo pero **no** al código, y Editor.js llama a un `scrollIntoView()` por cada bloque que enfoca. El contenedor se corría en horizontal y ahí se quedaba: texto cortado por la izquierda y la barra inferior arrastrada con él. Ahora el armazón lleva `overflow-x: clip`, que no admite desplazamiento de ninguna de las dos formas.
+- **El menú lateral de escritorio seguía en el DOM en móvil**, con `-translate-x-full`: 240 px de contenido plantados en `left: -240`. Desde que la barra inferior sustituyó a la hamburguesa ya no había forma de abrirlo, así que era peso muerto que además ensanchaba la región desplazable del documento. Ahora no se renderiza por debajo de `md`.
+
 ## [1.26.1] - 2026-08-20
 
 ### Fixed
