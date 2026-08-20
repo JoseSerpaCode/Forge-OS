@@ -55,7 +55,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
 <html lang={Astro.locals.lang || 'es'} data-theme={user?.theme_preference || 'light'}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    {/* `interactive-widget=resizes-content`: cuando se abre el teclado, que el
+         navegador **encoja la maqueta** en vez de dejarla igual y desplazar el
+         viewport visual por encima. Sin esto, al escribir en el editor y volver
+         a cerrar el teclado la página se quedaba corrida hacia un lado, con el
+         texto cortado por la izquierda y la barra inferior desplazada con él.
+         Va de la mano de `h-dvh` en el armazón: los dos miden lo que se ve. */}
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, interactive-widget=resizes-content" />
     <meta name="description" content={metaDesc} />
     <meta name="keywords" content="workspace, kanban, knowledge base, forge os, team collaboration, productivity" />
     <meta name="author" content="Forge OS" />
@@ -144,12 +150,16 @@ Astro.response.headers.set('Pragma', 'no-cache');
       })();
     </script>
   </head>
-  <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-screen overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin}>
+  <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-dvh overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin}>
     <Sidebar workspaceId={workspaceId} workspaceName={workspaceName} />
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity opacity-0 backdrop-blur-sm max-md:backdrop-blur-none cursor-pointer"></div>
     <div class="flex-1 flex flex-col min-w-0">
       <TopBar title={title} workspaceName={workspaceName} />
-      <main class="flex-1 overflow-auto flex flex-col relative min-h-0">
+      {/* `pb-16` en móvil: la barra inferior es `fixed`, así que ya no ocupa
+          sitio en el flujo y taparía los últimos 64 px de lo que se desplaza.
+          El relleno va dentro del contenedor con scroll, así que el contenido
+          sube por encima de él al desplazarse. */}
+      <main class="flex-1 overflow-auto flex flex-col relative min-h-0 pb-16 md:pb-0">
         <div class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1 shrink-0">
           <GuestBanner />
           <slot />

@@ -93,3 +93,33 @@ test('el menú del sprint no se sale de la pantalla', async ({ page }) => {
   expect(caja!.x + caja!.width, 'el menú acaba fuera de la pantalla')
     .toBeLessThanOrEqual(page.viewportSize()!.width + 1);
 });
+
+test('el menú del sprint tampoco se sale con el filtro de etiquetas puesto', async ({ page }) => {
+  await entrar(page);
+  const wsId = conEspacio();
+
+  /*
+   * Esta es la condición que se escapó en producción.
+   *
+   * El filtro «Todas las etiquetas» solo se pinta si el espacio tiene alguna, y
+   * al aparecer empuja el botón del sprint a la otra columna de la rejilla. La
+   * prueba anterior usaba un espacio sin etiquetas, así que fijaba el menú en
+   * la única posición donde el anclaje elegido funcionaba.
+   */
+  const db = getTestDb();
+  db.prepare('DELETE FROM labels WHERE workspace_id = ?').run(wsId);
+  db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES (?,?,?,?)")
+    .run(crypto.randomUUID(), wsId, 'Parcial 2', '#FF5D00');
+
+  await page.goto(`/w/${ESPACIO}/board`);
+  await expect(page.locator('#label-filter, [id*="label"]').first()).toBeVisible();
+
+  await page.locator('#btn-sprint-menu').click();
+  const menu = page.locator('#sprint-menu');
+  await expect(menu).toBeVisible();
+
+  const caja = await menu.boundingBox();
+  const ancho = page.viewportSize()!.width;
+  expect(caja!.x, 'se sale por la izquierda').toBeGreaterThanOrEqual(-1);
+  expect(caja!.x + caja!.width, 'se sale por la derecha').toBeLessThanOrEqual(ancho + 1);
+});
