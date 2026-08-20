@@ -11,6 +11,16 @@
  */
 
 export const en = {
+  'nav.panel': 'Dashboard',
+  'nav.board': 'Board',
+  'nav.pages': 'Pages',
+  'nav.hub': 'Hub',
+  'nav.about': 'About Forge OS',
+  'nav.theme': 'Theme',
+  'nav.more': 'More',
+  'nav.this_space': 'This space',
+  'nav.close_menu': 'Close menu',
+  'a11y.primary_nav': 'Primary navigation',
   'sidebar.workspace': 'Workspace',
   'sidebar.hub': 'My Hub',
   'sidebar.dashboard': 'Dashboard',
@@ -110,6 +120,10 @@ export const en = {
   'table.due_date': 'DUE DATE',
   'table.status': 'STATUS',
   'modal.due_date': 'Due Date',
+  'status.short.todo': 'To do',
+  'status.short.in_progress': 'Doing',
+  'status.short.review': 'Review',
+  'status.short.done': 'Done',
   'status.todo': 'todo',
   'status.in_progress': 'in progress',
   'status.review': 'in review',

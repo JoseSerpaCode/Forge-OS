@@ -92,9 +92,11 @@ const wsPendingInvites = (db.prepare(`
 
 <MainLayout hideFooter={true} title={`${t('sidebar.settings')} - ${ws.name}`} workspaceId={ws.id}>
   <div class="max-w-4xl mx-auto mt-4 sm:mt-10 p-0 sm:p-6 space-y-6 sm:space-y-8 relative">
-    <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-forge-text">{t('ws.settings.title')}</h1>
-      <a href={`/w/${sys_tag}`} class="text-forge-muted hover:text-forge-text text-sm hover:underline">{t('ws.settings.back')}</a>
+    {/* Mismo caso que la cabecera del panel: en una fila, el enlace de vuelta
+        se lleva su ancho y el título se parte en dos líneas de dos palabras. */}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
+      <h1 class="text-2xl sm:text-3xl font-bold text-forge-text">{t('ws.settings.title')}</h1>
+      <a href={`/w/${sys_tag}`} class="text-forge-muted hover:text-forge-text text-sm hover:underline shrink-0">{t('ws.settings.back')}</a>
     </div>
 
     <!-- General Settings -->
@@ -351,11 +353,18 @@ const wsPendingInvites = (db.prepare(`
         </button>
       </form>
 
+      {/* Cada tipo, en dos filas cuando la pantalla es estrecha.
+
+          En una sola, «Renombrar» más la papelera se llevan 120 px fijos de los
+          290 que hay, y los dos textos de la izquierda —el nombre del tipo y su
+          uso— se reparten lo que queda encogiéndose a la vez. El resultado era
+          «T… en 1… Renombrar», con el nombre recortado a una letra: la lista
+          dejaba de decir qué tipos existen, que es lo único que hace. */}
       <ul id="lista-tipos" class="space-y-2">
         {tiposTicket.map((ti: any) => (
-          <li class="fila-tipo flex items-center justify-between gap-3 bg-forge-bg/50 border border-forge-border p-3 rounded-lg"
+          <li class="fila-tipo flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 bg-forge-bg/50 border border-forge-border p-3 rounded-lg"
             data-id={ti.id} data-key={ti.key} data-name={ti.name} data-color={ti.color} data-builtin={ti.isBuiltin ? '1' : '0'}>
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex items-center gap-3 min-w-0 flex-wrap">
               <span class="w-3 h-3 rounded-full shrink-0" style={`background:${ti.color}`} aria-hidden="true"></span>
               <span class="text-sm font-semibold text-forge-text truncate">
                 {ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name}
@@ -364,7 +373,7 @@ const wsPendingInvites = (db.prepare(`
                 {ti.usos === 0 ? t('types.unused') : ti.usos === 1 ? t('types.used_in_one') : t('types.used_in').replace('{n}', String(ti.usos))}
               </span>
             </div>
-            <div class="flex items-center gap-1 shrink-0">
+            <div class="flex items-center gap-1 shrink-0 self-end sm:self-auto">
               <button class="btn-renombrar-tipo text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors">{t('types.rename')}</button>
               <button class="btn-borrar-tipo text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-red-500/10 transition-colors" aria-label={t('types.delete')} title={t('types.delete')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
@@ -779,14 +788,14 @@ const wsPendingInvites = (db.prepare(`
       li.dataset.color = etiqueta.color;
 
       li.innerHTML = `
-        <div class="flex items-center gap-3 min-w-0">
+        <div class="flex items-center gap-3 min-w-0 flex-wrap">
           <span class="inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text max-w-full px-2 py-1 text-xs">
             <span class="rounded-full shrink-0 w-2 h-2 chip-dot"></span>
             <span class="truncate chip-name"></span>
           </span>
           <span class="text-xs text-forge-muted truncate chip-uso"></span>
         </div>
-        <div class="flex items-center gap-1 shrink-0">
+        <div class="flex items-center gap-1 shrink-0 self-end sm:self-auto">
           <button class="btn-renombrar-etiqueta text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors"></button>
           <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-red-500/10 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>

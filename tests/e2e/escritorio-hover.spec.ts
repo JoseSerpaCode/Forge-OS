@@ -34,7 +34,10 @@ test('el botón de borrar fila sigue oculto hasta acercarse', async ({ page }) =
   await page.goto(`/w/${ESPACIO}/db/${baseId}`);
   await page.waitForLoadState('networkidle');
 
-  const borrar = page.locator('.btn-delete-row').first();
+  // Dentro de la tabla, que es de quien habla esta prueba: la ficha de móvil
+  // tiene su propio botón de borrar —visible siempre, porque allí no hay ratón
+  // que acercar— y va antes en el orden del documento.
+  const borrar = page.locator('table .btn-delete-row').first();
   await expect(borrar).toHaveCount(1);
 
   // Sin el ratón encima: invisible, como estaba pensado.

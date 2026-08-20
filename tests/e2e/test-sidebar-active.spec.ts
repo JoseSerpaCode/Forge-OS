@@ -11,9 +11,11 @@ test('Sidebar active states toggle correctly', async ({ page }) => {
   await page.goto('/w/test-workspace');
   await page.waitForLoadState('networkidle');
   
-  // Dashboard link should be active, Kanban should not
-  const dashboardLink = page.locator('nav a', { hasText: 'Dashboard' });
-  const kanbanLink = page.locator('nav a', { hasText: 'Kanban Board' });
+  // Acotado a `#app-sidebar`: con la barra inferior de móvil en el DOM —oculta
+  // en escritorio, pero presente— `nav a` casaba con dos menús y el localizador
+  // dejaba de ser único. El id dice lo que la prueba siempre quiso decir.
+  const dashboardLink = page.locator('#app-sidebar a', { hasText: 'Dashboard' });
+  const kanbanLink = page.locator('#app-sidebar a', { hasText: 'Kanban Board' });
   
   await expect(dashboardLink).toHaveClass(/active/);
   await expect(kanbanLink).not.toHaveClass(/active/);

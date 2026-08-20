@@ -259,9 +259,12 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       —el nombre completo está en la barra lateral y en la pestaña—, el bloque
       de tiempo tiene su ancho y los controles respiran al envolverse.
     */}
+    {/* En móvil el `<h1>` no se pinta: la barra superior ya dice «Captura /
+        Tablero» dos centímetros más arriba, y repetirlo cuesta una fila entera
+        de las pocas que hay antes de la primera tarjeta. */}
     <header class="mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-x-4 gap-y-3">
       <div class="flex items-center gap-4 min-w-0">
-        <h1 class="text-2xl font-bold text-forge-text truncate max-w-[11rem] lg:max-w-[15rem]" title={`${workspace.name} Board`}>{workspace.name} Board</h1>
+        <h1 class="hidden sm:block text-xl sm:text-2xl font-bold text-forge-text truncate max-w-[11rem] lg:max-w-[15rem]" title={`${workspace.name} Board`}>{workspace.name} Board</h1>
         {/*
           La etiqueta encima y la cifra debajo, no una al lado de la otra.
           En horizontal, «0h registradas — sin estimar» no cabía junto a
@@ -282,15 +285,28 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         )}
       </div>
 
-      <div class="flex flex-wrap gap-x-2 gap-y-2.5 items-center w-full xl:w-auto xl:justify-end">
-        <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
+      {/* El `z-50` del botón naranja era para que su tooltip saliera por encima
+          de las tarjetas, pero lo ponía también por encima del desplegable de
+          notificaciones —que está en `z-50` y se pinta antes—: al abrir la
+          campana, «+ Nuevo ticket» aparecía flotando encima del panel. `z-10`
+          basta para el tooltip y deja pasar lo que va por delante.
+
+        En móvil, rejilla de dos columnas; a partir de `sm`, la fila de siempre.
+
+        Envolviendo a la brava, los cuatro controles caían en tres filas
+        desiguales —dos arriba, uno solo debajo, el botón naranja descolgado— y
+        entre el título y la primera tarjeta se iban 160 px de pantalla. Una
+        rejilla los deja en dos filas parejas y ocupa la mitad.
+      */}
+      <div class="grid grid-cols-2 gap-2 w-full items-center sm:flex sm:flex-wrap sm:gap-x-2 sm:gap-y-2.5 xl:w-auto xl:justify-end">
+        <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="w-full sm:w-auto min-w-0 bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
           <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
           {sprints.map(s => (
             <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? '(Active)' : s.status === 'completed' ? '(Completed)' : ''}</option>
           ))}
         </select>
         <label class="sr-only" for="board-sort">{t('board.sort')}</label>
-        <select id="board-sort" class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
+        <select id="board-sort" class="w-full sm:w-auto min-w-0 bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
           <option value="manual" selected={ordenActivo === 'manual'}>{t('board.sort_manual')}</option>
           <option value="priority" selected={ordenActivo === 'priority'}>{t('board.sort_priority')}</option>
           <option value="due" selected={ordenActivo === 'due'}>{t('board.sort_due')}</option>
@@ -337,7 +353,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
 
-            <div id="sprint-menu" role="menu" class="hidden absolute right-0 top-full mt-1 min-w-[13rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1">
+            <div id="sprint-menu" role="menu" class="hidden absolute left-0 right-auto sm:left-auto sm:right-0 top-full mt-1 min-w-[13rem] max-w-[calc(100vw-2rem)] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1">
               {/* Crear un sprint también es una acción de sprint, y tampoco es
                   algo de cada día: sacarlo de la barra es lo que hace que
                   «+ Issue» —eso sí es de cada día— deje de caer a otra fila. */}
@@ -381,10 +397,10 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         )}
 
         {acceso.rol !== 'viewer' && (
-          <button id="btn-new-issue" title={t('board.new_issue_hint')} class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity ml-2 relative group z-50">
-            + Issue
+          <button id="btn-new-issue" title={t('board.new_issue_hint')} class="w-full sm:w-auto bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity sm:ml-2 relative group z-10 justify-center">
+            + {t('board.new_issue')}
             <!-- Tooltip -->
-            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-forge-panel border border-forge-border text-forge-text text-[10px] px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-50">New Issue <kbd class="font-mono bg-forge-bg border border-forge-border px-1 py-0.5 rounded text-[8px] ml-1">C</kbd></span>
+            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-forge-panel border border-forge-border text-forge-text text-[10px] px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-50">{t('board.new_issue')} <kbd class="font-mono bg-forge-bg border border-forge-border px-1 py-0.5 rounded text-[8px] ml-1">C</kbd></span>
           </button>
         )}
       </div>

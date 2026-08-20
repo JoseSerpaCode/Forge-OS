@@ -2,6 +2,7 @@
 import '../styles/themes.css';
 import TopBar from '../components/layout/TopBar.astro';
 import Sidebar from '../components/layout/Sidebar.astro';
+import BottomNav from '../components/layout/BottomNav.astro';
 import Footer from '../components/layout/Footer.astro';
 import GuestBanner from '../components/layout/GuestBanner.astro';
 import { useTranslations } from '../i18n/ui';
@@ -149,12 +150,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
     <div class="flex-1 flex flex-col min-w-0">
       <TopBar title={title} workspaceName={workspaceName} />
       <main class="flex-1 overflow-auto flex flex-col relative min-h-0">
-        <div class="max-w-[1440px] w-full mx-auto px-6 py-6 flex-1 shrink-0">
+        <div class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1 shrink-0">
           <GuestBanner />
           <slot />
         </div>
         {!hideFooter && <Footer />}
       </main>
+      <BottomNav workspaceId={workspaceId} workspaceName={workspaceName} />
     </div>
     
     <!-- Global UI Components -->
@@ -459,6 +461,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
                 // Una consulta lenta de «inf» puede llegar después de la de
                 // «informe» y pintar sus resultados encima de los buenos.
                 if (mia !== ultima) return;
+                // Y una consulta cualquiera puede llegar después de **cerrar**
+                // la paleta: `pinta` volvía a mostrar los resultados y a
+                // esconder las acciones rápidas sobre un diálogo ya cerrado, así
+                // que al reabrirlo aparecía la búsqueda anterior a medias. En
+                // pantalla dura un instante y no da ningún error; se veía como
+                // una prueba que fallaba una de cada ocho corridas.
+                if (!palette.open) return;
                 if (!datos.length) { pinta(aviso(hits.dataset.tNone || ''), true); return; }
 
                 var html = datos.map(function (item) {
@@ -495,6 +504,11 @@ Astro.response.headers.set('Pragma', 'no-cache');
         // Al cerrarla se limpia: reabrirla con la búsqueda de hace dos horas
         // dentro es confuso.
         palette.addEventListener('close', function () {
+          // Se cancela lo que estuviera en vuelo antes de limpiar: el temporizador
+          // pendiente y, subiendo el contador, cualquier respuesta que aún venga
+          // de camino.
+          clearTimeout(espera);
+          ultima++;
           input.value = '';
           pinta('', false);
           /**

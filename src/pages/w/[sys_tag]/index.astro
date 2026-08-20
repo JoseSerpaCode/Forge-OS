@@ -185,13 +185,19 @@ const priorityColor: Record<string, string> = {
 <MainLayout hideFooter={true} title={`${t('sidebar.dashboard')} — ${workspace.name}`} workspaceId={workspace.id}>
   <div class="space-y-6 max-w-[1400px] pb-12">
     
+    {/* En móvil, el título arriba y los botones debajo.
+
+        En una fila, los dos botones se llevan su ancho natural y el título se
+        queda con lo que sobra: «Panel Principal — Resumen del Espacio» caía en
+        una columna de cuatro palabras, una por línea, junto a dos botones que
+        tampoco cabían. */}
     <!-- Header -->
-    <header class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-forge-text">{workspace.name}</h1>
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="text-2xl font-bold text-forge-text truncate">{workspace.name}</h1>
         <p class="text-sm text-forge-muted mt-0.5">{t('sidebar.dashboard')} — {t('dashboard.workspace_overview')}</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 shrink-0">
         <a href={`/w/${sys_tag}/board`} class="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded bg-forge-primary text-forge-on-accent hover:opacity-90 transition-opacity">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
           {t('dashboard.open_board')}

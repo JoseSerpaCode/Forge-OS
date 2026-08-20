@@ -28,19 +28,23 @@ const currentUrl = Astro.url.pathname;
   )}
   <div class="flex items-center gap-4 flex-1">
     <div class="flex items-center gap-2">
-      <button id="sidebar-toggle" class="text-forge-muted hover:text-forge-accent-text transition-all p-2 rounded-lg hover:bg-forge-secondary/10 hover:scale-105 active:scale-95" title={t('a11y.toggle_sidebar')} aria-label={t('a11y.toggle_sidebar')}>
+      <button id="sidebar-toggle" class="hidden md:inline-flex text-forge-muted hover:text-forge-accent-text transition-all p-2 rounded-lg hover:bg-forge-secondary/10 hover:scale-105 active:scale-95" title={t('a11y.toggle_sidebar')} aria-label={t('a11y.toggle_sidebar')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
       </button>
       
+      {/* La identidad del espacio también en móvil. Estaba en `hidden sm:flex`
+          porque la hamburguesa ya ocupaba esa esquina; al retirarla, el lado
+          izquierdo de la barra se quedaba vacío y no había forma de saber en
+          qué espacio estabas sin abrir la hoja «Más». */}
       {title && (
-        <div class="hidden sm:flex items-center gap-2 text-sm text-forge-muted font-medium ml-1 select-none">
+        <div class="flex items-center gap-2 text-sm text-forge-muted font-medium ml-1 min-w-0 select-none">
           {workspaceName && (
             <>
-              <a href={workspaceDashboardUrl} class="text-forge-text hover:text-forge-accent-text transition-colors truncate max-w-[150px] cursor-pointer" title={`Go to ${workspaceName} Dashboard`}>{workspaceName}</a>
+              <a href={workspaceDashboardUrl} class="text-forge-text hover:text-forge-accent-text transition-colors truncate max-w-[90px] sm:max-w-[150px] cursor-pointer" title={`Go to ${workspaceName} Dashboard`}>{workspaceName}</a>
               <span class="text-forge-border">/</span>
             </>
           )}
-          <a href={currentUrl} class={`${workspaceName ? 'text-forge-accent-text hover:text-forge-text' : 'text-forge-text hover:text-forge-accent-text'} transition-colors cursor-pointer`}>{title.split(' — ')[0].split(' - ')[0]}</a>
+          <a href={currentUrl} class={`${workspaceName ? 'text-forge-accent-text hover:text-forge-text' : 'text-forge-text hover:text-forge-accent-text'} transition-colors cursor-pointer truncate`}>{title.split(' — ')[0].split(' - ')[0]}</a>
         </div>
       )}
     </div>
@@ -137,7 +141,10 @@ const currentUrl = Astro.url.pathname;
 </header>
 
 <!-- Docs Modal -->
-<dialog id="docs-modal" class="bg-forge-panel border border-forge-border rounded-lg p-0 w-[650px] text-forge-text shadow-xl backdrop:bg-black/50 overflow-hidden">
+{/* 650 px fijos sobre una pantalla de 360: el modal se salía por los dos lados
+    y la columna de pestañas, a un tercio, dejaba «Documentación» cortada a
+    media palabra. */}
+<dialog id="docs-modal" class="bg-forge-panel border border-forge-border rounded-lg p-0 w-[calc(100vw-2rem)] max-w-[650px] text-forge-text shadow-xl backdrop:bg-black/50 overflow-hidden">
   <div class="p-6 border-b border-forge-border bg-forge-bg/50">
     <h2 class="text-xl font-bold flex items-center gap-2">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -146,20 +153,25 @@ const currentUrl = Astro.url.pathname;
     </h2>
   </div>
   
-  <div class="flex max-h-[60vh]">
-    <div class="w-1/3 border-r border-forge-border bg-forge-bg">
-      <div class="flex flex-col">
-        <button class="about-tab-btn active p-3 text-left text-sm border-l-2 border-forge-secondary bg-forge-panel font-bold" data-target="about-guide">{t('about.guide') || 'User Guide'}</button>
-        <button class="about-tab-btn p-3 text-left text-sm text-forge-muted border-l-2 border-transparent hover:bg-forge-panel/50 hover:text-forge-text transition-colors flex items-center justify-between" data-target="about-shortcuts">
+  <div class="flex flex-col sm:flex-row max-h-[70vh] sm:max-h-[60vh]">
+    <div class="w-full sm:w-1/3 border-b sm:border-b-0 sm:border-r border-forge-border bg-forge-bg shrink-0">
+      <div class="flex flex-row overflow-x-auto sm:flex-col">
+        <button class="about-tab-btn active p-3 text-left text-sm border-b-2 sm:border-b-0 sm:border-l-2 border-forge-secondary bg-forge-panel font-bold whitespace-nowrap shrink-0" data-target="about-guide">{t('about.guide') || 'User Guide'}</button>
+        {/* Los atajos de teclado no se enseñan en un teléfono.
+
+            La pestaña listaba «⌘/Ctrl + K», «C» y «Esc» a quien no tiene ni una
+            de las tres teclas, y ocupaba un cuarto del menú del modal
+            prometiendo algo que ahí no existe. */}
+        <button class="about-tab-btn hidden sm:flex p-3 text-left text-sm text-forge-muted border-l-2 border-transparent hover:bg-forge-panel/50 hover:text-forge-text transition-colors items-center justify-between whitespace-nowrap shrink-0" data-target="about-shortcuts">
           {t('about.shortcuts') || 'Keyboard Shortcuts'}
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M4 7h16"></path><path d="M4 11h16"></path><path d="M4 15h16"></path><path d="M4 19h16"></path></svg>
         </button>
-        <button class="about-tab-btn p-3 text-left text-sm text-forge-muted border-l-2 border-transparent hover:bg-forge-panel/50 hover:text-forge-text transition-colors" data-target="about-docs">{t('about.docs') || 'Documentation'}</button>
-        <button class="about-tab-btn p-3 text-left text-sm text-forge-muted border-l-2 border-transparent hover:bg-forge-panel/50 hover:text-forge-text transition-colors" data-target="about-legal">{t('about.legal') || 'License & Legal'}</button>
+        <button class="about-tab-btn p-3 text-left text-sm text-forge-muted border-b-2 sm:border-b-0 sm:border-l-2 border-transparent hover:bg-forge-panel/50 hover:text-forge-text transition-colors whitespace-nowrap shrink-0" data-target="about-docs">{t('about.docs') || 'Documentation'}</button>
+        <button class="about-tab-btn p-3 text-left text-sm text-forge-muted border-b-2 sm:border-b-0 sm:border-l-2 border-transparent hover:bg-forge-panel/50 hover:text-forge-text transition-colors whitespace-nowrap shrink-0" data-target="about-legal">{t('about.legal') || 'License & Legal'}</button>
       </div>
     </div>
     
-    <div class="w-2/3 p-6 overflow-y-auto bg-forge-panel min-h-[300px]">
+    <div class="w-full sm:w-2/3 p-4 sm:p-6 overflow-y-auto bg-forge-panel min-h-[200px] sm:min-h-[300px]">
       <!-- Guía de Uso -->
       <div id="about-guide" class="about-tab-content space-y-4">
         <div>
@@ -181,15 +193,15 @@ const currentUrl = Astro.url.pathname;
         <p class="text-xs text-forge-muted mb-4">{t('about.shortcuts.desc') || 'Master Forge OS using these quick keyboard shortcuts.'}</p>
         <div class="space-y-2">
           <div class="flex items-center justify-between p-2.5 bg-forge-bg rounded-lg border border-forge-border hover:border-forge-secondary/30 transition-colors">
-            <span class="text-xs font-bold text-forge-text">Command Palette / Search</span>
+            <span class="text-xs font-bold text-forge-text">{t('about.sc.palette')}</span>
             <div class="flex gap-1.5 items-center">
               <kbd class="px-2 py-1 bg-forge-panel border border-forge-border shadow-sm rounded text-[10px] text-forge-muted font-mono font-bold">/</kbd> 
-              <span class="text-[10px] text-forge-muted">or</span> 
+              <span class="text-[10px] text-forge-muted">{t('about.sc.or')}</span> 
               <kbd class="px-2 py-1 bg-forge-panel border border-forge-border shadow-sm rounded text-[10px] text-forge-muted font-mono font-bold">⌘/Ctrl + K</kbd>
             </div>
           </div>
           <div class="flex items-center justify-between p-2.5 bg-forge-bg rounded-lg border border-forge-border hover:border-forge-secondary/30 transition-colors">
-            <span class="text-xs font-bold text-forge-text">Create New Issue</span>
+            <span class="text-xs font-bold text-forge-text">{t('about.sc.new_issue')}</span>
             <kbd class="px-2 py-1 bg-forge-panel border border-forge-border shadow-sm rounded text-[10px] text-forge-muted font-mono font-bold">C</kbd>
           </div>
           <div class="flex items-center justify-between p-2.5 bg-forge-bg rounded-lg border border-forge-border hover:border-forge-secondary/30 transition-colors">
@@ -197,7 +209,7 @@ const currentUrl = Astro.url.pathname;
             <kbd class="px-2 py-1 bg-forge-panel border border-forge-border shadow-sm rounded text-[10px] text-forge-muted font-mono font-bold">⌘/Ctrl + B</kbd>
           </div>
           <div class="flex items-center justify-between p-2.5 bg-forge-bg rounded-lg border border-forge-border hover:border-forge-secondary/30 transition-colors">
-            <span class="text-xs font-bold text-forge-text">Close Modal / Palette</span>
+            <span class="text-xs font-bold text-forge-text">{t('about.sc.close')}</span>
             <kbd class="px-2 py-1 bg-forge-panel border border-forge-border shadow-sm rounded text-[10px] text-forge-muted font-mono font-bold">Esc</kbd>
           </div>
         </div>
@@ -254,6 +266,7 @@ const currentUrl = Astro.url.pathname;
 
 <script>
   import { escaparHtml, hrefSeguro } from '../../lib/texto';
+  import { alternarTema, temaActual } from '../../lib/client/tema';
   import { colorDeNotificacion } from '../../lib/notificaciones';
   // Event listener for / key
   const globalSearch = document.getElementById('global-search') as HTMLInputElement;
@@ -265,7 +278,7 @@ const currentUrl = Astro.url.pathname;
   
   if (btnToggleTheme) {
     const updateIcon = () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const currentTheme = temaActual();
       if (currentTheme === 'light') {
         iconDark?.classList.remove('hidden');
         iconLight?.classList.add('hidden');
@@ -292,18 +305,8 @@ const currentUrl = Astro.url.pathname;
     observer.observe(document.documentElement, { attributes: true });
     
     btnToggleTheme.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('forge_theme', newTheme);
+      alternarTema();
       updateIcon();
-      
-      // Sync with database silently
-      fetch('/api/user/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme_preference: newTheme })
-      }).catch(err => console.error('Failed to sync theme preference', err));
     });
   }
   const searchDropdown = document.getElementById('search-dropdown');

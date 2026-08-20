@@ -51,11 +51,27 @@ const ordenManual = sortMode === 'manual';
 const sePuedeArrastrar = canEdit;
 
 const columns = [
-  { id: 'todo', title: t('status.todo') },
-  { id: 'in_progress', title: t('status.in_progress') },
-  { id: 'review', title: t('status.review') },
-  { id: 'done', title: t('status.done') }
+  { id: 'todo', title: t('status.todo'), corto: t('status.short.todo') },
+  { id: 'in_progress', title: t('status.in_progress'), corto: t('status.short.in_progress') },
+  { id: 'review', title: t('status.review'), corto: t('status.short.review') },
+  { id: 'done', title: t('status.done'), corto: t('status.short.done') }
 ];
+
+/**
+ * El estado que se ve al abrir el tablero en un teléfono.
+ *
+ * `todo` y no «el primero que tenga algo»: el tablero tiene que abrirse
+ * siempre en el mismo sitio, o el conmutador salta solo entre visitas y deja
+ * de servir como punto de referencia.
+ */
+const ESTADO_INICIAL = 'todo';
+
+// Se cuenta una vez y lo usan las columnas y el conmutador. Antes el `filter`
+// se repetía dos veces por columna dentro del propio `map`.
+const porEstado = new Map(
+  columns.map((col) => [col.id, issues.filter((i) => i.status === col.id)])
+);
+const totalDe = (id: string) => statusCounts[id] ?? (porEstado.get(id)?.length ?? 0);
 
 // Helper para extraer iniciales
 function getInitials(username: string) {
@@ -64,15 +80,50 @@ function getInitials(username: string) {
 }
 ---
 <div class="h-full flex flex-col relative">
+  {/*
+    El conmutador de estado.
+
+    En escritorio las cuatro columnas se ven de un vistazo y el encabezado de
+    cada una lleva su cuenta. En un teléfono no cabe ninguna de las dos cosas,
+    así que la información se traslada aquí: qué estados hay, cuál se está
+    mirando y cuánto hay en cada uno, en una fila.
+
+    Es `role="tablist"` y no un `<select>` porque las cuatro opciones son fijas
+    y caben: un desplegable escondería tras un toque lo que aquí se lee sin
+    tocar nada, que es justamente la cuenta.
+  */}
+  <div class="sm:hidden shrink-0 mb-3 grid grid-cols-4 gap-1 p-1 bg-forge-panel border border-forge-border rounded-xl" role="tablist" aria-label={t('board.status_filter')}>
+    {columns.map((col) => (
+      <button
+        type="button"
+        role="tab"
+        class:list={[
+          'filtro-estado flex items-center justify-center gap-1 px-0.5 rounded-lg text-xs font-semibold transition-colors min-w-0',
+          col.id === ESTADO_INICIAL ? 'bg-forge-primary text-forge-on-accent' : 'text-forge-muted',
+        ]}
+        data-estado={col.id}
+        aria-selected={col.id === ESTADO_INICIAL ? 'true' : 'false'}
+      >
+        {/* La etiqueta corta, no la de la columna. En cuatro huecos de 78 px
+            «en progreso» y «en revisión» se recortaban a «en progr…»; la
+            cabecera de la columna sigue con el nombre entero, que es donde hay
+            sitio para él. */}
+        <span class="truncate">{col.corto}</span>
+        <span class="font-mono opacity-70 shrink-0">{totalDe(col.id)}</span>
+      </button>
+    ))}
+  </div>
+
   <div class="flex gap-4 h-full overflow-x-auto pb-4 kanban-container" data-workspace={workspaceId} data-can-edit={sePuedeArrastrar.toString()} data-sort-mode={sortMode} data-t-no-drag={t('board.sort_no_drag')}>
     {columns.map(col => (
       <BoardColumn
         title={col.title}
         status={col.id}
-        total={statusCounts[col.id] ?? issues.filter(i => i.status === col.id).length}
-        shown={issues.filter(i => i.status === col.id).length}
+        total={totalDe(col.id)}
+        shown={porEstado.get(col.id)!.length}
+        activaEnMovil={col.id === ESTADO_INICIAL}
       >
-        {issues.filter(i => i.status === col.id).map(issue => (
+        {porEstado.get(col.id)!.map(issue => (
           <IssueCard issue={{
             id: issue.id,
             title: issue.title,
@@ -98,16 +149,28 @@ function getInitials(username: string) {
   </div>
   
   {issues.length === 0 && (
-    <div class="absolute inset-0 z-10 flex flex-col items-center justify-center p-8 text-center bg-forge-bg/60 backdrop-blur-sm max-md:backdrop-blur-none rounded-xl border border-forge-border/30 m-4 shadow-xl">
+    <div class="tablero-vacio absolute inset-0 z-10 flex flex-col items-center justify-center p-8 text-center bg-forge-bg/60 backdrop-blur-sm max-md:backdrop-blur-none rounded-xl border border-forge-border/30 m-4 shadow-xl">
       <div class="w-20 h-20 bg-forge-panel rounded-full border border-forge-border shadow-lg flex items-center justify-center mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 8h4"></path><path d="M13 12h2"></path></svg>
       </div>
       <h3 class="text-xl font-black text-forge-text mb-2">{t('about.kanban.empty_title')}</h3>
       <p class="text-forge-muted max-w-md mx-auto mb-8 text-sm">{t('about.kanban.empty_desc')}</p>
       {canEdit && (
-        <div class="flex items-center gap-2 px-4 py-2 bg-forge-panel border border-forge-border rounded-lg shadow-sm text-sm text-forge-muted font-medium">
-          {t('about.kanban.empty_cta_1')} <kbd class="px-2 py-1 bg-forge-bg border border-forge-border shadow-sm rounded text-[10px] text-forge-text font-mono font-bold mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
-        </div>
+        <>
+          {/* El atajo de teclado solo donde hay teclado.
+
+              «Presiona [C] para crear una nueva tarea» es la primera —y única—
+              indicación que ve quien abre un tablero vacío. En un teléfono
+              señala una tecla que no existe, y encima se partía en tres líneas
+              alrededor del recuadro de la C. Ahí se señala el botón, que sí
+              está a un dedo de distancia. */}
+          <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-forge-panel border border-forge-border rounded-lg shadow-sm text-sm text-forge-muted font-medium">
+            {t('about.kanban.empty_cta_1')} <kbd class="px-2 py-1 bg-forge-bg border border-forge-border shadow-sm rounded text-[10px] text-forge-text font-mono font-bold mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
+          </div>
+          <p class="sm:hidden px-4 py-2 bg-forge-panel border border-forge-border rounded-lg shadow-sm text-sm text-forge-muted font-medium text-center">
+            {t('about.kanban.empty_cta_movil')}
+          </p>
+        </>
       )}
     </div>
   )}
@@ -119,6 +182,84 @@ function getInitials(username: string) {
   const columns = document.querySelectorAll('.board-column');
   const cards = document.querySelectorAll('.issue-card');
   const container = document.querySelector('.kanban-container');
+
+  /**
+   * El conmutador de estado, en móvil.
+   *
+   * Enseña una columna y esconde las otras tres con `max-sm:hidden`, la misma
+   * clase con la que el servidor pinta el estado inicial. Así lo que hace el
+   * JavaScript es exactamente lo que ya venía en el HTML, y no hay un momento
+   * —entre la carga y el primer clic— en el que el tablero se comporte de otra
+   * forma.
+   */
+  const filtros = Array.from(document.querySelectorAll('.filtro-estado')) as HTMLButtonElement[];
+  filtros.forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const estado = boton.dataset.estado;
+      if (!estado) return;
+
+      filtros.forEach((otro) => {
+        const activo = otro === boton;
+        otro.classList.toggle('bg-forge-primary', activo);
+        otro.classList.toggle('text-forge-on-accent', activo);
+        otro.classList.toggle('text-forge-muted', !activo);
+        otro.setAttribute('aria-selected', String(activo));
+      });
+
+      columns.forEach((columna) => {
+        const suyo = (columna as HTMLElement).dataset.status === estado;
+        columna.classList.toggle('max-sm:hidden', !suyo);
+      });
+    });
+  });
+
+  /**
+   * Mover un ticket desde el desplegable de su tarjeta.
+   *
+   * Es la única forma de moverlo en un teléfono: el arrastre del tablero es
+   * HTML5 y no dispara en táctil.
+   *
+   * La posición que se manda es la del final de la columna destino. Colocarlo
+   * en un punto exacto es lo que hace el arrastre, y en móvil no hay forma de
+   * expresar «entre estas dos»; llegar al final es lo que espera quien mueve
+   * algo a «En progreso».
+   */
+  document.addEventListener('change', async (e) => {
+    const select = (e.target as HTMLElement)?.closest?.('.mover-issue') as HTMLSelectElement | null;
+    if (!select) return;
+
+    const issueId = select.dataset.issueId;
+    const nuevo = select.value;
+    if (!issueId || !nuevo) return;
+
+    const destino = document.querySelector(`.board-column[data-status="${nuevo}"]`);
+    const ultimas = destino?.querySelectorAll('.issue-card');
+    const ultima = ultimas?.[ultimas.length - 1] as HTMLElement | undefined;
+    const posicion = ultima ? Number(ultima.dataset.position || 0) + 100000 : 100000;
+
+    select.disabled = true;
+    try {
+      const res = await fetch(`/api/issues/${issueId}/move`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nuevo, position: posicion }),
+      });
+      if (!res.ok) {
+        console.error('mover issue:', await res.text());
+        (window as any).showToast?.(window.forgeMsg?.errGenerico || '', true);
+        select.disabled = false;
+        return;
+      }
+      // Recargar y no mover la tarjeta a mano: las cuentas de cada columna, el
+      // total del sprint y la barra de tiempo cambian con ella, y actualizar
+      // cuatro sitios por separado es como se quedan desfasados.
+      window.location.reload();
+    } catch (err) {
+      console.error('mover issue:', err);
+      (window as any).showToast?.(window.forgeMsg?.errGenerico || '', true);
+      select.disabled = false;
+    }
+  });
   const workspaceId = container?.getAttribute('data-workspace');
   const canEdit = container?.getAttribute('data-can-edit') === 'true';
 
@@ -185,7 +326,16 @@ function getInitials(username: string) {
     }
     
     // Modal logic
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+      /**
+       * Pulsar el desplegable de mover no abre el ticket.
+       *
+       * La tarjeta entera abre el modal, así que tocar el `<select>` que hay
+       * dentro lo abría encima y el desplegable no llegaba a desplegarse: en
+       * móvil, mover un ticket era imposible **incluso con el control puesto**.
+       */
+      if ((e.target as HTMLElement)?.closest?.('.mover-issue')) return;
+
       try {
         const modal = document.getElementById('issue-details-modal');
         const titleEl = document.getElementById('modal-issue-title');

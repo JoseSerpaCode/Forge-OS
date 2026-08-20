@@ -92,4 +92,6 @@ export const en = {
   'board.delete_sprint': 'Delete sprint',
   'sprint.err_delete': 'The sprint could not be deleted.',
   'board.sprint_actions': 'Sprint',
+  'board.status_filter': 'Filter by status',
+  'card.move_to': 'Move to',
 } as const;

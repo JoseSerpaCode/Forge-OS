@@ -50,27 +50,40 @@ const t = useTranslations(lang);
   data-t-del-error={t('issue.delete_error')}
   class="fixed top-0 right-0 w-[550px] max-w-full h-full bg-forge-bg/95 backdrop-blur-md max-md:backdrop-blur-none border-l border-forge-border/40 z-[110] transform translate-x-full transition-transform duration-300 ease-out shadow-2xl shadow-black/50 overflow-y-auto flex flex-col">
   
+  {/*
+    La cabecera se envuelve en vez de desbordarse.
+
+    Son seis cosas en una fila —tipo, id, compartir, duplicar, eliminar y
+    cerrar— y en 360 px suman bastante más de lo que hay. El resultado no era
+    que se apretaran: era una **barra de desplazamiento horizontal dentro del
+    modal**, con «Eliminar» y la equis fuera de la pantalla hasta que se
+    arrastraba de lado. Cerrar el modal exigía descubrir primero que se podía
+    desplazar.
+
+    `flex-wrap` lo parte en dos filas cuando no cabe y lo deja en una cuando sí,
+    así que en escritorio no cambia nada.
+  */}
   <!-- Header -->
-  <div class="px-6 py-4 border-b border-forge-border/30 flex justify-between items-center bg-gradient-to-r from-forge-panel to-forge-bg sticky top-0 z-10">
-    <div class="flex items-center gap-3">
+  <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-forge-border/30 flex flex-wrap justify-between items-center gap-y-2 bg-gradient-to-r from-forge-panel to-forge-bg sticky top-0 z-10">
+    <div class="flex items-center gap-3 min-w-0">
       <select id="modal-issue-type" aria-label={t('a11y.issue_type')} class="px-2 py-1 rounded-md text-[11px] font-bold tracking-wider bg-forge-bg/50 text-forge-text border border-forge-border/50 focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/50 focus:outline-none uppercase transition-all shadow-sm">
         {issueTypes.map((ti) => (
           <option value={ti.key}>{ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name}</option>
         ))}
       </select>
-      <span id="modal-issue-id" class="font-mono text-[13px] text-forge-muted tracking-wide font-medium">ID-XXX</span>
+      <span id="modal-issue-id" class="font-mono text-[13px] text-forge-muted tracking-wide font-medium truncate">ID-XXX</span>
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-1.5 sm:gap-3 ml-auto">
       <button id="btn-share-issue" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1" title={t('modal.copy_link')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-        {t('modal.share')}
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <span class="hidden sm:inline">{t('modal.share')}</span>
       </button>
       {/* Duplicar.
           Va aquí y no en la tarjeta del tablero porque duplicar se decide
           después de mirar el ticket entero, no de pasada. */}
       <button id="btn-duplicate-issue" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1 hidden" title={t('issue.duplicate_hint')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        {t('issue.duplicate')}
+        <span class="hidden sm:inline">{t('issue.duplicate')}</span>
       </button>
       <button id="btn-delete-issue" class="text-forge-error hover:bg-red-400/10 hover:text-forge-error px-3 py-1.5 rounded-md text-xs font-bold transition-all hidden border border-transparent hover:border-red-400/20">
         {t('modal.delete')}
@@ -82,12 +95,12 @@ const t = useTranslations(lang);
   </div>
   
   <!-- Content -->
-  <div class="p-8 flex-1 flex flex-col gap-8">
+  <div class="p-5 sm:p-8 flex-1 flex flex-col gap-6 sm:gap-8">
     <div class="relative group">
       <input type="text" id="modal-issue-title" aria-label={t('a11y.issue_title')} class="text-2xl font-black text-forge-text bg-transparent border-b-2 border-transparent hover:border-forge-border/50 focus:border-forge-secondary focus:outline-none w-full transition-all pb-1 tracking-tight" value="Loading...">
     </div>
     
-    <div class="grid grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       <div class="space-y-2 relative">
         <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5" for="modal-issue-assignee">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -139,7 +152,7 @@ const t = useTranslations(lang);
       </div>
     </div>
     
-    <div class="grid grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       <div class="space-y-2">
         <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-sprint">{t('modal.sprint')}</label>
         <select id="modal-issue-sprint" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
@@ -204,7 +217,7 @@ const t = useTranslations(lang);
         </div>
       </div>
       
-      <div class="grid grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div class="space-y-1.5">
           <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-estimated">{t('modal.estimated_hours')}</label>
           <input type="number" id="modal-issue-estimated" value="0" min="0" step="0.5" class="w-full bg-forge-bg border border-forge-border/50 rounded-lg py-2 px-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all font-mono" />
@@ -278,13 +291,13 @@ const t = useTranslations(lang);
 </div>
 
 <!-- Log Work Modal -->
-<dialog id="log-work-modal" class="bg-forge-panel border border-forge-border rounded-xl p-6 w-full max-w-[400px] text-forge-text shadow-2xl backdrop:bg-black/60">
+<dialog id="log-work-modal" class="bg-forge-panel border border-forge-border rounded-xl p-5 sm:p-6 w-[calc(100vw-2rem)] max-w-[400px] text-forge-text shadow-2xl backdrop:bg-black/60">
   <h2 class="text-lg font-bold mb-5 flex items-center gap-2">
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
     {t('modal.log_work')}
   </h2>
   <div class="space-y-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-1.5" for="log-work-hours">{t('modal.time_spent')}</label>
         <input type="number" id="log-work-hours" step="0.25" min="0.25" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-forge-text focus:border-forge-secondary focus:outline-none font-mono" placeholder="e.g. 2.5">

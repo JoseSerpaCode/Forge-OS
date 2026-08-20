@@ -91,13 +91,25 @@ for (const p of pages) {
     el botón para volver al texto. */}
 <div id="page-tree-backdrop" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
 
-{/* Abre el cajón. Solo en móvil: en escritorio el árbol ya está a la vista. */}
+{/* Abre el cajón. Solo en móvil: en escritorio el árbol ya está a la vista.
+
+    `z-20` y no `z-50`: por encima del contenido de la página, pero por debajo
+    del velo del propio cajón (`z-30`) y del desplegable de notificaciones
+    (`z-50`). Con `z-50` el botón se quedaba flotando encima de los dos, tapando
+    la cabecera del cajón que él mismo acababa de abrir.
+
+    Anclado **arriba**, no abajo. Abajo se montaba encima de la primera pestaña
+    de la barra de navegación, y subirlo para esquivarla lo dejaba fuera del
+    área visible: en emulación móvil el viewport de maquetación es más alto que
+    el que se ve, así que `bottom` no cae donde parece. Arriba no hay ninguna de
+    las dos cosas — y es donde el índice está en escritorio, así que se busca en
+    el mismo sitio en las dos pantallas. */}
 <button
   id="btn-open-tree"
   type="button"
   aria-controls="page-tree-aside"
   aria-expanded="false"
-  class="md:hidden fixed bottom-5 left-5 z-30 w-12 h-12 rounded-full bg-forge-primary text-forge-on-accent shadow-lg flex items-center justify-center"
+  class="md:hidden fixed top-20 left-4 z-20 w-12 h-12 rounded-full bg-forge-primary text-forge-on-accent shadow-lg flex items-center justify-center"
   aria-label={t('kb.open_tree')}
 >
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>

@@ -78,6 +78,7 @@ let visibleColumns = columns.map((c: any) => c.id);
 if (view?.visibleColumnsJson) {
   try { visibleColumns = JSON.parse(view.visibleColumnsJson); } catch(e){}
 }
+import CeldaValor from '../../../../components/db/CeldaValor.astro';
 ---
 
 <MainLayout hideFooter={true} title={`${database.name} — ${workspace.name}`} workspaceId={workspace.id}>
@@ -113,7 +114,81 @@ if (view?.visibleColumnsJson) {
       </div>
     </header>
 
-    <div class="flex-1 bg-forge-panel border border-forge-border rounded-xl overflow-hidden flex flex-col shadow-sm">
+    {/*
+      Una tabla no cabe en 393 px.
+
+      Estaba dentro de un `overflow-auto`, así que técnicamente se podía leer:
+      desplazando en horizontal, columna a columna, perdiendo de vista de qué
+      fila era cada valor en cuanto la primera columna salía por la izquierda.
+      Se puede usar y aun así no sirve.
+
+      En móvil cada fila pasa a ficha: la primera columna hace de título —que es
+      lo que identifica la fila— y el resto van como pares etiqueta/valor. A
+      partir del cuarto campo se pliegan, porque una ficha de doce filas vuelve
+      a ser una tabla, solo que en vertical.
+
+      El `<details>` es de serie: se abre con el dedo y con el teclado, sale en
+      la búsqueda de la página y no cuesta una línea de JavaScript.
+    */}
+    <div class="md:hidden flex-1 flex flex-col gap-3 overflow-y-auto pb-2">
+      {entries.length === 0 ? (
+        <p class="bg-forge-panel border border-forge-border rounded-xl px-4 py-12 text-center text-forge-muted text-xs">{t('db.view_empty')}</p>
+      ) : (
+        entries.map(entry => {
+          const payload = JSON.parse(entry.payloadJson);
+          const cols = columns.filter((c: any) => visibleColumns.includes(c.id));
+          const principal = cols[0];
+          const resto = cols.slice(1);
+          const alaVista = resto.slice(0, 3);
+          const plegados = resto.slice(3);
+          return (
+            <article class="bg-forge-panel border border-forge-border rounded-xl overflow-hidden">
+              <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-forge-border">
+                <h3 class="text-[15px] font-bold truncate min-w-0">
+                  {principal ? <CeldaValor tipo={principal.type} valor={payload[principal.id]} archivos={archivos} /> : null}
+                </h3>
+                {canEdit && (
+                  <button class="btn-delete-row shrink-0 text-forge-muted hover:text-forge-error p-2 -mr-2 transition-colors" data-id={entry.id} aria-label={t('db.delete_row')}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                )}
+              </div>
+              <dl class="px-4 py-3 flex flex-col gap-2.5 m-0">
+                {alaVista.map((col: any) => (
+                  <div class="flex items-start justify-between gap-3">
+                    <dt class="text-xs text-forge-muted shrink-0">{col.name}</dt>
+                    <dd class="text-sm text-right m-0 min-w-0 break-words">
+                      <CeldaValor tipo={col.type} valor={payload[col.id]} archivos={archivos} />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {plegados.length > 0 && (
+                <details class="px-4 pb-3">
+                  <summary class="text-[13px] font-semibold text-forge-accent-text cursor-pointer py-1.5 list-none">
+                    {plegados.length === 1
+                      ? t('db.more_fields_one')
+                      : (t('db.more_fields') as string).replace('{n}', String(plegados.length))}
+                  </summary>
+                  <dl class="pt-2 flex flex-col gap-2.5 m-0">
+                    {plegados.map((col: any) => (
+                      <div class="flex items-start justify-between gap-3">
+                        <dt class="text-xs text-forge-muted shrink-0">{col.name}</dt>
+                        <dd class="text-sm text-right m-0 min-w-0 break-words">
+                          <CeldaValor tipo={col.type} valor={payload[col.id]} archivos={archivos} />
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              )}
+            </article>
+          );
+        })
+      )}
+    </div>
+
+    <div class="hidden md:flex flex-1 bg-forge-panel border border-forge-border rounded-xl overflow-hidden flex-col shadow-sm">
       <div class="overflow-auto flex-1 custom-scrollbar">
         <table class="w-full text-left border-collapse text-sm">
           <thead class="sticky top-0 bg-forge-panel z-10 shadow-[0_1px_0_var(--forge-border)]">
@@ -136,7 +211,7 @@ if (view?.visibleColumnsJson) {
             {entries.length === 0 ? (
               <tr>
                 <td colspan={visibleColumns.length + 1} class="px-4 py-12 text-center text-forge-muted text-xs">
-                  This view is empty. Click "New Row" to add data.
+                  {t('db.view_empty')}
                 </td>
               </tr>
             ) : (
@@ -148,24 +223,7 @@ if (view?.visibleColumnsJson) {
                       const val = payload[col.id];
                       return (
                         <td class="px-4 py-2 truncate max-w-[200px]">
-                          {col.type === 'file' ? (
-                            (() => {
-                              const f = val ? archivos.get(val) : null;
-                              // Un id que ya no resuelve —el archivo se quitó—
-                              // no se enseña como un id crudo: eso no le dice
-                              // nada a nadie.
-                              if (!f) return <span class="text-forge-muted italic">{t('db.no_file')}</span>;
-                              return f.webViewLink ? (
-                                <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" class="text-forge-accent-text hover:underline">{f.name}</a>
-                              ) : (
-                                <span>{f.name}</span>
-                              );
-                            })()
-                          ) : col.type === 'select' && val ? (
-                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-forge-secondary/10 text-forge-accent-text border border-forge-secondary/20">{val}</span>
-                          ) : (
-                            <span class={val ? '' : 'text-forge-muted italic'}>{val !== null && val !== undefined && val !== '' ? val : t('db.empty_cell')}</span>
-                          )}
+                          <CeldaValor tipo={col.type} valor={val} archivos={archivos} />
                         </td>
                       );
                     })}

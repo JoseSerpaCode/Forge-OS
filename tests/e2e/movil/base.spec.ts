@@ -102,16 +102,27 @@ test('los diálogos tampoco se salen de la pantalla', async ({ page }) => {
 });
 
 test.describe('la navegación funciona sin ratón ni teclado', () => {
-  test('el menú lateral se abre y se cierra', async ({ page }) => {
+  test('se llega a las secciones desde la barra inferior', async ({ page }) => {
+    /**
+     * Antes esto comprobaba el cajón lateral, que era el único menú de móvil.
+     * Ya no lo es: la navegación bajó al pulgar en cuatro pestañas y la
+     * hamburguesa se retiró, porque tener los dos menús a la vez obliga a
+     * aprenderse dos mapas de la misma aplicación.
+     *
+     * Se mantiene lo que la prueba siempre quiso decir —«se puede llegar a las
+     * secciones sin ratón ni teclado»— comprobándolo sobre el menú que hay.
+     */
     await entrar(page);
-    // En móvil la barra lateral es un cajón: sin el botón no hay forma de
-    // llegar a ninguna sección.
-    const boton = page.locator('#sidebar-toggle');
-    await expect(boton).toBeVisible();
 
-    const barra = page.locator('aside').first();
-    await boton.tap();
+    const barra = page.locator('nav.nav-movil');
     await expect(barra).toBeInViewport();
+    await expect(page.locator('#sidebar-toggle')).toBeHidden();
+
+    const pestanas = barra.locator('.tab-movil');
+    await expect(pestanas).toHaveCount(4);
+    for (const p of await pestanas.all()) {
+      await expect(p).toBeInViewport();
+    }
   });
 
   test('se puede buscar sin teclado', async ({ page }) => {
