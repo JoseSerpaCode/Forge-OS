@@ -29,6 +29,7 @@ interface Props {
 const { issue, canEdit = false, arrastrable = canEdit, tipo = null } = Astro.props;
 
 import { useTranslations } from '../../i18n/ui';
+import { nombreVisible } from '../../lib/issueTypes';
 import LabelChip from '../labels/LabelChip.astro';
 import { fecha, vencida } from '../../lib/fechas';
 const lang = Astro.locals.lang || 'en';
@@ -85,7 +86,7 @@ const t = useTranslations(lang);
       style={tipo ? `border-color: ${tipo.color}55` : undefined}>
       {tipo && <span class="w-1.5 h-1.5 rounded-full shrink-0" style={`background:${tipo.color}`} aria-hidden="true"></span>}
       <span class="text-forge-muted">
-        {tipo ? (tipo.isBuiltin ? (t(`type.${tipo.key}` as any) || tipo.name) : tipo.name) : issue.type}
+        {tipo ? nombreVisible(tipo, t) : issue.type}
       </span>
     </span>
   </div>

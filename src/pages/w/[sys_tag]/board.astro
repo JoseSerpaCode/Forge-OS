@@ -5,7 +5,7 @@ import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
 import { deVarias, listar as listarEtiquetas } from '../../../lib/labels';
-import { listar as listarTipos } from '../../../lib/issueTypes';
+import { listar as listarTipos, nombreVisible } from '../../../lib/issueTypes';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
 const { sys_tag } = Astro.params;
@@ -487,7 +487,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-type">{t('modal.type')}</label>
         <select id="new-issue-type" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
           {tiposDelEspacio.map((ti) => (
-            <option value={ti.key}>{ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name}</option>
+            <option value={ti.key}>{nombreVisible(ti, t)}</option>
           ))}
         </select>
       </div>
