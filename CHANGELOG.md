@@ -6,6 +6,14 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.26.3] - 2026-08-23
+
+### Fixed
+
+- **No se podían poner horas estimadas al crear un ticket**, y el hueco estaba en las dos capas: el formulario no tenía el campo y `IssueService.create()` ni siquiera incluía la columna en su `INSERT`, mientras `update()` sí la tenía entre sus campos permitidos. La única forma de estimar era crear el ticket y volver a abrirlo. `due_date`, un campo idéntico en dificultad, sí estaba: fue un olvido, no una decisión.
+- El número se limpia en el servidor. Llega de fuera, así que un texto, un negativo o un `Infinity` habrían entrado tal cual en una columna `REAL` y habrían salido después en los totales del sprint.
+- Dos mensajes del formulario que estaban escritos en inglés a mano —«Title is required» y «Creating...»— pasan por el diccionario.
+
 ## [1.26.2] - 2026-08-20
 
 ### Fixed
