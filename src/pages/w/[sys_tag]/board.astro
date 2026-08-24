@@ -437,6 +437,8 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     data-t-deactivate={t('sprint.deactivate_confirm')}
     data-t-err-deactivate={t('sprint.err_deactivate')}
     data-t-err-create={t('issue.err_create')}
+    data-t-err-title={t('issue.err_title')}
+    data-t-creating={t('issue.creating')}
     data-t-err-delete={t('sprint.err_delete')}
     data-t-err={t('sprint.err_close')}
     data-t-no-target={t('sprint.err_no_target')}
@@ -512,6 +514,10 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       <div>
         <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-due-date">{t('modal.due_date') || 'Due Date'}</label>
         <input type="date" id="new-issue-due-date" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none font-mono" />
+      </div>
+      <div>
+        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-estimated">{t('modal.estimated_hours')}</label>
+        <input type="number" id="new-issue-estimated" min="0" step="0.5" placeholder="0" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none font-mono" />
       </div>
       <div>
         <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-desc">{t('modal.description') || 'Description'}</label>
@@ -623,10 +629,11 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       const assigneeId = (document.getElementById('new-issue-assignee') as HTMLSelectElement).value;
       const dueDate = (document.getElementById('new-issue-due-date') as HTMLInputElement).value;
       const description = (document.getElementById('new-issue-desc') as HTMLTextAreaElement).value;
+      const estimated = (document.getElementById('new-issue-estimated') as HTMLInputElement)?.value;
 
-      if (!title) return window.showToast?.('Title is required', 'error');
+      if (!title) return window.showToast?.(dialogoCierre?.getAttribute('data-t-err-title') || '', 'error');
 
-      saveIssueBtn.textContent = 'Creating...';
+      saveIssueBtn.textContent = dialogoCierre?.getAttribute('data-t-creating') || '';
       const sysTag = window.location.pathname.split('/')[2];
       const res = await fetch(`/api/w/${sysTag}/issues`, {
         method: 'POST',
@@ -637,7 +644,8 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           sprint_id: sprintId || null, 
           assignee_id: assigneeId || null,
           due_date: dueDate || null,
-          description: description || null
+          description: description || null,
+          estimated_hours: estimated ? Number(estimated) : 0
         })
       });
 

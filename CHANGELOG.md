@@ -18,6 +18,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Renombrar un tipo de ticket de fábrica no se veía en ninguna parte.** La regla que decide qué nombre enseñar estaba copiada **cinco veces** —tarjeta, tabla del hub, modal, desplegable del tablero y ajustes— y las cinco ignoraban el nombre escrito cuando el tipo era de fábrica: siempre ganaba la traducción de la clave. Llamar «Incidencia» a «Task» solo se veía al volver a abrir el diálogo de renombrar, que lo lee de otro sitio.
 - La regla buena es la que el proyecto ya aplica a las etiquetas y a los tipos propios: **lo que escribe una persona no se traduce**. Ahora se traduce mientras el tipo esté intacto —quien nunca renombra, que es casi todo el mundo, sigue viendo «Tarea» y «Task» según el idioma— y en cuanto alguien le cambia el nombre gana el suyo en los dos. Se decide comparando contra el nombre con el que nació, no mirando solo `is_builtin`.
 - Las cinco copias pasan a una sola función, `nombreVisible()`, junto a `mapaPorClave()` que ya existía para esto mismo. Cinco copias de la misma expresión es exactamente cómo se llegó aquí.
+- **No se podían poner horas estimadas al crear un ticket**, y el hueco estaba en las dos capas: el formulario no tenía el campo y `IssueService.create()` ni siquiera incluía la columna en su `INSERT`, mientras `update()` sí la tenía entre sus campos permitidos. La única forma de estimar era crear el ticket y volver a abrirlo. `due_date`, un campo idéntico en dificultad, sí estaba: fue un olvido, no una decisión.
+- El número se limpia en el servidor. Llega de fuera, así que un texto, un negativo o un `Infinity` habrían entrado tal cual en una columna `REAL` y habrían salido después en los totales del sprint.
+- Dos mensajes del formulario que estaban escritos en inglés a mano —«Title is required» y «Creating...»— pasan por el diccionario.
 
 ## [1.26.2] - 2026-08-20
 

@@ -93,5 +93,7 @@ export const es = {
   'sprint.err_delete': 'No se ha podido borrar el sprint.',
   'board.sprint_actions': 'Sprint',
   'board.status_filter': 'Filtrar por estado',
+  'issue.err_title': 'El ticket necesita un título.',
+  'issue.creating': 'Creando…',
   'card.move_to': 'Mover a',
 } as const;
