@@ -1,5 +1,6 @@
 ---
 import { useTranslations } from '../../i18n/ui';
+import { nombreVisible } from '../../lib/issueTypes';
 import LabelPicker from '../labels/LabelPicker.astro';
 interface Props {
   sprints?: any[];
@@ -68,7 +69,7 @@ const t = useTranslations(lang);
     <div class="flex items-center gap-3 min-w-0">
       <select id="modal-issue-type" aria-label={t('a11y.issue_type')} class="px-2 py-1 rounded-md text-[11px] font-bold tracking-wider bg-forge-bg/50 text-forge-text border border-forge-border/50 focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/50 focus:outline-none uppercase transition-all shadow-sm">
         {issueTypes.map((ti) => (
-          <option value={ti.key}>{ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name}</option>
+          <option value={ti.key}>{nombreVisible(ti, t)}</option>
         ))}
       </select>
       <span id="modal-issue-id" class="font-mono text-[13px] text-forge-muted tracking-wide font-medium truncate">ID-XXX</span>

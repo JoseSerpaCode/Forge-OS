@@ -22,6 +22,7 @@ interface Props {
 const { tasks, sys_tag, emptyMessage, tipos } = Astro.props as Props;
 
 import { useTranslations } from '../../i18n/ui';
+import { nombreVisible } from '../../lib/issueTypes';
 import { fecha } from '../../lib/fechas';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -70,7 +71,7 @@ const statusColor: Record<string, string> = {
                   // no, porque lo escribió alguien. Sin tipo resuelto se enseña
                   // la clave, que es fea pero es información.
                   const nombre = ti
-                    ? (ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name)
+                    ? nombreVisible(ti, t)
                     : (task.type || 'task');
                   return (
                     <span

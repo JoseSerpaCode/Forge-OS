@@ -6,6 +6,14 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.27.0] - 2026-08-23
+
+### Fixed
+
+- **Renombrar un tipo de ticket de fábrica no se veía en ninguna parte.** La regla que decide qué nombre enseñar estaba copiada **cinco veces** —tarjeta, tabla del hub, modal, desplegable del tablero y ajustes— y las cinco ignoraban el nombre escrito cuando el tipo era de fábrica: siempre ganaba la traducción de la clave. Llamar «Incidencia» a «Task» solo se veía al volver a abrir el diálogo de renombrar, que lo lee de otro sitio.
+- La regla buena es la que el proyecto ya aplica a las etiquetas y a los tipos propios: **lo que escribe una persona no se traduce**. Ahora se traduce mientras el tipo esté intacto —quien nunca renombra, que es casi todo el mundo, sigue viendo «Tarea» y «Task» según el idioma— y en cuanto alguien le cambia el nombre gana el suyo en los dos. Se decide comparando contra el nombre con el que nació, no mirando solo `is_builtin`.
+- Las cinco copias pasan a una sola función, `nombreVisible()`, junto a `mapaPorClave()` que ya existía para esto mismo. Cinco copias de la misma expresión es exactamente cómo se llegó aquí.
+
 ## [1.26.2] - 2026-08-20
 
 ### Fixed

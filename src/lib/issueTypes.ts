@@ -107,14 +107,56 @@ export function listar(workspaceId: string): TipoTicket[] {
   ).all(workspaceId) as any[]).map(aTipo);
 }
 
+/**
+ * Los cuatro de siempre, con el nombre con el que nacen.
+ *
+ * Está aquí arriba y no dentro de `sembrarDeFabrica()` porque `nombreVisible()`
+ * necesita saber cuál era el nombre original para distinguir un tipo intacto de
+ * uno renombrado. Dos listas separadas serían dos verdades sobre lo mismo.
+ */
+const DE_FABRICA = [
+  { key: 'task', name: 'Task', color: '#0091FF' },
+  { key: 'bug', name: 'Bug', color: '#E5484D' },
+  { key: 'story', name: 'Story', color: '#30A46C' },
+  { key: 'epic', name: 'Epic', color: '#8E4EC6' },
+] as const;
+
+/** El nombre con el que nació cada tipo de fábrica, por clave. */
+const NOMBRE_ORIGINAL = new Map<string, string>(DE_FABRICA.map((t) => [t.key, t.name]));
+
+/**
+ * El nombre que se enseña de un tipo, en el idioma que toca.
+ *
+ * Esta regla estaba copiada **cinco veces**, y las cinco tenían el mismo fallo:
+ *
+ *     ti.isBuiltin ? (t(`type.${ti.key}`) || ti.name) : ti.name
+ *
+ * Para un tipo de fábrica eso ignora `ti.name` **siempre**, así que renombrar
+ * «Tarea» a «Incidencia» no se veía en ninguna parte: ni en la tarjeta, ni en
+ * la tabla del hub, ni en los desplegables. El único sitio donde aparecía el
+ * nombre nuevo era el diálogo de renombrar, que lo lee de un `data-name`.
+ *
+ * La regla buena es la que el proyecto ya aplica a las etiquetas y a los tipos
+ * propios: **lo que escribe una persona no se traduce**. Así que se traduce
+ * solo mientras el tipo esté intacto; en cuanto alguien le cambia el nombre,
+ * gana el suyo en los dos idiomas.
+ *
+ * Se compara contra el nombre original y no contra un `is_builtin` a secas
+ * porque quien nunca renombra —la mayoría— tiene que seguir viendo «Tarea» y
+ * «Task» según el idioma, que es lo que hace útil la traducción.
+ */
+export function nombreVisible(
+  tipo: { key: string; name: string; isBuiltin: boolean } | null | undefined,
+  t: (clave: any) => any
+): string {
+  if (!tipo) return '';
+  if (!tipo.isBuiltin) return tipo.name;
+  if (tipo.name !== NOMBRE_ORIGINAL.get(tipo.key)) return tipo.name;
+  return (t(`type.${tipo.key}`) as string) || tipo.name;
+}
+
 /** Los cuatro de siempre, para un espacio que todavía no tiene ninguno. */
 export function sembrarDeFabrica(workspaceId: string): void {
-  const DE_FABRICA = [
-    { key: 'task', name: 'Task', color: '#0091FF' },
-    { key: 'bug', name: 'Bug', color: '#E5484D' },
-    { key: 'story', name: 'Story', color: '#30A46C' },
-    { key: 'epic', name: 'Epic', color: '#8E4EC6' },
-  ];
   const insertar = db.prepare(`
     INSERT OR IGNORE INTO issue_types (id, workspace_id, key, name, color, position, is_builtin)
     VALUES (?, ?, ?, ?, ?, ?, 1)
