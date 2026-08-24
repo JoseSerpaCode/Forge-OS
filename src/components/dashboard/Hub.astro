@@ -3,6 +3,7 @@ import Logo from '../brand/Logo.astro';
 import WorkspaceIcon from '../brand/WorkspaceIcon.astro';
 import { mapaPorClave } from '../../lib/issueTypes';
 import { nombreDeRol } from '../../lib/roles';
+import { vencida } from '../../lib/fechas';
 import { espaciosDelHub, tareasPendientes } from '../../lib/consultas';
 // src/pages/index.astro
 import MainLayout from '../../layouts/MainLayout.astro';
@@ -73,10 +74,20 @@ for (const wsId of new Set(myTasks.map((t) => t.workspace_id))) {
   for (const [clave, tipo] of mapaPorClave(wsId)) tiposPendientes.set(`${wsId}:${clave}`, tipo);
 }
 
-// Vencidas: comparando solo la fecha, no la hora. Una entrega «de hoy» no está
-// vencida a las nueve de la mañana.
-const hoy = new Date().toISOString().slice(0, 10);
-const vencidas = pendientes.filter((tarea) => tarea.due_date && String(tarea.due_date).slice(0, 10) < hoy).length;
+/**
+ * Vencidas, con el helper y no a mano.
+ *
+ * Aquí había un `new Date().toISOString().slice(0, 10)`, que da el día en
+ * **UTC**. `lib/fechas.ts` documenta justo este caso en el comentario de
+ * `hoyLocal()`: en Bogotá, entre las siete de la tarde y medianoche, el
+ * servidor ya cree que es mañana y marca como vencido lo que vence hoy. Se
+ * veía como una tarea vencida que no lo estaba, cada tarde.
+ *
+ * `vencida()` existía desde entonces y `IssueCard.astro` ya la usa; este
+ * contador reimplementó la comparación por su cuenta y se trajo el fallo de
+ * vuelta.
+ */
+const vencidas = pendientes.filter((tarea) => vencida(tarea.due_date)).length;
 ---
 
 <MainLayout title={t('hub.title')}>

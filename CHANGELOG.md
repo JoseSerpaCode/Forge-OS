@@ -6,6 +6,16 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.26.3] - 2026-08-23
+
+### Security
+
+- **Rechazar una solicitud de amistad que no existe devolvía la fila entera de la tabla.** El 404 incluía un `dbState` con el `SELECT *` de la amistad —`action_user_id`, el id de la otra persona, las marcas de tiempo— a quien acababa de fallar la comprobación de permisos, y había además un `console.log` de cada intento. Era depuración que se quedó puesta, y convertía un «no puedes» en un volcado de la tabla. Sus dos hermanos, aceptar y cancelar, responden con la frase a secas: este era el único de los tres que se salía del patrón.
+
+### Fixed
+
+- **El hub marcaba como vencida una tarea que vence hoy.** El contador comparaba con `new Date().toISOString()`, que da el día en UTC: en Bogotá, a partir de las siete de la tarde, el servidor ya cree que es mañana. `lib/fechas.ts` documenta ese caso exacto en su comentario y expone `vencida()` desde entonces —la tarjeta del tablero ya la usa—, pero este contador reimplementó la comparación por su cuenta y se trajo el fallo de vuelta. No falla nunca por la mañana, así que es de los que se descartan como manía de uno.
+
 ## [1.26.2] - 2026-08-20
 
 ### Fixed
