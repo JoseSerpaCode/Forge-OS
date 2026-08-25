@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.27.0] - 2026-08-23
+
+### Security
+
+- **Rechazar una solicitud de amistad que no existe devolvía la fila entera de la tabla.** El 404 incluía un `dbState` con el `SELECT *` de la amistad —`action_user_id`, el id de la otra persona, las marcas de tiempo— a quien acababa de fallar la comprobación de permisos, y había además un `console.log` de cada intento. Era depuración que se quedó puesta, y convertía un «no puedes» en un volcado de la tabla. Sus dos hermanos, aceptar y cancelar, responden con la frase a secas: este era el único de los tres que se salía del patrón.
+
+### Fixed
+
+- **El hub marcaba como vencida una tarea que vence hoy.** El contador comparaba con `new Date().toISOString()`, que da el día en UTC: en Bogotá, a partir de las siete de la tarde, el servidor ya cree que es mañana. `lib/fechas.ts` documenta ese caso exacto en su comentario y expone `vencida()` desde entonces —la tarjeta del tablero ya la usa—, pero este contador reimplementó la comparación por su cuenta y se trajo el fallo de vuelta. No falla nunca por la mañana, así que es de los que se descartan como manía de uno.
+- **Renombrar un tipo de ticket de fábrica no se veía en ninguna parte.** La regla que decide qué nombre enseñar estaba copiada **cinco veces** —tarjeta, tabla del hub, modal, desplegable del tablero y ajustes— y las cinco ignoraban el nombre escrito cuando el tipo era de fábrica: siempre ganaba la traducción de la clave. Llamar «Incidencia» a «Task» solo se veía al volver a abrir el diálogo de renombrar, que lo lee de otro sitio.
+- La regla buena es la que el proyecto ya aplica a las etiquetas y a los tipos propios: **lo que escribe una persona no se traduce**. Ahora se traduce mientras el tipo esté intacto —quien nunca renombra, que es casi todo el mundo, sigue viendo «Tarea» y «Task» según el idioma— y en cuanto alguien le cambia el nombre gana el suyo en los dos. Se decide comparando contra el nombre con el que nació, no mirando solo `is_builtin`.
+- Las cinco copias pasan a una sola función, `nombreVisible()`, junto a `mapaPorClave()` que ya existía para esto mismo. Cinco copias de la misma expresión es exactamente cómo se llegó aquí.
+- **No se podían poner horas estimadas al crear un ticket**, y el hueco estaba en las dos capas: el formulario no tenía el campo y `IssueService.create()` ni siquiera incluía la columna en su `INSERT`, mientras `update()` sí la tenía entre sus campos permitidos. La única forma de estimar era crear el ticket y volver a abrirlo. `due_date`, un campo idéntico en dificultad, sí estaba: fue un olvido, no una decisión.
+- El número se limpia en el servidor. Llega de fuera, así que un texto, un negativo o un `Infinity` habrían entrado tal cual en una columna `REAL` y habrían salido después en los totales del sprint.
+- Dos mensajes del formulario que estaban escritos en inglés a mano —«Title is required» y «Creating...»— pasan por el diccionario.
+
+- **Las etiquetas de una tarea no salían en «Mis Tareas» del hub**, aunque la misma tarea sí las enseñara en el tablero — y el hub es justo donde se mira para decidir qué tocar. Faltaban las dos mitades: la consulta no las traía y la tabla no tenía dónde ponerlas. Se leen con `deVarias()`, el mismo lector en lote que ya usa el tablero.
+- **El panel de atajos de la base de conocimiento prometía teclas que el navegador se queda.** Listaba `Ctrl+K` para insertar un enlace —que va a la barra de búsqueda del navegador— y `Ctrl+U` para subrayar, que abre «ver código fuente»; ningún `preventDefault()` de la página los recupera de forma fiable, así que quien los probaba concluía que la aplicación falla. Se quitan los dos y se dejan los que sí funcionan. Sus cinco textos estaban además escritos en inglés a mano: solo el título pasaba por el diccionario.
+
 ## [1.26.2] - 2026-08-20
 
 ### Fixed

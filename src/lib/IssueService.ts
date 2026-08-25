@@ -127,10 +127,25 @@ export class IssueService {
       position = lastIssue.position + 100000;
     }
 
+    /**
+     * Las horas estimadas se insertan al crear, no solo al editar.
+     *
+     * Faltaban en este `INSERT` mientras `update()` sí las tenía entre sus
+     * `allowedFields`, así que la única forma de estimar un ticket era crearlo
+     * y volver a abrirlo. `due_date`, que es un campo idéntico en dificultad,
+     * sí estaba: fue un olvido, no una decisión.
+     *
+     * Se limpia aquí porque el número llega de fuera: un texto, un negativo o
+     * un `Infinity` entrarían tal cual en una columna REAL y saldrían luego en
+     * los totales del sprint.
+     */
+    const estimadas = Number(data.estimated_hours);
+    const horas = Number.isFinite(estimadas) && estimadas > 0 ? estimadas : 0;
+
     db.prepare(`
-      INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, description)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position, data.assignee_id || null, data.due_date || null, data.description || null);
+      INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, description, estimated_hours)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position, data.assignee_id || null, data.due_date || null, data.description || null, horas);
 
     // Avisar a quien queda asignado **al crear**, no solo al editar después.
     //

@@ -6,7 +6,7 @@ import { useTranslations } from '../../../i18n/ui';
 import LabelChip from '../../../components/labels/LabelChip.astro';
 import WorkspaceIcon from '../../../components/brand/WorkspaceIcon.astro';
 import { COLORES, listar as listarEtiquetas } from '../../../lib/labels';
-import { listar as listarTipos } from '../../../lib/issueTypes';
+import { listar as listarTipos, nombreVisible } from '../../../lib/issueTypes';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
 const user = Astro.locals.user!;
@@ -367,7 +367,7 @@ const wsPendingInvites = (db.prepare(`
             <div class="flex items-center gap-3 min-w-0 flex-wrap">
               <span class="w-3 h-3 rounded-full shrink-0" style={`background:${ti.color}`} aria-hidden="true"></span>
               <span class="text-sm font-semibold text-forge-text truncate">
-                {ti.isBuiltin ? (t(`type.${ti.key}` as any) || ti.name) : ti.name}
+                {nombreVisible(ti, t)}
               </span>
               <span class="text-xs text-forge-muted truncate">
                 {ti.usos === 0 ? t('types.unused') : ti.usos === 1 ? t('types.used_in_one') : t('types.used_in').replace('{n}', String(ti.usos))}
