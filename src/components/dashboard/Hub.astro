@@ -3,6 +3,7 @@ import Logo from '../brand/Logo.astro';
 import WorkspaceIcon from '../brand/WorkspaceIcon.astro';
 import { mapaPorClave } from '../../lib/issueTypes';
 import { nombreDeRol } from '../../lib/roles';
+import { deVarias } from '../../lib/labels';
 import { vencida } from '../../lib/fechas';
 import { espaciosDelHub, tareasPendientes } from '../../lib/consultas';
 // src/pages/index.astro
@@ -69,6 +70,18 @@ const gruposPendientes = [...porEspacio.values()];
  * así que «incidencia» puede ser roja en uno y no existir en otro. Se consulta
  * una vez por espacio con tareas, no una por tarea.
  */
+/**
+ * Las etiquetas de las tareas pendientes.
+ *
+ * No salían por ninguna parte: ni la consulta las traía ni la tabla tenía
+ * dónde ponerlas, así que la misma tarea enseñaba sus etiquetas en el tablero
+ * y ninguna en el hub — que es justo donde se mira para decidir qué tocar.
+ *
+ * Se leen con `deVarias()`, el mismo lector en lote que usa el tablero: una
+ * consulta para todas en vez de una por fila.
+ */
+const etiquetasPendientes = deVarias('issue', pendientes.map((t) => t.id));
+
 const tiposPendientes = new Map<string, { key: string; name: string; color: string; isBuiltin: boolean }>();
 for (const wsId of new Set(myTasks.map((t) => t.workspace_id))) {
   for (const [clave, tipo] of mapaPorClave(wsId)) tiposPendientes.set(`${wsId}:${clave}`, tipo);
@@ -223,7 +236,7 @@ const vencidas = pendientes.filter((tarea) => vencida(tarea.due_date)).length;
                       {g.tareas.length === 1 ? t('hub.one_task') : t('hub.n_tasks').replace('{n}', String(g.tareas.length))}
                     </span>
                   </a>
-                  <TaskTable tasks={g.tareas} sys_tag={g.sysTag} tipos={tiposPendientes} />
+                  <TaskTable tasks={g.tareas} sys_tag={g.sysTag} tipos={tiposPendientes} etiquetas={etiquetasPendientes} />
                 </div>
               ))}
 

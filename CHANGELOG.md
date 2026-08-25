@@ -22,6 +22,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - El número se limpia en el servidor. Llega de fuera, así que un texto, un negativo o un `Infinity` habrían entrado tal cual en una columna `REAL` y habrían salido después en los totales del sprint.
 - Dos mensajes del formulario que estaban escritos en inglés a mano —«Title is required» y «Creating...»— pasan por el diccionario.
 
+- **Las etiquetas de una tarea no salían en «Mis Tareas» del hub**, aunque la misma tarea sí las enseñara en el tablero — y el hub es justo donde se mira para decidir qué tocar. Faltaban las dos mitades: la consulta no las traía y la tabla no tenía dónde ponerlas. Se leen con `deVarias()`, el mismo lector en lote que ya usa el tablero.
+- **El panel de atajos de la base de conocimiento prometía teclas que el navegador se queda.** Listaba `Ctrl+K` para insertar un enlace —que va a la barra de búsqueda del navegador— y `Ctrl+U` para subrayar, que abre «ver código fuente»; ningún `preventDefault()` de la página los recupera de forma fiable, así que quien los probaba concluía que la aplicación falla. Se quitan los dos y se dejan los que sí funcionan. Sus cinco textos estaban además escritos en inglés a mano: solo el título pasaba por el diccionario.
+
 ## [1.26.2] - 2026-08-20
 
 ### Fixed

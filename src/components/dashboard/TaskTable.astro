@@ -18,12 +18,15 @@ interface Props {
   sys_tag?: string;
   emptyMessage?: string;
   tipos?: Map<string, { key: string; name: string; color: string; isBuiltin: boolean }>;
+  /** Etiquetas por id de ticket. Se leen en lote fuera, no una por fila. */
+  etiquetas?: Map<string, Array<{ id: string; name: string; color: string }>>;
 }
-const { tasks, sys_tag, emptyMessage, tipos } = Astro.props as Props;
+const { tasks, sys_tag, emptyMessage, tipos, etiquetas } = Astro.props as Props;
 
 import { useTranslations } from '../../i18n/ui';
 import { nombreVisible } from '../../lib/issueTypes';
 import { fecha } from '../../lib/fechas';
+import LabelChip from '../labels/LabelChip.astro';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
@@ -88,6 +91,18 @@ const statusColor: Record<string, string> = {
                 <a href={href} class="text-forge-text font-medium group-hover:text-forge-accent-text transition-colors block truncate" onclick="event.stopPropagation();">
                   {task.title}
                 </a>
+                {/* Las etiquetas, debajo del título.
+
+                    Van aquí y no en una columna propia porque la tabla ya
+                    tiene cuatro y en el hub compiten con el nombre, que es lo
+                    que se lee. Es el mismo sitio que ocupan en la tarjeta del
+                    tablero, así que la misma tarea se reconoce igual en los
+                    dos sitios. */}
+                {etiquetas?.get(task.id)?.length ? (
+                  <div class="flex flex-wrap gap-1 mt-1">
+                    {etiquetas.get(task.id)!.map((e) => <LabelChip name={e.name} color={e.color} size="sm" />)}
+                  </div>
+                ) : null}
                 <div class="text-[10px] text-forge-muted font-mono truncate mt-0.5">
                   {(task.sys_tag || sys_tag) ? `${task.sys_tag || sys_tag}-${task.id.substring(0,8)}` : task.id.substring(0,8)}
                 </div>

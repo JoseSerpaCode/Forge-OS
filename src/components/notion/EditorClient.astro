@@ -137,11 +137,21 @@ function formatDate(dateStr: string | undefined) {
           <div class="absolute right-0 top-full mt-2 w-56 bg-forge-panel border border-forge-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-3 text-xs text-forge-text pointer-events-none">
             <h4 class="font-bold text-forge-primary mb-2 border-b border-forge-border pb-1">{t('kb.shortcuts')}</h4>
             <ul class="space-y-2 text-forge-muted">
-              <li class="flex justify-between items-center"><span>Add Block</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">TAB / +</span></li>
-              <li class="flex justify-between items-center"><span>Move Block</span> <span class="text-[10px]">Drag <span class="bg-forge-bg px-1 py-0.5 rounded font-bold border border-forge-border/50">::</span></span></li>
-              <li class="flex justify-between items-center"><span>Undo/Redo</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">Ctrl Z / Y</span></li>
-              <li class="flex justify-between items-center"><span>Styles</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">Ctrl B/I/U</span></li>
-              <li class="flex justify-between items-center"><span>Link</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">Ctrl K</span></li>
+              {/* Solo los atajos que el navegador cede.
+
+                  Estaban aquí «Ctrl K» para enlace y «Ctrl B/I/U» para
+                  estilos, y de esos el navegador se queda dos: `Ctrl+K` va a
+                  su barra de búsqueda y `Ctrl+U` abre «ver código fuente».
+                  Ningún `preventDefault()` de la página los recupera de forma
+                  fiable, así que el panel prometía algo que no pasa — peor que
+                  no listarlo, porque quien lo prueba cree que la app falla.
+
+                  Los cinco textos estaban además escritos en inglés a mano;
+                  solo el título pasaba por el diccionario. */}
+              <li class="flex justify-between items-center"><span>{t('kb.sc.block')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">TAB</span></li>
+              <li class="flex justify-between items-center"><span>{t('kb.sc.move')}</span> <span class="text-[10px]">{t('kb.sc.drag')} <span class="bg-forge-bg px-1 py-0.5 rounded font-bold border border-forge-border/50">::</span></span></li>
+              <li class="flex justify-between items-center"><span>{t('kb.sc.undo')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">Ctrl Z / Y</span></li>
+              <li class="flex justify-between items-center"><span>{t('kb.sc.styles')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">Ctrl B / I</span></li>
             </ul>
           </div>
         </div>

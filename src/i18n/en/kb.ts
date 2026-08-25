@@ -26,5 +26,10 @@ export const en = {
   'kb.empty_cta': 'Click "New Page" in the sidebar to create one.',
   'kb.open_tree': 'Open page index',
   'kb.editor_tips': 'Editor tips',
+  'kb.sc.block': 'Add block',
+  'kb.sc.move': 'Move block',
+  'kb.sc.undo': 'Undo / redo',
+  'kb.sc.styles': 'Bold, italic',
+  'kb.sc.drag': 'Drag',
   'kb.shortcuts': 'Editor shortcuts',
 } as const;
