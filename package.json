@@ -60,6 +60,6 @@
     "drizzle-kit": "^0.31.10",
     "socket.io-client": "^4.8.3",
     "tsx": "^4.23.12",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
