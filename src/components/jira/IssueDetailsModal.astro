@@ -322,6 +322,7 @@ const t = useTranslations(lang);
 
 <script>
   import { escaparHtml } from '../../lib/texto';
+  import { fecha } from '../../lib/fechas';
   const closeBtn = document.getElementById('close-modal-btn');
   const modal = document.getElementById('issue-details-modal');
   const backdrop = document.getElementById('issue-details-backdrop');
@@ -656,7 +657,18 @@ const t = useTranslations(lang);
       // hasta cuatrocientas veces en el HTML de un tablero lleno, para leerla
       // una vez al abrir uno.
       const etiqueta = raizModal?.dataset.tDue || 'Due:';
-      fechaEl.textContent = `${etiqueta} ${new Date(iso + 'T00:00:00').toLocaleDateString()}`;
+      /*
+       * El mismo formato que la tarjeta, no el del navegador.
+       *
+       * Esto era un `toLocaleDateString()` **sin argumentos**, así que usaba el
+       * idioma del navegador y no el de la aplicación: la misma entrega salía
+       * «9 sept 2026» en la tarjeta y «9/09/26» al abrirla. Es el fallo que ya
+       * se corrigió una vez en `IssueCard.astro`; aquí quedó una copia suelta.
+       *
+       * Se llama a `fecha()` en vez de repetir las opciones a mano, que es
+       * exactamente cómo se llega a tener dos formatos.
+       */
+      fechaEl.textContent = `${etiqueta} ${fecha(iso, raizModal?.dataset.lang || 'en')}`;
       // El rojo de vencida se recalcula aquí: si no, una fecha movida al futuro
       // seguiría pintada en rojo hasta recargar.
       const vencida = card.dataset.status !== 'done' && new Date(iso + 'T00:00:00') < new Date();
