@@ -84,9 +84,15 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /*
+   * Run your local dev server before starting the tests.
+   *
+   * `TZ=America/Bogota` porque el servidor pinta las fechas en su zona, y en
+   * UTC —la de los runners de CI— una fecha de entrega que sale un día antes
+   * al oeste de Greenwich se ve bien. Es la zona de quien usa esto a diario.
+   */
   webServer: {
-    command: 'NODE_ENV=test PORT=4322 npm run build && NODE_ENV=test PORT=4322 node server.mjs',
+    command: 'NODE_ENV=test PORT=4322 npm run build && TZ=America/Bogota NODE_ENV=test PORT=4322 node server.mjs',
     url: 'http://localhost:4322/login', // Use /login so it waits for the astro server to actually be ready to handle requests
     reuseExistingServer: false,
     timeout: 120 * 1000,

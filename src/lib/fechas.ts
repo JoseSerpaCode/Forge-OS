@@ -20,7 +20,17 @@
  *
  * Además todo el formateo estaba clavado a `'en-US'`, así que una interfaz en
  * español enseñaba «Aug 17, 2026».
+ *
+ * Y hay un segundo tipo de valor que no es una marca de tiempo: las fechas
+ * **solo-día**, como `issues.due_date`, que guarda un `<input type="date">`
+ * como `'2026-09-09'`. Eso es un día del
+ * calendario, no un instante, y no tiene zona. Tratarlo como UTC lo ponía a
+ * medianoche en Greenwich, que en Bogotá todavía es el día 8 a las siete de la
+ * tarde: cada entrega salía un día antes de lo que se había puesto.
  */
+
+/** `'2026-09-09'`, sin hora ni zona. */
+const SOLO_DIA = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /**
  * Convierte lo que venga de la base en un `Date` real.
@@ -29,6 +39,10 @@
  * la misma con `T`, y la que ya trae `Z` o un desfase explícito. Devuelve `null`
  * ante cualquier cosa que no sepa leer, en vez de un `Invalid Date` que se
  * propaga y acaba pintando «NaN» en pantalla.
+ *
+ * Una fecha solo-día (`'2026-09-09'`) da la **medianoche local** de ese día, no
+ * la de UTC: así se formatea y se compara como el mismo día en cualquier zona,
+ * en el servidor y en el navegador.
  */
 export function deSQLite(valor: unknown): Date | null {
   if (valor instanceof Date) return Number.isNaN(valor.getTime()) ? null : valor;
@@ -37,6 +51,16 @@ export function deSQLite(valor: unknown): Date | null {
 
   const limpio = valor.trim();
   if (!limpio) return null;
+
+  const dia = SOLO_DIA.exec(limpio);
+  if (dia) {
+    const [a, m, d] = [Number(dia[1]), Number(dia[2]), Number(dia[3])];
+    const local = new Date(a, m - 1, d);
+    // `new Date(2026, 1, 30)` no falla: salta al 2 de marzo. Un día que no
+    // existe se rechaza igual que cualquier otra cosa ilegible.
+    if (local.getFullYear() !== a || local.getMonth() !== m - 1 || local.getDate() !== d) return null;
+    return local;
+  }
 
   // Si ya dice su zona —`Z` o `+05:00`— se respeta: tocarla la movería.
   const tieneZona = /(?:Z|[+-]\d{2}:?\d{2})$/.test(limpio);
@@ -115,10 +139,26 @@ export function hoyLocal(ahora: Date = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * El día del calendario de un valor, como `AAAA-MM-DD`, o `null`.
+ *
+ * Una fecha solo-día sale tal cual: no hay nada que convertir, y pasarla por
+ * `Date` es justo cómo se movía. Una marca de tiempo da el día **local** de ese
+ * instante. Es lo que espera un `<input type="date">`; el modal hacía
+ * `new Date(x).toISOString().split('T')[0]`, que da el día en UTC.
+ */
+export function diaDeCalendario(valor: unknown): string | null {
+  if (typeof valor === 'string' && SOLO_DIA.test(valor.trim())) {
+    return deSQLite(valor) ? valor.trim() : null;
+  }
+  const d = deSQLite(valor);
+  return d ? hoyLocal(d) : null;
+}
+
 /** ¿Esta fecha de entrega ya pasó? Compara días, no instantes. */
 export function vencida(valor: unknown, ahora: Date = new Date()): boolean {
-  const d = deSQLite(valor);
-  if (!d) return false;
+  const dia = diaDeCalendario(valor);
+  if (!dia) return false;
   // Una entrega «de hoy» no está vencida a las nueve de la mañana.
-  return String(valor).slice(0, 10) < hoyLocal(ahora);
+  return dia < hoyLocal(ahora);
 }
