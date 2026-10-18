@@ -39,9 +39,6 @@ test.describe('Timer UI and Auto-stop flow', () => {
     await page.waitForLoadState('networkidle');
 
     // 1. Verify "Start" button exists and click it
-    console.log(await page.url());
-    console.log(await page.content());
-    
     const startBtn = page.locator(`.issue-card[id="${issueId}"] .btn-start-timer`);
     await expect(startBtn).toBeVisible();
     await startBtn.click();
