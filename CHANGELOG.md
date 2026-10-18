@@ -15,6 +15,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Al abrir un ticket, el campo de fecha del modal se rellena con el día guardado tal cual, en vez de pasarlo por `toISOString()`, que da el día en UTC.
 - Las pruebas e2e corren el servidor y el navegador en `America/Bogota`. En UTC, que es la zona de CI, este fallo no se veía.
 
+## [1.28.1] - 2026-10-18
+
+### Security
+
+- **Dependencias con avisos de seguridad que llegan a producción.** `npm audit` contaba 22 avisos, dos de ellos críticos, y Dependabot llevaba parado desde agosto, así que nadie los había propuesto. Los que importaban:
+  - `@astrojs/node` ≤ 11.1.2: una cabecera `Host` con un puerto malformado podía tumbar el servidor. Pasa a 11.1.8.
+  - `astro` ≤ 7.2.7 (crítico): pasa a 7.4.0.
+  - `engine.io` (a través de `socket.io`), `devalue`, `proxy-addr`, `undici` y otros transitivos.
+
+  Todo se queda dentro de la misma versión mayor. Quedan 6 avisos moderados sin arreglo real, en `drizzle-kit` y `@tailwindcss/typography`; ver CLAUDE.md.
+- Astro 7.4 deja de rechazar los POST que no traen ni `Origin` ni `Sec-Fetch-Site`. Son peticiones de clientes que no son un navegador (`curl`), que no llevan las cookies de nadie y por tanto no son un vector de CSRF. Un POST hecho desde otro sitio con un navegador sigue recibiendo 403. El test que daba por hecho lo primero ahora simula el ataque real.
+
 ## [1.28.0] - 2026-10-18
 
 ### Changed

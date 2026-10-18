@@ -1,7 +1,7 @@
 # Forge OS
 
 Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Versión 1.21.0, Astro en modo SSR. Requiere Node >=22.12
+conocimiento tipo Notion. Astro en modo SSR (la versión, en `package.json`). Requiere Node >=22.12
 (tienes 26 vía mise).
 
 **El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
@@ -58,12 +58,22 @@ Si lo ves crecer: `sqlite3 forge_test.db "VACUUM;"`.
 
 ## Vulnerabilidades conocidas (no accionables)
 
-`npm audit` reporta **4 moderadas** en la cadena
-`drizzle-kit → @esbuild-kit/esm-loader → esbuild`. **No tienen arreglo**:
-`drizzle-kit@0.31.10` ya es la última y sigue arrastrando esa dependencia. npm
-sugiere "arreglarlo" con `drizzle-kit@0.18.1`, que es retroceder 13 versiones
-menores — **no lo hagas**. El aviso de esbuild solo afecta a su dev server, que
-aquí no se expone. No ejecutes `npm audit fix --force` en este repo.
+`npm audit` reporta **6 moderadas**, en dos cadenas, y **ninguna tiene arreglo
+real**: en las dos, lo que npm propone es *retroceder*.
+
+- **4 en `drizzle-kit → @esbuild-kit/esm-loader → esbuild`.** `drizzle-kit@0.31.x`
+  ya es la última y sigue arrastrando esa dependencia; npm sugiere
+  `drizzle-kit@0.18.1`, trece versiones menores atrás. El aviso de esbuild
+  solo afecta a su dev server, que aquí no se expone.
+- **2 en `@tailwindcss/typography → postcss-selector-parser`.** npm sugiere
+  bajar a `typography@0.5.4`. Solo corre al compilar el CSS, con selectores
+  nuestros, no con entrada de nadie.
+
+**No ejecutes `npm audit fix --force`** en este repo. Cualquier otro aviso que
+aparezca **sí** es accionable: en octubre de 2026 había 22, dos críticos, en
+`astro`, `@astrojs/node` y `engine.io`, que llegan a producción. Se arreglaron
+subiendo de versión menor (1.28.1). Dependabot llevaba parado desde agosto,
+así que no basta con esperar a sus PR: mira `npm audit` de vez en cuando.
 
 ## Accesibilidad: no lo deshagas sin querer
 
@@ -271,4 +281,6 @@ Guía completa en `deploy/README.md`. Tres cosas que conviene saber sin abrirla:
 
 ## Estado
 
-Remote: `git@github.com:JoseSerpaCode/Forge-OS.git`. Sin PRs ni issues abiertos.
+Remote: `git@github.com:JoseSerpaCode/Forge-OS.git`. En `main` se exige una
+revisión aprobada, y como José es el único en el repo se fusiona como
+administrador (`gh pr merge --merge --admin`) con la CI en verde.
