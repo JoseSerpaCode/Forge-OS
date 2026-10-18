@@ -24,11 +24,22 @@ test('Ajustes no ofrece conectar un proveedor sin configurar', async ({ page }) 
   await expect(page.getByText(/Not configured on this server|No configurado en este servidor/).first()).toBeVisible();
 });
 
-test('un POST sin Origin lo para el CSRF antes que nada', async ({ request }) => {
-  // Astro comprueba el Origin antes de que el endpoint vea la petición. Es la
+test('un POST desde otro sitio lo para el CSRF antes que nada', async ({ request }) => {
+  // Astro comprueba el origen antes de que el endpoint vea la petición. Es la
   // primera barrera y conviene que esté fijada: sin ella, cualquier página
   // podría desvincular proveedores de quien la visite.
-  const res = await request.post('/api/auth/oauth/github/unlink', { maxRedirects: 0 });
+  //
+  // Se simula lo que manda un navegador desde otro dominio: `Origin` y
+  // `Sec-Fetch-Site`. Hasta Astro 7.2 bastaba con no mandar `Origin` para
+  // recibir un 403; desde la 7.4 una petición sin ninguna de las dos cabeceras
+  // se trata como de un cliente que no es un navegador —`curl`—, que no lleva
+  // las cookies de nadie y por tanto no es un ataque CSRF. Ese caso llega al
+  // endpoint y lo para la falta de sesión (ver el test siguiente).
+  const res = await request.post('/api/auth/oauth/github/unlink', {
+    maxRedirects: 0,
+    headers: { Origin: 'https://evil.example', 'Sec-Fetch-Site': 'cross-site', 'Content-Type': 'application/x-www-form-urlencoded' },
+    data: '',
+  });
   expect(res.status()).toBe(403);
 });
 
