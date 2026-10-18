@@ -14,6 +14,8 @@
  */
 import bcrypt from 'bcryptjs';
 import db from '../src/lib/db.ts';
+import { fromEditorjs } from '../src/lib/notes/fromEditorjs.ts';
+import { serializeNote } from '../src/lib/notes/content.ts';
 
 const FORCE = process.argv.includes('--force');
 const PASSWORD = process.env.TEST_PASSWORD || 'LocalDevPass123!';
@@ -44,7 +46,12 @@ function daysOut(n) {
   return new Date(Date.now() + n * 86400000).toISOString();
 }
 
-/** Minimal Editor.js payload: a heading followed by paragraphs and a list. */
+/**
+ * A heading followed by paragraphs and a list, stored as a Tiptap note.
+ *
+ * Written as Editor.js blocks and run through the same converter the migration
+ * uses, so the seed also exercises it.
+ */
 function doc(heading, paragraphs, listItems = []) {
   const blocks = [
     { type: 'header', data: { text: heading, level: 2 } },
@@ -53,7 +60,7 @@ function doc(heading, paragraphs, listItems = []) {
   if (listItems.length) {
     blocks.push({ type: 'list', data: { style: 'unordered', items: listItems } });
   }
-  return JSON.stringify({ time: Date.now(), blocks, version: '2.31.6' });
+  return serializeNote(fromEditorjs({ blocks }).doc);
 }
 
 const users = [

@@ -65,8 +65,9 @@ running two commands gives you a working instance.
 - **Kanban and sprints** — epics, stories, tasks and bugs across four columns
   with persistent drag & drop, plus server-side time tracking that auto-stops
   when an issue reaches Done.
-- **Knowledge base** — a Notion-style editor built on Editor.js with tables,
-  code blocks, undo/redo and bidirectional links between pages and issues.
+- **Knowledge base** — a Notion-style editor built on Tiptap: Markdown-style
+  shortcuts as you type, a `/` menu, drag-to-reorder blocks, to-do lists,
+  tables, code blocks and bidirectional links between pages and issues.
 - **Dynamic databases** — build Airtable-style tables from the UI, without
   touching a schema file.
 - **Sprint metrics** — velocity, burndown, distribution and precision charts

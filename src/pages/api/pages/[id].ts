@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
-import { sanitizeEditorBlocksDetailed } from '../../../lib/sanitizer';
+import { validateNoteDoc, serializeNote, isStoredNote } from '../../../lib/notes/content';
 
 // Helper to resolve workspace and check permissions
 function authorize(user: any, requiredRole: 'owner' | 'editor' | 'viewer', pageId: string) {
@@ -50,20 +50,23 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       } catch (e) {
         return new Response(JSON.stringify({ error: 'Invalid JSON payload' }), { status: 400 });
       }
-      
-      if (!parsed || typeof parsed !== 'object') {
-         return new Response(JSON.stringify({ error: 'Invalid JSON payload format' }), { status: 400 });
+
+      // Solo se escribe el formato de Tiptap. Las notas de Editor.js se
+      // convierten al leerlas (`lib/notes/content.ts`), así que un cliente
+      // que mande `{blocks: […]}` es un cliente viejo en caché: aceptarlo
+      // volvería a meter el formato que se está migrando.
+      if (!isStoredNote(parsed)) {
+        return new Response(JSON.stringify({ error: 'Invalid JSON payload format' }), { status: 400 });
       }
 
-      const blocks = Array.isArray(parsed.blocks) ? parsed.blocks : [];
-      const { blocks: safeBlocks, dropped } = sanitizeEditorBlocksDetailed(blocks);
-
-      if (blocks.length > 0 && safeBlocks.length === 0) {
-        return new Response(JSON.stringify({ error: 'El contenido fue rechazado porque contiene únicamente bloques no soportados o maliciosos' }), { status: 400 });
+      // Se valida con el mismo esquema con el que escribe el editor. Lo que
+      // el editor produce pasa siempre; lo que no, es un documento manipulado.
+      const valid = validateNoteDoc(parsed.doc);
+      if (!valid.ok) {
+        return new Response(JSON.stringify({ error: 'El contenido fue rechazado porque no es un documento válido', code: valid.error }), { status: 400 });
       }
 
-      parsed.blocks = safeBlocks;
-      finalContentJson = JSON.stringify(parsed);
+      finalContentJson = serializeNote(valid.doc);
 
       // Lo que se ha descartado viaja en la respuesta.
       //
@@ -71,7 +74,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       // tablas desaparecían del documento mientras el editor mostraba «Saved».
       // Un guardado que pierde contenido no es un guardado correcto, y quien
       // escribe tiene derecho a enterarse en ese momento y no al recargar.
-      droppedBlocks = dropped;
+      droppedBlocks = valid.dropped;
     }
 
     // Explicit IDOR mitigation: AND workspace_id = ?

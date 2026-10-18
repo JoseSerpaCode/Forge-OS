@@ -1,6 +1,7 @@
 ---
 import { useTranslations } from '../../i18n/ui';
 import LabelPicker from '../labels/LabelPicker.astro';
+import { loadNote } from '../../lib/notes/content';
 
 interface Props {
   pageId: string;
@@ -21,6 +22,54 @@ const { pageId, initialTitle, initialContent, canEdit, authorName, authorAvatar,
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+
+// La nota llega ya convertida a Tiptap aunque en la base siga en formato de
+// Editor.js: la conversión es la misma que usa el script de migración.
+const nota = loadNote(initialContent);
+
+// Si al convertir una nota vieja se queda algún bloque por el camino, la nota
+// se enseña pero **no se guarda**: el primer autoguardado sobrescribiría el
+// original y esos bloques se perderían para siempre.
+const legacyDropped = nota.ok && nota.legacy ? nota.dropped : [];
+const bloquearGuardado = !nota.ok || legacyDropped.length > 0;
+const avisoCarga = !nota.ok
+  ? t('kb.load_failed')
+  : legacyDropped.length
+    ? t('kb.legacy_dropped').replace('{list}', legacyDropped.join(', '))
+    : '';
+
+const textos = {
+  placeholder: t('kb.editor.placeholder'),
+  aria: t('kb.editor.aria'),
+  drag: t('kb.editor.drag'),
+  'slash.text': t('kb.slash.text'), 'slash.h1': t('kb.slash.h1'), 'slash.h2': t('kb.slash.h2'), 'slash.h3': t('kb.slash.h3'),
+  'slash.bullet': t('kb.slash.bullet'), 'slash.ordered': t('kb.slash.ordered'), 'slash.task': t('kb.slash.task'),
+  'slash.quote': t('kb.slash.quote'), 'slash.code': t('kb.slash.code'), 'slash.table': t('kb.slash.table'),
+  'slash.divider': t('kb.slash.divider'), 'slash.empty': t('kb.slash.empty'),
+  'link.invalid': t('kb.fmt.link_invalid'),
+  'status.unsaved': t('kb.status.unsaved'), 'status.saving': t('kb.status.saving'), 'status.saved': t('kb.saved'),
+  'status.error': t('kb.status.error'), 'status.not_saved': t('kb.status.not_saved'),
+  'status.saved_dropped': t('kb.status.saved_dropped'), 'dropped_toast': t('kb.dropped_toast'),
+  'delete_confirm': t('kb.delete_confirm'), 'delete_error': t('kb.delete_error'),
+};
+
+const marcas = [
+  { mark: 'bold', label: t('kb.fmt.bold'), icon: '<path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="M6 12h9a4 4 0 0 1 0 8H6z"/>' },
+  { mark: 'italic', label: t('kb.fmt.italic'), icon: '<line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/>' },
+  { mark: 'underline', label: t('kb.fmt.underline'), icon: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/>' },
+  { mark: 'strike', label: t('kb.fmt.strike'), icon: '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/>' },
+  { mark: 'highlight', label: t('kb.fmt.highlight'), icon: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>' },
+  { mark: 'code', label: t('kb.fmt.code'), icon: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' },
+];
+
+const accionesTabla = [
+  { id: 'row-add', label: t('kb.table.row_add') },
+  { id: 'col-add', label: t('kb.table.col_add') },
+  { id: 'header', label: t('kb.table.header') },
+  { id: 'row-del', label: t('kb.table.row_del') },
+  { id: 'col-del', label: t('kb.table.col_del') },
+  { id: 'table-del', label: t('kb.table.del') },
+];
 
 // Date formatter
 function formatDate(dateStr: string | undefined) {
@@ -113,7 +162,7 @@ function formatDate(dateStr: string | undefined) {
         <span>{t('kb.forged_by')} <span class="text-forge-text font-bold">{authorName || '—'}</span></span>
         <span class="text-forge-border">•</span>
         <span>{t('kb.updated')} {formatDate(updatedAt)}</span>
-        {initialContent === 'null' || !initialContent ? (
+        {initialContent === 'null' || !initialContent || initialContent === '{}' ? (
           <>
             <span class="text-forge-border">•</span>
             <span class="bg-forge-primary/10 text-forge-primary px-1.5 py-0.5 rounded border border-forge-primary/30">Draft</span>
@@ -148,10 +197,11 @@ function formatDate(dateStr: string | undefined) {
 
                   Los cinco textos estaban además escritos en inglés a mano;
                   solo el título pasaba por el diccionario. */}
-              <li class="flex justify-between items-center"><span>{t('kb.sc.block')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">TAB</span></li>
-              <li class="flex justify-between items-center"><span>{t('kb.sc.move')}</span> <span class="text-[10px]">{t('kb.sc.drag')} <span class="bg-forge-bg px-1 py-0.5 rounded font-bold border border-forge-border/50">::</span></span></li>
-              <li class="flex justify-between items-center"><span>{t('kb.sc.undo')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">Ctrl Z / Y</span></li>
-              <li class="flex justify-between items-center"><span>{t('kb.sc.styles')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">Ctrl B / I</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.slash')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">/</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.markdown')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50 whitespace-nowrap">1. - [] # &gt;</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.move')}</span> <span class="text-[10px]">{t('kb.sc.drag')} <span class="bg-forge-bg px-1 py-0.5 rounded font-bold border border-forge-border/50">⋮⋮</span></span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.undo')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50 whitespace-nowrap">Ctrl Z / Y</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.styles')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50 whitespace-nowrap">Ctrl B / I</span></li>
             </ul>
           </div>
         </div>
@@ -179,17 +229,49 @@ function formatDate(dateStr: string | undefined) {
       </div>
     )}
 
-    <!-- Editor.js Container -->
-    <div 
+    {avisoCarga && (
+      <p role="alert" class="mb-6 rounded-lg border border-forge-error/40 bg-forge-error/10 px-4 py-3 text-sm text-forge-text">{avisoCarga}</p>
+    )}
+
+    {/* El editor. `page-editor` es el nombre de siempre: lo buscan los tests
+        de móvil. El documento viaja ya en el formato de Tiptap. */}
+    <div
       id="page-editor"
-      class="flex-1 text-forge-text outline-none prose dark:prose-invert max-w-none relative editor-js-container selection:bg-forge-primary selection:text-white"
+      class="flex-1 text-forge-text relative note-editor"
       data-page-id={pageId}
-      data-t-del-confirm={t('kb.delete_confirm')}
-      data-t-del-error={t('kb.delete_error')}
-      data-initial-content={initialContent}
+      data-initial-doc={nota.ok ? JSON.stringify(nota.doc) : ''}
       data-can-edit={canEdit.toString()}
+      data-block-save={bloquearGuardado.toString()}
+      data-texts={JSON.stringify(textos)}
     ></div>
 
+    {canEdit && (
+      <>
+        {/* Menú de formato: aparece al seleccionar texto. Lo coloca Tiptap. */}
+        <div id="note-format-menu" class="note-floating-menu" role="toolbar" aria-label={t('kb.fmt.toolbar')}>
+          <div data-buttons class="flex items-center gap-0.5">
+            {marcas.map((m) => (
+              <button type="button" data-mark={m.mark} aria-pressed="false" aria-label={m.label} title={m.label}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" set:html={m.icon} />
+              </button>
+            ))}
+            <span class="w-px h-5 bg-forge-border mx-1" aria-hidden="true"></span>
+            <button type="button" data-action="link" data-mark="link" aria-pressed="false" aria-label={t('kb.fmt.link')} title={t('kb.fmt.link')}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </button>
+          </div>
+          <form data-link-form class="hidden">
+            <input data-link-input type="text" inputmode="url" autocomplete="off" aria-label={t('kb.fmt.link')} placeholder={t('kb.fmt.link_placeholder')} class="w-64 bg-forge-bg border border-forge-border rounded px-2 py-1 text-sm text-forge-text focus:outline-none focus:border-forge-accent-primary" />
+          </form>
+        </div>
+
+        <div id="note-table-menu" class="note-floating-menu" role="toolbar" aria-label={t('kb.table.toolbar')}>
+          {accionesTabla.map((a) => (
+            <button type="button" data-table={a.id} class="note-table-btn">{a.label}</button>
+          ))}
+        </div>
+      </>
+    )}
 
     <div class="fixed bottom-4 right-8 flex items-center gap-2 text-xs font-mono text-forge-muted">
       <span id="save-status">{t('kb.saved')}</span>
@@ -198,171 +280,114 @@ function formatDate(dateStr: string | undefined) {
 </div>
 
 <script>
-  import EditorJS from '@editorjs/editorjs';
-  import Header from '@editorjs/header';
-  import List from '@editorjs/list';
-  // @ts-ignore
-  import Checklist from '@editorjs/checklist';
-  import Quote from '@editorjs/quote';
-  // @ts-ignore
-  import Marker from '@editorjs/marker';
-  import InlineCode from '@editorjs/inline-code';
-  // @ts-ignore
-  import Undo from 'editorjs-undo';
-  // @ts-ignore
-  import Underline from '@editorjs/underline';
-  // @ts-ignore
-  import Table from '@editorjs/table';
-  import Delimiter from '@editorjs/delimiter';
-  import Warning from '@editorjs/warning';
-  import CodeTool from '@editorjs/code';
-  // @ts-ignore
-  import DragDrop from 'editorjs-drag-drop';
+  import { createNoteEditor } from './editor/createNoteEditor';
+  import { serializeNote } from '../../lib/notes/content';
 
   const editorDiv = document.getElementById('page-editor');
-  const titleInput = document.getElementById('editor-title') as HTMLInputElement;
+  const titleInput = document.getElementById('editor-title') as HTMLInputElement | null;
   const statusSpan = document.getElementById('save-status');
 
   if (editorDiv) {
     const pageId = editorDiv.dataset.pageId;
     const canEdit = editorDiv.dataset.canEdit === 'true';
-    const txtBorrarPagina = editorDiv.dataset.tDelConfirm || '';
-    const txtBorrarError = editorDiv.dataset.tDelError || '';
-    let initialData: any = { blocks: [] };
+    const t: Record<string, string> = JSON.parse(editorDiv.dataset.texts || '{}');
+    const setStatus = (key: string) => {
+      if (statusSpan) statusSpan.textContent = t[key] ?? '';
+    };
 
     // Si el contenido guardado no se puede leer, **no se edita**.
     //
-    // Antes se caía a `{blocks: []}` y se seguía adelante: el editor arrancaba
-    // vacío y la primera tecla —incluso en el título— disparaba el autoguardado
-    // y sobrescribía el documento entero con nada. Un documento ilegible es
-    // recuperable; uno sobrescrito, no.
-    let loadFailed = false;
+    // Con Editor.js se caía a un documento vacío y se seguía adelante: la
+    // primera tecla —incluso en el título— disparaba el autoguardado y
+    // sobrescribía el documento entero con nada. Un documento ilegible es
+    // recuperable; uno sobrescrito, no. Lo mismo para una nota vieja que al
+    // convertirse ha perdido bloques: el servidor lo marca en `data-block-save`.
+    const blockSave = editorDiv.dataset.blockSave === 'true';
+    let doc: any = { type: 'doc', content: [{ type: 'paragraph' }] };
     try {
-      if (editorDiv.dataset.initialContent && editorDiv.dataset.initialContent !== 'null') {
-        initialData = JSON.parse(editorDiv.dataset.initialContent);
-      }
+      if (editorDiv.dataset.initialDoc) doc = JSON.parse(editorDiv.dataset.initialDoc);
     } catch (e) {
       console.error('Failed to parse initial content', e);
-      loadFailed = true;
     }
 
-    let saveTimeout: any;
+    let saveTimeout: ReturnType<typeof setTimeout> | undefined;
 
-    const editor = new EditorJS({
-      holder: 'page-editor',
-      readOnly: !canEdit,
-      data: initialData,
-      tools: {
-        header: {
-          class: Header,
-          inlineToolbar: true,
-          config: {
-            levels: [1, 2, 3, 4, 5, 6],
-            defaultLevel: 1
-          }
-        },
-        list: {
-          class: List,
-          inlineToolbar: true,
-        },
-        checklist: {
-          class: Checklist,
-          inlineToolbar: true,
-        },
-        quote: {
-          class: Quote,
-          inlineToolbar: true,
-        },
-        marker: {
-          class: Marker,
-        },
-        inlineCode: {
-          class: InlineCode,
-        },
-        underline: {
-          class: Underline,
-        },
-        table: {
-          // @ts-ignore - @editorjs/table has non-standard type exports
-          class: Table,
-          inlineToolbar: true,
-        },
-        delimiter: {
-          class: Delimiter,
-        },
-        warning: {
-          class: Warning,
-          inlineToolbar: true,
-        },
-        code: {
-          class: CodeTool,
-        }
-      },
-      onChange: () => {
-        debounceSave();
-      },
-      onReady: () => {
-        new Undo({ editor });
-        new DragDrop(editor);
-        // Expose for E2E testing
-        (window as any).__editorInstance = editor;
-      }
+    const editor = createNoteEditor({
+      element: editorDiv,
+      content: doc,
+      editable: canEdit,
+      t,
+      formatMenu: document.getElementById('note-format-menu'),
+      tableMenu: document.getElementById('note-table-menu'),
+      onUpdate: () => debounceSave(),
     });
+    // Para los tests e2e.
+    (window as any).__editorInstance = editor;
 
     async function save() {
       if (!canEdit) return;
 
-      // Ver arriba: con la carga rota, guardar es destruir.
-      if (loadFailed) {
-        if (statusSpan) statusSpan.textContent = 'No se ha guardado';
+      if (blockSave) {
+        setStatus('status.not_saved');
         return;
       }
 
-      if (statusSpan) statusSpan.textContent = 'Saving...';
+      setStatus('status.saving');
       try {
-        const outputData = await editor.save();
         const res = await fetch(`/api/pages/${pageId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            title: (titleInput as HTMLInputElement)?.value?.trim() || 'Untitled', 
-            content_json: JSON.stringify(outputData)
-          })
+          body: JSON.stringify({
+            title: titleInput?.value?.trim() || 'Untitled',
+            content_json: serializeNote(editor.getJSON() as any),
+          }),
         });
-        
+
         if (!res.ok) {
-           const err = await res.json();
-           throw new Error(err.error || 'Save failed');
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Save failed');
         }
 
-        // El servidor dice qué bloques ha descartado. Decir «Saved» cuando se
-        // ha perdido algo es exactamente cómo desaparecían las tablas sin que
-        // nadie se enterara hasta recargar.
+        // El servidor dice qué bloques ha descartado. Decir «Guardado» cuando
+        // se ha perdido algo es exactamente cómo desaparecían las tablas sin
+        // que nadie se enterara hasta recargar.
         const body = await res.json().catch(() => ({}));
         if (Array.isArray(body.dropped) && body.dropped.length) {
-          if (statusSpan) statusSpan.textContent = 'Guardado, con bloques descartados';
-          window.showToast?.(
-            `No se han podido guardar estos bloques: ${body.dropped.join(', ')}`,
-            true
-          );
+          setStatus('status.saved_dropped');
+          window.showToast?.(t.dropped_toast + body.dropped.join(', '), true);
           return;
         }
 
-        if (statusSpan) statusSpan.textContent = 'Saved';
+        setStatus('status.saved');
       } catch (e: any) {
-        if (statusSpan) statusSpan.textContent = 'Error saving';
-        window.showToast?.('Error: ' + e.message, true);
+        setStatus('status.error');
+        window.showToast?.(`${t['status.error']}: ${e.message}`, true);
       }
     }
 
     function debounceSave() {
-      if (statusSpan) statusSpan.textContent = 'Unsaved changes...';
+      if (!canEdit) return;
+      setStatus(blockSave ? 'status.not_saved' : 'status.unsaved');
       clearTimeout(saveTimeout);
       saveTimeout = setTimeout(save, 1000);
     }
 
     titleInput?.addEventListener('input', debounceSave);
 
+    // Enter en el título baja al texto, como en cualquier editor de notas.
+    titleInput?.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' && !ev.isComposing) {
+        ev.preventDefault();
+        editor.commands.focus('start');
+      }
+    });
+
+    // Cerrar la pestaña con cambios a medio guardar los perdería.
+    window.addEventListener('beforeunload', (ev) => {
+      if (saveTimeout && statusSpan?.textContent === t['status.unsaved'] && !blockSave) {
+        ev.preventDefault();
+      }
+    });
 
     document.getElementById('btn-delete-page')?.addEventListener('click', () => {
       // `window.forgeConfirm`, no el `confirm()` del navegador.
@@ -371,21 +396,22 @@ function formatDate(dateStr: string | undefined) {
       // diálogos» a partir del segundo; si alguien acepta, `confirm()` empieza
       // a devolver `false` al instante y el botón deja de hacer nada **sin
       // decir nada**. Eso es lo que se vio en producción: pulsar borrar una y
-      // otra vez sin efecto aparente. Además el texto estaba en inglés.
-      window.forgeConfirm?.(txtBorrarPagina, async () => {
+      // otra vez sin efecto aparente.
+      window.forgeConfirm?.(t.delete_confirm, async () => {
         const res = await fetch(`/api/pages/${pageId}`, { method: 'DELETE' });
 
         if (!res.ok) {
           // Sin volcar el cuerpo de la respuesta: no significa nada para quien
           // lo lee y puede traer detalles internos.
-          window.showToast?.(txtBorrarError, true);
+          window.showToast?.(t.delete_error, true);
           return;
         }
 
         // Salir de aquí **siempre**. Antes esto dependía de que la URL casara
         // con un patrón; si no casaba, la página quedaba borrada y el navegador
-        // se quedaba en su dirección, que ya no existe. Al recargar aparecía un
-        // 404 pelado y parecía que se hubiera roto algo.
+        // se quedaba en su dirección, que ya no existe.
+        clearTimeout(saveTimeout);
+        saveTimeout = undefined;
         const m = window.location.pathname.match(/^\/w\/([^/]+)/);
         window.location.href = m ? `/w/${m[1]}/p` : '/';
       });
@@ -401,212 +427,199 @@ function formatDate(dateStr: string | undefined) {
 </script>
 
 <style is:global>
-  /* Fix EditorJS internal variables for perfect dark/light mode integration */
-  .editor-js-container {
-    --color-text-primary: var(--forge-text);
-    --color-background-item-hover: var(--forge-bg);
-    --color-background-item-focus: var(--forge-bg);
-    --color-border: var(--forge-border);
+  /* ── El documento ───────────────────────────────────────────────────────
+     Tipografía de `prose`, con los ajustes que necesita un editor: menos aire
+     entre bloques que en un artículo, y los párrafos vacíos con altura —son
+     las líneas en blanco que se dejan a propósito y antes desaparecían—. */
+  .note-content {
+    min-height: 40vh;
+    padding-bottom: 6rem;
+    color: var(--forge-text);
+    caret-color: var(--forge-accent-primary);
   }
+  .note-content p { margin: 0.25em 0; min-height: 1.6em; }
+  .note-content :where(h1, h2, h3) { margin-top: 1.2em; margin-bottom: 0.2em; color: var(--forge-text); }
+  .note-content :where(ul, ol) { margin: 0; padding-left: 1.5em; }
+  .note-content li { margin: 0.15em 0; }
+  .note-content li > p { margin: 0; }
+  .note-content blockquote {
+    border-left: 4px solid var(--forge-accent-secondary);
+    background: var(--forge-bg);
+    padding: 0.5em 1em;
+    margin: 0.75em 0;
+    font-style: normal;
+    color: var(--forge-text);
+  }
+  .note-content blockquote p::before,
+  .note-content blockquote p::after { content: none; }
+  .note-content hr { border-color: var(--forge-border); margin: 1.5em 0; }
+  .note-content a { color: var(--forge-accent-text); text-decoration: underline; cursor: text; }
 
-  .ce-popover, .ce-inline-toolbar, .ce-settings, .ce-conversion-toolbar, .tc-popover {
-    --color-border: var(--forge-border) !important;
-    --color-background: var(--forge-panel) !important;
-    --color-text-primary: var(--forge-text) !important;
-    --color-text-secondary: var(--forge-muted) !important;
-    --color-border-icon: var(--forge-border) !important;
-    --color-background-item-hover: var(--forge-bg) !important;
-    --color-background-item-focus: var(--forge-bg) !important;
-    --color-shadow: rgba(0, 0, 0, 0.3) !important;
-    
-    background-color: var(--forge-panel) !important;
-    border: 1px solid var(--forge-border) !important;
-    color: var(--forge-text) !important;
-  }
-  
-  /* Fallbacks for older editor.js DOM elements if CSS vars aren't fully supported */
-  .ce-popover-item, .tc-popover__item, .ce-inline-tool, .ce-conversion-tool {
-    color: var(--forge-text) !important;
-  }
-  .ce-popover-item:hover, .tc-popover__item:hover, .ce-inline-tool:hover, .ce-conversion-tool:hover {
-    background-color: var(--forge-bg) !important;
-  }
-  .ce-popover-item__title, .tc-popover__item-label {
-    color: var(--forge-text) !important;
-  }
-  .ce-popover-item__icon, .tc-popover__item-icon {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    color: var(--forge-text) !important;
-  }
-  .ce-popover__search {
-    background-color: var(--forge-bg) !important;
-    color: var(--forge-text) !important;
-    border-bottom: 1px solid var(--forge-border) !important;
-  }
-
-  /* Typography / Block Styles */
-  .ce-block__content, .ce-toolbar__content {
-    max-width: 800px !important;
-  }
-  
-  .ce-header {
-    color: var(--forge-text) !important;
-  }
-  
-  .cdx-quote {
-    border-left: 4px solid var(--forge-secondary) !important;
-    background-color: var(--forge-bg) !important;
-  }
-  
-  .cdx-checklist__item-checkbox {
-    border: 1px solid var(--forge-border) !important;
-    background: var(--forge-bg) !important;
-    border-radius: 4px !important;
-    margin-top: 0.25rem !important;
-  }
-  .cdx-checklist__item--checked .cdx-checklist__item-checkbox {
-    background: var(--forge-secondary) !important;
-    border-color: var(--forge-secondary) !important;
-  }
-
-  .cdx-marker {
-    background-color: var(--forge-accent-primary) !important;
-    color: #fff !important;
-    padding: 0.1rem 0.2rem !important;
-    border-radius: 3px !important;
-  }
-
-  .inline-code {
-    background-color: var(--forge-bg) !important;
-    border: 1px solid var(--forge-border) !important;
-    padding: 0.1rem 0.3rem !important;
-    border-radius: 4px !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.9em !important;
+  .note-content mark {
+    background-color: var(--forge-accent-primary);
+    color: #fff;
+    padding: 0.1rem 0.2rem;
+    border-radius: 3px;
   }
 
   /* El plugin de typography inserta comillas invertidas alrededor de <code>.
      Con el chip ya delimitado por fondo y borde, sobran. */
-  .editor-js-container :where(code)::before,
-  .editor-js-container :where(code)::after {
-    content: none !important;
-  }
-
-  /* <code> suelto en el contenido (el que no usa la herramienta inline-code)
-     hereda el color del tema en lugar de quedarse con el de prose. */
-  .editor-js-container :where(code) {
+  .note-content :where(code)::before,
+  .note-content :where(code)::after { content: none !important; }
+  .note-content :not(pre) > code {
     color: var(--forge-text);
     background-color: var(--forge-bg);
     border: 1px solid var(--forge-border);
     padding: 0.1rem 0.3rem;
     border-radius: 4px;
     font-size: 0.9em;
+    font-weight: 400;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
-
-  /* ── Tabla y código: los plugins traen su propia paleta, y es clara ─────
-     `@editorjs/table` define sus colores en variables sobre `.tc-wrap`
-     (`--color-background: #f9f9fb`) y `@editorjs/code` pinta su `textarea`
-     en blanco. En tema oscuro eso deja una tabla blanca con texto claro
-     encima: medido, **1.17:1** de contraste, es decir ilegible.
-
-     No se había visto nunca porque el sanitizador borraba los bloques `table`
-     enteros antes de guardarlos; al arreglar aquella pérdida de datos, las
-     tablas empezaron a aparecer y el fallo de estilo salió con ellas.
-
-     Se reasignan las variables del plugin en vez de pelearse con sus reglas
-     una a una: así hereda el tema entero, incluidos bordes y la barra de
-     herramientas de fila y columna. */
-  .editor-js-container .tc-wrap {
-    --color-background: var(--forge-panel);
-    --color-text-secondary: var(--forge-muted);
-    --color-border: var(--forge-border);
-    color: var(--forge-text);
-  }
-  .editor-js-container .tc-table,
-  .editor-js-container .tc-row,
-  .editor-js-container .tc-cell {
-    border-color: var(--forge-border);
-  }
-  .editor-js-container .tc-cell {
-    color: var(--forge-text);
-    background: transparent;
-  }
-  /* La fila de cabecera se distingue por peso y fondo, no por color de texto:
-     bajarle el color la sacaría del umbral de contraste. */
-  .editor-js-container .tc-row--heading .tc-cell {
-    background: var(--forge-panel);
-    font-weight: 700;
-  }
-  .editor-js-container .tc-add-row,
-  .editor-js-container .tc-add-column {
-    color: var(--forge-muted);
-  }
-  .editor-js-container .tc-add-row:hover,
-  .editor-js-container .tc-add-column:hover {
-    background: color-mix(in srgb, var(--forge-accent-primary) 12%, transparent);
-    color: var(--forge-text);
-  }
-
-  .editor-js-container .ce-code__textarea {
+  .note-content pre {
     background: var(--forge-bg);
     color: var(--forge-text);
     border: 1px solid var(--forge-border);
     border-radius: 8px;
+    padding: 0.75em 1em;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
+  .note-content pre code { background: none; border: 0; padding: 0; color: inherit; }
 
-  .codex-editor__redactor {
-    padding-bottom: 100px !important;
+  /* Listas de tareas: la casilla a la izquierda y el texto tachado al marcar. */
+  .note-content ul[data-type='taskList'] { list-style: none; padding-left: 0.25em; }
+  .note-content ul[data-type='taskList'] li { display: flex; align-items: flex-start; gap: 0.5em; }
+  .note-content ul[data-type='taskList'] li > label { flex: none; margin-top: 0.3em; user-select: none; }
+  .note-content ul[data-type='taskList'] li > div { flex: 1; min-width: 0; }
+  .note-content ul[data-type='taskList'] input[type='checkbox'] {
+    width: 1em; height: 1em;
+    accent-color: var(--forge-accent-primary);
+    cursor: pointer;
+  }
+  .note-content ul[data-type='taskList'] li[data-checked='true'] > div { text-decoration: line-through; color: var(--forge-muted); }
+
+  /* Tablas, con la paleta del tema. Las de Editor.js traían la suya, clara, y
+     en tema oscuro quedaban a 1.17:1 de contraste. */
+  .note-content table { border-collapse: collapse; width: 100%; margin: 0.75em 0; table-layout: fixed; }
+  .note-content :where(td, th) {
+    border: 1px solid var(--forge-border);
+    padding: 0.4em 0.6em;
+    vertical-align: top;
+    color: var(--forge-text);
+  }
+  .note-content th { background: var(--forge-panel); font-weight: 700; text-align: left; }
+  .note-content .selectedCell { background: color-mix(in srgb, var(--forge-accent-primary) 15%, transparent); }
+
+  /* Texto de ayuda de la línea vacía. Va con el color atenuado del tema, sin
+     opacidad: bajarla lo sacaría del umbral de contraste. */
+  .note-content p.is-editor-empty:first-child::before,
+  .note-content .is-empty::before {
+    content: attr(data-placeholder);
+    color: var(--forge-muted);
+    float: left;
+    height: 0;
+    pointer-events: none;
   }
 
-  /**
-   * En móvil, el editor usa el ancho entero.
-   *
-   * Editor.js reserva a la izquierda un carril fijo para su barra de
-   * herramientas —el `+` y el manejador de bloque— pensado para pantallas
-   * anchas. A 393 px eso deja el texto en 25, así que escribir es imposible.
-   *
-   * Por debajo de 768 el carril se quita y la barra se coloca sobre el propio
-   * bloque, que es como funcionan los editores en un teléfono.
-   */
-  @media (max-width: 767px) {
-    .codex-editor--narrow .codex-editor__redactor {
-      margin-right: 0 !important;
-    }
-    .codex-editor__redactor {
-      margin-left: 0 !important;
-      padding-left: 0 !important;
-    }
-    .ce-block__content,
-    .ce-toolbar__content {
-      max-width: 100% !important;
-      margin-left: 0 !important;
-      margin-right: 0 !important;
-    }
-    .ce-toolbar__actions {
-      right: 0 !important;
-    }
-  }
-  .ce-block--selected .ce-block__content {
-    background-color: color-mix(in srgb, var(--forge-accent-primary) 15%, transparent) !important;
+  .note-content .ProseMirror-selectednode { outline: 2px solid var(--forge-accent-primary); outline-offset: 2px; border-radius: 4px; }
+  /* La selección con el color de acento y texto blanco, como antes: con un
+     fondo translúcido el texto quedaba por debajo del contraste exigido. */
+  .note-content ::selection,
+  .note-content *::selection {
+    background-color: var(--forge-accent-primary);
+    color: #ffffff;
   }
 
-  /* Force override Editor.js dynamically injected selection styles */
-  .editor-js-container ::selection {
-    background-color: var(--forge-accent-primary) !important;
-    color: #ffffff !important;
+  /* Línea que marca dónde caerá un bloque al soltarlo. */
+  .ProseMirror-dropcursor { background: var(--forge-accent-primary); }
+
+  /* ── Asa de arrastre ──────────────────────────────────────────────────── */
+  .note-drag-handle {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 22px;
+    margin-top: -3px;
+    border-radius: 4px;
+    color: var(--forge-muted);
+    cursor: grab;
+    visibility: hidden;
+    z-index: 10;
   }
-  .editor-js-container *::selection {
-    background-color: var(--forge-accent-primary) !important;
-    color: #ffffff !important;
+  .note-drag-handle.is-visible { visibility: visible; }
+  .note-drag-handle:hover { background: var(--forge-panel); color: var(--forge-text); }
+  .note-drag-handle:active { cursor: grabbing; }
+  /* Sin ratón no hay hover que la enseñe ni arrastre que hacer. */
+  @media (hover: none) { .note-drag-handle { display: none; } }
+
+  /* ── Menús flotantes ─────────────────────────────────────────────────────
+     Los coloca Tiptap; empiezan escondidos para que no parpadeen al cargar. */
+  /* `width: max-content` y `position: absolute` desde el principio: Tiptap
+     los pone él, pero **después** de calcular la posición, así que en el
+     primer cálculo el menú medía lo que su contenedor y salía descentrado. */
+  .note-floating-menu {
+    position: absolute;
+    width: max-content;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 40;
+    visibility: hidden;
   }
-  .ce-block__content ::selection {
-    background-color: var(--forge-accent-primary) !important;
-    color: #ffffff !important;
+  .note-floating-menu button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    border-radius: 6px;
+    color: var(--forge-text);
   }
-  .cdx-block ::selection {
-    background-color: var(--forge-accent-primary) !important;
-    color: #ffffff !important;
+  .note-floating-menu button:hover { background: var(--forge-bg); }
+  .note-floating-menu button[aria-pressed='true'] { background: var(--forge-bg); color: var(--forge-accent-text); }
+  .note-floating-menu .note-table-btn { font-size: 12px; white-space: nowrap; }
+  #note-table-menu { flex-wrap: wrap; max-width: min(92vw, 640px); }
+
+  /* ── Menú «/» ─────────────────────────────────────────────────────────── */
+  .note-slash-menu {
+    width: 240px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 50;
+  }
+  .note-slash-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--forge-text);
+    text-align: left;
+  }
+  .note-slash-item[aria-selected='true'],
+  .note-slash-item:hover { background: var(--forge-bg); }
+  .note-slash-item kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: var(--forge-muted); }
+  .note-slash-empty { padding: 6px 8px; font-size: 14px; color: var(--forge-muted); }
+
+  /* El asa vive en el margen izquierdo del editor; en escritorio se le hace
+     sitio, en móvil no hace falta porque no se muestra. */
+  @media (hover: hover) {
+    .note-editor { padding-left: 28px; margin-left: -28px; }
   }
 </style>

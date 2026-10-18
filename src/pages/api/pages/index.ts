@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import { EMPTY_NOTE_JSON } from '../../../lib/notes/content';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import crypto from 'crypto';
 
@@ -41,7 +42,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       workspaceId,
       data.parent_page_id || null,
       data.title || 'Untitled',
-      '{}',
+      EMPTY_NOTE_JSON,
       user.id
     );
 

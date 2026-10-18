@@ -13,8 +13,8 @@
 /**
  * Texto que va dentro de HTML construido a mano.
  *
- * **Solo al pintar, nunca al guardar.** Es la regla que el propio proyecto
- * documenta en `lib/sanitizer.ts`, y que `api/w/[sys_tag]/db/[id]/entries.ts`
+ * **Solo al pintar, nunca al guardar.** Es la regla que el proyecto aprendió
+ * con los bloques de código de las notas, y que `api/w/[sys_tag]/db/[id]/entries.ts`
  * incumplía: escapaba el valor de cada celda **antes de meterlo en la base**.
  * Eso no aporta seguridad —quien pinta ya escapa— y sí acumula: un `<` se
  * guarda como `&lt;`, y al reeditar la fila se guarda como `&amp;lt;`. El

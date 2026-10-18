@@ -250,7 +250,7 @@ CREATE TABLE IF NOT EXISTS pages (
  title TEXT NOT NULL DEFAULT 'Untitled',
  icon TEXT,
  cover_image TEXT,
- content_json TEXT, -- Payload de Editor.js o Excalidraw
+ content_json TEXT, -- {"format":"tiptap","doc":…}; ver src/lib/notes/content.ts
  created_by TEXT NOT NULL,
  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

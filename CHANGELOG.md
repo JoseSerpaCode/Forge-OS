@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.28.0] - 2026-10-18
+
+### Changed
+
+- **Las notas pasan de Editor.js a Tiptap.** Escribir en la base de conocimiento iba en contra de todo lo que uno espera de un editor, y casi todo venía de la misma raíz: Editor.js pinta cada párrafo como un bloque aparte. Por eso seleccionar, copiar o cortar varios párrafos no funcionaba, «1. » no creaba una lista (había que ir al menú del «+») y las líneas en blanco desaparecían al recargar, porque al guardar se descartaban los párrafos vacíos. Con Tiptap (sobre ProseMirror) el documento es uno solo:
+  - Atajos al escribir: «1. », «- », «[] », «# », «> », «```» y «---».
+  - Selección, copia y pegado normales entre párrafos, también desde otras páginas.
+  - Un menú flotante al seleccionar texto (negrita, cursiva, subrayado, tachado, resaltado, código y enlace) y un menú «/» para insertar bloques.
+  - Un asa a la izquierda de cada bloque para arrastrarlo, y un menú propio para añadir o quitar filas y columnas de las tablas.
+  - Las líneas en blanco se guardan.
+- **Las notas existentes se convierten al abrirlas.** Cada bloque de Editor.js tiene su equivalente, salvo dos que se acercan: los títulos de nivel 4 a 6 pasan a nivel 3, y los avisos pasan a una cita con el título en negrita. Si una nota tiene algún bloque que no se puede convertir, se enseña sin él, con un aviso, y **no se guarda**: el primer autoguardado habría sobrescrito el original.
+- **El servidor valida las notas con el mismo esquema con el que escribe el editor** (`src/lib/notes/schema.ts`). Con Editor.js eran dos listas separadas —la del editor y la del sanitizador— y por esa diferencia las tablas se borraban al guardar sin que nadie se enterara. Como el texto ya no viaja como HTML, desaparecen el sanitizador y DOMPurify; los enlaces siguen pasando la misma regla de protocolos.
+- Un cliente viejo que intente guardar en formato de Editor.js recibe un 400: escribirlo otra vez desharía la conversión.
+- La cifra de la portada sobre lo que llega al navegador pasa de 199 a 252 KB. Ya estaba desfasada antes de este cambio (`main` medía 210 KB), y el editor nuevo pesa más que el anterior.
+
+### Removed
+
+- Los 14 paquetes de Editor.js y sus plugins, `isomorphic-dompurify` y `src/lib/sanitizer.ts`.
+
 ## [1.27.0] - 2026-08-23
 
 ### Security

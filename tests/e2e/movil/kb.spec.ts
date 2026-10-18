@@ -50,7 +50,7 @@ test('el editor tiene sitio para escribir', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   const ancho = await page.evaluate(() => {
-    // El contenedor de Editor.js se llama `page-editor` (ver `holder:`).
+    // El contenedor del editor se llama `page-editor` (ver `EditorClient.astro`).
     const ed = document.getElementById('page-editor');
     return ed ? Math.round(ed.getBoundingClientRect().width) : -1;
   });

@@ -84,7 +84,9 @@ test.describe('permisos por rol', () => {
   test('quien solo mira no escribe en una página', async ({ browser }) => {
     const dentro = await sesionDe(browser, 'aud_owner');
     const viewer = await sesionDe(browser, 'aud_viewer');
-    const cuerpo = { content_json: { blocks: [{ type: 'paragraph', data: { text: 'hola' } }] } };
+    const cuerpo = {
+      content_json: { format: 'tiptap', doc: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'hola' }] }] } },
+    };
 
     expect((await dentro.fetch('/api/pages/p-auditoria', { method: 'PUT', data: cuerpo, headers: ORIGIN_HEADER })).status()).toBe(200);
     expect((await viewer.fetch('/api/pages/p-auditoria', { method: 'PUT', data: cuerpo, headers: ORIGIN_HEADER })).status()).not.toBe(200);
@@ -160,24 +162,36 @@ test.describe('sesiones', () => {
 });
 
 test.describe('inyección', () => {
-  test('el sanitizador no deja pasar script, iframe ni javascript: por el editor', async ({ browser }) => {
+  test('la validación de notas no deja pasar nodos raros, atributos ni javascript:', async ({ browser }) => {
+    // Con Tiptap el texto ya no viaja como HTML: un `<script>` escrito en una
+    // nota es texto y se pinta como texto. Lo que hay que vigilar ahora son
+    // los nodos y atributos que no están en el esquema, y los destinos de los
+    // enlaces.
     const dentro = await sesionDe(browser, 'aud_owner');
+    const enlace = (href: string, text: string) => ({
+      type: 'paragraph',
+      content: [{ type: 'text', text, marks: [{ type: 'link', attrs: { href } }] }],
+    });
     const res = await dentro.fetch('/api/pages/p-inyeccion', {
       method: 'PUT',
       headers: ORIGIN_HEADER,
       data: {
         content_json: {
-          blocks: [
-            { type: 'paragraph', data: { text: '<script>alert(1)</script><img src=x onerror=alert(2)>texto' } },
-            { type: 'paragraph', data: { text: '<a href="javascript:alert(3)">trampa</a>' } },
-            { type: 'paragraph', data: { text: '<a href="//evil.example">protocolo relativo</a>' } },
-            { type: 'raw', data: { html: '<script>alert(4)</script>' } },
-          ],
+          format: 'tiptap',
+          doc: {
+            type: 'doc',
+            content: [
+              { type: 'paragraph', attrs: { onerror: 'alert(2)', style: 'x' }, content: [{ type: 'text', text: 'texto' }] },
+              enlace('javascript:alert(3)', 'trampa'),
+              enlace('//evil.example', 'protocolo relativo'),
+              { type: 'raw', attrs: { html: '<script>alert(4)</script>' } },
+            ],
+          },
         },
       },
     });
     expect(res.status()).toBe(200);
-    // El bloque `raw` no se descarta en silencio: se dice cuál se fue.
+    // El nodo `raw` no se descarta en silencio: se dice cuál se fue.
     expect((await res.json()).dropped).toContain('raw');
 
     const db = getTestDb();
@@ -188,9 +202,22 @@ test.describe('inyección', () => {
     expect(guardado).not.toContain('<script');
     expect(guardado).not.toContain('onerror');
     expect(guardado).toContain('texto');
-    // El enlace sobrevive; su destino peligroso, no.
+    // El texto del enlace sobrevive; su destino peligroso, no.
+    expect(guardado).toContain('trampa');
     expect(guardado).not.toContain('javascript:');
     expect(guardado).not.toContain('//evil.example');
+  });
+
+  test('un cliente viejo que mande bloques de Editor.js no escribe', async ({ browser }) => {
+    // Las notas de Editor.js se convierten al leerlas; escribir ese formato
+    // otra vez desharía la migración.
+    const dentro = await sesionDe(browser, 'aud_owner');
+    const res = await dentro.fetch('/api/pages/p-inyeccion', {
+      method: 'PUT',
+      headers: ORIGIN_HEADER,
+      data: { content_json: { blocks: [{ type: 'paragraph', data: { text: 'hola' } }] } },
+    });
+    expect(res.status()).toBe(400);
   });
 
   test('la biografía no se puede escapar del atributo meta donde se pinta', async ({ browser }) => {
