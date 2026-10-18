@@ -1,5 +1,6 @@
 import db from './db';
 import crypto from 'crypto';
+import { hoyLocal } from './fechas';
 
 /**
  * Fotos diarias de un sprint, para el burndown.
@@ -23,9 +24,17 @@ export type Foto = {
   issuesDone: number;
 };
 
-/** Fecha en formato YYYY-MM-DD, en UTC, que es como guarda SQLite. */
-function hoyUTC(): string {
-  return new Date().toISOString().slice(0, 10);
+/**
+ * El día de la foto, en formato YYYY-MM-DD, en la zona del servidor.
+ *
+ * Era el día en UTC. En Bogotá eso significa que, desde las siete de la tarde,
+ * la foto de hoy se guardaba con la fecha de mañana: el trabajo cerrado esa
+ * noche aparecía en el día siguiente, y la foto real del día se quedaba
+ * congelada a las 18:59. `taken_on` es un día del calendario, no un instante;
+ * se compara siempre como cadena y no pasa por SQLite.
+ */
+function hoy(): string {
+  return hoyLocal();
 }
 
 /**
@@ -60,7 +69,7 @@ export function medirSprint(sprintId: string): Omit<Foto, 'sprintId' | 'takenOn'
  * día actualice en vez de duplicar: puede ejecutarse tantas veces como haga
  * falta sin ensuciar la serie.
  */
-export function tomarFoto(sprintId: string, fecha = hoyUTC()): Foto {
+export function tomarFoto(sprintId: string, fecha = hoy()): Foto {
   const m = medirSprint(sprintId);
   db.prepare(`
     INSERT INTO sprint_snapshots (id, sprint_id, taken_on, points_total, points_done, issues_total, issues_done)
@@ -92,7 +101,7 @@ export function serie(sprintId: string): Foto[] {
  * todas las fotos del día o ninguna, porque una serie a la que le falta un
  * sprint suelto es peor que una serie que no se tomó.
  */
-export function fotografiarSprintsActivos(fecha = hoyUTC()): number {
+export function fotografiarSprintsActivos(fecha = hoy()): number {
   const activos = db.prepare("SELECT id FROM sprints WHERE status = 'active'").all() as Array<{ id: string }>;
   const tx = db.transaction(() => {
     for (const s of activos) tomarFoto(s.id, fecha);

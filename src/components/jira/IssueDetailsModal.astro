@@ -1121,11 +1121,17 @@ const t = useTranslations(lang);
         }
 
         // Due date update
+        //
+        // Sin tocarla si se está editando, igual que las horas estimadas de
+        // arriba. Al abrir el modal esta función corre **dos veces** —una
+        // directa y otra cuando terminan de cargar los registros de trabajo—,
+        // y si la segunda respuesta llegaba después de elegir una fecha, el
+        // campo volvía a la anterior. El PATCH ya se había mandado con la
+        // nueva, así que la tarjeta y el campo acababan diciendo cosas
+        // distintas.
         const dueDateInput = document.getElementById('modal-issue-due-date') as HTMLInputElement;
-        if (dueDateInput && issue.due_date) {
-          dueDateInput.value = diaDeCalendario(issue.due_date) ?? '';
-        } else if (dueDateInput) {
-          dueDateInput.value = '';
+        if (dueDateInput && document.activeElement !== dueDateInput) {
+          dueDateInput.value = issue.due_date ? (diaDeCalendario(issue.due_date) ?? '') : '';
         }
       }
 

@@ -1233,7 +1233,15 @@ function fotografiarHoy() {
     const activos = db.prepare("SELECT id FROM sprints WHERE status = 'active'").all() as Array<{ id: string }>;
     if (activos.length === 0) return;
 
-    const hoy = new Date().toISOString().slice(0, 10);
+    // El día en la zona del servidor, como `hoyLocal()` de `lib/fechas`. En
+    // UTC, desde las siete de la tarde en Bogotá la foto salía con la fecha de
+    // mañana.
+    //
+    // Se calcula aquí en vez de importarlo: este módulo lo carga Node sin
+    // compilar (`tests/e2e/reset-db.ts`), y ahí `import './fechas'` sin
+    // extensión no se resuelve y el servidor de pruebas no llega a arrancar.
+    const ahora = new Date();
+    const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
     const medir = db.prepare(`
       SELECT
         COUNT(*) AS issuesTotal,
