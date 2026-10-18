@@ -100,6 +100,39 @@ sudo systemctl enable --now forge-os
 sudo systemctl status forge-os
 ```
 
+### La zona horaria
+
+El unit fija `TZ=America/Bogota`. No es un detalle de presentación: la app
+decide **qué día es hoy** con la zona del proceso, y de eso dependen el rojo de
+«vencida» en las tarjetas que pinta el servidor, el contador de vencidas del
+Hub y el día con que se guarda la foto diaria del burndown. Una VM de GCP viene
+en UTC, así que sin esta línea, desde las siete de la tarde en Bogotá el
+servidor ya cree que es mañana y marca como vencida una entrega de hoy. El
+navegador lo corrige al repintar, pero el HTML que llega primero está mal.
+
+Las fechas guardadas **no cambian** con esto: las marcas de
+`CURRENT_TIMESTAMP` siguen en UTC y las fechas de entrega son días del
+calendario sin zona. Solo cambia qué día se toma como «hoy».
+
+Si quien usa la instancia vive en otra zona, cambia esa línea del unit, no la
+zona de la VM: así no se mueven los logs ni los temporizadores del sistema.
+
+**Una instancia que ya estaba desplegada no lo recoge sola.** `deploy.sh`
+reinicia el servicio pero no vuelve a copiar el unit, así que hay que hacerlo
+una vez:
+
+```sh
+sudo cp /opt/forge-os/deploy/forge-os.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl restart forge-os
+```
+
+Y comprobar que el proceso la tiene:
+
+```sh
+sudo cat /proc/$(systemctl show -p MainPID --value forge-os)/environ | tr '\0' '\n' | grep '^TZ='
+```
+
 ## 5. Caddy
 
 **Antes de arrancarlo**, el registro A de `forge-os.online` (en Porkbun) debe
@@ -410,6 +443,9 @@ curl -sI https://forge-os.online/_astro/<algún-asset>.js | grep -iE 'cache-cont
 
 # La API nunca se cachea en capas compartidas
 curl -sI https://forge-os.online/api/storage/<archivo> | grep -i cache-control   # private
+
+# El proceso decide «hoy» en la zona de Bogotá, no en UTC
+sudo cat /proc/$(systemctl show -p MainPID --value forge-os)/environ | tr '\0' '\n' | grep '^TZ='
 
 # Sobrevive a un reinicio
 sudo reboot && sleep 45 && curl -sI https://forge-os.online | head -1

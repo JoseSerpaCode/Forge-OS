@@ -6,7 +6,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
-## [1.28.3] - 2026-10-18
+## [1.28.5] - 2026-10-18
+
+> La 1.28.3 no existió: este cambio llevaba ese número en su PR, pero entró en `main` después de la 1.28.4.
 
 ### Fixed
 
@@ -14,6 +16,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **La foto diaria del burndown se guardaba con la fecha de mañana por la tarde.** El día de la foto salía en UTC, así que desde las siete de la tarde en Bogotá la de hoy se guardaba como la de mañana, y la del día real se quedaba como estaba a las 18:59. Ahora usa el día en la zona del servidor, igual que `vencida()`.
 - **Elegir una fecha de entrega justo al abrir un ticket a veces no se quedaba en el campo.** Al abrir el modal, los datos del ticket se cargan dos veces, y si la segunda respuesta llegaba después de elegir la fecha, el campo volvía a la anterior aunque la nueva ya se hubiera guardado. Ahora el campo no se toca mientras se está editando, como ya pasaba con las horas estimadas. Era también la causa de que `fecha-y-cancelar.spec.ts` fallara de vez en cuando con la suite entera.
 - La línea de tiempo de sprints del resumen lee las fechas con `deSQLite()`, como el resto, en vez de `new Date()`, que leía una fecha solo-día como UTC y una marca de SQLite como hora local.
+
+## [1.28.4] - 2026-10-18
+
+### Fixed
+
+- **En producción, las entregas de hoy salían vencidas por la noche.** La app decide qué día es hoy con la zona del proceso —el rojo de «vencida» en las tarjetas servidas, el contador del Hub, el día de la foto del burndown— y el servicio no fijaba ninguna, así que en la VM corría en UTC: desde las siete de la tarde en Bogotá ya creía que era mañana. El unit de systemd fija ahora `TZ=America/Bogota`, la misma zona con la que corren las pruebas e2e. Las fechas guardadas no cambian.
+- Una instancia ya desplegada tiene que copiar el unit una vez, porque `deploy.sh` reinicia el servicio pero no lo reinstala. Los pasos están en `deploy/README.md`, en «La zona horaria».
 
 ## [1.28.2] - 2026-10-18
 
