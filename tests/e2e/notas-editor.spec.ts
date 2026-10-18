@@ -117,10 +117,30 @@ test('seleccionar varios párrafos, copiarlos y pegarlos funciona', async ({ pag
   // paralelo, pegar enseguida a veces llegaba antes y no pegaba nada.
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('tres');
 
-  // Pegar en la línea vacía del final.
-  await editor.locator('p').last().click();
-  await page.keyboard.press('ControlOrMeta+v');
-  await expect(editor.locator('p', { hasText: 'dos' })).toHaveCount(2);
+  // Pegar en la línea vacía del final. El cursor se coloca con el teclado
+  // —flecha abajo desde el final de la selección— y se comprueba dónde quedó
+  // antes de pegar: con un clic, con la suite entera en paralelo, a veces se
+  // quedaba al final de «tres» y salía «tresuno».
+  await page.keyboard.press('ArrowDown');
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const { state } = (window as any).__editorInstance;
+        const { $from, empty } = state.selection;
+        return empty && $from.parent.content.size === 0 && $from.index(0) === state.doc.childCount - 1;
+      })
+    )
+    .toBe(true);
+
+  // Con reintento, pero solo si no se pegó nada: de vez en cuando la pulsación
+  // se pierde con el foco y el portapapeles ya en su sitio. Volver a pegar
+  // cuando ya hay una copia daría tres, y el recuento exacto de abajo lo
+  // detectaría.
+  const dos = editor.locator('p', { hasText: 'dos' });
+  await expect(async () => {
+    if ((await dos.count()) < 2) await page.keyboard.press('ControlOrMeta+v');
+    await expect(dos).toHaveCount(2, { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
   await esperarGuardado(page);
 
   const textos = guardado(id).content.filter((b: any) => b.content).map((b: any) => b.content[0].text);
