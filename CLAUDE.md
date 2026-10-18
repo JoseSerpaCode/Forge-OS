@@ -14,10 +14,11 @@ el paquete no aporta nada y rompería instalaciones.
   con Express 5 en la raíz.
 - **Drizzle ORM 0.45** sobre `better-sqlite3` **v13**. Config en `drizzle.config.ts`,
   esquema versionado también como SQL plano (`schema.sql`, `schema-v1.1-social.sql`).
-- **Editor.js** con un montón de plugins (checklist, code, table, quote, undo,
-  drag-drop) — es el núcleo de la UI de edición.
+- **Tiptap 3** (sobre ProseMirror) para las notas. El esquema vive en
+  `src/lib/notes/schema.ts` y lo comparten el editor y la validación del
+  servidor; ver «Notas: Tiptap» más abajo.
 - **Tailwind 4** vía `@tailwindcss/vite` (no el plugin de PostCSS) + typography.
-- Auth con `bcryptjs` + `cookie` **v2**. Sanitización con `isomorphic-dompurify`.
+- Auth con `bcryptjs` + `cookie` **v2**.
 - Gráficas con `chart.js`. Realtime con `socket.io-client`.
 
 > **`cookie` v2 renombró la API**: es `parseCookie`/`stringifyCookie`, no
@@ -160,6 +161,24 @@ pone el cliente desde las claves `err.*`. Y ante un captcha fallido devuelve
 
 Los tests e2e que se registran usan `tests/e2e/helpers/register.ts`, que
 resuelve la suma leyendo la página. No se puentea el captcha en pruebas.
+
+## Notas: Tiptap
+
+Las notas se guardan como `{"format":"tiptap","doc":{…}}` en `pages.content_json`.
+Cuatro cosas que no se ven en el código:
+
+- **Un solo esquema.** `src/lib/notes/schema.ts` lo usan el editor y la
+  validación del servidor (`validateNoteDoc`). Si añades un tipo de bloque solo
+  en el cliente, el servidor rechazará cada guardado que lo lleve: fue lo que
+  pasó con las tablas en Editor.js, que se borraban al guardar sin avisar.
+- **Las notas de Editor.js se convierten al leerlas** (`loadNote`). Si al
+  convertir se pierde algún bloque, la nota se enseña pero **no se guarda**:
+  el primer autoguardado sobrescribiría el original.
+- **El asa de arrastre es propia** (`components/notion/editor/dragHandle.ts`).
+  `@tiptap/extension-drag-handle` arrastra `yjs` y una segunda copia de
+  ProseMirror; no la reinstales.
+- **El texto ya no viaja como HTML**, así que no hay DOMPurify: la defensa es
+  el esquema de ProseMirror más `isSafeHref` para los enlaces.
 
 ## Tablas reservadas: no están rotas, están sin construir
 

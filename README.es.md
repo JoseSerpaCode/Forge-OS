@@ -66,9 +66,9 @@ repositorio y ejecutar dos comandos te deja una instancia funcionando.
 - **Kanban y sprints**: épicas, historias, tareas y bugs repartidos en cuatro
   columnas con drag & drop persistente, más control de tiempo en servidor que se
   detiene solo cuando un issue llega a Done.
-- **Base de conocimiento**: editor tipo Notion sobre Editor.js con tablas,
-  bloques de código, deshacer/rehacer y enlaces bidireccionales entre páginas e
-  issues.
+- **Base de conocimiento**: editor tipo Notion sobre Tiptap, con atajos tipo
+  Markdown al escribir, menú «/», bloques que se arrastran, listas de tareas,
+  tablas, bloques de código y enlaces bidireccionales entre páginas e issues.
 - **Bases de datos dinámicas**: crea tablas tipo Airtable desde la interfaz, sin
   tocar ningún archivo de esquema.
 - **Métricas de sprint**: gráficas de velocity, burndown, distribución y

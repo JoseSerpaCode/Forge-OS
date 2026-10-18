@@ -143,8 +143,8 @@
   /* `clip` y no `hidden` en horizontal.
 
      `overflow: hidden` impide arrastrar con el dedo pero **no** el
-     desplazamiento por código: un `scrollIntoView()` —y Editor.js llama a uno
-     por cada bloque que enfoca— corre el contenedor de lado igual, y ahí se
+     desplazamiento por código: un `scrollIntoView()` —y Editor.js, el editor
+     de notas de entonces, llamaba a uno por cada bloque que enfocaba— corre el contenedor de lado igual, y ahí se
      queda. Se veía como la página entera desplazada, con el texto cortado por
      la izquierda y la barra inferior arrastrada con ella.
 

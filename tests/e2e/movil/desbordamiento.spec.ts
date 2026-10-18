@@ -97,7 +97,8 @@ test('nada empuja la vista de lado, ni por código', async ({ page }) => {
 
   /*
    * `overflow: hidden` frena el dedo pero no al código: un `scrollIntoView()`
-   * —y Editor.js hace uno por cada bloque que enfoca— corre el contenedor de
+   * —y Editor.js, el editor de notas de entonces, hacía uno por cada bloque
+   * que enfocaba— corre el contenedor de
    * lado igual, y ahí se queda. Se veía como la página entera desplazada, con
    * el texto cortado por la izquierda y la barra inferior arrastrada con ella.
    *

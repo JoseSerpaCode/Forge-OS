@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   return new Response(JSON.stringify(entries), { status: 200, headers: { 'Content-Type': 'application/json' } });
 };
 
-// Helper to escape HTML tags to prevent XSS (Same lesson as Editor.js)
+// Helper to escape HTML tags to prevent XSS
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   const { sys_tag, id } = params;
@@ -79,7 +79,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
          * Se guarda tal cual. El escapado va **al pintar**.
          *
          * Aquí se escapaba antes de meterlo en la base, contra la regla que el
-         * propio proyecto documenta en `lib/sanitizer.ts`. No aportaba
+         * proyecto aprendió con los bloques de código de las notas. No aportaba
          * seguridad —la tabla se pinta con `{val}` en Astro, que escapa solo— y
          * sí acumulaba: un `<` se guardaba como `&lt;`, y al reeditar la fila
          * como `&amp;lt;`. Quien escribía un signo de menor lo veía convertido

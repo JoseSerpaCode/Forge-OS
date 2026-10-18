@@ -146,7 +146,7 @@ for (const theme of ['dark', 'light']) {
     const file = path.join(OUT, `${p.name}-${theme}.png`);
     await page.goto(BASE + p.url, { waitUntil: 'networkidle' });
 
-    // Let chart.js animations and Editor.js hydration settle.
+    // Let chart.js animations and the note editor settle.
     await page.waitForTimeout(2500);
 
     if (p.setup) await p.setup();
