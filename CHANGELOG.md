@@ -6,6 +6,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.28.4] - 2026-10-18
+
+### Fixed
+
+- **En producción, las entregas de hoy salían vencidas por la noche.** La app decide qué día es hoy con la zona del proceso —el rojo de «vencida» en las tarjetas servidas, el contador del Hub, el día de la foto del burndown— y el servicio no fijaba ninguna, así que en la VM corría en UTC: desde las siete de la tarde en Bogotá ya creía que era mañana. El unit de systemd fija ahora `TZ=America/Bogota`, la misma zona con la que corren las pruebas e2e. Las fechas guardadas no cambian.
+- Una instancia ya desplegada tiene que copiar el unit una vez, porque `deploy.sh` reinicia el servicio pero no lo reinstala. Los pasos están en `deploy/README.md`, en «La zona horaria».
+
 ## [1.28.1] - 2026-10-18
 
 ### Security

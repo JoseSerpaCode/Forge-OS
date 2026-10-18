@@ -20,6 +20,14 @@ WorkingDirectory=/opt/forge-os
 # root: el servicio lo lee al arrancar, el usuario forge no puede leerlo.
 EnvironmentFile=/etc/forge-os.env
 
+# La zona en la que la app decide qué día es hoy. `vencida()`, `hoyLocal()` y
+# la foto diaria del burndown usan la del proceso, y una VM de GCP viene en
+# UTC: sin esto, desde las siete de la tarde en Bogotá el servidor ya cree que
+# es mañana y pinta como vencida una entrega de hoy. No es un secreto ni cambia
+# entre máquinas, por eso va aquí y no en /etc/forge-os.env. Las pruebas e2e
+# corren con la misma (`playwright.config.ts`).
+Environment=TZ=America/Bogota
+
 ExecStart=/usr/bin/node server.mjs
 
 Restart=always
