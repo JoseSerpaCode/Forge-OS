@@ -322,7 +322,7 @@ const t = useTranslations(lang);
 
 <script>
   import { escaparHtml } from '../../lib/texto';
-  import { fecha } from '../../lib/fechas';
+  import { fecha, vencida, diaDeCalendario } from '../../lib/fechas';
   const closeBtn = document.getElementById('close-modal-btn');
   const modal = document.getElementById('issue-details-modal');
   const backdrop = document.getElementById('issue-details-backdrop');
@@ -671,10 +671,15 @@ const t = useTranslations(lang);
       fechaEl.textContent = `${etiqueta} ${fecha(iso, raizModal?.dataset.lang || 'en')}`;
       // El rojo de vencida se recalcula aquí: si no, una fecha movida al futuro
       // seguiría pintada en rojo hasta recargar.
-      const vencida = card.dataset.status !== 'done' && new Date(iso + 'T00:00:00') < new Date();
-      fechaEl.classList.toggle('text-forge-error', vencida);
-      fechaEl.classList.toggle('font-bold', vencida);
-      fechaEl.classList.toggle('text-forge-muted', !vencida);
+      //
+      // Con `vencida()`, la misma regla que la tarjeta servida. Aquí había un
+      // `new Date(iso + 'T00:00:00') < new Date()`, que da por vencida una
+      // entrega de hoy desde la medianoche: la tarjeta salía en gris y, al
+      // tocar cualquier campo del modal, pasaba a rojo.
+      const estaVencida = card.dataset.status !== 'done' && vencida(iso);
+      fechaEl.classList.toggle('text-forge-error', estaVencida);
+      fechaEl.classList.toggle('font-bold', estaVencida);
+      fechaEl.classList.toggle('text-forge-muted', !estaVencida);
     } else if (fechaEl) {
       fechaEl.remove();
     }
@@ -1118,7 +1123,7 @@ const t = useTranslations(lang);
         // Due date update
         const dueDateInput = document.getElementById('modal-issue-due-date') as HTMLInputElement;
         if (dueDateInput && issue.due_date) {
-          dueDateInput.value = new Date(issue.due_date).toISOString().split('T')[0];
+          dueDateInput.value = diaDeCalendario(issue.due_date) ?? '';
         } else if (dueDateInput) {
           dueDateInput.value = '';
         }

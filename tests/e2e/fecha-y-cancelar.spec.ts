@@ -3,6 +3,13 @@ import { getTestDb } from './test-utils';
 
 const ESPACIO = 'ws-fecha-cancelar';
 
+// El navegador, en la misma zona que el servidor (`playwright.config.ts`): al
+// oeste de UTC es donde una fecha solo-día se corría al día anterior.
+test.use({ timezoneId: 'America/Bogota' });
+
+/** «Sep 9, 2026» o «9 sept 2026»: el día exacto, en cualquiera de los dos idiomas. */
+const elDia = (d: number) => new RegExp(`(Sep ${d}, 2026|\\b${d} sept? 2026)`);
+
 async function entrar(page: any) {
   await page.goto('/login');
   await page.fill('input[name="username"]', 'jose');
@@ -45,6 +52,15 @@ test('la fecha de entrega se ve igual en la tarjeta y en el modal', async ({ pag
   // Como la pinta el servidor, con el idioma de la aplicación.
   const antes = (await tarjeta.locator('.card-due').textContent())?.trim() ?? '';
 
+  /*
+   * El día exacto que se guardó, no uno parecido.
+   *
+   * `'2026-09-09'` se leía como medianoche UTC, que en Bogotá es el día 8 a
+   * las siete de la tarde: la tarjeta decía «Sep 8, 2026». Comparar solo la
+   * forma de las dos fechas, como hace el final de esta prueba, no lo veía.
+   */
+  expect(antes).toMatch(elDia(9));
+
   // Y ahora se edita desde el modal, que es cuando se reescribía con el
   // formato del navegador: el modal escribe de vuelta en la propia tarjeta.
   await tarjeta.locator('h4').click();
@@ -63,6 +79,8 @@ test('la fecha de entrega se ve igual en la tarjeta y en el modal', async ({ pag
     .not.toBe(antes);
 
   const despues = (await tarjeta.locator('.card-due').textContent())?.trim() ?? '';
+  // Y el del navegador, que repinta con la misma `fecha()`, tampoco se corre.
+  expect(despues).toMatch(elDia(10));
 
   /*
    * No se fija el formato concreto, sino que los dos se escriban igual: el

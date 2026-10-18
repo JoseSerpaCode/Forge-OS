@@ -6,6 +6,15 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.28.2] - 2026-10-18
+
+### Fixed
+
+- **Las fechas de entrega salían un día antes al oeste de UTC.** Una entrega puesta para el 9 de septiembre se veía «8 sept 2026» en Colombia. `due_date` se guarda como `'2026-09-09'` —un día del calendario, sin hora ni zona— y `deSQLite()` le añadía la `Z` que sí necesitan las marcas de `CURRENT_TIMESTAMP`, así que pasaba a medianoche UTC, que en Bogotá son las siete de la tarde del día anterior. Ahora una fecha solo-día se lee como ese día en la zona de quien mira, tanto en la tarjeta que pinta el servidor como en el modal del navegador, y también en la lista de «Mis Tareas» y en cualquier otra fecha guardada solo con el día que pase por `fecha()`. Las marcas de tiempo siguen leyéndose en UTC.
+- **Una entrega de hoy se ponía en rojo al tocar el ticket.** El modal recalculaba «vencida» con su propia comparación —medianoche del día de entrega contra la hora actual—, que la daba por vencida desde las 00:00 de ese mismo día, mientras la tarjeta servida decía que no. Ahora los dos usan `vencida()`.
+- Al abrir un ticket, el campo de fecha del modal se rellena con el día guardado tal cual, en vez de pasarlo por `toISOString()`, que da el día en UTC.
+- Las pruebas e2e corren el servidor y el navegador en `America/Bogota`. En UTC, que es la zona de CI, este fallo no se veía.
+
 ## [1.28.1] - 2026-10-18
 
 ### Security
