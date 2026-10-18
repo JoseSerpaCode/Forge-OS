@@ -6,6 +6,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.27.1] - 2026-09-08
+
+### Fixed
+
+- **La fecha de entrega cambiaba de formato al editarla.** La tarjeta la pinta el servidor con el idioma de la aplicación —«9 sept 2026»— y al cambiarla desde el modal se reescribía **dentro de la propia tarjeta** con un `toLocaleDateString()` sin argumentos, que usa el idioma del navegador: «9/09/26». Es el mismo fallo que se corrigió en la 1.25.0 para la tarjeta, del que quedó una copia suelta en el modal. Ahora las dos llaman a `fecha()`.
+- **«Cancelar» al crear una base de datos hacía lo mismo que la equis.** El alta tiene dos pasos —elegir plantilla y rellenar el formulario— y cancelar en el segundo cerraba el diálogo entero, así que «me he equivocado de plantilla» se convertía en «empieza de cero». Ahora vuelve a la galería, y solo cierra si ya estabas en ella.
+
 ## [1.27.0] - 2026-08-23
 
 ### Security

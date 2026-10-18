@@ -250,7 +250,13 @@ const TXT = {
       </div>
 
       <div class="pt-6 border-t border-forge-border/40 flex justify-end gap-3 mt-8 p-8">
-        <button type="button" class="px-6 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text transition-colors" onclick="document.getElementById('new-db-modal').close()">
+        {/* «Cancelar» vuelve al paso anterior; la equis cierra.
+
+            Hacía `close()`, o sea exactamente lo mismo que la equis, y en un
+            alta de dos pasos eso convierte «me he equivocado de plantilla» en
+            «empieza de cero». Dos controles distintos que hacen lo mismo son
+            uno de más. */}
+        <button type="button" id="btn-cancel-db" class="px-6 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text transition-colors">
           {t('ws.settings.modal_cancel')}
         </button>
         <button type="button" id="btn-save-db" class="bg-forge-primary text-forge-on-accent px-8 py-2.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm shadow-forge-primary/20">
@@ -270,6 +276,7 @@ const TXT = {
           stepTpl: document.getElementById('step-tpl'),
           stepForm: document.getElementById('step-form'),
           backBtn: document.getElementById('btn-tpl-back'),
+          cancelBtn: document.getElementById('btn-cancel-db'),
           subtitulo: document.getElementById('modal-sub'),
           addColBtn: document.getElementById('btn-add-col'),
           colsContainer: document.getElementById('columns-container'),
@@ -288,6 +295,19 @@ const TXT = {
 
         this.elements.newDbBtn?.addEventListener('click', () => this.abrir());
         this.elements.backBtn?.addEventListener('click', () => this.mostrarPaso('tpl'));
+
+        /*
+         * «Cancelar» deshace un paso; no cierra el diálogo entero.
+         *
+         * Estando en el formulario, cancelar quiere decir «esta plantilla no
+         * era»: se vuelve a la galería. Solo cierra si ya estás en la galería,
+         * que es donde no hay nada que deshacer.
+         */
+        this.elements.cancelBtn?.addEventListener('click', () => {
+          const enFormulario = !this.elements.stepForm?.classList.contains('hidden');
+          if (enFormulario) this.mostrarPaso('tpl');
+          else this.elements.modal?.close();
+        });
         this.elements.addColBtn?.addEventListener('click', () => this.addColumnRow());
         this.elements.saveBtn?.addEventListener('click', () => this.handleSave());
 
