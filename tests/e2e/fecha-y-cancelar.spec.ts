@@ -92,6 +92,68 @@ test('la fecha de entrega se ve igual en la tarjeta y en el modal', async ({ pag
 });
 
 /**
+ * La fecha elegida no la pisa una carga que llega tarde.
+ *
+ * Al abrir el modal, los datos del ticket se piden dos veces: una directa y
+ * otra cuando terminan de cargar los registros de trabajo. La segunda
+ * reescribía el campo de fecha con lo que había en el servidor *antes* de
+ * elegir la nueva, así que el campo volvía a la fecha vieja. Con la suite en
+ * paralelo pasaba de vez en cuando y hacía fallar la prueba de arriba; aquí se
+ * fuerza retrasando los registros de trabajo.
+ */
+test('elegir la fecha justo al abrir el ticket no se deshace', async ({ page }) => {
+  await entrar(page);
+  const { db, yo, ws } = conEspacio();
+  db.prepare("DELETE FROM issues WHERE title = 'Con fecha lenta'").run();
+  db.prepare(`INSERT INTO issues (id, workspace_id, type, title, status, reporter_id, position, due_date)
+              VALUES (?, ?, 'task', 'Con fecha lenta', 'todo', ?, 100001, '2026-09-09')`)
+    .run(crypto.randomUUID(), ws.id, yo.id);
+
+  /*
+   * Se deja pasar la primera carga y se retiene la **respuesta** de la segunda:
+   * la petición sale antes de elegir la fecha, así que trae la vieja, y llega
+   * después. Retener la petición en vez de la respuesta no reproduce nada —
+   * saldría tras el PATCH y ya traería la nueva—.
+   */
+  let cargas = 0;
+  let soltar!: () => void;
+  const retenido = new Promise<void>((r) => { soltar = r; });
+  let pedida!: () => void;
+  const segundaPedida = new Promise<void>((r) => { pedida = r; });
+  let entregada!: () => void;
+  const segundaEntregada = new Promise<void>((r) => { entregada = r; });
+  await page.route(/\/api\/issues\/[^/]+$/, async (ruta) => {
+    if (ruta.request().method() !== 'GET' || ++cargas !== 2) return ruta.continue();
+    const vieja = await ruta.fetch();
+    pedida();
+    await retenido;
+    await ruta.fulfill({ response: vieja });
+    entregada();
+  });
+
+  await page.goto(`/w/${ESPACIO}/board?sprint=backlog`);
+  const tarjeta = page.locator('.issue-card', { hasText: 'Con fecha lenta' }).first();
+  await tarjeta.locator('h4').click();
+  const campo = page.locator('#modal-issue-due-date');
+  await expect(campo).toHaveValue('2026-09-09');
+  await segundaPedida;
+
+  const guardado = page.waitForResponse((r) => r.request().method() === 'PATCH' && r.url().includes('/api/issues/'));
+  await campo.fill('2026-09-10');
+  await campo.dispatchEvent('change');
+  await guardado;
+
+  // Ahora llega la segunda carga, con lo que había antes de elegir.
+  soltar();
+  await segundaEntregada;
+  // Un respiro para que el manejador de la respuesta escriba en el campo.
+  await page.evaluate(() => new Promise((r) => setTimeout(r, 100)));
+
+  await expect(campo).toHaveValue('2026-09-10');
+  await expect(tarjeta.locator('.card-due')).toHaveText(/(Sep 10, 2026|\b10 sept? 2026)/);
+});
+
+/**
  * «Cancelar» deshace un paso; la equis cierra.
  *
  * Hacía `close()`, exactamente lo mismo que la equis, y en un alta de dos pasos

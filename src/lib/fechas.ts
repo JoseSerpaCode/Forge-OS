@@ -162,3 +162,25 @@ export function vencida(valor: unknown, ahora: Date = new Date()): boolean {
   // Una entrega «de hoy» no está vencida a las nueve de la mañana.
   return dia < hoyLocal(ahora);
 }
+
+/**
+ * Cuántos días del calendario faltan hasta una fecha: 0 si es hoy, negativo si
+ * ya pasó, `null` si no se puede leer.
+ *
+ * Cuenta días, no horas. El resumen del espacio hacía
+ * `Math.ceil((fin - ahora) / 86400000)` sobre un `new Date('2026-09-09')`, que
+ * es la medianoche **UTC**: en Bogotá, desde las siete de la tarde del día
+ * anterior ya decía «termina hoy», y en Tokio el último día por la mañana
+ * todavía decía «termina en 1 día».
+ */
+export function diasHasta(valor: unknown, ahora: Date = new Date()): number | null {
+  const dia = diaDeCalendario(valor);
+  if (!dia) return null;
+  // Las dos fechas pasan a medianoche UTC solo para restarlas: así un cambio de
+  // horario de verano no deja un día de 23 horas que redondee mal.
+  const comoUTC = (iso: string) => {
+    const [a, m, d] = iso.split('-').map(Number);
+    return Date.UTC(a, m - 1, d);
+  };
+  return Math.round((comoUTC(dia) - comoUTC(hoyLocal(ahora))) / 86_400_000);
+}

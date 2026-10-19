@@ -10,7 +10,7 @@ const user = Astro.locals.user!;
 if (!user) return Astro.redirect('/login');
 
 import { useTranslations } from '../../../i18n/ui';
-import { fecha, relativo } from '../../../lib/fechas';
+import { fecha, relativo, deSQLite, diasHasta } from '../../../lib/fechas';
 import { mapaPorClave } from '../../../lib/issueTypes';
 import TaskTable from '../../../components/dashboard/TaskTable.astro';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
@@ -61,11 +61,11 @@ if (activeSprint) {
     ? Math.round((doneInSprint.count / totalInSprint.count) * 100) 
     : 0;
   
-  if (activeSprint.end_date) {
-    const endDate = new Date(activeSprint.end_date);
-    const now = new Date();
-    sprintDaysLeft = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-  }
+  // Días del calendario, no horas: con `new Date(end_date)` una fecha
+  // solo-día era la medianoche UTC y el «termina hoy» llegaba un día antes en
+  // Bogotá. Ver `diasHasta()`.
+  const faltan = diasHasta(activeSprint.end_date);
+  if (faltan !== null) sprintDaysLeft = Math.max(0, faltan);
 } else {
   pendingIssues = db.prepare(`
     SELECT COUNT(*) as count FROM issues 
@@ -298,11 +298,15 @@ const priorityColor: Record<string, string> = {
               let barWidth = 50; // default
               
               if (firstStart && lastEnd && sprint.start_date && sprint.end_date) {
-                const rangeStart = new Date(firstStart).getTime();
-                const rangeEnd = new Date(lastEnd).getTime();
+                // Con `deSQLite`, como el resto de fechas: `new Date()` leía una
+                // fecha solo-día como UTC y una marca de SQLite como hora local,
+                // y en una misma barra podían convivir las dos.
+                const ms = (v: unknown) => deSQLite(v)?.getTime() ?? NaN;
+                const rangeStart = ms(firstStart);
+                const rangeEnd = ms(lastEnd);
                 const range = rangeEnd - rangeStart || 1;
-                const sprintStart = new Date(sprint.start_date).getTime();
-                const sprintEnd = new Date(sprint.end_date).getTime();
+                const sprintStart = ms(sprint.start_date);
+                const sprintEnd = ms(sprint.end_date);
                 barLeft = Math.max(0, Math.min(100, ((sprintStart - rangeStart) / range) * 100));
                 barWidth = Math.max(8, Math.min(100 - barLeft, ((sprintEnd - sprintStart) / range) * 100));
               } else {
