@@ -34,6 +34,25 @@ for (const p of pages) {
     childrenMap.get(p.parent_page_id)!.push(p);
   }
 }
+// Mover y crear exigen ser editor; el servidor lo comprueba igualmente.
+const canEdit = checkWorkspaceAccess(user.id, user.is_sysadmin, workspaceId, 'editor').granted;
+
+// Todas las notas en orden de árbol, con su profundidad, para el desplegable
+// de «Mover a…». Con tope de profundidad por si la base trajera un ciclo.
+const enOrden: Array<{ id: string; title: string; depth: number }> = [];
+const recorrer = (lista: any[], depth: number) => {
+  if (depth > 50) return;
+  for (const p of lista) {
+    enOrden.push({ id: p.id, title: p.title, depth });
+    recorrer(childrenMap.get(p.id) || [], depth + 1);
+  }
+};
+recorrer(rootPages, 0);
+
+const textosArbol = {
+  move_error: t('kb.tree.move_error'),
+  move_cycle: t('kb.tree.move_cycle'),
+};
 ---
 
 {/*
@@ -51,6 +70,8 @@ for (const p of pages) {
 <aside
   id="page-tree-aside"
   data-workspace-id={workspaceId}
+  data-can-edit={canEdit.toString()}
+  data-texts={JSON.stringify(textosArbol)}
   class="fixed md:relative inset-y-0 left-0 z-40 w-72 md:w-64 max-w-[85vw] bg-forge-panel border border-forge-border md:rounded-lg m-0 md:m-4 flex flex-col h-full md:h-[calc(100%-2rem)] md:shrink-0 -translate-x-full md:translate-x-0 transition-transform md:transition-all duration-300"
 >
   <div class="p-4 border-b border-forge-border flex items-center justify-between">
@@ -80,7 +101,7 @@ for (const p of pages) {
         </li>
       ) : (
         rootPages.map(page => (
-          <PageTreeItem page={page} childrenMap={childrenMap} currentPageId={currentPageId} sys_tag={sysTag} />
+          <PageTreeItem page={page} childrenMap={childrenMap} currentPageId={currentPageId} sys_tag={sysTag} canEdit={canEdit} t={t} />
         ))
       )}
     </ul>
@@ -91,6 +112,30 @@ for (const p of pages) {
     el botón para volver al texto. */}
 <div id="page-tree-backdrop" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden"></div>
 
+{/* «Mover a…»: la forma de mover una nota sin arrastrar, con teclado o en un
+    teléfono. Va al final del destino elegido; para colocarla en un sitio
+    concreto entre sus hermanas está el arrastre. */}
+{canEdit && (
+  <dialog id="move-page-dialog" class="bg-forge-panel border border-forge-border rounded-lg p-0 w-[calc(100vw-2rem)] max-w-md text-forge-text shadow-xl backdrop:bg-black/50">
+    <form method="dialog" id="move-page-form" class="p-5 flex flex-col gap-4">
+      <h2 class="text-lg font-bold" id="move-page-title">{t('kb.tree.move')}</h2>
+      <label class="flex flex-col gap-1.5 text-sm">
+        <span class="text-forge-muted">{t('kb.tree.move_to')}</span>
+        <select id="move-page-target" class="bg-forge-bg border border-forge-border rounded px-2 py-2 text-forge-text">
+          <option value="">{t('kb.tree.move_root')}</option>
+          {enOrden.map((p) => (
+            <option value={p.id}>{'\u00a0\u00a0'.repeat(p.depth + 1) + p.title}</option>
+          ))}
+        </select>
+      </label>
+      <div class="flex justify-end gap-2">
+        <button type="button" id="move-page-cancel" class="px-3 py-1.5 rounded text-sm text-forge-muted hover:text-forge-text">{t('kb.tree.cancel')}</button>
+        <button type="submit" id="move-page-submit" class="px-3 py-1.5 rounded text-sm font-bold bg-forge-primary text-forge-on-accent">{t('kb.tree.move_submit')}</button>
+      </div>
+    </form>
+  </dialog>
+)}
+
 {/* El botón que abre este cajón vive en la fila del título del editor
     (`EditorClient.astro`), no aquí. Estuvo flotando y chocó con el contenido
     las dos veces que se intentó — abajo se salía de la pantalla, arriba tapaba
@@ -98,37 +143,222 @@ for (const p of pages) {
     componente; lo busca por id. */}
 
 <script>
-  // Handle toggling of folders
-  document.getElementById('page-tree-root')?.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest('button[aria-label="Toggle"]');
-    if (btn) {
-      e.preventDefault();
-      e.stopPropagation();
-      const parentLi = btn.closest('li');
-      const childrenUl = parentLi?.querySelector('ul');
-      const icon = btn.querySelector('svg');
-      if (childrenUl && parentLi) {
-        parentLi.classList.toggle('expanded');
-        childrenUl.classList.toggle('hidden');
-        if (icon) icon.classList.toggle('rotate-90');
-      }
+  const asideArbol = document.getElementById('page-tree-aside');
+  const raizArbol = document.getElementById('page-tree-root');
+  const espacioId = asideArbol?.dataset.workspaceId ?? '';
+  const puedeEditar = asideArbol?.dataset.canEdit === 'true';
+  const textosArbol: Record<string, string> = JSON.parse(asideArbol?.dataset.texts || '{}');
+
+  /**
+   * Qué carpetas están abiertas, recordado entre páginas.
+   *
+   * Cada nota es una página entera, así que el árbol se pintaba de cero en
+   * cada clic y se cerraba todo lo que se hubiera abierto: para repasar varias
+   * notas de una carpeta había que volver a abrirla cada vez.
+   *
+   * Va en `localStorage` por espacio: es una preferencia de esta persona en
+   * este navegador, no algo que tenga que saber el servidor. Si el
+   * almacenamiento no está disponible (modo privado estricto), el árbol
+   * funciona igual, solo que sin memoria.
+   */
+  const CLAVE_ABIERTAS = `forge:arbol-abierto:${espacioId}`;
+  const leerAbiertas = (): Set<string> => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(CLAVE_ABIERTAS) || '[]'));
+    } catch {
+      return new Set();
     }
+  };
+  const abiertas = leerAbiertas();
+  const guardarAbiertas = () => {
+    try {
+      localStorage.setItem(CLAVE_ABIERTAS, JSON.stringify([...abiertas]));
+    } catch {}
+  };
+
+  const abrirCarpeta = (li: Element, abrir: boolean) => {
+    li.classList.toggle('expanded', abrir);
+    li.querySelector(':scope > ul')?.classList.toggle('hidden', !abrir);
+    li.querySelector(':scope > div .tree-toggle')?.setAttribute('aria-expanded', String(abrir));
+  };
+
+  // Lo recordado, más la nota actual y todo lo que hay por encima: al entrar
+  // en una nota se ven sus subpáginas y dónde está.
+  raizArbol?.querySelectorAll<HTMLElement>('li.tree-item').forEach((li) => {
+    if (abiertas.has(li.dataset.pageId ?? '')) abrirCarpeta(li, true);
+  });
+  const actual = raizArbol?.querySelector('a[aria-current="page"]')?.closest('li.tree-item');
+  for (let li: Element | null | undefined = actual; li; li = li.parentElement?.closest('li.tree-item')) {
+    abrirCarpeta(li, true);
+    abiertas.add((li as HTMLElement).dataset.pageId ?? '');
+  }
+  guardarAbiertas();
+
+  raizArbol?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.tree-toggle');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const li = btn.closest<HTMLElement>('li.tree-item');
+    if (!li) return;
+    const abrir = !li.classList.contains('expanded');
+    abrirCarpeta(li, abrir);
+    const id = li.dataset.pageId ?? '';
+    if (abrir) abiertas.add(id);
+    else abiertas.delete(id);
+    guardarAbiertas();
   });
 
-  // Automatically expand folders that contain the active page
-  const activeLink = document.querySelector('a.text-forge-text.font-bold');
-  if (activeLink) {
-    let parent = activeLink.parentElement?.parentElement; // li
-    while (parent && parent.tagName === 'LI') {
-      parent.classList.add('expanded');
-      const ul = parent.querySelector(':scope > ul');
-      if (ul) ul.classList.remove('hidden');
-      const icon = parent.querySelector(':scope > div button[aria-label="Toggle"] svg');
-      if (icon) icon.classList.add('rotate-90');
-      
-      parent = parent.parentElement?.parentElement; // go up to next li
+  /** Pide al servidor mover la nota y recarga el árbol. */
+  async function mover(paginaId: string, padreId: string | null, indice: number) {
+    const res = await fetch(`/api/pages/${paginaId}/move`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parent_id: padreId, index: indice }),
+    });
+    if (!res.ok) {
+      const cuerpo = await res.json().catch(() => ({}));
+      window.showToast?.(cuerpo.error === 'cycle' ? textosArbol.move_cycle : textosArbol.move_error, true);
+      return;
     }
+    // Que el destino quede abierto: es donde se va a mirar a continuación.
+    if (padreId) {
+      abiertas.add(padreId);
+      guardarAbiertas();
+    }
+    window.location.reload();
   }
+
+  /** Las hermanas de un `li`, sin contar la que se está moviendo. */
+  const hermanasDe = (li: Element, sin: string) =>
+    [...(li.parentElement?.children ?? [])].filter(
+      (h) => h.matches('li.tree-item') && (h as HTMLElement).dataset.pageId !== sin
+    ) as HTMLElement[];
+
+  /**
+   * Arrastrar en el árbol.
+   *
+   * Tres zonas en cada fila: el cuarto de arriba la coloca **antes**, el de
+   * abajo **después** y el centro la mete **dentro** como subpágina. Soltar
+   * una nota sobre sí misma o sobre algo que cuelga de ella no hace nada; el
+   * servidor lo rechazaría igual.
+   */
+  if (puedeEditar && raizArbol) {
+    let arrastrada: HTMLElement | null = null;
+    type Zona = 'antes' | 'despues' | 'dentro';
+    let destino: { li: HTMLElement; zona: Zona } | null = null;
+
+    const limpiar = () => {
+      raizArbol.querySelectorAll('.drop-antes, .drop-despues, .drop-dentro').forEach((el) =>
+        el.classList.remove('drop-antes', 'drop-despues', 'drop-dentro')
+      );
+    };
+
+    raizArbol.addEventListener('dragstart', (e) => {
+      const fila = (e.target as HTMLElement).closest('.tree-row');
+      const li = fila?.closest<HTMLElement>('li.tree-item');
+      if (!fila || !li || !e.dataTransfer) return;
+      arrastrada = li;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', li.dataset.pageId ?? '');
+      li.classList.add('is-dragging');
+    });
+
+    raizArbol.addEventListener('dragover', (e) => {
+      if (!arrastrada) return;
+      const fila = (e.target as HTMLElement).closest<HTMLElement>('.tree-row');
+      const li = fila?.closest<HTMLElement>('li.tree-item');
+      limpiar();
+      destino = null;
+      // Sobre sí misma o sobre una de sus subpáginas: no se puede soltar.
+      if (!fila || !li || arrastrada.contains(li)) return;
+
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const caja = fila.getBoundingClientRect();
+      const y = (e.clientY - caja.top) / caja.height;
+      const zona: Zona = y < 0.25 ? 'antes' : y > 0.75 ? 'despues' : 'dentro';
+      fila.classList.add(`drop-${zona}`);
+      destino = { li, zona };
+    });
+
+    raizArbol.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const quien = arrastrada;
+      const donde = destino;
+      limpiar();
+      if (!quien || !donde) return;
+      const id = quien.dataset.pageId ?? '';
+
+      if (donde.zona === 'dentro') {
+        // Al final de sus subpáginas; el servidor ajusta el índice.
+        mover(id, donde.li.dataset.pageId ?? null, Number.MAX_SAFE_INTEGER);
+        return;
+      }
+      const padre = donde.li.dataset.parentId || null;
+      const hermanas = hermanasDe(donde.li, id);
+      const i = hermanas.indexOf(donde.li);
+      mover(id, padre, donde.zona === 'antes' ? i : i + 1);
+    });
+
+    raizArbol.addEventListener('dragend', () => {
+      arrastrada?.classList.remove('is-dragging');
+      arrastrada = null;
+      destino = null;
+      limpiar();
+    });
+  }
+
+  /**
+   * «Mover a…»: el mismo movimiento sin arrastrar. Se desactivan en la lista la
+   * propia nota y lo que cuelga de ella, que son los destinos imposibles.
+   */
+  (() => {
+    const dialogo = document.getElementById('move-page-dialog') as HTMLDialogElement | null;
+    const lista = document.getElementById('move-page-target') as HTMLSelectElement | null;
+    const titulo = document.getElementById('move-page-title');
+    const formulario = document.getElementById('move-page-form') as HTMLFormElement | null;
+    if (!dialogo || !lista || !formulario || !raizArbol) return;
+    const tituloBase = titulo?.textContent ?? '';
+    let moviendo: string | null = null;
+
+    raizArbol.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('.move-tree-page-btn');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const li = btn.closest<HTMLElement>('li.tree-item');
+      if (!li) return;
+      moviendo = li.dataset.pageId ?? null;
+
+      const imposibles = new Set(
+        [li, ...li.querySelectorAll<HTMLElement>('li.tree-item')].map((x) => x.dataset.pageId)
+      );
+      for (const op of lista.options) op.disabled = imposibles.has(op.value);
+      // Preseleccionar donde está ahora, para que «Mover» sin tocar nada no
+      // la mande a otra parte.
+      lista.value = li.dataset.parentId ?? '';
+      if (titulo) {
+        const nombre = li.querySelector(':scope > div .tree-title')?.textContent?.trim() ?? '';
+        titulo.textContent = `${tituloBase}: ${nombre}`;
+      }
+      dialogo.showModal();
+      lista.focus();
+    });
+
+    document.getElementById('move-page-cancel')?.addEventListener('click', () => dialogo.close());
+
+    formulario.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!moviendo) return;
+      dialogo.close();
+      const li = raizArbol.querySelector<HTMLElement>(`li.tree-item[data-page-id="${CSS.escape(moviendo)}"]`);
+      // Mismo sitio que ya tenía: no hay nada que mover. Sin esto, aceptar el
+      // diálogo sin cambiar nada la mandaba al final de su nivel.
+      if ((li?.dataset.parentId ?? '') === lista.value) return;
+      mover(moviendo, lista.value || null, Number.MAX_SAFE_INTEGER);
+    });
+  })();
 
   // Create page logic
   async function createPage(parentId: string | null) {
@@ -269,3 +499,14 @@ for (const p of pages) {
     }
   });
 </script>
+
+<style>
+  /* Dónde caerá la nota al soltarla: una línea antes o después de la fila,
+     o la fila entera resaltada si va dentro. Color de acento a pleno, sin
+     opacidad, como el resto de indicadores. */
+  :global(.tree-row.drop-antes) { box-shadow: inset 0 2px 0 var(--forge-accent-primary); }
+  :global(.tree-row.drop-despues) { box-shadow: inset 0 -2px 0 var(--forge-accent-primary); }
+  :global(.tree-row.drop-dentro) { outline: 2px solid var(--forge-accent-primary); outline-offset: -2px; }
+  :global(li.tree-item.is-dragging > .tree-row) { opacity: 0.5; }
+  :global(.tree-row[draggable='true']) { cursor: grab; }
+</style>

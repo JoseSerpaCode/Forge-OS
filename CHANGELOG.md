@@ -6,6 +6,21 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.29.0] - 2026-10-18
+
+### Added
+
+- **Las notas se pueden mover.** Antes, para meter una nota dentro de otra había que crear una subpágina vacía y copiar el contenido a mano, y no había forma de cambiar el orden: las notas salían por fecha de creación. Ahora:
+  - **Arrastrando en el árbol.** Si sueltas la nota en el borde superior o inferior de otra, se coloca antes o después de ella. Si la sueltas en el centro, entra como subpágina.
+  - **Con «Mover a…»**, en las acciones de cada nota, para moverla sin arrastrar: con teclado o en el teléfono. La lista no ofrece los destinos imposibles: la propia nota y sus subpáginas.
+- El servidor comprueba que el destino es del mismo espacio y que una nota no acaba dentro de sí misma ni de una de sus subpáginas. Eso la desengancharía del árbol entero junto con todo lo que cuelga de ella.
+- Migración 39: `pages.position`. Conserva el orden que se veía hasta ahora: por fecha de creación dentro de cada nivel.
+
+### Fixed
+
+- **El árbol de notas se cerraba al cambiar de página.** Cada nota se carga entera y el árbol olvidaba qué carpetas habías abierto, así que para repasar varias notas de una carpeta había que abrirla una y otra vez. Ahora lo recuerda el navegador, y al entrar en una nota se abren su carpeta y las de encima.
+- Las acciones de cada nota en el árbol solo aparecían al pasar el ratón. Ahora también salen con el foco del teclado y siempre en pantallas táctiles. Quien solo puede leer el espacio ya no las ve, porque el servidor se las rechazaba igualmente.
+
 ## [1.28.5] - 2026-10-18
 
 > La 1.28.3 no existió: este cambio llevaba ese número en su PR, pero entró en `main` después de la 1.28.4.

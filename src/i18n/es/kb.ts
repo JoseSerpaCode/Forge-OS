@@ -73,4 +73,13 @@ export const es = {
   'kb.table.col_del': 'Borrar columna',
   'kb.table.header': 'Fila de cabecera',
   'kb.table.del': 'Borrar tabla',
+  'kb.tree.toggle': 'Abrir o cerrar subpáginas',
+  'kb.tree.move': 'Mover a…',
+  'kb.tree.move_to': 'Dentro de',
+  'kb.tree.move_root': 'Raíz del espacio',
+  'kb.tree.move_submit': 'Mover',
+  'kb.tree.cancel': 'Cancelar',
+  'kb.tree.add_child': 'Añadir subpágina',
+  'kb.tree.move_error': 'No se ha podido mover la nota.',
+  'kb.tree.move_cycle': 'Una nota no puede ir dentro de sí misma ni de una de sus subpáginas.',
 } as const;

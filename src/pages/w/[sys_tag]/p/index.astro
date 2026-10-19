@@ -27,7 +27,7 @@ if (user.last_page_id) {
 
 // Fallback a la primera página si no hay historial
 if (!targetPageId) {
-  const firstPage = db.prepare('SELECT id FROM pages WHERE workspace_id = ? ORDER BY created_at ASC LIMIT 1').get(ws.id) as any;
+  const firstPage = db.prepare('SELECT id FROM pages WHERE workspace_id = ? ORDER BY (parent_page_id IS NOT NULL), position ASC, created_at ASC LIMIT 1').get(ws.id) as any;
   if (firstPage) targetPageId = firstPage.id;
 }
 

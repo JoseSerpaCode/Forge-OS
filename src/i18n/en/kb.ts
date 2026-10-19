@@ -73,4 +73,13 @@ export const en = {
   'kb.table.col_del': 'Delete column',
   'kb.table.header': 'Header row',
   'kb.table.del': 'Delete table',
+  'kb.tree.toggle': 'Show or hide subpages',
+  'kb.tree.move': 'Move to…',
+  'kb.tree.move_to': 'Inside',
+  'kb.tree.move_root': 'Top level of the workspace',
+  'kb.tree.move_submit': 'Move',
+  'kb.tree.cancel': 'Cancel',
+  'kb.tree.add_child': 'Add subpage',
+  'kb.tree.move_error': 'That note could not be moved.',
+  'kb.tree.move_cycle': 'A note cannot go inside itself or one of its subpages.',
 } as const;
