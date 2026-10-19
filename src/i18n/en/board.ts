@@ -150,7 +150,7 @@ export const en = {
   'notes.no_results': 'No notes with that title.',
   'quick.label': 'New task',
   'quick.placeholder': 'Hand in essay friday 6pm #Calculus !1 [[Topic 3]]',
-  'quick.help': 'Date and time in words, #label, !1 to !4 or !high for priority and [[ to link a note.',
+  'quick.help': 'Date and time in words, #label, @person, !1 to !4 or !high for priority and [[ to link a note.',
   'quick.more': 'More options',
   'quick.create_open': 'Create and open',
   'quick.create_open_hint': 'Creates the task and opens its panel, to attach files (Shift+Enter).',
@@ -263,4 +263,5 @@ export const en = {
   'remind.needs_date': 'To remind you, the task needs a due date.',
   'remind.saved': 'Reminder saved.',
   'quick.chip_remind': 'Remind',
+  'quick.chip_assignee': 'Assignee',
 } as const;

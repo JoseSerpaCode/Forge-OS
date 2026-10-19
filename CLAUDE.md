@@ -320,8 +320,15 @@ lo es: los archivos siguen en su Drive.
   interno». Como mucho `MAX_SUSCRIPCIONES` dispositivos por cuenta.
 - **El calendario `.ics` (`/cal/<token>.ics`) es una ruta pública**: la llave es
   el token, del que solo se guarda el hash.
-- **Los contactos sin cuenta** (responsables que no son usuarios) entrarán como
-  otra opción del mismo desplegable de responsable, no como otro campo.
+- **Responsable: persona con cuenta o contacto** (`assignee_id` o
+  `assignee_contact_id`, nunca los dos). Se resuelve **solo** con
+  `resolver()` de `src/lib/responsables.ts`: comprueba que la cuenta sea del
+  espacio y que el contacto sea de quien asigna. En los desplegables, un
+  contacto es el valor `c:<id>` del mismo `<select>`, no otro campo. Los
+  contactos son de la cuenta (`src/lib/contactos.ts`), no del espacio.
+- **Las menciones `@` de las notas** son el nodo `mention` del esquema
+  compartido (`src/lib/notes/mention.ts`). `page_mentions` las indexa al
+  guardar, pero solo las de contactos de quien guarda.
 
 ## Despliegue
 

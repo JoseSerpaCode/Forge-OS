@@ -6,6 +6,7 @@ import BottomNav from '../components/layout/BottomNav.astro';
 import Footer from '../components/layout/Footer.astro';
 import GuestBanner from '../components/layout/GuestBanner.astro';
 import NuevaTarea from '../components/jira/NuevaTarea.astro';
+import ContactoRapido from '../components/jira/ContactoRapido.astro';
 import { useTranslations } from '../i18n/ui';
 
 interface Props {
@@ -159,6 +160,8 @@ Astro.response.headers.set('Pragma', 'no-cache');
     {/* El alta de tareas, en toda página de un espacio: `C` funciona también
         desde los apuntes. Solo se pinta para quien puede crear. */}
     {workspaceId && <NuevaTarea workspaceId={workspaceId} />}
+    {/* «Nuevo contacto…» desde cualquier desplegable de responsable. */}
+    {workspaceId && user && !user.is_guest && <ContactoRapido />}
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity opacity-0 backdrop-blur-sm max-md:backdrop-blur-none cursor-pointer"></div>
     <div class="flex-1 flex flex-col min-w-0">
       <TopBar title={title} workspaceName={workspaceName} />

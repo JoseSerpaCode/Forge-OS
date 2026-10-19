@@ -1413,6 +1413,53 @@ const MIGRATIONS: Migration[] = [
       `);
       db.exec('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)');
     }
+  },  {
+    version: 54,
+    description: 'contactos: personas sin cuenta, para asignar y mencionar',
+    run: () => {
+      /**
+       * Un contacto es de **una cuenta**, no de un espacio: el mismo compañero
+       * sirve en todas tus asignaturas sin darlo de alta dos veces. `CASCADE`
+       * en `owner_id`: es una libreta personal y se va con la cuenta.
+       *
+       * No apunta a `users`, así que `accountDeletion.ts` no tiene nada que
+       * reatribuir: al borrarse los contactos, las tareas asignadas a ellos
+       * quedan sin asignar por el `SET NULL` de abajo.
+       */
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS contacts (
+          id TEXT PRIMARY KEY,
+          owner_id TEXT NOT NULL,
+          name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 80),
+          note TEXT CHECK (note IS NULL OR length(note) <= 200),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_contacts_owner ON contacts(owner_id, name COLLATE NOCASE)');
+
+      // Una tarea va a una persona con cuenta **o** a un contacto, nunca a
+      // los dos. Lo impone `responsables.ts`; la columna solo guarda.
+      if (!hasColumn('issues', 'assignee_contact_id')) {
+        db.exec('ALTER TABLE issues ADD COLUMN assignee_contact_id TEXT REFERENCES contacts(id) ON DELETE SET NULL');
+      }
+      db.exec('CREATE INDEX IF NOT EXISTS idx_issues_contact ON issues(assignee_contact_id)');
+
+      // En qué notas sale cada contacto. Se rehace en cada guardado de la
+      // nota, a partir de sus menciones: buscarlas dentro del JSON de todas
+      // las notas en cada consulta sería recorrer la tabla entera.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS page_mentions (
+          page_id TEXT NOT NULL,
+          contact_id TEXT NOT NULL,
+          PRIMARY KEY (page_id, contact_id),
+          FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE,
+          FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_page_mentions_contact ON page_mentions(contact_id)');
+    }
   },
 ];
 

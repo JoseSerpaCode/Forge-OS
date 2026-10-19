@@ -2,6 +2,8 @@
 import { useTranslations } from '../../i18n/ui';
 import LabelPicker from '../labels/LabelPicker.astro';
 import { loadNote } from '../../lib/notes/content';
+import db from '../../lib/db';
+import { listar as listarContactos } from '../../lib/contactos';
 
 interface Props {
   pageId: string;
@@ -51,7 +53,23 @@ const textos = {
   'status.error': t('kb.status.error'), 'status.not_saved': t('kb.status.not_saved'),
   'status.saved_dropped': t('kb.status.saved_dropped'), 'dropped_toast': t('kb.dropped_toast'),
   'delete_confirm': t('kb.delete_confirm'), 'delete_error': t('kb.delete_error'),
+  'mention.empty': t('contacts.mention_empty'), 'mention.contact': t('contacts.mention_contact'), 'mention.member': t('contacts.mention_member'),
 };
+
+// A quién se puede mencionar con «@»: los miembros del espacio y tus
+// contactos. Los contactos de los demás no: son de su libreta.
+const yo = Astro.locals.user;
+const personas = canEdit && yo
+  ? [
+      ...(db.prepare(`
+        SELECT u.id, u.username FROM workspace_members wm
+        JOIN users u ON u.id = wm.user_id
+        JOIN workspaces w ON w.id = wm.workspace_id
+        WHERE w.sys_tag = ? ORDER BY u.username COLLATE NOCASE
+      `).all(sysTag) as Array<{ id: string; username: string }>).map((m) => ({ id: m.id, nombre: m.username, tipo: 'usuario' as const })),
+      ...(yo.is_guest ? [] : listarContactos(yo.id)).map((c) => ({ id: c.id, nombre: c.name, tipo: 'contacto' as const })),
+    ]
+  : [];
 
 const marcas = [
   { mark: 'bold', label: t('kb.fmt.bold'), icon: '<path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="M6 12h9a4 4 0 0 1 0 8H6z"/>' },
@@ -243,6 +261,7 @@ function formatDate(dateStr: string | undefined) {
       data-can-edit={canEdit.toString()}
       data-block-save={bloquearGuardado.toString()}
       data-texts={JSON.stringify(textos)}
+      data-personas={JSON.stringify(personas)}
     ></div>
 
     {canEdit && (
@@ -319,6 +338,7 @@ function formatDate(dateStr: string | undefined) {
       t,
       formatMenu: document.getElementById('note-format-menu'),
       tableMenu: document.getElementById('note-table-menu'),
+      personas: JSON.parse(editorDiv.dataset.personas || '[]'),
       onUpdate: () => debounceSave(),
     });
     // Para los tests e2e.
@@ -589,6 +609,16 @@ function formatDate(dateStr: string | undefined) {
   #note-table-menu { flex-wrap: wrap; max-width: min(92vw, 640px); }
 
   /* ── Menú «/» ─────────────────────────────────────────────────────────── */
+  /* `@alguien`. Texto en `accent-text`, que es el naranja que pasa AA; el
+     fondo lleva el color, no el texto (sin opacidad en el texto). */
+  .note-mention {
+    color: var(--forge-accent-text);
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 0 2px;
+    background: color-mix(in srgb, var(--forge-accent-text) 10%, transparent);
+    white-space: nowrap;
+  }
   .note-slash-menu {
     width: 240px;
     max-height: 320px;

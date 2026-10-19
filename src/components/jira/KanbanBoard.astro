@@ -14,6 +14,8 @@ interface Props {
   sprints?: any[];
   currentSprintId?: string | null;
   workspaceMembers?: any[];
+  /** Contactos sin cuenta de quien mira, para el desplegable de responsable. */
+  contactos?: Array<{ id: string; name: string }>;
   userRole?: string;
   /** Total real por columna (o por `carril|columna`), para avisar de lo que no se pinta. */
   statusCounts?: Record<string, number>;
@@ -42,7 +44,7 @@ const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
 const {
-  issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer',
+  issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], contactos = [], userRole = 'viewer',
   statusCounts = {}, labels = [], issueTypes = [], sysTag = '',
   funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false }, agrupar = false, filtroEtiqueta = null,
   vista = 'tablero', grupos = [], hoy = '', dias = 14, filtrosUrl = '',
@@ -276,7 +278,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
   </div>
 )}
 
-<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} labels={labels} issueTypes={issueTypes} sysTag={sysTag} canManageTypes={userRole === 'owner'} funciones={funciones} />
+<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} contactos={contactos} labels={labels} issueTypes={issueTypes} sysTag={sysTag} canManageTypes={userRole === 'owner'} funciones={funciones} />
 
 <script>
   /**
@@ -545,7 +547,8 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
 
     const assigneeSelect = document.getElementById('modal-issue-assignee') as HTMLSelectElement | null;
     const reporterSelect = document.getElementById('modal-issue-reporter') as HTMLSelectElement | null;
-    if (assigneeSelect) assigneeSelect.value = card.dataset.assigneeId || '';
+    // Persona o contacto: `data-responsable` lleva el valor del desplegable.
+    if (assigneeSelect) assigneeSelect.value = card.dataset.responsable ?? card.dataset.assigneeId ?? '';
     if (reporterSelect) reporterSelect.value = card.dataset.reporterId || 'system';
 
     // La repetición, después de la fecha: «el mismo día» se lee de la entrega.

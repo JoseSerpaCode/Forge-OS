@@ -22,6 +22,8 @@ import { listar as listarTipos, nombreVisible } from '../../lib/issueTypes';
 import { OPCIONES as PRIORIDADES } from '../../lib/prioridad';
 import { listar as listarPlantillas } from '../../lib/plantillas';
 import CampoFecha from '../forms/CampoFecha.astro';
+import OpcionesResponsable from './OpcionesResponsable.astro';
+import { listar as listarContactos } from '../../lib/contactos';
 import LabelChip from '../labels/LabelChip.astro';
 
 interface Props { workspaceId: string }
@@ -43,6 +45,7 @@ const miembros = puede
 const sprints = puede && funcs.sprints
   ? db.prepare("SELECT id, name FROM sprints WHERE workspace_id = ? AND status != 'completed' ORDER BY start_date DESC, rowid DESC").all(ws!.id) as Array<{ id: string; name: string }>
   : [];
+const contactos = puede && user && !user.is_guest ? listarContactos(user.id).map((c) => ({ id: c.id, name: c.name })) : [];
 const plantillas = puede ? listarPlantillas(ws!.id).map((p) => ({ id: p.id, name: p.name })) : [];
 const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary outline-none';
 ---
@@ -63,6 +66,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     data-t-chip-repeticion={t('quick.chip_repeat')}
     data-t-chip-trabajo={t('quick.chip_work')}
     data-t-chip-recordatorio={t('quick.chip_remind')}
+    data-t-chip-responsable={t('quick.chip_assignee')}
     data-t-create-label={t('quick.create_label')}
     data-t-note-missing={t('quick.note_missing')}
     data-t-created={t('quick.created')}
@@ -145,11 +149,10 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
           </div>
           <div>
             <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-responsable">{t('modal.assignee')}</label>
-            {/* Por ahora solo personas con cuenta. Cuando lleguen los contactos
-                sin cuenta, entran aquí como otra opción, no como otro campo. */}
-            <select id="nt-responsable" class={campo}>
-              <option value="">{t('modal.unassigned')}</option>
-              {miembros.map((m) => <option value={m.id}>{m.username}</option>)}
+            {/* Miembros y contactos sin cuenta en el mismo desplegable: un
+                contacto es otra opción, no otro campo. */}
+            <select id="nt-responsable" class={`select-responsable ${campo}`}>
+              <OpcionesResponsable miembros={miembros} contactos={contactos} vacia={t('modal.unassigned')} />
             </select>
           </div>
           {funcs.sprints && (
@@ -193,6 +196,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
 )}
 
 <script>
+  import { aPayload, nuevoContacto } from './responsableCliente';
   import { interpretar, normalizar, type Interpretacion, type Tramo } from '../../lib/altaRapida';
   import { describir } from '../../lib/recurrencia';
 
@@ -212,6 +216,16 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     const hora = $<HTMLInputElement>('nt-hora')!;
     const prioridad = $<HTMLSelectElement>('nt-prioridad')!;
     const tipo = $<HTMLSelectElement>('nt-tipo')!;
+    const responsable = $<HTMLSelectElement>('nt-responsable');
+    let responsablePrevio = '';
+    responsable?.addEventListener('focus', () => { responsablePrevio = responsable.value; });
+    responsable?.addEventListener('change', async () => {
+      manual.responsable = true;
+      if (responsable.value !== '__nuevo') { responsablePrevio = responsable.value; return; }
+      const creado = await nuevoContacto();
+      responsable.value = creado ? creado.valor : responsablePrevio;
+      responsablePrevio = responsable.value;
+    });
     const contEtiquetas = $<HTMLDivElement>('nt-etiquetas')!;
     const CLAVE_TIPO = `forge_ultimo_tipo_${sysTag}`;
 
@@ -219,7 +233,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     /** Tramos descartados, por tipo y texto: los desplazamientos cambian al seguir escribiendo. */
     const descartados = new Set<string>();
     /** Campos que alguien tocó a mano: la línea ya no los pisa. */
-    const manual = { fecha: false, hora: false, prioridad: false, trabajo: false };
+    const manual = { fecha: false, hora: false, prioridad: false, trabajo: false, responsable: false };
     const encendidas = new Set<string>();
     const apagadas = new Set<string>();
     /** Título normalizado del apunte → id, al elegirlo en el buscador. */
@@ -229,7 +243,12 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     const claveTramo = (t: Tramo) => `${t.tipo}:${t.texto.toLowerCase()}`;
 
     function analizar() {
-      const ctx = { hoy: new Date(), lang, etiquetas: catalogo };
+      // Las personas salen del propio desplegable: así `@` reconoce también
+      // un contacto recién creado con «Nuevo contacto…».
+      const personas = Array.from(responsable?.options ?? [])
+        .filter((o) => o.value && o.value !== '__nuevo')
+        .map((o) => ({ valor: o.value, nombre: o.text }));
+      const ctx = { hoy: new Date(), lang, etiquetas: catalogo, personas };
       const primera = interpretar(linea.value, ctx);
       const ignorar = new Set(primera.tramos.filter((t) => descartados.has(claveTramo(t))).map((t) => t.inicio));
       const r = ignorar.size ? interpretar(linea.value, { ...ctx, ignorar }) : primera;
@@ -240,6 +259,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       if (trabajo && !manual.trabajo) trabajo.value = r.fechaTrabajo ?? '';
       if (!manual.hora) hora.value = r.hora ?? '';
       if (!manual.prioridad) prioridad.value = r.prioridad ?? 'medium';
+      if (responsable && !manual.responsable) responsable.value = r.responsable?.valor ?? '';
       const desdeLinea = new Set(r.etiquetas.map((e) => e.id));
       contEtiquetas.querySelectorAll<HTMLButtonElement>('.nt-etiqueta').forEach((b) => {
         const id = b.dataset.id!;
@@ -275,13 +295,14 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       const nombres: Record<string, string> = {
         fecha: d.tChipFecha || '', hora: d.tChipHora || '', etiqueta: d.tChipEtiqueta || '',
         prioridad: d.tChipPrioridad || '', apunte: d.tChipApunte || '', repeticion: d.tChipRepeticion || '',
-        trabajo: d.tChipTrabajo || '', recordatorio: d.tChipRecordatorio || '',
+        trabajo: d.tChipTrabajo || '', recordatorio: d.tChipRecordatorio || '', responsable: d.tChipResponsable || '',
       };
       const faltan: string[] = [];
       for (const t of r.tramos) {
         let visible = t.texto.trim();
         if (t.tipo === 'trabajo' && r.fechaTrabajo) visible = `${visible} → ${new Date(`${r.fechaTrabajo}T00:00:00`).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`;
         if (t.tipo === 'fecha' && r.fecha) visible = `${visible} → ${new Date(`${r.fecha}T00:00:00`).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+        if (t.tipo === 'responsable' && r.responsable) visible = r.responsable.nombre;
         if (t.tipo === 'repeticion' && r.recurrencia) visible = describir(r.recurrencia, lang);
         if (t.tipo === 'apunte') {
           const titulo = t.texto.slice(2, -2).trim();
@@ -495,7 +516,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
           due_date: fecha.value || null,
           due_time: fecha.value && horaTexto ? horaTexto : null,
           priority: prioridad.value,
-          assignee_id: $<HTMLSelectElement>('nt-responsable')?.value || null,
+          ...aPayload($<HTMLSelectElement>('nt-responsable')?.value || ''),
           label_ids: etiquetasElegidas,
           page_ids: await idsDeApuntes(r.apuntes),
           // Una repetición sin fecha no se manda: el servidor la rechazaría.
@@ -552,7 +573,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       encendidas.clear();
       apagadas.clear();
       apuntesElegidos.clear();
-      manual.fecha = manual.hora = manual.prioridad = manual.trabajo = false;
+      manual.fecha = manual.hora = manual.prioridad = manual.trabajo = manual.responsable = false;
       const est = $<HTMLInputElement>('nt-estimado');
       if (est) est.value = '';
       // El último tipo usado en este espacio, no siempre el primero de la lista.

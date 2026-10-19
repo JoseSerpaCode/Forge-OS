@@ -1,6 +1,7 @@
 import { Node as PMNodeClass } from '@tiptap/pm/model';
 import { noteSchema, isSafeHref } from './schema';
 import { fromEditorjs, isEditorjsData, type PMNode } from './fromEditorjs';
+import { limpiarMencion } from './mention';
 
 /**
  * Cómo se guarda una nota en `pages.content_json`.
@@ -92,6 +93,15 @@ function limpiar(node: any, depth: number): PMNode {
   if (depth > MAX_DEPTH) throw new Error('too_deep');
   const schema = noteSchema();
   const out: PMNode = { type: String(node?.type) };
+
+  // Una mención con atributos raros no se cuela tal cual: el `label` se pinta
+  // en la nota de todo el espacio. Si no se puede sanear, queda como texto.
+  if (node?.type === 'mention') {
+    const m = limpiarMencion(node.attrs);
+    if (m) return { type: 'mention', attrs: m };
+    const texto = typeof node.attrs?.label === 'string' ? node.attrs.label.trim().slice(0, 80) : '';
+    return { type: 'text', text: `@${texto}` };
+  }
 
   if (node?.type === 'text') {
     out.text = typeof node.text === 'string' ? node.text : '';

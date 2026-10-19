@@ -150,7 +150,7 @@ export const es = {
   'notes.no_results': 'No hay apuntes con ese título.',
   'quick.label': 'Nueva tarea',
   'quick.placeholder': 'Entregar taller viernes 18:00 #Cálculo !1 [[Tema 3]]',
-  'quick.help': 'Fecha y hora en palabras, #etiqueta, !1 a !4 o !alta para la prioridad y [[ para vincular un apunte.',
+  'quick.help': 'Fecha y hora en palabras, #etiqueta, @persona, !1 a !4 o !alta para la prioridad y [[ para vincular un apunte.',
   'quick.more': 'Más opciones',
   'quick.create_open': 'Crear y abrir',
   'quick.create_open_hint': 'Crea la tarea y abre su panel, para adjuntar archivos (Mayús+Enter).',
@@ -263,4 +263,5 @@ export const es = {
   'remind.needs_date': 'Para recordar, la tarea necesita fecha de entrega.',
   'remind.saved': 'Recordatorio guardado.',
   'quick.chip_remind': 'Recordar',
+  'quick.chip_assignee': 'Responsable',
 } as const;

@@ -6,6 +6,20 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.35.0] - 2026-10-19
+
+### Added
+
+- **Contactos: personas sin cuenta en Forge** (migración 54). Un compañero de clase al que le toca una parte del trabajo puede ser responsable de una tarea sin registrarse. Están en el mismo desplegable de responsable que los miembros —en el panel, en el alta y en el filtro del tablero— y «Nuevo contacto…» los crea sin salir de donde estás. En la tarjeta salen con sus iniciales y un borde discontinuo.
+- **`@nombre` en el alta rápida** asigna la tarea a un miembro o a un contacto. Vale el primer nombre si nadie más lo comparte. Un `@algo` que no es nadie se queda en el título: puede ser un correo.
+- **Menciones `@` en las notas**, a miembros y contactos. El nombre se guarda dentro de la nota, así que quien la comparte lo ve aunque no tenga acceso a tus contactos.
+- **La libreta de contactos** (`/contacts`, en el menú de la cuenta): crear, renombrar y borrar contactos. La ficha de cada uno enseña sus tareas y las notas donde aparece. Es de tu cuenta, no de un espacio, así que sirve en todos tus espacios. Borrar un contacto deja sus tareas sin asignar y sus menciones como texto.
+
+### Security
+
+- **Al editar una tarea se podía asignar a cualquier cuenta de Forge**, aunque no fuera del espacio, y esa cuenta recibía una notificación con el título de la tarea. Al crearla sí se comprobaba. Ahora las dos rutas pasan por la misma regla (`lib/responsables.ts`).
+- Solo puedes asignar o mencionar a tus propios contactos. Un id ajeno metido a mano en la petición o en el documento de la nota no sirve. Quien comparte el espacio puede editar una tarea asignada a tu contacto sin quitárselo.
+
 ## [1.34.0] - 2026-10-19
 
 ### Added

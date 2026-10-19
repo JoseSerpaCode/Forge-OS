@@ -4,6 +4,7 @@ import { TaskList, TaskItem } from '@tiptap/extension-list';
 import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table';
 import Highlight from '@tiptap/extension-highlight';
 import { isSafeHref } from './href';
+import { Mention } from './mention';
 
 export { isSafeHref };
 
@@ -41,6 +42,7 @@ export function noteExtensions(): AnyExtension[] {
     TableHeader,
     TableCell,
     Highlight,
+    Mention,
   ];
 }
 

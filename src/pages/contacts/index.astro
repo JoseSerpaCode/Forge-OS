@@ -1,0 +1,91 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import db from '../../lib/db';
+import { useTranslations } from '../../i18n/ui';
+import { listar } from '../../lib/contactos';
+
+/**
+ * Contactos: personas sin cuenta a las que asignas tareas o mencionas en notas.
+ *
+ * La libreta es de la cuenta (migración 54), no de un espacio: el mismo
+ * compañero sirve en todas tus asignaturas. Un invitado no tiene libreta.
+ */
+const user = Astro.locals.user!;
+if (!user) return Astro.redirect('/login');
+if (user.is_guest) return Astro.redirect('/register');
+
+const t = useTranslations(Astro.locals.lang || 'en');
+const contactos = listar(user.id);
+// Tareas abiertas de cada uno, solo de espacios donde sigues: lo mismo que
+// enseña su ficha.
+const abiertas = new Map(
+  (db.prepare(`
+    SELECT i.assignee_contact_id AS id, COUNT(*) AS n
+    FROM issues i
+    JOIN contacts c ON c.id = i.assignee_contact_id AND c.owner_id = ?
+    JOIN workspace_members wm ON wm.workspace_id = i.workspace_id AND wm.user_id = ?
+    WHERE i.status != 'done'
+    GROUP BY i.assignee_contact_id
+  `).all(user.id, user.id) as Array<{ id: string; n: number }>).map((r) => [r.id, r.n])
+);
+---
+
+<MainLayout title={t('contacts.title')}>
+  <div id="contacts-page" class="max-w-3xl mx-auto mt-4 sm:mt-8 p-0 sm:p-6 pb-20" data-t-error={t('contacts.error')}>
+    <div class="border-b border-forge-border/40 pb-5 mb-8">
+      <h1 class="text-2xl font-semibold text-forge-text">{t('contacts.title')}</h1>
+      <p class="text-forge-muted text-sm mt-1">{t('contacts.intro')}</p>
+    </div>
+
+    <form id="contacts-new" class="flex flex-col sm:flex-row gap-2 mb-8">
+      <label class="flex-1 flex flex-col gap-1 text-xs font-semibold text-forge-muted">
+        {t('contacts.name')}
+        <input name="name" type="text" maxlength="80" required autocomplete="off"
+          class="bg-forge-panel border border-forge-border rounded-lg px-3 py-2 text-sm font-normal text-forge-text focus:border-forge-secondary outline-none" />
+      </label>
+      <label class="flex-1 flex flex-col gap-1 text-xs font-semibold text-forge-muted">
+        {t('contacts.note')}
+        <input name="note" type="text" maxlength="200" autocomplete="off"
+          class="bg-forge-panel border border-forge-border rounded-lg px-3 py-2 text-sm font-normal text-forge-text focus:border-forge-secondary outline-none" />
+      </label>
+      <button type="submit" class="self-end h-[38px] px-4 rounded-lg text-sm font-bold bg-forge-primary text-forge-on-accent">{t('contacts.create')}</button>
+    </form>
+
+    {contactos.length === 0 ? (
+      <p class="text-sm text-forge-muted">{t('contacts.empty')}</p>
+    ) : (
+      <ul class="divide-y divide-forge-border/50 border border-forge-border rounded-lg bg-forge-panel" id="contacts-list">
+        {contactos.map((c) => (
+          <li>
+            <a href={`/contacts/${c.id}`} class="flex items-center gap-3 px-4 py-3 hover:bg-forge-bg transition-colors">
+              <span class="w-8 h-8 shrink-0 rounded-full border border-dashed border-forge-muted flex items-center justify-center text-xs font-bold text-forge-text" aria-hidden="true">
+                {c.name.trim().split(/\s+/).slice(0, 2).map((p) => [...p][0] ?? '').join('').toLocaleUpperCase()}
+              </span>
+              <span class="flex-1 min-w-0">
+                <span class="block text-sm font-semibold text-forge-text truncate">{c.name}</span>
+                {c.note && <span class="block text-xs text-forge-muted truncate">{c.note}</span>}
+              </span>
+              <span class="text-xs text-forge-muted shrink-0">{t('contacts.count_tasks').replace('{n}', String(abiertas.get(c.id) ?? 0))}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</MainLayout>
+
+<script>
+  const pagina = document.getElementById('contacts-page');
+  const form = document.getElementById('contacts-new') as HTMLFormElement | null;
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datos = new FormData(form);
+    const res = await fetch('/api/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: datos.get('name'), note: datos.get('note') }),
+    }).catch(() => null);
+    if (!res?.ok) { window.showToast?.(pagina?.dataset.tError || '', true); return; }
+    window.location.reload();
+  });
+</script>

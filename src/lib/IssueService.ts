@@ -8,6 +8,7 @@ import path from 'path';
 import { STORAGE_DIR } from './storage';
 import { finalizeIssueSessions } from './sesionesTiempo';
 import { ApiError } from './errors';
+import { resolver as resolverResponsable } from './responsables';
 import { escaparLike } from './texto';
 
 export { ApiError } from './errors';
@@ -70,7 +71,7 @@ export class IssueService {
     }
 
     // Whitelist allowed fields to prevent SQL injection via keys
-    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'sprint_id', 'position', 'due_date', 'due_time', 'recurrence', 'planned_date', 'reminder_minutes'];
+    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'assignee_contact_id', 'sprint_id', 'position', 'due_date', 'due_time', 'recurrence', 'planned_date', 'reminder_minutes'];
 
     // Validar antes de escribir: la `CHECK` de la base rechazaría lo mismo,
     // pero con un 500 que no dice qué campo estaba mal.
@@ -100,12 +101,25 @@ export class IssueService {
     const estadoAntes = 'status' in data
       ? (db.prepare('SELECT status FROM issues WHERE id = ?').get(issueId) as any)?.status
       : undefined;
+    // A quién va: miembro del espacio o contacto propio, nunca los dos
+    // (`responsables.ts`). Sustituye a lo que viniera en esos dos campos.
+    const tocaResponsable = 'assignee_id' in data || 'assignee_contact_id' in data;
+    const responsable = tocaResponsable
+      ? resolverResponsable({
+          workspaceId: issue.workspace_id,
+          actorId: userId,
+          assignee_id: (data as any).assignee_id,
+          assignee_contact_id: (data as any).assignee_contact_id,
+          contactoActual: (db.prepare('SELECT assignee_contact_id FROM issues WHERE id = ?').get(issueId) as any)?.assignee_contact_id ?? null,
+        })
+      : {};
     const safeData: any = {};
     for (const key of Object.keys(data)) {
-      if (allowedFields.includes(key)) {
+      if (allowedFields.includes(key) && key !== 'assignee_id' && key !== 'assignee_contact_id') {
         safeData[key] = data[key as keyof Partial<Issue>];
       }
     }
+    Object.assign(safeData, responsable);
 
     const keys = Object.keys(safeData);
     if (keys.length === 0) return { success: true };
@@ -134,14 +148,14 @@ export class IssueService {
     }
 
     // Assignee Notification Hook
-    if (data.assignee_id !== undefined && data.assignee_id !== null && data.assignee_id !== userId) {
+    if (responsable.assignee_id && responsable.assignee_id !== userId) {
       const ws = db.prepare('SELECT sys_tag FROM workspaces WHERE id = ?').get(issue.workspace_id) as any;
       if (ws) {
         // El título, no ocho caracteres del identificador: «te han asignado
         // 3f2a1b9c» no dice qué hay que hacer, y obliga a abrir el enlace solo
         // para saber si importa.
         NotificationService.notify(
-          data.assignee_id,
+          responsable.assignee_id,
           'assign',
           'Te han asignado un ticket',
           `${username}: ${data.title ?? issue.title ?? ''}`,
@@ -249,10 +263,10 @@ export class IssueService {
         const ultima = db.prepare("SELECT MAX(position) AS p FROM issues WHERE workspace_id = ? AND status = 'todo'").get(t.workspace_id) as any;
         db.prepare(`
           INSERT INTO issues (id, workspace_id, sprint_id, type, title, description, status, priority, story_points,
-                              estimated_hours, reporter_id, assignee_id, position, due_date, due_time, recurrence, planned_date, reminder_minutes)
-          VALUES (?, ?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              estimated_hours, reporter_id, assignee_id, assignee_contact_id, position, due_date, due_time, recurrence, planned_date, reminder_minutes)
+          VALUES (?, ?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(id, t.workspace_id, sprintId, t.type, t.title, t.description, t.priority, t.story_points,
-          t.estimated_hours, userId, t.assignee_id, (ultima?.p ?? 0) + 100000, fecha, t.due_time, t.recurrence, planificada, t.reminder_minutes);
+          t.estimated_hours, userId, t.assignee_id, t.assignee_contact_id ?? null, (ultima?.p ?? 0) + 100000, fecha, t.due_time, t.recurrence, planificada, t.reminder_minutes);
         db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) SELECT ?, label_id FROM issue_labels WHERE issue_id = ?').run(id, issueId);
         db.prepare('INSERT OR IGNORE INTO issue_page_links (issue_id, page_id, linked_by) SELECT ?, page_id, ? FROM issue_page_links WHERE issue_id = ?').run(id, userId, issueId);
         IssueService.copiarSubtareas(issueId, id, userId);
@@ -369,10 +383,13 @@ export class IssueService {
       if (!sprint) throw new ApiError(400, 'Sprint not found or belongs to another workspace');
     }
 
-    if (data.assignee_id) {
-      const isMember = db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(data.workspace_id, data.assignee_id);
-      if (!isMember) throw new ApiError(400, 'Assignee is not a member of this workspace');
-    }
+    // Miembro del espacio o contacto propio (`responsables.ts`).
+    const responsable = resolverResponsable({
+      workspaceId: data.workspace_id,
+      actorId: userId,
+      assignee_id: data.assignee_id ?? null,
+      assignee_contact_id: (data as any).assignee_contact_id ?? null,
+    });
 
     /**
      * Etiquetas, apuntes, prioridad y hora **al crear**.
@@ -435,10 +452,10 @@ export class IssueService {
 
     db.transaction(() => {
       db.prepare(`
-        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, due_time, description, estimated_hours, priority, recurrence, planned_date, reminder_minutes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, assignee_contact_id, due_date, due_time, description, estimated_hours, priority, recurrence, planned_date, reminder_minutes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position,
-        data.assignee_id || null, data.due_date || null, (data.due_date && data.due_time) || null, data.description || null, horas,
+        responsable.assignee_id ?? null, responsable.assignee_contact_id ?? null, data.due_date || null, (data.due_date && data.due_time) || null, data.description || null, horas,
         data.priority || 'medium', regla, planificada, data.due_date ? antelacion : null);
       const ponerEtiqueta = db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) VALUES (?, ?)');
       for (const id of etiquetas) ponerEtiqueta.run(issueId, id);
@@ -451,12 +468,12 @@ export class IssueService {
     // ticket ya asignado es el camino normal —está en el propio formulario de
     // nuevo ticket—, y era el único que no avisaba. Había que crearlo sin
     // asignar y asignarlo en un segundo paso para que saliera la notificación.
-    if (data.assignee_id && data.assignee_id !== userId) {
+    if (responsable.assignee_id && responsable.assignee_id !== userId) {
       const ws = db.prepare('SELECT sys_tag FROM workspaces WHERE id = ?').get(data.workspace_id) as any;
       const quien = db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as any;
       if (ws) {
         NotificationService.notify(
-          data.assignee_id,
+          responsable.assignee_id,
           'assign',
           'Te han asignado un ticket',
           `${quien?.username ?? 'Alguien'}: ${data.title}`,
@@ -535,8 +552,8 @@ export class IssueService {
         INSERT INTO issues (
           id, workspace_id, sprint_id, parent_issue_id, type, title, description,
           status, priority, story_points, estimated_hours, logged_hours,
-          position, reporter_id, assignee_id, due_date, due_time
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
+          position, reporter_id, assignee_id, assignee_contact_id, due_date, due_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
       `).run(
         nuevoId,
         original.workspace_id,
@@ -554,6 +571,9 @@ export class IssueService {
         // las preguntas sobre este ticket nuevo van a quien lo creó.
         userId,
         assigneeId,
+        // El contacto se copia tal cual: si se hubiera borrado, la clave
+        // ajena ya lo habría dejado en NULL en el original.
+        assigneeId ? null : (original as any).assignee_contact_id ?? null,
         original.due_date ?? null,
         original.due_time ?? null
       );

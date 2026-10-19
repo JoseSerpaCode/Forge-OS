@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { validateNoteDoc, serializeNote, isStoredNote } from '../../../lib/notes/content';
+import { indexarMenciones } from '../../../lib/contactos';
 
 // Helper to resolve workspace and check permissions
 function authorize(user: any, requiredRole: 'owner' | 'editor' | 'viewer', pageId: string) {
@@ -42,6 +43,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     
     let finalContentJson = undefined;
     let droppedBlocks: string[] = [];
+    let docGuardado: unknown = null;
     
     if (data.content_json !== undefined) {
       let parsed;
@@ -67,6 +69,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       }
 
       finalContentJson = serializeNote(valid.doc);
+      docGuardado = valid.doc;
 
       // Lo que se ha descartado viaja en la respuesta.
       //
@@ -92,6 +95,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         auth.workspaceId
       );
     }
+    // Las menciones a tus contactos, para su ficha (`/contactos`).
+    if (docGuardado && locals.user) indexarMenciones(id, docGuardado, locals.user.id);
     return new Response(
       JSON.stringify(droppedBlocks.length ? { success: true, dropped: droppedBlocks } : { success: true }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

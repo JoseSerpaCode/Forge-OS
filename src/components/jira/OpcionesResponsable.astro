@@ -1,0 +1,34 @@
+---
+/**
+ * Las opciones de un desplegable de responsable: miembros del espacio y tus
+ * contactos sin cuenta (`responsables.ts`).
+ *
+ * Un solo `<select>` para las dos cosas: el valor de un contacto lleva el
+ * prefijo `c:`. «Nuevo contacto…» abre el diálogo de `ContactoRapido.astro`
+ * sin salir de donde se está.
+ */
+import { useTranslations } from '../../i18n/ui';
+import { valorDeContacto } from '../../lib/responsables';
+
+interface Props {
+  miembros: Array<{ id: string; username: string }>;
+  contactos: Array<{ id: string; name: string }>;
+  /** Texto de la opción vacía: «Sin asignar» o, en un filtro, «Cualquiera». */
+  vacia: string;
+  /** El filtro no ofrece crear contactos: filtra por los que ya hay. */
+  conNuevo?: boolean;
+}
+const { miembros, contactos, vacia, conNuevo = true } = Astro.props;
+const t = useTranslations(Astro.locals.lang || 'en');
+const puedeCrear = conNuevo && Astro.locals.user && !Astro.locals.user.is_guest;
+---
+<option value="">{vacia}</option>
+<optgroup label={t('contacts.members')}>
+  {miembros.map((m) => <option value={m.id}>{m.username}</option>)}
+</optgroup>
+{(contactos.length > 0 || puedeCrear) && (
+  <optgroup label={t('contacts.title')} class="grupo-contactos">
+    {contactos.map((c) => <option value={valorDeContacto(c.id)}>{c.name}</option>)}
+    {puedeCrear && <option value="__nuevo">{t('contacts.new_option')}</option>}
+  </optgroup>
+)}
