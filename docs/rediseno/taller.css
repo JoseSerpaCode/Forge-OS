@@ -576,6 +576,9 @@ kbd, .kbd {
   font-stretch: var(--narrow-x);
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  margin: 0;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .column .column-head h2::before {
   content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--c);
@@ -1150,3 +1153,7 @@ kbd, .kbd {
   .hero-title .ln { flex-wrap: wrap; row-gap: 0.06em; }
   .hero-title .ln-wide { font-size: 0.5em; }
 }
+
+/* La columna de ejemplo de «Qué hace» tiene el ancho de una columna real:
+   estirada al panel, el arco se achata. */
+.feature-demo > .column { max-width: 420px; margin-inline: auto; }
