@@ -470,8 +470,17 @@ horizontal a 390 px.
   extremidades como trazos redondeados de grosor fijo.
   - Llevan los tonos de las personas del espacio y juegan en la fragua como
     en un parque.
-  - Se usan en el acceso y, si hace falta, en estados vacíos. No en pantallas
-    de trabajo.
+  - **Escena grande** en «Entrar» (juegan en la fragua) y en «Crear cuenta»
+    (gente que llega: una entra con su tarjeta nueva, otra trepa y la de
+    arriba le da la mano, otra trae una brasa). Misma fragua, otra historia.
+  - **Figuras sueltas y pequeñas** en la portada, una por sección y ocupada
+    en algo de esa sección: de pie sobre la etiqueta del archivo, con un
+    ticket sobre el arco del tablero, lanzando una brasa junto a «Qué hace»,
+    sentada en el borde de la ficha técnica, saltando sobre la llamada final
+    y despidiéndose en el pie. Del tamaño de un icono grande: acompañan, no
+    compiten.
+  - No en pantallas de trabajo ni en estados vacíos, que se quedan
+    tipográficos.
   - Se evita a propósito el estilo de ilustración corporativa de miembros
     exagerados, otro rasgo típico de lo generado.
 - Densidad alta.

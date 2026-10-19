@@ -1397,6 +1397,25 @@ kbd, .kbd {
 @media (max-width: 820px) { .panel-grid { grid-template-columns: minmax(0, 1fr) !important; } }
 .spec-wrap, .panel { position: relative; }
 
+/* ── Figuras en la portada: pequeñas, una por sección ───────────────────── */
+.pf { display: block; height: auto; pointer-events: none; }
+.inl-file { position: relative; }
+.pf-sit { position: absolute; right: 16px; bottom: calc(100% - 14px); width: 52px; }
+/* Fuera de la figura, que recorta: se apoya en el arco con margen negativo. */
+.pf-show { position: relative; z-index: 1; width: 72px; margin: 0 0 -14px calc(50% + 150px); }
+.pf-throw { display: inline-block; width: 100px; vertical-align: -0.12em; margin-left: 0.1em; }
+.placa, .cta-final { position: relative; }
+.pf-placa { position: absolute; right: 64px; bottom: calc(100% - 16px); width: 54px; }
+.pf-jump { position: absolute; left: 50%; bottom: calc(100% - 28px); width: 64px; rotate: 8deg; }
+.pf-foot { width: 26px; }
+@media (max-width: 820px) {
+  .pf-show { width: 52px; margin: 0 0 -22px calc(50% + 40px); }
+  .pf-sit { width: 30px; right: -10px; bottom: calc(100% - 8px); }
+  .pf-throw { width: 72px; }
+  .pf-jump { left: auto; right: 28px; width: 48px; }
+  .pf-placa { right: 32px; width: 40px; }
+}
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */
@@ -1428,7 +1447,7 @@ kbd, .kbd {
     <h1 class="hero-title">
       <span class="ln"><span class="w">Tablero,</span><span class="inl inl-col" aria-hidden="true"><i></i>En curso<b>3</b></span></span>
       <span class="ln"><span class="w">notas</span><span class="inl inl-note" aria-hidden="true"><i></i>Arquitectura general</span></span>
-      <span class="ln"><span class="w">y archivos</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf</span></span>
+      <span class="ln"><span class="w">y archivos</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf<svg class="pf pf-sit" viewBox="-64 -160 128 200" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(0)"><path d="M-10 -2L-16 34" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L18 32" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L36 -88" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-28 -6" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#A98BF0"/><circle cx="0" cy="-80" r="18" fill="#A98BF0"/></g></svg></span></span>
       <span class="ln ln-wide">en un servidor tuyo.</span>
     </h1>
     <div class="hero-foot">
@@ -1440,6 +1459,7 @@ kbd, .kbd {
     </div>
   </section>
 
+  <svg class="pf pf-show" viewBox="-64 -170 128 200" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(0)"><path d="M-10 -4L-14 26" stroke="#3FB6C9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -4L16 26" stroke="#3FB6C9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -46L-28 -96" stroke="#3FB6C9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L28 -96" stroke="#3FB6C9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#3FB6C9"/><circle cx="0" cy="-80" r="18" fill="#3FB6C9"/><g transform="translate(0 -116) rotate(-5)"><rect x="-46" y="-18" width="92" height="36" rx="9" fill="#F8F7F4"/><circle cx="-30" cy="0" r="6" fill="#E8590C"/><rect x="-18" y="-7" width="50" height="6" rx="3" fill="#CFCAC0"/><rect x="-18" y="3" width="32" height="6" rx="3" fill="#CFCAC0"/></g></g></svg>
   <figure class="showcase">
     <div class="showcase-sign">
       <strong>Sprint 14 · Facturación y búsqueda</strong>
@@ -1450,7 +1470,7 @@ kbd, .kbd {
   <ol class="show-notes"><li data-n="1"><span class="pin-n">1</span><p>El temporizador corre en el servidor. Cerrar el portátil no pierde la hora registrada, y se para solo al llegar a «Hecho».</p></li><li data-n="2"><span class="pin-n">2</span><p>Las tarjetas se arrastran entre columnas. En el móvil, donde arrastrar no funciona, se mueven con un selector.</p></li><li data-n="3"><span class="pin-n">3</span><p>Lo que vence hoy se marca en rojo en la propia tarjeta, sin abrirla.</p></li></ol>
 
   <section class="site-section">
-    <h2>Qué hace</h2>
+    <h2>Qué hace <svg class="pf pf-throw" viewBox="-50 -165 196 205" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(-8)"><path d="M-10 -2L-24 28" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L26 22" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L40 -90" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-34 -16" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E0A23A"/><circle cx="0" cy="-80" r="18" fill="#E0A23A"/></g><path d="M44 -100Q80 -150 118 -132" stroke="#5C574F" stroke-width="4" stroke-dasharray="1 11" stroke-linecap="round" fill="none"/><circle cx="128" cy="-128" r="13" fill="#E8590C"/></svg></h2>
     <div class="features-rows"><div class="feature"><div class="feature-text"><h3>Tablero</h3><p>Cuatro columnas, sprints con fecha de cierre y un temporizador por ticket que corre en el servidor. Se detiene solo al llegar a «Hecho»: cerrar el portátil no pierde la hora.</p></div><div class="feature-demo"><section class="column s-progress" style="min-height:0"><header class="column-head"><h2>En curso</h2><span class="n">3</span></header><div class="column-body"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#6B3FA0"></span>Épica · 13 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="avatar p-avery" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card " style="--type:#2E7D6B"><h3>Generar facturas en PDF</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#2E7D6B"></span>Historia · 5 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="due late">Vence hoy</span><span class="avatar p-blake" title="blake">bl</span></span></div></article></div></section></div></div><div class="feature"><div class="feature-text"><h3>Notas</h3><p>Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.</p></div><div class="feature-demo"><article class="panel" style="padding:22px 24px">
   <p class="doc-title" style="font-size:2rem">Arquitectura general</p>
   <p class="hint" style="margin:8px 0 14px">avery · editada hace 5 min</p>
@@ -1470,6 +1490,7 @@ kbd, .kbd {
   </section>
 
   <section class="placa">
+    <svg class="pf pf-placa" viewBox="-64 -160 128 200" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(0)"><path d="M-10 -2L-16 34" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L18 32" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -46L-34 -90" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -44L28 -8" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E58FB8"/><circle cx="0" cy="-80" r="18" fill="#E58FB8"/></g></svg>
     <h2>Ficha técnica</h2>
     <table class="datasheet">
       <tr><th>Licencia</th><td>MIT. Todas las funciones, sin plan de pago.</td></tr>
@@ -1490,12 +1511,13 @@ kbd, .kbd {
   </section>
 
   <section class="cta-final">
+    <svg class="pf pf-jump" viewBox="-64 -160 128 200" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(0)"><path d="M-10 -2L-32 20" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L32 20" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -46L-28 -96" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L28 -96" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#A98BF0"/><circle cx="0" cy="-80" r="18" fill="#A98BF0"/></g></svg>
     <div><h2>Pruébalo con un sprint de verdad.</h2><p>Sin cuenta y sin tarjeta. El espacio de prueba dura 30 días y te lo llevas al registrarte.</p></div>
     <div class="actions"><a class="btn btn-ink" href="tablero.html">Probar sin cuenta</a><a class="btn btn-ink-outline" href="#">Instalarlo</a></div>
   </section>
 
   </main>
-  <footer class="site-foot"><span class="brand"><svg viewBox="0 0 64 64" width="20" height="20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/><path fill="var(--brand-orange)" d="M21 53V45A11 8 0 0 1 43 45V53Z"/></svg><span class="brand-word">Forge OS</span></span><span>MIT · hecho en Bogotá</span><span style="margin-left:auto">v1.28.5</span></footer>
+  <footer class="site-foot"><span class="brand"><svg viewBox="0 0 64 64" width="20" height="20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/><path fill="var(--brand-orange)" d="M21 53V45A11 8 0 0 1 43 45V53Z"/></svg><span class="brand-word">Forge OS</span></span><span>MIT · hecho en Bogotá</span><span style="margin-left:auto;display:inline-flex;align-items:flex-end;gap:10px"><svg class="pf pf-foot" viewBox="-64 -160 128 200" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(0)"><path d="M-10 -4L-14 26" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -4L16 26" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L34 -90" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-26 -6" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E0A23A"/><circle cx="0" cy="-80" r="18" fill="#E0A23A"/></g></svg>v1.28.5</span></footer>
 </div>
 </body>
 </html>

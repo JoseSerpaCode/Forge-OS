@@ -837,6 +837,55 @@ ajustes = f"""<div class="page">
 </div>"""
 write('ajustes.html', shell('', ['Ajustes'], ajustes, 'Ajustes'))
 
+# ── Escena del acceso: la fragua como parque ────────────────────────────────
+# Figuras abstractas con las formas de la marca: cuerpo en arco (como los
+# avatares), cabeza circular y trazos redondeados. Sin cara. Un tono por persona.
+VIOLET, TEAL, OCHRE, CREAM, ROSE = '#A98BF0', '#3FB6C9', '#E0A23A', '#F1E9DC', '#E58FB8'
+FLOOR, SHADOW, STREAK = '#211F1C', '#0E0D0C', '#5C574F'
+
+
+def figure(x, y, color, rot=0, arms=(), legs=(), w=44, h=58, extra=''):
+    """Figura con la base del cuerpo en (x, y). Cuerpo en arco, cabeza encima,
+    extremidades como trazos de 12 que salen de hombros y cadera; `extra` va en
+    las mismas coordenadas locales (lo que la figura sostiene)."""
+    r = w / 2
+    body = f'M{-r} 0V{-h + r}A{r} {r} 0 0 1 {r} {-h + r}V0Z'
+    limbs = ''.join(f'<path d="{d}" stroke="{color}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+                    for d in (*legs, *arms))
+    head = f'<circle cx="0" cy="{-h - 22}" r="18" fill="{color}"/>'
+    return f'<g transform="translate({x} {y}) rotate({rot})">{limbs}<path d="{body}" fill="{color}"/>{head}{extra}</g>'
+
+
+TICKET = ('<g transform="translate(0 -116) rotate(-5)">'
+          '<rect x="-46" y="-18" width="92" height="36" rx="9" fill="#F8F7F4"/>'
+          '<circle cx="-30" cy="0" r="6" fill="#E8590C"/>'
+          '<rect x="-18" y="-7" width="50" height="6" rx="3" fill="#CFCAC0"/>'
+          '<rect x="-18" y="3" width="32" height="6" rx="3" fill="#CFCAC0"/></g>')
+FILE = ('<g transform="translate(0 -118) rotate(4)">'
+        '<rect x="-38" y="-24" width="76" height="46" rx="8" fill="#F8F7F4"/>'
+        '<rect x="-28" y="-14" width="26" height="15" rx="4" fill="none" stroke="#7D776C" stroke-width="2.5"/>'
+        '<rect x="-28" y="7" width="48" height="5" rx="2.5" fill="#CFCAC0"/></g>')
+
+UP = ('M-15 -46L-28 -96', 'M15 -46L28 -96')
+
+
+# Figuras pequeñas repartidas por la portada: una por sección, ocupada en algo
+# de esa sección. Decorativas (aria-hidden) y del tamaño de un icono grande,
+# para que acompañen sin competir con el contenido.
+def sprite(cls, inner, vb='-64 -160 128 200'):
+    return f'<svg class="pf {cls}" viewBox="{vb}" aria-hidden="true" focusable="false" overflow="visible">{inner}</svg>'
+
+
+SIT = ('M-10 -2L-16 34', 'M10 -2L18 32')
+PF_HERO = sprite('pf-sit', figure(0, 0, VIOLET, arms=('M15 -46L36 -88', 'M-15 -44L-28 -6'), legs=SIT))
+PF_SHOW = sprite('pf-show', figure(0, 0, TEAL, arms=UP, legs=('M-10 -4L-14 26', 'M10 -4L16 26'), extra=TICKET), vb='-64 -170 128 200')
+PF_THROW = sprite('pf-throw', figure(0, 0, OCHRE, rot=-8, arms=('M15 -46L40 -90', 'M-15 -44L-34 -16'), legs=('M-10 -2L-24 28', 'M10 -2L26 22'))
+                  + f'<path d="M44 -100Q80 -150 118 -132" stroke="{STREAK}" stroke-width="4" stroke-dasharray="1 11" stroke-linecap="round" fill="none"/>'
+                  + '<circle cx="128" cy="-128" r="13" fill="#E8590C"/>', vb='-50 -165 196 205')
+PF_PLACA = sprite('pf-placa', figure(0, 0, ROSE, arms=('M-15 -46L-34 -90', 'M15 -44L28 -8'), legs=SIT))
+PF_JUMP = sprite('pf-jump', figure(0, 0, VIOLET, arms=UP, legs=('M-10 -2L-32 20', 'M10 -2L32 20')))
+PF_FOOT = sprite('pf-foot', figure(0, 0, OCHRE, arms=('M15 -46L34 -90', 'M-15 -44L-26 -6'), legs=('M-10 -4L-14 26', 'M10 -4L16 26')))
+
 # ── Portada ─────────────────────────────────────────────────────────────────
 mini = []
 for key, name in STATUS[:3]:
@@ -901,7 +950,7 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
     <h1 class="hero-title">
       <span class="ln"><span class="w">Tablero,</span><span class="inl inl-col" aria-hidden="true"><i></i>En curso<b>3</b></span></span>
       <span class="ln"><span class="w">notas</span><span class="inl inl-note" aria-hidden="true"><i></i>Arquitectura general</span></span>
-      <span class="ln"><span class="w">y archivos</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf</span></span>
+      <span class="ln"><span class="w">y archivos</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf{PF_HERO}</span></span>
       <span class="ln ln-wide">en un servidor tuyo.</span>
     </h1>
     <div class="hero-foot">
@@ -913,6 +962,7 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
     </div>
   </section>
 
+  {PF_SHOW}
   <figure class="showcase">
     <div class="showcase-sign">
       <strong>Sprint 14 · Facturación y búsqueda</strong>
@@ -923,11 +973,12 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
   <ol class="show-notes">{show_notes}</ol>
 
   <section class="site-section">
-    <h2>Qué hace</h2>
+    <h2>Qué hace {PF_THROW}</h2>
     <div class="features-rows">{features}</div>
   </section>
 
   <section class="placa">
+    {PF_PLACA}
     <h2>Ficha técnica</h2>
     <table class="datasheet">
       <tr><th>Licencia</th><td>MIT. Todas las funciones, sin plan de pago.</td></tr>
@@ -948,48 +999,18 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
   </section>
 
   <section class="cta-final">
+    {PF_JUMP}
     <div><h2>Pruébalo con un sprint de verdad.</h2><p>Sin cuenta y sin tarjeta. El espacio de prueba dura 30 días y te lo llevas al registrarte.</p></div>
     <div class="actions"><a class="btn btn-ink" href="tablero.html">Probar sin cuenta</a><a class="btn btn-ink-outline" href="#">Instalarlo</a></div>
   </section>
 
   </main>
-  <footer class="site-foot">{brand(20)}<span>MIT · hecho en Bogotá</span><span style="margin-left:auto">v1.28.5</span></footer>
+  <footer class="site-foot">{brand(20)}<span>MIT · hecho en Bogotá</span><span style="margin-left:auto;display:inline-flex;align-items:flex-end;gap:10px">{PF_FOOT}v1.28.5</span></footer>
 </div>
 </body>
 </html>
 """
 write('portada.html', portada)
-
-# ── Escena del acceso: la fragua como parque ────────────────────────────────
-# Figuras abstractas con las formas de la marca: cuerpo en arco (como los
-# avatares), cabeza circular y trazos redondeados. Sin cara. Un tono por persona.
-VIOLET, TEAL, OCHRE, CREAM, ROSE = '#A98BF0', '#3FB6C9', '#E0A23A', '#F1E9DC', '#E58FB8'
-FLOOR, SHADOW, STREAK = '#211F1C', '#0E0D0C', '#5C574F'
-
-
-def figure(x, y, color, rot=0, arms=(), legs=(), w=44, h=58, extra=''):
-    """Figura con la base del cuerpo en (x, y). Cuerpo en arco, cabeza encima,
-    extremidades como trazos de 12 que salen de hombros y cadera; `extra` va en
-    las mismas coordenadas locales (lo que la figura sostiene)."""
-    r = w / 2
-    body = f'M{-r} 0V{-h + r}A{r} {r} 0 0 1 {r} {-h + r}V0Z'
-    limbs = ''.join(f'<path d="{d}" stroke="{color}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
-                    for d in (*legs, *arms))
-    head = f'<circle cx="0" cy="{-h - 22}" r="18" fill="{color}"/>'
-    return f'<g transform="translate({x} {y}) rotate({rot})">{limbs}<path d="{body}" fill="{color}"/>{head}{extra}</g>'
-
-
-TICKET = ('<g transform="translate(0 -116) rotate(-5)">'
-          '<rect x="-46" y="-18" width="92" height="36" rx="9" fill="#F8F7F4"/>'
-          '<circle cx="-30" cy="0" r="6" fill="#E8590C"/>'
-          '<rect x="-18" y="-7" width="50" height="6" rx="3" fill="#CFCAC0"/>'
-          '<rect x="-18" y="3" width="32" height="6" rx="3" fill="#CFCAC0"/></g>')
-FILE = ('<g transform="translate(0 -118) rotate(4)">'
-        '<rect x="-38" y="-24" width="76" height="46" rx="8" fill="#F8F7F4"/>'
-        '<rect x="-28" y="-14" width="26" height="15" rx="4" fill="none" stroke="#7D776C" stroke-width="2.5"/>'
-        '<rect x="-28" y="7" width="48" height="5" rx="2.5" fill="#CFCAC0"/></g>')
-
-UP = ('M-15 -46L-28 -96', 'M15 -46L28 -96')
 
 # Composición: un recorrido alrededor de la fragua que la mirada sigue de
 # izquierda a derecha (salta y lanza → arriba con el ticket → baja por la

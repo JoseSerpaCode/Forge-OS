@@ -114,20 +114,43 @@ AJ_CSS = """<style>
 write('ajustes-espacio.html', shell('ajustes-espacio', ['Atlas Platform', 'Ajustes del espacio'], ajustes_esp, 'Ajustes del espacio', extra_head=AJ_CSS))
 
 # ── Registro ────────────────────────────────────────────────────────────────
-# Sin la escena de figuras a propósito: de momento solo vive en «Entrar».
+# Misma fragua que en «Entrar», otra historia: gente que llega. Una figura
+# entra andando con su tarjeta nueva, otra trepa por el arco y la de arriba le
+# echa una mano; a la derecha traen una brasa para encender el primer sprint.
+NEWCARD = ('<g transform="translate(52 -104) rotate(10)">'
+           '<rect x="-30" y="-20" width="60" height="40" rx="8" fill="#F8F7F4"/>'
+           '<path d="M0 -9V9M-9 0H9" stroke="#E8590C" stroke-width="5" stroke-linecap="round"/></g>')
+EMBER = '<circle cx="-62" cy="-64" r="15" fill="#E8590C"/><circle cx="-62" cy="-64" r="7" fill="#FF9452"/>'
+ARRIVAL = f"""<svg viewBox="0 104 640 456" preserveAspectRatio="xMidYMax meet" overflow="visible">
+  <rect x="-400" y="520" width="1440" height="120" fill="{FLOOR}"/>
+  <ellipse cx="320" cy="521" rx="168" ry="9" fill="{SHADOW}"/>
+  <ellipse cx="96" cy="522" rx="34" ry="6" fill="{SHADOW}"/>
+  <ellipse cx="560" cy="522" rx="34" ry="6" fill="{SHADOW}"/>
+
+  <rect x="170" y="506" width="300" height="14" rx="3" fill="#E8590C"/>
+  <path d="M190 506V376A130 130 0 0 1 450 376V506Z" fill="#E8590C"/>
+  <path d="M256 506V438A64 64 0 0 1 384 438V506Z" fill="#171614"/>
+  {figure(320, 494, CREAM, w=34, h=44)}
+  <path d="M256 506V484A64 24 0 0 1 384 484V506Z" fill="#E8590C"/>
+
+  {figure(182, 314, TEAL, rot=45, arms=('M15 -46L12 -100', 'M-15 -46L-34 -92'), legs=('M-10 -2L-20 30', 'M10 -2L4 32'))}
+  {figure(320, 248, OCHRE, arms=('M15 -46L38 -94', 'M-15 -42L-58 0'), legs=('M-10 -4L-14 26', 'M10 -4L16 26'))}
+
+  <path d="M20 470H44M8 450H34M24 430H44" stroke="{STREAK}" stroke-width="4" stroke-linecap="round"/>
+  {figure(96, 488, ROSE, rot=4, arms=('M15 -46L46 -88', 'M-15 -46L-34 -12'), legs=('M-8 -2L-30 30', 'M10 -2L26 30'), extra=NEWCARD)}
+
+  <path d="M602 470H626M610 450H636M598 430H618" stroke="{STREAK}" stroke-width="4" stroke-linecap="round"/>
+  {figure(560, 488, VIOLET, rot=-4, arms=('M-15 -44L-54 -58', 'M15 -44L-48 -48'), legs=('M-8 -2L-24 30', 'M10 -2L18 30'), extra=EMBER)}
+</svg>"""
 registro = HEAD.format(title='Crear cuenta · Forge OS', favicon=FAVICON) + f"""<body>
 <div class="auth">
   <aside class="auth-brand">
     <a href="portada.html" class="brand" style="color:var(--brand-paper)">{mark(30)}<span class="brand-word">Forge OS</span></a>
     <div class="auth-copy">
       <p class="claim">Tu cuenta, <span class="claim-wide">y en dos minutos, tu primer sprint.</span></p>
-      <ol class="steps">
-        <li><b>1</b><span>Crea la cuenta. Usuario, correo y contraseña; nada más.</span></li>
-        <li><b>2</b><span>Abre un espacio o acepta la invitación de tu equipo.</span></li>
-        <li><b>3</b><span>Escribe tickets, arrástralos, cronometra. Es tuyo: un archivo de SQLite.</span></li>
-      </ol>
+      <ul class="auth-facts"><li>Sin tarjeta</li><li>Sin scripts de terceros</li><li>Licencia MIT</li></ul>
     </div>
-    <ul class="auth-facts"><li>Sin tarjeta</li><li>Sin scripts de terceros</li><li>Licencia MIT</li></ul>
+    <div class="auth-scene" aria-hidden="true">{ARRIVAL}</div>
   </aside>
   <main class="auth-form">
     <form aria-labelledby="reg-t" onsubmit="return false">
@@ -150,12 +173,6 @@ registro = HEAD.format(title='Crear cuenta · Forge OS', favicon=FAVICON) + f"""
 </div>
 <style>
 .caret {{ display: inline-block; width: 1.5px; height: 1.1em; background: var(--text); vertical-align: -0.18em; margin-left: 1px; }}
-.steps {{ display: flex; flex-direction: column; gap: 18px; counter-reset: none; }}
-.steps li {{ display: grid; grid-template-columns: 56px 1fr; gap: 16px; align-items: baseline; color: #CFC9BF; font-size: var(--t-16); line-height: 1.5; }}
-.steps li::before {{ display: none; }}
-.steps b {{ font-size: 3.4rem; font-weight: 800; font-stretch: 64%; line-height: .8; color: var(--brand-orange); }}
-.pw-rule {{ display: flex; gap: 8px; align-items: center; }}
-.auth-brand {{ justify-content: space-between; }}
 </style>
 </body>
 </html>
