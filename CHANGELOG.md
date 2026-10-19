@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.42.0] - 2026-10-19
+
+Fase 6 del rediseño «Taller»: Métricas.
+
+### Added
+
+- **Cada gráfica tiene su tabla**: un conmutador «Gráfica | Tabla» enseña los mismos datos en texto, para un lector de pantalla o para copiar las cifras.
+
+### Changed
+
+- **Solo las gráficas que el espacio puede llenar**: sin sprints no salen el avance ni la velocidad, y sin medición de tiempo no sale estimado y registrado. Antes salían vacías.
+- Las gráficas usan los colores de estado. «Registrado» va en tinta y «Estimado» en neutro: el naranja queda para la acción.
+- Textos sin tipo título ni «Alcance:» delante: «Carga por persona», «Avance del sprint», «Tareas cerradas por sprint», «Estimado y registrado». La página se llama «Métricas» (antes «Dashboard & Métricas»).
+
+### Fixed
+
+- **«Carga por persona» no contaba las tareas en revisión**: las tres series eran Por hacer, En curso y Hecho, y lo que estaba en revisión no aparecía en ningún sitio.
+- La página de Métricas tenía todos sus mensajes en inglés fijo: «Scope: Historical Total», «Select a specific sprint above to view», «Completed», «Remaining», «No time tracking data found»…
+
 ## [1.41.0] - 2026-10-19
 
 Fase 5 del rediseño «Taller»: tablas y archivos.
