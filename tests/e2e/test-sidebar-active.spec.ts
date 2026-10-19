@@ -14,8 +14,10 @@ test('Sidebar active states toggle correctly', async ({ page }) => {
   // Acotado a `#app-sidebar`: con la barra inferior de móvil en el DOM —oculta
   // en escritorio, pero presente— `nav a` casaba con dos menús y el localizador
   // dejaba de ser único. El id dice lo que la prueba siempre quiso decir.
-  const dashboardLink = page.locator('#app-sidebar a', { hasText: 'Dashboard' });
-  const kanbanLink = page.locator('#app-sidebar a', { hasText: 'Kanban Board' });
+  // Nombres del rediseño: «Panel» del espacio y «Tablero» (antes «Dashboard»
+  // y «Kanban Board», que se pisaban con «My Hub»).
+  const dashboardLink = page.locator('#app-sidebar a', { hasText: /^\s*(Overview|Panel)\s*$/ });
+  const kanbanLink = page.locator('#app-sidebar a', { hasText: /^\s*(Board|Tablero)\s*\d*\s*$/ });
   
   await expect(dashboardLink).toHaveClass(/active/);
   await expect(kanbanLink).not.toHaveClass(/active/);

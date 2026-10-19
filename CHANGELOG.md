@@ -6,6 +6,23 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.38.0] - 2026-10-19
+
+Fase 2 del rediseño «Taller»: el armazón.
+
+### Changed
+
+- **Barra lateral nueva**: mismo fondo que la página, enlaces en píldora sin iconos y el activo en tinta con el punto naranja. El espacio lleva su nombre y su `#etiqueta`, y debajo su sección. Tablero y Notas dicen cuántas tareas quedan y cuántas notas hay.
+- **Nombres que ya no se pisan**: «Inicio» (antes «Mi Hub»), «Panel» (antes «Panel Principal»), «Tablero», «Notas», «Tablas», «Archivos», «Métricas» y «Ajustes del espacio». Las mismas palabras en la barra lateral y en la del móvil.
+- **Barra superior** sin desenfoque ni sombra. La raya naranja que latía arriba en modo administración es ahora una etiqueta «Administración».
+- **Navegación del móvil**: la pestaña activa en tinta sobre un tinte, y la hoja «Más» con asa y velo.
+- Avisos y búsqueda con las mismas piezas que el resto, sin parpadeos y con la letra a 12 px como mínimo.
+
+### Fixed
+
+- La barra superior tenía texto en inglés fijo: «Searching…», «No results found», «Search error», «Accept», «Reject», «Delete notification», «SILENT_COMM» y los atajos de la búsqueda. Ahora sale en el idioma elegido, como el tipo de cada resultado.
+- El cambio de idioma enseñaba una bandera. Una bandera no es un idioma: ahora dice «ES» o «EN».
+
 ## [1.37.0] - 2026-10-19
 
 Fase 1 del rediseño «Taller»: el tablero.

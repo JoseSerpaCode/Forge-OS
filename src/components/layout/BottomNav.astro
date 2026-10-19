@@ -84,11 +84,11 @@ const pestanas = enEspacio
     ];
 ---
 
-<nav class="nav-movil shrink-0 bg-forge-panel border-t border-forge-border" aria-label={t('a11y.primary_nav')}>
+<nav class="nav-movil shrink-0 bg-forge-panel border-t border-forge-border px-2 pt-1.5" aria-label={t('a11y.primary_nav')}>
   {pestanas.map((p) => (
     <a
       href={p.href}
-      class:list={['tab-movil', p.activa ? 'text-forge-accent-text' : 'text-forge-muted']}
+      class:list={['tab-movil', p.activa ? 'tab-activa text-forge-text' : 'text-forge-muted']}
       aria-current={p.activa ? 'page' : undefined}
     >
       {p.icono === 'panel' && (
@@ -108,18 +108,18 @@ const pestanas = enEspacio
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>
     <span class="tab-texto">{t('nav.more')}</span>
     {pendientes > 0 && (
-      <span class="absolute top-1.5 right-1/4 min-w-[16px] h-4 px-1 rounded-full bg-forge-primary text-forge-on-accent text-[11px] font-black flex items-center justify-center" aria-hidden="true">{pendientes > 9 ? '9+' : pendientes}</span>
+      <span class="absolute top-1.5 right-1/4 min-w-[16px] h-4 px-1 rounded-full bg-forge-primary text-forge-on-accent text-xs font-bold flex items-center justify-center" aria-hidden="true">{pendientes > 9 ? '9+' : pendientes}</span>
     )}
   </button>
 </nav>
 
-<dialog id="nav-mas" class="hoja-mas bg-forge-panel text-forge-text border-t border-forge-border rounded-t-2xl p-0 backdrop:bg-black/60" aria-label={t('nav.more')}>
+<dialog id="nav-mas" class="hoja-mas bg-forge-panel text-forge-text rounded-t-[24px] p-0 shadow-forge-float backdrop:bg-[var(--forge-scrim)]" aria-label={t('nav.more')}>
   <div class="flex flex-col pb-4">
-    <div class="w-10 h-1 rounded-full bg-forge-border mx-auto my-3 shrink-0"></div>
+    <div class="w-10 h-[5px] rounded-full bg-forge-border-strong mx-auto my-3 shrink-0"></div>
 
     {enEspacio && (
       <>
-        <p class="px-4 pb-2 text-xs font-bold uppercase tracking-widest text-forge-muted">{t('nav.this_space')}</p>
+        <p class="px-4 pb-2 text-xs font-semibold text-forge-muted">{t('nav.this_space')}</p>
         <a href={`/w/${sysTag}/db`} class="fila-hoja">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="3"></ellipse><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path></svg>
           <span class="flex-1">{t('sidebar.databases')}</span>
@@ -252,6 +252,8 @@ const pestanas = enEspacio
     }
   }
 
+  /* La pestaña activa: tinta sobre un tinte, como en la maqueta. */
+  .tab-movil.tab-activa { background: var(--forge-surface-2); border-radius: 14px; font-weight: 650; }
   .tab-movil {
     display: flex;
     flex-direction: column;

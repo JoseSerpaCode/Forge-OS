@@ -22,7 +22,7 @@ test.describe('Forge OS - Full System Omnibus Validation', () => {
 
     // === TOMO III / V12: Interfaz Visual y Layout (Tailwind) ===
     // Validar TopBar y Sidebar rendering
-    await expect(page.locator('aside.bg-forge-panel')).toBeVisible();
+    await expect(page.locator('#app-sidebar')).toBeVisible();
     await expect(page.locator('header').first()).toBeVisible();
     
     // === TOMO IV / V12: API y TopBar interactivo ===
