@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablas · Forge OS (propuesta «Taller»)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath fill='%23E8590C' d='M5 0H25L30 5V25L25 30H5L0 25V5Z'/%3E%3Cpath fill='%23171614' d='M9 6H21V10H13V13.5H19V17.5H13V24H9Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="taller.css">
+<script>
+  /* Única lógica de la maqueta: alternar tema claro / oscuro. */
+  (function () {
+    var r = document.documentElement;
+    try { var t = localStorage.getItem('taller-tema'); if (t) r.dataset.theme = t; } catch (e) {}
+    window.cambiarTema = function () {
+      var n = r.dataset.theme === 'dark' ? 'light' : 'dark';
+      r.dataset.theme = n;
+      try { localStorage.setItem('taller-tema', n); } catch (e) {}
+    };
+  })();
+</script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar-head"><a href="index.html" aria-label="Índice de la propuesta"><span class="brand"><svg viewBox="0 0 50 30" width="33.33" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></a></div>
+    <button class="ws-switch" type="button" aria-label="Cambiar de espacio">
+      <span><strong>Atlas Platform</strong><span class="mono">#atlas</span></span>
+    </button>
+    <nav class="nav"><a href="inicio.html"><span>Inicio</span></a><a href="inicio.html#actividad"><span>Actividad</span></a><p class="nav-label">Atlas Platform</p><a href="panel.html"><span>Panel</span></a><a href="tablero.html"><span>Tablero</span><span class="count">9</span></a><a href="notas.html"><span>Notas</span><span class="count">6</span></a><a href="tablas.html" aria-current="page"><span>Tablas</span><span class="count">3</span></a><a href="archivos.html"><span>Archivos</span><span class="count">14</span></a><a href="metricas.html"><span>Métricas</span></a><a href="#"><span>Ajustes del espacio</span></a></nav>
+    <div class="sidebar-foot">
+      <span class="avatar avatar-lg">av</span>
+      <a href="ajustes.html"><strong>avery</strong><span>Administración · ajustes</span></a>
+    </div>
+  </aside>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Ruta"><a href="panel.html">Atlas Platform</a><span class="sep">/</span><a href="panel.html">Tablas</a><span class="sep">/</span><span aria-current="page">Contactos comerciales</span></nav>
+    <div class="search" role="search"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar en Forge</span><kbd>/</kbd></div>
+    <div class="top-actions">
+      <button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
+      <button class="btn btn-ghost btn-icon" type="button" aria-label="Notificaciones: 2 sin leer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+    </div>
+  </header>
+  <main class="main" id="contenido">
+<div class="page">
+  <div class="page-head">
+    <div><h1 class="page-title">Tablas</h1><p class="page-sub">Datos con columnas propias: contactos, inventario, lecturas.</p></div>
+    <div class="page-actions"><button class="btn btn-secondary" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nueva tabla</button></div>
+  </div>
+  <div class="split">
+    <nav class="list-nav" aria-label="Tablas del espacio">
+      <a href="#" aria-current="page"><span>Contactos comerciales</span><span class="count">8</span></a>
+      <a href="#"><span>Inventario de equipos</span><span class="count">31</span></a>
+      <a href="#"><span>Lecturas del sensor</span><span class="count">240</span></a>
+    </nav>
+    <section>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+        <div><h2 class="section-title" style="margin:0">Contactos comerciales</h2><p class="hint">Empresas con las que hay una propuesta abierta o cerrada este trimestre.</p></div>
+        <div class="toolbar-group"><button class="btn btn-secondary" type="button">Columnas</button><button class="btn btn-primary" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nueva fila</button></div>
+      </div>
+      <div class="grid-wrap">
+        <table class="sheet">
+          <thead><tr><th class="rowno">#</th><th>Empresa<small>Texto</small></th><th>Contacto<small>Texto</small></th><th>Etapa<small>Selección</small></th><th class="num">Valor<small>Número</small></th><th>Contrato<small>Archivo</small></th></tr></thead>
+          <tbody><tr><td class="rowno">1</td><td><b>Ferretería Norte</b></td><td>Lucía Paredes</td><td><span class="status"><span class="sw" style="--c:#0E7490"></span>Propuesta</span></td><td class="num">4.800 €</td><td><span class="file-kind">PDF</span> propuesta-v2.pdf</td></tr><tr class="selected"><td class="rowno">2</td><td><b>Clínica San Rafael</b></td><td>Andrés Mejía</td><td><span class="status"><span class="sw" style="--c:#A16207"></span>Negociación</span></td><td class="num">12.500 €</td><td><span class="file-kind">PDF</span> contrato-borrador.pdf</td></tr><tr><td class="rowno">3</td><td><b>Colegio Las Acacias</b></td><td>Marta Ruiz</td><td><span class="status"><span class="sw" style="--c:#5F6B7A"></span>Contacto</span></td><td class="num">2.100 €</td><td><span class="muted">—</span></td></tr><tr><td class="rowno">4</td><td><b>Transportes Ébano</b></td><td>Iván Soto</td><td><span class="status"><span class="sw" style="--c:#4D7C0F"></span>Cerrado</span></td><td class="num">7.300 €</td><td><span class="file-kind">PDF</span> contrato-firmado.pdf</td></tr><tr><td class="rowno">5</td><td><b>Panadería La Espiga</b></td><td>Rosa Díaz</td><td><span class="status"><span class="sw" style="--c:#5F6B7A"></span>Contacto</span></td><td class="num">900 €</td><td><span class="muted">—</span></td></tr><tr><td class="rowno">6</td><td><b>Estudio Prisma</b></td><td>Tomás Vela</td><td><span class="status"><span class="sw" style="--c:#0E7490"></span>Propuesta</span></td><td class="num">3.650 €</td><td><span class="file-kind">PDF</span> alcance.pdf</td></tr><tr><td class="rowno">7</td><td><b>Agroinsumos del Valle</b></td><td>Elena Gil</td><td><span class="status"><span class="sw" style="--c:#4D7C0F"></span>Cerrado</span></td><td class="num">15.200 €</td><td><span class="file-kind">PDF</span> orden-compra.pdf</td></tr><tr><td class="rowno">8</td><td><b>Óptica Central</b></td><td>Pablo Rey</td><td><span class="status"><span class="sw" style="--c:#A16207"></span>Negociación</span></td><td class="num">5.400 €</td><td><span class="muted">—</span></td></tr></tbody>
+        </table>
+      </div>
+      <p class="hint" style="margin-top:8px">8 filas · suma de «Valor»: 51.850 €</p>
+    </section>
+  </div>
+</div>
+  </main>
+</div>
+
+</body>
+</html>

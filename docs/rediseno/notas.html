@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notas · Forge OS (propuesta «Taller»)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath fill='%23E8590C' d='M5 0H25L30 5V25L25 30H5L0 25V5Z'/%3E%3Cpath fill='%23171614' d='M9 6H21V10H13V13.5H19V17.5H13V24H9Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="taller.css">
+<script>
+  /* Única lógica de la maqueta: alternar tema claro / oscuro. */
+  (function () {
+    var r = document.documentElement;
+    try { var t = localStorage.getItem('taller-tema'); if (t) r.dataset.theme = t; } catch (e) {}
+    window.cambiarTema = function () {
+      var n = r.dataset.theme === 'dark' ? 'light' : 'dark';
+      r.dataset.theme = n;
+      try { localStorage.setItem('taller-tema', n); } catch (e) {}
+    };
+  })();
+</script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar-head"><a href="index.html" aria-label="Índice de la propuesta"><span class="brand"><svg viewBox="0 0 50 30" width="33.33" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></a></div>
+    <button class="ws-switch" type="button" aria-label="Cambiar de espacio">
+      <span><strong>Atlas Platform</strong><span class="mono">#atlas</span></span>
+    </button>
+    <nav class="nav"><a href="inicio.html"><span>Inicio</span></a><a href="inicio.html#actividad"><span>Actividad</span></a><p class="nav-label">Atlas Platform</p><a href="panel.html"><span>Panel</span></a><a href="tablero.html"><span>Tablero</span><span class="count">9</span></a><a href="notas.html" aria-current="page"><span>Notas</span><span class="count">6</span></a><a href="tablas.html"><span>Tablas</span><span class="count">3</span></a><a href="archivos.html"><span>Archivos</span><span class="count">14</span></a><a href="metricas.html"><span>Métricas</span></a><a href="#"><span>Ajustes del espacio</span></a></nav>
+    <div class="sidebar-foot">
+      <span class="avatar avatar-lg">av</span>
+      <a href="ajustes.html"><strong>avery</strong><span>Administración · ajustes</span></a>
+    </div>
+  </aside>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Ruta"><a href="panel.html">Atlas Platform</a><span class="sep">/</span><a href="panel.html">Notas</a><span class="sep">/</span><span aria-current="page">Arquitectura general</span></nav>
+    <div class="search" role="search"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar en Forge</span><kbd>/</kbd></div>
+    <div class="top-actions">
+      <button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
+      <button class="btn btn-ghost btn-icon" type="button" aria-label="Notificaciones: 2 sin leer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+    </div>
+  </header>
+  <main class="main" id="contenido">
+<div class="notes">
+  <nav class="tree" aria-label="Árbol de notas">
+    <div class="tree-head"><h2>Notas</h2><button class="btn btn-ghost btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nueva</button></div>
+    <ul>
+      <li><a href="#" aria-current="page">Arquitectura general</a>
+        <ul><li><a href="#">Modelo de datos</a></li><li><a href="#">Despliegue en la VM</a></li></ul></li>
+      <li><a href="#">Guía de incorporación</a></li>
+      <li><a href="#">Actas de sprint</a>
+        <ul><li><a href="#">Sprint 13</a></li><li><a href="#">Sprint 14</a></li></ul></li>
+    </ul>
+  </nav>
+  <article class="doc">
+    <div class="doc-inner">
+      <h1 class="doc-title">Arquitectura general</h1>
+      <div class="doc-meta"><span class="avatar">av</span><span><b style="color:var(--text)">avery</b> · editada hace 5 min</span><span class="chip"><span class="sw" style="--c:#334155"></span>API</span><span class="chip"><span class="sw" style="--c:#A16207"></span>Q4</span><span style="margin-left:auto">Guardado</span></div>
+      <div class="prose">
+        <p>Forge OS corre como <b>un solo proceso</b> de Astro en modo servidor, sobre un archivo de SQLite. No hay una capa de API aparte: los manejadores de <code>src/pages/api</code> son la API.</p>
+        <h2>Cómo encaja todo</h2>
+        <p>Cada consulta va filtrada por <code>workspace_id</code>. Ese filtro es la frontera entre espacios, así que se aplica en la capa de datos y no en la interfaz. Lo detalla <span class="ticket-ref"><span class="sw" style="--c:var(--st-todo)"></span>Búsqueda de texto completo en páginas</span>, que es el primer caso que lo cruza.</p>
+        <ul>
+          <li>Astro en modo servidor con el adaptador de Node.</li>
+          <li><code>better-sqlite3</code> para lecturas síncronas en el mismo proceso.</li>
+          <li>Socket.IO para las notificaciones en tiempo real.</li>
+        </ul>
+        <h2>Copias de seguridad</h2>
+        <p>La base está en modo WAL. Copiar el archivo da una copia incompleta, así que la copia nocturna pasa por <code>.backup</code> y comprueba el resultado:</p>
+        <pre>sqlite3 forge.db ".backup /var/backups/forge-$(date +%F).db"
+sqlite3 /var/backups/forge-$(date +%F).db "PRAGMA integrity_check;"</pre>
+        <table><thead><tr><th>Pieza</th><th>Dónde vive</th><th>Quién responde</th></tr></thead>
+        <tbody><tr><td>Base de datos</td><td><code>/var/lib/forge-os</code></td><td>avery</td></tr>
+        <tr><td>Archivos</td><td>Drive de quien conecta el espacio</td><td>blake</td></tr>
+        <tr><td>Proxy</td><td>Caddy</td><td>noor</td></tr></tbody></table>
+      </div>
+    </div>
+  </article>
+</div>
+  </main>
+</div>
+
+</body>
+</html>

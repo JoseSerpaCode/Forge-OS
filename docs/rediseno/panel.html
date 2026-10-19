@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel · Forge OS (propuesta «Taller»)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath fill='%23E8590C' d='M5 0H25L30 5V25L25 30H5L0 25V5Z'/%3E%3Cpath fill='%23171614' d='M9 6H21V10H13V13.5H19V17.5H13V24H9Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="taller.css">
+<script>
+  /* Única lógica de la maqueta: alternar tema claro / oscuro. */
+  (function () {
+    var r = document.documentElement;
+    try { var t = localStorage.getItem('taller-tema'); if (t) r.dataset.theme = t; } catch (e) {}
+    window.cambiarTema = function () {
+      var n = r.dataset.theme === 'dark' ? 'light' : 'dark';
+      r.dataset.theme = n;
+      try { localStorage.setItem('taller-tema', n); } catch (e) {}
+    };
+  })();
+</script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar-head"><a href="index.html" aria-label="Índice de la propuesta"><span class="brand"><svg viewBox="0 0 50 30" width="33.33" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></a></div>
+    <button class="ws-switch" type="button" aria-label="Cambiar de espacio">
+      <span><strong>Atlas Platform</strong><span class="mono">#atlas</span></span>
+    </button>
+    <nav class="nav"><a href="inicio.html"><span>Inicio</span></a><a href="inicio.html#actividad"><span>Actividad</span></a><p class="nav-label">Atlas Platform</p><a href="panel.html" aria-current="page"><span>Panel</span></a><a href="tablero.html"><span>Tablero</span><span class="count">9</span></a><a href="notas.html"><span>Notas</span><span class="count">6</span></a><a href="tablas.html"><span>Tablas</span><span class="count">3</span></a><a href="archivos.html"><span>Archivos</span><span class="count">14</span></a><a href="metricas.html"><span>Métricas</span></a><a href="#"><span>Ajustes del espacio</span></a></nav>
+    <div class="sidebar-foot">
+      <span class="avatar avatar-lg">av</span>
+      <a href="ajustes.html"><strong>avery</strong><span>Administración · ajustes</span></a>
+    </div>
+  </aside>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Ruta"><a href="panel.html">Atlas Platform</a><span class="sep">/</span><span aria-current="page">Panel</span></nav>
+    <div class="search" role="search"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar en Forge</span><kbd>/</kbd></div>
+    <div class="top-actions">
+      <button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
+      <button class="btn btn-ghost btn-icon" type="button" aria-label="Notificaciones: 2 sin leer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+    </div>
+  </header>
+  <main class="main" id="contenido">
+<div class="page">
+  <div class="page-head">
+    <div><h1 class="page-title">Atlas Platform</h1><p class="page-sub"><span class="mono">#atlas</span> · 3 personas · 9 tickets abiertos</p></div>
+    <div class="page-actions"><a class="btn btn-secondary" href="notas.html">Notas</a><a class="btn btn-primary" href="tablero.html">Abrir tablero</a></div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start" class="panel-grid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <section class="panel">
+        <div class="panel-head"><h2>Sprint 14 — Facturación y búsqueda</h2><span class="muted" style="font-size:var(--t-13)">termina el 23 oct · quedan 4 días</span></div>
+        <div class="panel-body">
+          <div class="bar" style="height:14px;background:none"><span style="width:33%;--c:var(--st-todo)"></span><span style="width:25%;--c:var(--st-progress)"></span><span style="width:17%;--c:var(--st-review)"></span><span style="width:25%;--c:var(--st-done)"></span></div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:12px"><span><span class="status s-todo"><span class="sw"></span>Por hacer</span> <b>4</b></span><span><span class="status s-progress"><span class="sw"></span>En curso</span> <b>3</b></span><span><span class="status s-review"><span class="sw"></span>En revisión</span> <b>2</b></span><span><span class="status s-done"><span class="sw"></span>Hecho</span> <b>3</b></span></div>
+          <p class="hint" style="margin-top:10px">32 h registradas de 121 h estimadas. Al ritmo actual quedan 14 puntos sin cerrar el 23 oct.</p>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Tus tickets</h2><a class="link" href="tablero.html">Ver en el tablero</a></div>
+        <table class="table"><thead><tr><th>Título</th><th>Tipo</th><th>Estado</th><th class="num">Vence</th></tr></thead><tbody><tr><td class="title">Facturación por uso</td><td class="muted">Épica</td><td><span class="status s-progress"><span class="sw"></span>En curso</span></td><td class="num"><span class="due">23 oct</span></td></tr><tr><td class="title">Búsqueda de texto completo en páginas</td><td class="muted">Historia</td><td><span class="status s-todo"><span class="sw"></span>Por hacer</span></td><td class="num"><span class="due">—</span></td></tr><tr><td class="title">La subida de avatar rechaza PNG válidos</td><td class="muted">Error</td><td><span class="status s-review"><span class="sw"></span>En revisión</span></td><td class="num"><span class="due">21 oct</span></td></tr><tr><td class="title">Modo oscuro en todos los textos</td><td class="muted">Tarea</td><td><span class="status s-done"><span class="sw"></span>Hecho</span></td><td class="num"><span class="due">—</span></td></tr></tbody></table>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Sprints</h2><a class="link" href="metricas.html">Métricas</a></div>
+        <table class="table"><thead><tr><th>Sprint</th><th>Fechas</th><th>Avance</th><th class="num">Hechos</th></tr></thead><tbody><tr><td class="title">Sprint 14 — Facturación y búsqueda</td><td class="muted">26 sep – 23 oct</td><td style="width:38%"><div class="bar"><span style="width:25%;--c:var(--text)"></span></div></td><td class="num">3 de 12</td></tr><tr><td class="title">Sprint 13 — Formularios públicos</td><td class="muted">12 – 25 sep</td><td style="width:38%"><div class="bar"><span style="width:100%;--c:var(--text)"></span></div></td><td class="num">11 de 11</td></tr><tr><td class="title">Sprint 12 — Registro de auditoría</td><td class="muted">29 ago – 11 sep</td><td style="width:38%"><div class="bar"><span style="width:100%;--c:var(--text)"></span></div></td><td class="num">12 de 12</td></tr><tr><td class="title">Sprint 11 — Adjuntos</td><td class="muted">15 – 28 ago</td><td style="width:38%"><div class="bar"><span style="width:92%;--c:var(--text)"></span></div></td><td class="num">11 de 12</td></tr></tbody></table>
+      </section>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <section class="panel">
+        <div class="panel-head"><h2>Carga por persona</h2></div>
+        <div class="panel-body"><ul><li style="display:grid;grid-template-columns:96px 1fr 28px;gap:10px;align-items:center;padding:6px 0"><span>avery</span><span class="bar" style="height:10px;background:none"><span style="flex:1;--c:var(--st-todo)"></span><span style="flex:1;--c:var(--st-progress)"></span><span style="flex:1;--c:var(--st-review)"></span><span style="flex:1;--c:var(--st-done)"></span></span><span class="muted" style="text-align:right">4</span></li><li style="display:grid;grid-template-columns:96px 1fr 28px;gap:10px;align-items:center;padding:6px 0"><span>blake</span><span class="bar" style="height:10px;background:none"><span style="flex:1;--c:var(--st-todo)"></span><span style="flex:1;--c:var(--st-progress)"></span><span style="flex:1;--c:var(--st-review)"></span><span style="flex:1;--c:var(--st-done)"></span></span><span class="muted" style="text-align:right">4</span></li><li style="display:grid;grid-template-columns:96px 1fr 28px;gap:10px;align-items:center;padding:6px 0"><span>noor</span><span class="bar" style="height:10px;background:none"><span style="flex:1;--c:var(--st-todo)"></span><span style="flex:1;--c:var(--st-progress)"></span><span style="flex:1;--c:var(--st-done)"></span></span><span class="muted" style="text-align:right">3</span></li><li style="display:grid;grid-template-columns:96px 1fr 28px;gap:10px;align-items:center;padding:6px 0"><span>Sin asignar</span><span class="bar" style="height:10px;background:none"><span style="flex:1;--c:var(--st-todo)"></span></span><span class="muted" style="text-align:right">1</span></li></ul><p class="hint" style="margin-top:6px">Tickets abiertos y cerrados del sprint, por estado.</p></div>
+      </section>
+      <section class="panel" id="actividad">
+        <div class="panel-head"><h2>Actividad reciente</h2></div>
+        <div class="panel-body"><ul><li style="padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--t-13)"><b>blake</b> movió «Selector de plan en ajustes» a En revisión<span class="hint" style="display:block">hace 25 min</span></li><li style="padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--t-13)"><b>avery</b> editó la nota «Arquitectura general»<span class="hint" style="display:block">hace 5 min</span></li><li style="padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--t-13)"><b>noor</b> registró 2 h en «La búsqueda pierde resultados…»<span class="hint" style="display:block">hace 1 h</span></li><li style="padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--t-13)"><b>blake</b> subió <span class="mono">factura-plantilla.pdf</span><span class="hint" style="display:block">ayer, 18:40</span></li></ul></div>
+      </section>
+    </div>
+  </div>
+</div>
+  </main>
+</div>
+
+</body>
+</html>

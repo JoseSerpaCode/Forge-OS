@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portada · Forge OS (propuesta «Taller»)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath fill='%23E8590C' d='M5 0H25L30 5V25L25 30H5L0 25V5Z'/%3E%3Cpath fill='%23171614' d='M9 6H21V10H13V13.5H19V17.5H13V24H9Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="taller.css">
+<script>
+  /* Única lógica de la maqueta: alternar tema claro / oscuro. */
+  (function () {
+    var r = document.documentElement;
+    try { var t = localStorage.getItem('taller-tema'); if (t) r.dataset.theme = t; } catch (e) {}
+    window.cambiarTema = function () {
+      var n = r.dataset.theme === 'dark' ? 'light' : 'dark';
+      r.dataset.theme = n;
+      try { localStorage.setItem('taller-tema', n); } catch (e) {}
+    };
+  })();
+</script>
+</head>
+<body>
+<div class="site">
+  <header class="site-head">
+    <a href="index.html" aria-label="Forge OS"><span class="brand"><svg viewBox="0 0 50 30" width="36.67" height="22" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></a>
+    <nav>
+      <a class="btn btn-ghost" href="#cambios">Cambios</a>
+      <a class="btn btn-ghost" href="#">Código</a>
+      <button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
+      <a class="btn btn-ghost" href="acceso.html">Entrar</a>
+      <a class="btn btn-primary" href="acceso.html">Crear cuenta</a>
+    </nav>
+  </header>
+  <section class="hero">
+    <div>
+      <h1>Tablero, notas y archivos de tu equipo, en un servidor tuyo.</h1>
+    </div>
+    <div>
+      <p>Un tablero por sprint, notas enlazadas a los tickets que describen y archivos que se guardan en tu Drive. Todo en un proceso de Node y un archivo de SQLite. Software libre, sin cuotas por persona.</p>
+      <div class="actions"><a class="btn btn-primary" href="tablero.html">Probar sin cuenta</a><a class="btn btn-secondary" href="#">Instalarlo</a></div>
+      <p class="hint" style="margin-top:10px">La prueba crea un espacio temporal que dura 30 días. Si luego te registras, te lo llevas.</p>
+    </div>
+  </section>
+  <figure class="figure">
+    <div class="board" style="grid-template-columns:repeat(3,minmax(0,1fr))"><section class="column s-todo" style="min-height:0"><header class="column-head"><h2>Por hacer</h2><span class="n">4</span></header><div class="tape"></div><div class="column-body"><article class="card " style="--type:#2E7D6B"><h3>Búsqueda de texto completo en páginas</h3><div class="card-foot"><span class="type">Historia · 5 pts</span><span class="chip"><span class="sw" style="--c:#0E7490"></span>Búsqueda</span><span class="push"><span class="avatar" title="avery">av</span></span></div></article><article class="card " style="--type:#5F6B7A"><h3>Ventana de ayuda con los atajos de teclado</h3><div class="card-foot"><span class="type">Tarea · 2 pts</span><span class="chip"><span class="sw" style="--c:#4D7C0F"></span>Interfaz</span><span class="push"><span class="avatar" title="noor">no</span></span></div></article></div></section><section class="column s-progress" style="min-height:0"><header class="column-head"><h2>En curso</h2><span class="n">3</span></header><div class="tape"></div><div class="column-body"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type">Épica · 13 pts</span><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="push"><span class="avatar" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card " style="--type:#2E7D6B"><h3>Generar facturas en PDF</h3><div class="card-foot"><span class="type">Historia · 5 pts</span><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="push"><span class="due late">Vence hoy</span><span class="avatar" title="blake">bl</span></span></div></article></div></section><section class="column s-review" style="min-height:0"><header class="column-head"><h2>En revisión</h2><span class="n">2</span></header><div class="tape"></div><div class="column-body"><article class="card " style="--type:#B42318"><h3>La subida de avatar rechaza PNG válidos</h3><div class="card-foot"><span class="type">Error · 2 pts</span><span class="chip"><span class="sw" style="--c:#4D7C0F"></span>Interfaz</span><span class="push"><span class="avatar" title="avery">av</span></span></div></article></div></section></div>
+  </figure>
+  <p class="figcaption">El tablero de la instancia de prueba, tal cual. El temporizador corre en el servidor: cerrar el portátil no pierde la hora registrada.</p>
+
+  <section class="site-section">
+    <h2>Qué hace</h2>
+    <div class="features">
+      <div><h3>Tablero</h3><p>Cuatro columnas, arrastrar y soltar, sprints con fecha de cierre y un temporizador por ticket que se detiene solo al llegar a «Hecho».</p></div>
+      <div><h3>Notas</h3><p>Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.</p></div>
+      <div><h3>Archivos</h3><p>Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso.</p></div>
+      <div><h3>Métricas</h3><p>Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad.</p></div>
+    </div>
+  </section>
+
+  <section class="site-section">
+    <h2>Ficha técnica</h2>
+    <table class="datasheet">
+      <tr><th>Licencia</th><td>MIT. Todas las funciones, sin plan de pago.</td></tr>
+      <tr><th>Datos</th><td>Un archivo de SQLite en tu máquina. Copia de seguridad con <span class="mono">scripts/backup.sh</span>.</td></tr>
+      <tr><th>Requisitos</th><td>Node 22.12 o superior. Funciona en una e2-micro.</td></tr>
+      <tr><th>Personas</th><td>Sin límite por espacio.</td></tr>
+      <tr><th>Terceros</th><td>Ninguno en la página. Google solo si conectas Drive o entras con su cuenta.</td></tr>
+    </table>
+  </section>
+
+  <section class="site-section" id="cambios">
+    <h2>Cambios recientes</h2>
+    <ul class="changes">
+      <li><span><span class="v">1.28.5</span><span class="d">18 oct 2026</span></span><ul><li>«Termina hoy» ya no aparece un día antes al oeste de UTC.</li><li>La foto diaria del burndown se guarda con la fecha local del espacio.</li></ul></li>
+      <li><span><span class="v">1.28.4</span><span class="d">18 oct 2026</span></span><ul><li>Las entregas de hoy dejan de salir vencidas por la noche en producción.</li></ul></li>
+      <li><span><span class="v">1.28.2</span><span class="d">18 oct 2026</span></span><ul><li>Las fechas de entrega ya no se desplazan un día al oeste de UTC.</li><li>Una entrega de hoy no se pone en rojo al abrir el ticket.</li></ul></li>
+    </ul>
+  </section>
+
+  <footer class="site-foot"><span class="brand"><svg viewBox="0 0 50 30" width="30.0" height="18" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span><span>MIT · hecho en Bogotá</span><span style="margin-left:auto">v1.28.5</span></footer>
+</div>
+</body>
+</html>

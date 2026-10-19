@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Índice · Forge OS (propuesta «Taller»)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath fill='%23E8590C' d='M5 0H25L30 5V25L25 30H5L0 25V5Z'/%3E%3Cpath fill='%23171614' d='M9 6H21V10H13V13.5H19V17.5H13V24H9Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="taller.css">
+<script>
+  /* Única lógica de la maqueta: alternar tema claro / oscuro. */
+  (function () {
+    var r = document.documentElement;
+    try { var t = localStorage.getItem('taller-tema'); if (t) r.dataset.theme = t; } catch (e) {}
+    window.cambiarTema = function () {
+      var n = r.dataset.theme === 'dark' ? 'light' : 'dark';
+      r.dataset.theme = n;
+      try { localStorage.setItem('taller-tema', n); } catch (e) {}
+    };
+  })();
+</script>
+</head>
+<body>
+<div class="sheet-page">
+  <header class="site-head" style="margin-bottom:40px"><span class="brand"><svg viewBox="0 0 50 30" width="36.67" height="22" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span><nav><span class="hint">Maqueta estática · 19 oct 2026</span><button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button></nav></header>
+
+  <h1 class="page-title" style="font-size:clamp(2.4rem,5vw,3.6rem)">Propuesta «Taller»</h1>
+  <p class="page-sub" style="max-width:70ch;font-size:var(--t-16);line-height:1.6;margin-bottom:40px">Rediseño completo de Forge OS, logo incluido, siguiendo <span class="mono">docs/rediseno-diagnostico.md</span>. Las pantallas no tienen funcionalidad: son para ver cómo queda cada sector. Los datos son los de la demostración. El botón de tema alterna claro y oscuro en todas.</p>
+
+  <section class="site-section" style="padding-top:0;border-top:0">
+    <h2>Pantallas</h2>
+    <div class="screens"><a href="tablero.html"><strong>Tablero</strong><span>Cuatro columnas a 1280 px, tarjeta compacta, una tarjeta en pleno arrastre.</span></a><a href="ticket.html"><strong>Ticket</strong><span>Cajón lateral sobre el tablero: propiedades, tiempo y notas enlazadas.</span></a><a href="panel.html"><strong>Panel del espacio</strong><span>Estado del sprint, tus tickets, sprints, carga y actividad.</span></a><a href="inicio.html"><strong>Inicio</strong><span>Lo pendiente en todos tus espacios, sin banners ni saludo.</span></a><a href="notas.html"><strong>Notas</strong><span>Árbol sin caja y medida de lectura de 68 caracteres.</span></a><a href="tablas.html"><strong>Tablas</strong><span>Hoja de cálculo con el tipo de cada columna a la vista.</span></a><a href="archivos.html"><strong>Archivos</strong><span>Lista de Drive, con el caso de un archivo sin acceso.</span></a><a href="metricas.html"><strong>Métricas</strong><span>Cuatro gráficas con los colores de estado y etiquetas directas.</span></a><a href="ajustes.html"><strong>Ajustes</strong><span>Formularios con un solo tipo de campo y la zona de borrado.</span></a><a href="portada.html"><strong>Portada</strong><span>Sin bento, sin halo, sin ventana falsa: el producto y una ficha técnica.</span></a><a href="acceso.html"><strong>Entrar</strong><span>Panel de marca en tinta y formulario.</span></a></div>
+  </section>
+
+  <section class="site-section">
+    <h2>La marca del herrero</h2>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:center" class="logo-grid">
+      <div class="panel" style="padding:40px;display:grid;place-items:center;position:relative">
+        <svg viewBox="-18 -8 88 46" width="100%" style="max-width:420px" aria-label="Construcción del emblema">
+          <g stroke="var(--border)" stroke-width="0.2"><line x1="0" y1="-4" x2="0" y2="34"/><line x1="2" y1="-4" x2="2" y2="34"/><line x1="4" y1="-4" x2="4" y2="34"/><line x1="6" y1="-4" x2="6" y2="34"/><line x1="8" y1="-4" x2="8" y2="34"/><line x1="10" y1="-4" x2="10" y2="34"/><line x1="12" y1="-4" x2="12" y2="34"/><line x1="14" y1="-4" x2="14" y2="34"/><line x1="16" y1="-4" x2="16" y2="34"/><line x1="18" y1="-4" x2="18" y2="34"/><line x1="20" y1="-4" x2="20" y2="34"/><line x1="22" y1="-4" x2="22" y2="34"/><line x1="24" y1="-4" x2="24" y2="34"/><line x1="26" y1="-4" x2="26" y2="34"/><line x1="28" y1="-4" x2="28" y2="34"/><line x1="30" y1="-4" x2="30" y2="34"/><line x1="32" y1="-4" x2="32" y2="34"/><line x1="34" y1="-4" x2="34" y2="34"/><line x1="36" y1="-4" x2="36" y2="34"/><line x1="38" y1="-4" x2="38" y2="34"/><line x1="40" y1="-4" x2="40" y2="34"/><line x1="42" y1="-4" x2="42" y2="34"/><line x1="44" y1="-4" x2="44" y2="34"/><line x1="46" y1="-4" x2="46" y2="34"/><line x1="48" y1="-4" x2="48" y2="34"/><line x1="50" y1="-4" x2="50" y2="34"/><line x1="-4" y1="0" x2="54" y2="0"/><line x1="-4" y1="2" x2="54" y2="2"/><line x1="-4" y1="4" x2="54" y2="4"/><line x1="-4" y1="6" x2="54" y2="6"/><line x1="-4" y1="8" x2="54" y2="8"/><line x1="-4" y1="10" x2="54" y2="10"/><line x1="-4" y1="12" x2="54" y2="12"/><line x1="-4" y1="14" x2="54" y2="14"/><line x1="-4" y1="16" x2="54" y2="16"/><line x1="-4" y1="18" x2="54" y2="18"/><line x1="-4" y1="20" x2="54" y2="20"/><line x1="-4" y1="22" x2="54" y2="22"/><line x1="-4" y1="24" x2="54" y2="24"/><line x1="-4" y1="26" x2="54" y2="26"/><line x1="-4" y1="28" x2="54" y2="28"/><line x1="-4" y1="30" x2="54" y2="30"/></g>
+          <path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z" fill="var(--text)"/>
+          <g stroke="var(--accent)" stroke-width="0.35" fill="none"><path d="M0 5 L5 0"/><path d="M45 30 L50 25"/></g>
+          <g fill="var(--accent-text)" font-size="2.2" font-family="var(--font)">
+            <text x="-17" y="-3">chaflán = h/6</text>
+            <text x="53" y="16">h = 30</text>
+            <text x="12" y="35">trazo = 4 en F y O</text>
+          </g>
+        </svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <p style="line-height:1.6">Un punzón de herrero: el cartucho achaflanado que se estampa en el metal, con «FO» en hueco. Una sola tinta, sin gradiente ni halo: se puede grabar, bordar o imprimir en una pegatina de un color. Los chaflanes son cortes rectos, así que se leen a 16 px.</p>
+        <div style="display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap">
+          <div style="text-align:center"><span class="brand"><svg viewBox="0 0 30 30" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H25L30 5V25L25 30H5L0 25V5ZM9 6H21V10H13V13.5H19V17.5H13V24H9Z"/></svg></span><p class="hint">16</p></div>
+          <div style="text-align:center"><span class="brand"><svg viewBox="0 0 30 30" width="32" height="32" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H25L30 5V25L25 30H5L0 25V5ZM9 6H21V10H13V13.5H19V17.5H13V24H9Z"/></svg></span><p class="hint">32</p></div>
+          <div style="text-align:center"><svg viewBox="0 0 30 30" width="64" height="64" role="img" aria-label="Icono de Forge OS"><path d="M5 0H25L30 5V25L25 30H5L0 25V5Z" fill="#E8590C"/><path d="M9 6H21V10H13V13.5H19V17.5H13V24H9Z" fill="#171614"/></svg><p class="hint">icono de app</p></div>
+          <div style="text-align:center"><svg viewBox="0 0 30 30" width="32" height="32" role="img" aria-label="Icono de Forge OS"><path d="M5 0H25L30 5V25L25 30H5L0 25V5Z" fill="#E8590C"/><path d="M9 6H21V10H13V13.5H19V17.5H13V24H9Z" fill="#171614"/></svg><p class="hint">favicon</p></div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div class="panel" style="padding:16px 20px"><span class="brand"><svg viewBox="0 0 50 30" width="40.0" height="24" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></div>
+          <div style="padding:16px 20px;background:var(--brand-ink);color:var(--brand-paper);border-radius:var(--r)"><span class="brand" style="color:inherit"><svg viewBox="0 0 50 30" width="40.0" height="24" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></div>
+          <div style="padding:16px 20px;background:var(--brand-orange);color:var(--brand-ink);border-radius:var(--r)"><span class="brand" style="color:inherit"><svg viewBox="0 0 50 30" width="40.0" height="24" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="site-section">
+    <h2>Color</h2>
+    <p class="muted" style="margin-bottom:16px;max-width:70ch">Claro por defecto. Todas las parejas de texto pasan AA (≥ 4,5:1) sobre el fondo y las dos superficies, en los dos temas. Los cuatro estados forman además una paleta validada para daltonismo, que es la que usan las gráficas.</p>
+    <div class="swatches">
+      <div class="swatch"><b style="--c:var(--bg)"></b><div><strong>Fondo</strong><span class="mono">#EEECE7 / #1B1A18</span></div></div><div class="swatch"><b style="--c:var(--surface-1)"></b><div><strong>Superficie 1</strong><span class="mono">#F8F7F4 / #232220</span></div></div><div class="swatch"><b style="--c:var(--surface-2)"></b><div><strong>Superficie 2</strong><span class="mono">#E4E1DA / #2C2A27</span></div></div>
+      <div class="swatch"><b style="--c:var(--border-strong)"></b><div><strong>Borde fuerte</strong><span class="mono">#7D776C / #857E74</span><br><span class=muted>controles · ≥ 3:1</span></div></div><div class="swatch"><b style="--c:var(--text)"></b><div><strong>Texto</strong><span class="mono">#171614 / #ECE9E3</span></div></div><div class="swatch"><b style="--c:var(--muted)"></b><div><strong>Tenue</strong><span class="mono">#57534B / #ABA59B</span></div></div>
+      <div class="swatch"><b style="--c:var(--accent)"></b><div><strong>Acción</strong><span class="mono">#E8590C / #F06A1F</span><br><span class=muted>relleno, con texto en tinta</span></div></div><div class="swatch"><b style="--c:var(--accent-text)"></b><div><strong>Texto de acción</strong><span class="mono">#A63C00 / #FF9452</span></div></div><div class="swatch"><b style="--c:var(--danger)"></b><div><strong>Peligro</strong><span class="mono">#A61E1E / #FF7A6E</span></div></div>
+    </div>
+    <p class="muted" style="margin:24px 0 12px">Estados: solo para el estado de un ticket, nunca como adorno ni como color de texto.</p>
+    <div class="swatches">
+      <div class="swatch"><b style="--c:var(--st-todo)"></b><div><strong>Por hacer</strong><span class="mono">#9C5A0F / #BF7F28</span></div></div><div class="swatch"><b style="--c:var(--st-progress)"></b><div><strong>En curso</strong><span class="mono">#1E5AA8 / #5A8FE6</span></div></div><div class="swatch"><b style="--c:var(--st-review)"></b><div><strong>En revisión</strong><span class="mono">#A23B72 / #C66BB0</span></div></div><div class="swatch"><b style="--c:var(--st-done)"></b><div><strong>Hecho</strong><span class="mono">#266B2A / #3FA86A</span></div></div>
+    </div>
+  </section>
+
+  <section class="site-section">
+    <h2>Tipografía</h2>
+    <p class="muted" style="margin-bottom:16px;max-width:70ch">Archivo (Omnibus-Type, OFL), variable en peso y anchura. Estrecha para títulos y cabeceras de columna; normal para todo lo demás. IBM Plex Mono solo para código, atajos y claves. Ambas servidas desde <span class="mono">fonts/</span>, sin Google Fonts. Cifras tabulares en toda la interfaz.</p>
+    <div class="specimen">
+      <div><span class="hint">34 · estrecha 700</span><span class="page-title">Sprint 14 — Facturación</span></div>
+      <div><span class="hint">20 · estrecha 700</span><span class="section-title" style="margin:0">Tus tickets</span></div>
+      <div><span class="hint">16 · 700 · columna</span><span style="font-size:var(--t-16);font-weight:750;font-stretch:75%;text-transform:uppercase;letter-spacing:.02em">En revisión</span></div>
+      <div><span class="hint">16 · notas</span><span style="font-size:var(--t-16)">Cada consulta va filtrada por <code class="mono">workspace_id</code>.</span></div>
+      <div><span class="hint">14 · 600 · tarjeta</span><span style="font-weight:600">Generar facturas en PDF</span></div>
+      <div><span class="hint">13 · interfaz</span><span style="font-size:var(--t-13)">32 h de 121 h registradas</span></div>
+      <div><span class="hint">12 · mínimo</span><span style="font-size:var(--t-12)" class="muted">Creado por avery el 3 oct</span></div>
+    </div>
+  </section>
+
+  <section class="site-section">
+    <h2>Componentes</h2>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="toolbar-group"><button class="btn btn-primary" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nuevo ticket <kbd>C</kbd></button><button class="btn btn-secondary" type="button">Secundario</button><button class="btn btn-ghost" type="button">Fantasma</button><button class="btn btn-danger" type="button">Borrar</button><button class="btn btn-secondary btn-sm" type="button">Pequeño</button></div>
+      <div class="row-2" style="max-width:640px"><div class="field"><label>Título</label><span class="input">Generar facturas en PDF</span><span class="hint">Una frase que se entienda fuera del tablero.</span></div><div class="field"><label>Estado</label><span class="select"><span class="status s-progress"><span class="sw"></span>En curso</span></span></div></div>
+      <div class="toolbar-group"><span class="status s-todo"><span class="sw"></span>Por hacer</span><span class="status s-progress"><span class="sw"></span>En curso</span><span class="status s-review"><span class="sw"></span>En revisión</span><span class="status s-done"><span class="sw"></span>Hecho</span></div>
+      <div class="toolbar-group"><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="chip"><span class="sw" style="--c:#0E7490"></span>Búsqueda</span><span class="chip"><span class="sw" style="--c:#4D7C0F"></span>Interfaz</span><span class="avatar">av</span><span class="avatar avatar-lg">bl</span><span class="due late">Vence hoy</span><span class="due">24 oct</span></div>
+      <div style="max-width:300px"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type">Épica · 13 pts</span><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="push"><span class="avatar" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article></div>
+    </div>
+  </section>
+
+  <section class="site-section">
+    <h2>Reglas</h2>
+    <ol class="rules"><li><span>Cada decisión visual se justifica con una frase sobre Forge.</span></li><li><span>Un color significa una cosa: naranja es acción, los estados son estado, rojo es error.</span></li><li><span>Sin gradientes, halos, desenfoques ni animaciones perpetuas. La sombra solo indica que algo flota.</span></li><li><span>El movimiento responde a una acción: arrastrar, abrir, guardar.</span></li><li><span>Mayúsculas solo en las cabeceras de columna. Mono solo para código, atajos y claves.</span></li><li><span>Archivo, no la tipografía por defecto de lo generado.</span></li><li><span>Un juego de iconos, y solo donde la etiqueta no basta.</span></li><li><span>La portada enseña el producto real, no maquetas de plantilla.</span></li><li><span>Texto en tipo oración, concreto y sin superlativos.</span></li><li><span>Un botón, un campo, un modal: sin componentes no hay identidad.</span></li></ol>
+  </section>
+</div>
+</body>
+</html>

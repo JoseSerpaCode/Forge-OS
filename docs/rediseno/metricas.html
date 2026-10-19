@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Métricas · Forge OS (propuesta «Taller»)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath fill='%23E8590C' d='M5 0H25L30 5V25L25 30H5L0 25V5Z'/%3E%3Cpath fill='%23171614' d='M9 6H21V10H13V13.5H19V17.5H13V24H9Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="taller.css">
+<script>
+  /* Única lógica de la maqueta: alternar tema claro / oscuro. */
+  (function () {
+    var r = document.documentElement;
+    try { var t = localStorage.getItem('taller-tema'); if (t) r.dataset.theme = t; } catch (e) {}
+    window.cambiarTema = function () {
+      var n = r.dataset.theme === 'dark' ? 'light' : 'dark';
+      r.dataset.theme = n;
+      try { localStorage.setItem('taller-tema', n); } catch (e) {}
+    };
+  })();
+</script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar-head"><a href="index.html" aria-label="Índice de la propuesta"><span class="brand"><svg viewBox="0 0 50 30" width="33.33" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></a></div>
+    <button class="ws-switch" type="button" aria-label="Cambiar de espacio">
+      <span><strong>Atlas Platform</strong><span class="mono">#atlas</span></span>
+    </button>
+    <nav class="nav"><a href="inicio.html"><span>Inicio</span></a><a href="inicio.html#actividad"><span>Actividad</span></a><p class="nav-label">Atlas Platform</p><a href="panel.html"><span>Panel</span></a><a href="tablero.html"><span>Tablero</span><span class="count">9</span></a><a href="notas.html"><span>Notas</span><span class="count">6</span></a><a href="tablas.html"><span>Tablas</span><span class="count">3</span></a><a href="archivos.html"><span>Archivos</span><span class="count">14</span></a><a href="metricas.html" aria-current="page"><span>Métricas</span></a><a href="#"><span>Ajustes del espacio</span></a></nav>
+    <div class="sidebar-foot">
+      <span class="avatar avatar-lg">av</span>
+      <a href="ajustes.html"><strong>avery</strong><span>Administración · ajustes</span></a>
+    </div>
+  </aside>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Ruta"><a href="panel.html">Atlas Platform</a><span class="sep">/</span><span aria-current="page">Métricas</span></nav>
+    <div class="search" role="search"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar en Forge</span><kbd>/</kbd></div>
+    <div class="top-actions">
+      <button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
+      <button class="btn btn-ghost btn-icon" type="button" aria-label="Notificaciones: 2 sin leer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+    </div>
+  </header>
+  <main class="main" id="contenido">
+<div class="page">
+  <div class="page-head">
+    <div><h1 class="page-title">Métricas</h1><p class="page-sub">Calculadas con el tiempo registrado, no con las estimaciones.</p></div>
+    <div class="page-actions"><span class="select select-inline">Sprint 14 — Facturación y búsqueda</span></div>
+  </div>
+  <div class="charts">
+    <section class="panel chart"><div class="panel-head"><h2>Puntos pendientes</h2><span class="hint">va por detrás: 14 pts con 4 días</span></div>
+      <div class="panel-body"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div><svg viewBox="0 0 560 250" role="img" aria-label="Burndown del sprint 14: quedan 14 de 40 puntos con 4 días por delante; la línea ideal marcaría unos 6.">
+  <g class="grid"><line x1="34" x2="496" y1="224.0" y2="224.0"/><line x1="34" x2="496" y1="170.5" y2="170.5"/><line x1="34" x2="496" y1="117.0" y2="117.0"/><line x1="34" x2="496" y1="63.5" y2="63.5"/><line x1="34" x2="496" y1="10.0" y2="10.0"/></g><text x="26" y="228.0" text-anchor="end">0</text><text x="26" y="174.5" text-anchor="end">10</text><text x="26" y="121.0" text-anchor="end">20</text><text x="26" y="67.5" text-anchor="end">30</text><text x="26" y="14.0" text-anchor="end">40</text><text x="34.0" y="244" text-anchor="middle">26 sep</text><text x="149.5" y="244" text-anchor="middle">3 oct</text><text x="265.0" y="244" text-anchor="middle">10 oct</text><text x="380.5" y="244" text-anchor="middle">17 oct</text><text x="496.0" y="244" text-anchor="middle">23 oct</text>
+  <line class="axis" x1="34" x2="496" y1="224.0" y2="224.0"/>
+  <line x1="34.0" y1="10.0" x2="496.0" y2="224.0" stroke="var(--border-strong)" stroke-width="2" stroke-dasharray="5 4"/>
+  <polyline points="34.0,10.0 50.5,10.0 67.0,20.7 83.5,20.7 100.0,26.1 116.5,36.8 133.0,36.8 149.5,47.5 166.0,63.5 182.5,63.5 199.0,68.8 215.5,79.5 232.0,79.5 248.5,90.2 265.0,95.6 281.5,106.3 298.0,106.3 314.5,111.7 331.0,122.3 347.5,127.7 364.0,133.1 380.5,133.1 397.0,143.8 413.5,149.1" fill="none" stroke="var(--text)" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="413.5" cy="149.1" r="4.5" fill="var(--text)" stroke="var(--surface-1)" stroke-width="2"/>
+  <line x1="413.5" x2="413.5" y1="10" y2="224.0" stroke="var(--border-strong)" stroke-width="1"/>
+  <text x="421.5" y="22" class="lbl">Hoy</text>
+  <text x="423.5" y="153.1" class="lbl">14 pts</text>
+  <text x="502.0" y="218.0">Ideal</text>
+</svg></div></section>
+    <section class="panel chart"><div class="panel-head"><h2>Carga por persona</h2><span class="hint">tickets del sprint</span></div>
+      <div class="panel-body"><div class="legend"><span><i style="--c:var(--st-todo)"></i>Por hacer</span><span><i style="--c:var(--st-progress)"></i>En curso</span><span><i style="--c:var(--st-review)"></i>En revisión</span><span><i style="--c:var(--st-done)"></i>Hecho</span></div><svg viewBox="0 0 560 190" role="img" aria-label="Carga por persona en el sprint 14, por estado."><text x="82" y="24" text-anchor="end" class="lbl" style="font-weight:500">avery</text><rect x="92" y="6" width="105.0" height="26" fill="var(--st-todo)"/><rect x="199.0" y="6" width="105.0" height="26" fill="var(--st-progress)"/><rect x="306.0" y="6" width="105.0" height="26" fill="var(--st-review)"/><rect x="413.0" y="6" width="105.0" height="26" fill="var(--st-done)"/><text x="526.0" y="24">4</text><text x="82" y="70" text-anchor="end" class="lbl" style="font-weight:500">blake</text><rect x="92" y="52" width="105.0" height="26" fill="var(--st-todo)"/><rect x="199.0" y="52" width="105.0" height="26" fill="var(--st-progress)"/><rect x="306.0" y="52" width="105.0" height="26" fill="var(--st-review)"/><rect x="413.0" y="52" width="105.0" height="26" fill="var(--st-done)"/><text x="526.0" y="70">4</text><text x="82" y="116" text-anchor="end" class="lbl" style="font-weight:500">noor</text><rect x="92" y="98" width="105.0" height="26" fill="var(--st-todo)"/><rect x="199.0" y="98" width="105.0" height="26" fill="var(--st-progress)"/><rect x="306.0" y="98" width="105.0" height="26" fill="var(--st-done)"/><text x="419.0" y="116">3</text><text x="82" y="162" text-anchor="end" class="lbl" style="font-weight:500">Sin asignar</text><rect x="92" y="144" width="105.0" height="26" fill="var(--st-todo)"/><text x="205.0" y="162">1</text></svg></div></section>
+    <section class="panel chart"><div class="panel-head"><h2>Puntos cerrados por sprint</h2><span class="hint">últimos 4 sprints</span></div>
+      <div class="panel-body"><svg viewBox="0 0 560 220" role="img" aria-label="Puntos cerrados por sprint: 21, 26, 24 y 9 en el sprint en curso."><g class="grid"><line x1="34" x2="544" y1="194.0" y2="194.0"/><line x1="34" x2="544" y1="135.33333333333331" y2="135.33333333333331"/><line x1="34" x2="544" y1="76.66666666666666" y2="76.66666666666666"/><line x1="34" x2="544" y1="18.0" y2="18.0"/></g><text x="26" y="198.0" text-anchor="end">0</text><text x="26" y="139.33333333333331" text-anchor="end">10</text><text x="26" y="80.66666666666666" text-anchor="end">20</text><text x="26" y="22.0" text-anchor="end">30</text><rect x="65.75" y="70.8" width="64" height="123.2" fill="var(--text)"/><text x="97.75" y="64.8" text-anchor="middle" class="lbl">21</text><text x="97.75" y="214" text-anchor="middle">Sprint 11</text><rect x="193.25" y="41.46666666666667" width="64" height="152.53333333333333" fill="var(--text)"/><text x="225.25" y="35.46666666666667" text-anchor="middle" class="lbl">26</text><text x="225.25" y="214" text-anchor="middle">Sprint 12</text><rect x="320.75" y="53.2" width="64" height="140.8" fill="var(--text)"/><text x="352.75" y="47.2" text-anchor="middle" class="lbl">24</text><text x="352.75" y="214" text-anchor="middle">Sprint 13</text><rect x="448.25" y="141.2" width="64" height="52.80000000000001" fill="none" stroke="var(--text)" stroke-width="1.5" stroke-dasharray="4 3"/><text x="480.25" y="135.2" text-anchor="middle" class="lbl">9 (en curso)</text><text x="480.25" y="214" text-anchor="middle">Sprint 14</text></svg></div></section>
+    <section class="panel chart"><div class="panel-head"><h2>Estimado y registrado</h2><span class="hint">horas, sprint 14</span></div>
+      <div class="panel-body"><div class="legend"><span><i style="--c:var(--border-strong)"></i>Estimado</span><span><i style="--c:var(--text)"></i>Registrado</span></div><svg viewBox="0 0 560 220" role="img" aria-label="Horas estimadas frente a registradas por persona."><g class="grid"><line x1="34" x2="544" y1="194.0" y2="194.0"/><line x1="34" x2="544" y1="106.0" y2="106.0"/><line x1="34" x2="544" y1="18.0" y2="18.0"/></g><text x="26" y="198.0" text-anchor="end">0</text><text x="26" y="110.0" text-anchor="end">25</text><text x="26" y="22.0" text-anchor="end">50</text><rect x="66.0" y="46.16" width="52" height="147.84" fill="var(--border-strong)"/><rect x="120.0" y="88.4" width="52" height="105.6" fill="var(--text)"/><text x="93.0" y="40.16" text-anchor="middle">42 h</text><text x="145.0" y="82.4" text-anchor="middle" class="lbl">30 h</text><text x="119.0" y="214" text-anchor="middle">avery</text><rect x="236.0" y="32.08" width="52" height="161.92000000000002" fill="var(--border-strong)"/><rect x="290.0" y="120.08" width="52" height="73.92" fill="var(--text)"/><text x="263.0" y="26.08" text-anchor="middle">46 h</text><text x="315.0" y="114.08" text-anchor="middle" class="lbl">21 h</text><text x="289.0" y="214" text-anchor="middle">blake</text><rect x="406.0" y="77.84" width="52" height="116.16" fill="var(--border-strong)"/><rect x="460.0" y="151.76" width="52" height="42.24000000000001" fill="var(--text)"/><text x="433.0" y="71.84" text-anchor="middle">33 h</text><text x="485.0" y="145.76" text-anchor="middle" class="lbl">12 h</text><text x="459.0" y="214" text-anchor="middle">noor</text></svg></div></section>
+  </div>
+</div>
+  </main>
+</div>
+
+</body>
+</html>

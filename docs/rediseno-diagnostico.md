@@ -382,11 +382,22 @@ herramienta de trabajo, no un escaparate.
 | accent (relleno) / on-accent | `#E8590C` / `#171614` | `#F06A1F` / `#171614` |
 | accent-text | `#A63C00` | `#FF9452` |
 | focus | `#171614` (anillo de tinta, 2 px) | `#ECE9E3` |
-| todo · progress · review · done | `#5F5A52` `#1E5AA8` `#7F5300` `#266B2A` | `#A39D93` `#6EA3F0` `#E0B04A` `#6CC07A` |
+| todo · progress · review · done | `#9C5A0F` `#1E5AA8` `#A23B72` `#266B2A` | `#BF7F28` `#5A8FE6` `#C66BB0` `#3FA86A` |
 | danger | `#A61E1E` | `#FF7A6E` |
 
-Los estados siguen el código de la señalética (azul, ámbar, verde), no el de
-una aplicación de colores.
+Los estados se usan solo como color de marca gráfica (muestra, cinta de
+columna, barra), nunca como color de texto: el texto que los acompaña va en
+tinta.
+
+Estos cuatro valores sustituyen a una primera versión (gris, azul, ámbar y
+verde) que no pasaba la validación de paletas categóricas. Hecho y En revisión
+quedaban a ΔE 4 para deuteranopía, es decir, indistinguibles en las gráficas.
+Los actuales pasan las cinco comprobaciones (banda de luminosidad, croma
+mínimo, separación para daltonismo, separación con visión normal y ≥ 3:1
+sobre la superficie) en los dos temas.
+
+**Maquetas:** `docs/rediseno/index.html` enlaza once pantallas estáticas de
+esta identidad, en claro y oscuro.
 
 **Tipografía:**
 

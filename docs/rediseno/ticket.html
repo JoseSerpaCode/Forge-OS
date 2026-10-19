@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticket · Forge OS (propuesta «Taller»)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath fill='%23E8590C' d='M5 0H25L30 5V25L25 30H5L0 25V5Z'/%3E%3Cpath fill='%23171614' d='M9 6H21V10H13V13.5H19V17.5H13V24H9Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="taller.css">
+<script>
+  /* Única lógica de la maqueta: alternar tema claro / oscuro. */
+  (function () {
+    var r = document.documentElement;
+    try { var t = localStorage.getItem('taller-tema'); if (t) r.dataset.theme = t; } catch (e) {}
+    window.cambiarTema = function () {
+      var n = r.dataset.theme === 'dark' ? 'light' : 'dark';
+      r.dataset.theme = n;
+      try { localStorage.setItem('taller-tema', n); } catch (e) {}
+    };
+  })();
+</script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar-head"><a href="index.html" aria-label="Índice de la propuesta"><span class="brand"><svg viewBox="0 0 50 30" width="33.33" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M5 0H45L50 5V25L45 30H5L0 25V5ZM10 6H22V10H14V13.5H20V17.5H14V24H10ZM29 6H37L40 9V21L37 24H29L26 21V9ZM31.5 10H34.5L36 11.5V18.5L34.5 20H31.5L30 18.5V11.5Z"/></svg><span class="brand-word">Forge OS</span></span></a></div>
+    <button class="ws-switch" type="button" aria-label="Cambiar de espacio">
+      <span><strong>Atlas Platform</strong><span class="mono">#atlas</span></span>
+    </button>
+    <nav class="nav"><a href="inicio.html"><span>Inicio</span></a><a href="inicio.html#actividad"><span>Actividad</span></a><p class="nav-label">Atlas Platform</p><a href="panel.html"><span>Panel</span></a><a href="tablero.html" aria-current="page"><span>Tablero</span><span class="count">9</span></a><a href="notas.html"><span>Notas</span><span class="count">6</span></a><a href="tablas.html"><span>Tablas</span><span class="count">3</span></a><a href="archivos.html"><span>Archivos</span><span class="count">14</span></a><a href="metricas.html"><span>Métricas</span></a><a href="#"><span>Ajustes del espacio</span></a></nav>
+    <div class="sidebar-foot">
+      <span class="avatar avatar-lg">av</span>
+      <a href="ajustes.html"><strong>avery</strong><span>Administración · ajustes</span></a>
+    </div>
+  </aside>
+  <header class="topbar">
+    <nav class="crumbs" aria-label="Ruta"><a href="panel.html">Atlas Platform</a><span class="sep">/</span><span aria-current="page">Tablero</span></nav>
+    <div class="search" role="search"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Buscar en Forge</span><kbd>/</kbd></div>
+    <div class="top-actions">
+      <button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
+      <button class="btn btn-ghost btn-icon" type="button" aria-label="Notificaciones: 2 sin leer"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+    </div>
+  </header>
+  <main class="main" id="contenido">
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Sprint 14 — Facturación y búsqueda</h1>
+      <div class="board-meta">
+        <span>26 sep – 23 oct · quedan 4 días</span>
+        <span class="bar" aria-hidden="true"><span style="width:26%;--c:var(--text)"></span></span>
+        <span>32 h de 121 h registradas</span>
+      </div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <span class="select select-inline" aria-label="Sprint">Sprint 14 (activo)</span>
+      <span class="select select-inline" aria-label="Orden">Orden manual</span>
+      <span class="select select-inline" aria-label="Etiqueta">Todas las etiquetas</span>
+    </div>
+    <div class="toolbar-group">
+      <button class="btn btn-secondary" type="button">Sprint <span class="select" style="border:0;padding:0;height:auto;background:none"></span></button>
+      <button class="btn btn-primary" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nuevo ticket <kbd>C</kbd></button>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Columnas"><a href="#" aria-current="page">Por hacer 4</a><a href="#">En curso 3</a><a href="#">En revisión 2</a><a href="#">Hecho 3</a></nav><div class="board"><section class="column s-todo" aria-label="Por hacer, 4 tickets">
+  <header class="column-head"><h2>Por hacer</h2><span class="n">4</span></header>
+  <div class="tape"></div>
+  <div class="column-body"><article class="card " style="--type:#2E7D6B"><h3>Búsqueda de texto completo en páginas</h3><div class="card-foot"><span class="type">Historia · 5 pts</span><span class="chip"><span class="sw" style="--c:#0E7490"></span>Búsqueda</span><span class="push"><span class="avatar" title="avery">av</span></span></div></article><article class="card " style="--type:#5F6B7A"><h3>Ventana de ayuda con los atajos de teclado</h3><div class="card-foot"><span class="type">Tarea · 2 pts</span><span class="chip"><span class="sw" style="--c:#4D7C0F"></span>Interfaz</span><span class="push"><span class="avatar" title="noor">no</span></span></div></article><article class="card " style="--type:#2E7D6B"><h3>Lista de pasos para espacios nuevos</h3><div class="card-foot"><span class="type">Historia · 3 pts</span><span class="chip"><span class="sw" style="--c:#6D28D9"></span>Incorporación</span><span class="push"><span class="due">24 oct</span><span class="avatar" title="blake">bl</span></span></div></article><article class="card " style="--type:#2E7D6B"><h3>Visor del registro de auditoría</h3><div class="card-foot"><span class="type">Historia · 8 pts</span><span class="push"></span></div></article></div>
+</section><section class="column s-progress" aria-label="En curso, 3 tickets">
+  <header class="column-head"><h2>En curso</h2><span class="n">3</span></header>
+  <div class="tape"></div>
+  <div class="column-body"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type">Épica · 13 pts</span><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="push"><span class="avatar" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card " style="--type:#2E7D6B"><h3>Generar facturas en PDF</h3><div class="card-foot"><span class="type">Historia · 5 pts</span><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="push"><span class="due late">Vence hoy</span><span class="avatar" title="blake">bl</span></span></div></article><article class="card " style="--type:#B42318"><h3>La búsqueda pierde resultados después de la página 3</h3><div class="card-foot"><span class="type">Error · 3 pts</span><span class="chip"><span class="sw" style="--c:#0E7490"></span>Búsqueda</span><span class="push"><span class="avatar" title="noor">no</span></span></div></article></div>
+</section><section class="column s-review" aria-label="En revisión, 2 tickets">
+  <header class="column-head"><h2>En revisión</h2><span class="n">2</span></header>
+  <div class="tape"></div>
+  <div class="column-body"><article class="card " style="--type:#5F6B7A"><h3>Selector de plan en ajustes</h3><div class="card-foot"><span class="type">Tarea · 3 pts</span><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="push"><span class="avatar" title="blake">bl</span></span></div></article><article class="card " style="--type:#B42318"><h3>La subida de avatar rechaza PNG válidos</h3><div class="card-foot"><span class="type">Error · 2 pts</span><span class="chip"><span class="sw" style="--c:#4D7C0F"></span>Interfaz</span><span class="push"><span class="avatar" title="avery">av</span></span></div></article></div>
+</section><section class="column s-done" aria-label="Hecho, 3 tickets">
+  <header class="column-head"><h2>Hecho</h2><span class="n">3</span></header>
+  <div class="tape"></div>
+  <div class="column-body"><article class="card " style="--type:#2E7D6B"><h3>API de medición de consumo</h3><div class="card-foot"><span class="type">Historia · 5 pts</span><span class="chip"><span class="sw" style="--c:#334155"></span>API</span><span class="push"><span class="due">6,5 h registradas</span><span class="avatar" title="blake">bl</span></span></div></article><article class="card " style="--type:#5F6B7A"><h3>Límite de peticiones por IP en la API pública</h3><div class="card-foot"><span class="type">Tarea · 3 pts</span><span class="chip"><span class="sw" style="--c:#334155"></span>API</span><span class="push"><span class="due">4 h registradas</span><span class="avatar" title="noor">no</span></span></div></article><article class="card " style="--type:#5F6B7A"><h3>Modo oscuro en todos los textos</h3><div class="card-foot"><span class="type">Tarea · 2 pts</span><span class="chip"><span class="sw" style="--c:#4D7C0F"></span>Interfaz</span><span class="push"><span class="due">3 h registradas</span><span class="avatar" title="avery">av</span></span></div></article></div>
+</section></div>
+</div>
+  </main>
+</div>
+<div class="scrim" aria-hidden="true"></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="t-titulo">
+  <div class="drawer-head">
+    <span class="select select-inline" style="height:28px">Historia</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-ghost btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Copiar enlace</button>
+    <button class="btn btn-ghost btn-sm" type="button">Duplicar</button>
+    <button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Borrar</button>
+    <a class="btn btn-ghost btn-icon" href="tablero.html" aria-label="Cerrar"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></a>
+  </div>
+  <div class="drawer-body">
+    <h2 class="drawer-title" id="t-titulo">Generar facturas en PDF</h2>
+    <dl class="props">
+      <dt>Estado</dt><dd><span class="select select-inline"><span class="status s-progress"><span class="sw"></span>En curso</span></span></dd>
+      <dt>Responsable</dt><dd><span class="select select-inline"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar">bl</span>blake</span></span></dd>
+      <dt>Informador</dt><dd><span class="avatar">av</span>avery</dd>
+      <dt>Sprint</dt><dd><span class="select select-inline">Sprint 14 — Facturación y búsqueda</span></dd>
+      <dt>Puntos</dt><dd><span class="input" style="width:72px">5</span></dd>
+      <dt>Vence</dt><dd><span class="input" style="width:160px">19/10/2026</span><span class="due late">Vence hoy</span></dd>
+      <dt>Etiquetas</dt><dd><span class="chip"><span class="sw" style="--c:#9A3412"></span>Facturación</span><span class="chip"><span class="sw" style="--c:#A16207"></span>Q4</span><button class="btn btn-ghost btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir</button></dd>
+    </dl>
+    <section>
+      <h3 class="block-title">Descripción</h3>
+      <div class="textarea">Renderizar las facturas en el servidor y guardarlas como adjuntos del espacio. El PDF lleva el número de factura, el periodo y el desglose por consumo que calcula la API de medición.</div>
+    </section>
+    <section>
+      <h3 class="block-title">Tiempo <button class="btn btn-secondary btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Registrar tiempo</button></h3>
+      <div style="display:flex;justify-content:space-between;font-size:var(--t-13);margin-bottom:6px"><span><b>6 h</b> de 16 h estimadas</span><span class="muted">38 %</span></div>
+      <div class="bar" aria-hidden="true"><span style="width:38%;--c:var(--text)"></span></div>
+      <ul class="log" style="margin-top:10px">
+        <li><span class="avatar">bl</span>blake<span class="muted">Plantilla y estilos de impresión</span><span class="push">3 h · 18 oct</span></li>
+        <li><span class="avatar">bl</span>blake<span class="muted">Cola de generación</span><span class="push">2 h · 17 oct</span></li>
+        <li><span class="avatar">av</span>avery<span class="muted">Revisión del desglose</span><span class="push">1 h · 16 oct</span></li>
+      </ul>
+    </section>
+    <section>
+      <h3 class="block-title">Notas enlazadas</h3>
+      <ul class="log">
+        <li><a class="link" href="notas.html">Arquitectura general</a><span class="push">editada hace 5 min</span></li>
+        <li><a class="link" href="notas.html">Acta del sprint 14</a><span class="push">editada el 14 oct</span></li>
+      </ul>
+    </section>
+    <p class="hint">Creado por avery el 3 oct · actualizado hace 2 h</p>
+  </div>
+</aside>
+</body>
+</html>
