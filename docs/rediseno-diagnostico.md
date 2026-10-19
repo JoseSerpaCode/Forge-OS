@@ -429,7 +429,7 @@ esta identidad, en claro y oscuro.
 - Al arrastrar, la tarjeta se inclina 1° y proyecta sombra. Es el único
   movimiento de la pantalla.
 
-**Logo — el contraste de herrero.**
+**Logo — el contraste de herrero.** *(Sustituido: las propuestas de logo nuevo, con «Fragua» como recomendada, están en `docs/rediseno/logo.html`.)*
 
 - **Emblema:** un cartucho rectangular de proporción 5:3 con las cuatro
   esquinas **achaflanadas** (corte a 45°, de 1/6 de la altura). Es la silueta
