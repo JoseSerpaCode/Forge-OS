@@ -20,7 +20,7 @@ test('no lista atajos que el navegador intercepta, y está traducido', async ({ 
 
   await page.request.post('/api/lang', {
     form: { lang: 'es', current_path: '/' },
-    headers: { Origin: 'http://localhost:4322' },
+    headers: { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` },
   });
 
   const db = (await import('./test-utils')).getTestDb();

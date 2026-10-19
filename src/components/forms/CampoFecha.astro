@@ -1,0 +1,147 @@
+---
+/**
+ * Campo de fecha que escribe en el idioma de la aplicación.
+ *
+ * El `<input type="date">` nativo pinta la fecha con el idioma **del
+ * navegador**, no con el de la página: con Forge en español salía `mm/dd/yyyy`
+ * y no hay atributo que lo cambie. Aquí se escribe en un texto
+ * (`dd/mm/aaaa` en español) y el calendario nativo se abre con un botón.
+ *
+ * El `<input type="date">` sigue existiendo, oculto, con el `id` que se pase:
+ * es el que guarda el valor (`AAAA-MM-DD`) y el que dispara `change`. Así el
+ * código que ya leía `#modal-issue-due-date` o escuchaba su `change` sigue
+ * funcionando sin enterarse de que delante hay otro campo.
+ *
+ * El `<label for>` de quien lo use tiene que apuntar a `${id}-texto`, que es el
+ * campo que se ve y se escribe. Apuntar al oculto dejaría el campo visible sin
+ * nombre accesible.
+ */
+import { useTranslations } from '../../i18n/ui';
+import { patronFecha } from '../../lib/fechas';
+
+interface Props {
+  id: string;
+  value?: string;
+  /** Clases del campo de texto, para que se parezca a los demás del formulario. */
+  inputClass?: string;
+  class?: string;
+}
+
+const { id, value = '', inputClass = '', class: clase = '' } = Astro.props;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+const patron = patronFecha(lang);
+---
+<div class:list={['campo-fecha relative', clase]} data-lang={lang}>
+  <div class="flex items-stretch gap-1">
+    <input
+      type="text"
+      id={`${id}-texto`}
+      inputmode="numeric"
+      autocomplete="off"
+      placeholder={patron}
+      aria-describedby={`${id}-error`}
+      class:list={['campo-fecha-texto flex-1 min-w-0 font-mono', inputClass]}
+    />
+    <button
+      type="button"
+      class="campo-fecha-boton shrink-0 px-2.5 rounded-lg border border-forge-border/50 bg-forge-bg text-forge-muted hover:text-forge-accent-text hover:border-forge-secondary/50 transition-colors"
+      aria-label={t('date.open_calendar')}
+      title={t('date.open_calendar')}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+    </button>
+  </div>
+  {/* Fuera de la vista pero **pintado**: `showPicker()` falla sobre un
+      elemento con `display: none`, y el calendario se ancla a él, así que va
+      pegado al botón. */}
+  <input
+    type="date"
+    id={id}
+    value={value}
+    tabindex="-1"
+    aria-hidden="true"
+    class="campo-fecha-valor absolute right-0 bottom-0 w-px h-px opacity-0 pointer-events-none"
+  />
+  <p id={`${id}-error`} class="campo-fecha-error hidden mt-1 text-xs text-forge-error" role="alert">
+    {t('date.invalid').replace('{patron}', patron)}
+  </p>
+</div>
+
+<script>
+  import { leerFechaUsuario, fechaCorta } from '../../lib/fechas';
+
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!;
+
+  function montar(raiz: HTMLElement) {
+    if (raiz.dataset.montado) return;
+    raiz.dataset.montado = '1';
+
+    const lang = raiz.dataset.lang || 'en';
+    const texto = raiz.querySelector<HTMLInputElement>('.campo-fecha-texto')!;
+    const valor = raiz.querySelector<HTMLInputElement>('.campo-fecha-valor')!;
+    const boton = raiz.querySelector<HTMLButtonElement>('.campo-fecha-boton')!;
+    const error = raiz.querySelector<HTMLElement>('.campo-fecha-error')!;
+
+    const marcarError = (hay: boolean) => {
+      error.classList.toggle('hidden', !hay);
+      texto.setAttribute('aria-invalid', String(hay));
+    };
+    const pintar = () => {
+      texto.value = fechaCorta(descriptor.get!.call(valor), lang);
+      marcarError(false);
+    };
+
+    /**
+     * Quien ponga `valor.value = '2027-03-05'` desde fuera —el panel lo hace al
+     * abrir una tarea— tiene que ver la fecha en el texto. Un `set` no dispara
+     * ningún evento, así que se intercepta la propiedad de **este** elemento.
+     */
+    Object.defineProperty(valor, 'value', {
+      configurable: true,
+      get() { return descriptor.get!.call(this); },
+      set(v: string) { descriptor.set!.call(this, v); pintar(); },
+    });
+
+    const confirmar = () => {
+      const escrito = texto.value.trim();
+      const anterior = descriptor.get!.call(valor);
+      if (!escrito) {
+        marcarError(false);
+        if (anterior !== '') {
+          descriptor.set!.call(valor, '');
+          valor.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
+      const iso = leerFechaUsuario(escrito, lang);
+      // Una fecha mal escrita no se guarda ni se borra la buena: se avisa y se
+      // espera a que la corrijan.
+      if (!iso) { marcarError(true); return; }
+      descriptor.set!.call(valor, iso);
+      pintar();
+      if (iso !== anterior) valor.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    texto.addEventListener('change', confirmar);
+    texto.addEventListener('keydown', (e) => {
+      // Enter confirma la fecha sin enviar el formulario que la rodea.
+      if (e.key === 'Enter') { e.preventDefault(); confirmar(); }
+    });
+    // Lo que elige el calendario nativo llega por aquí, no por el `set`.
+    valor.addEventListener('change', pintar);
+    valor.addEventListener('input', pintar);
+
+    boton.addEventListener('click', () => {
+      try { valor.showPicker(); }
+      catch { texto.focus(); }
+    });
+
+    pintar();
+  }
+
+  const montarTodos = () => document.querySelectorAll<HTMLElement>('.campo-fecha').forEach(montar);
+  montarTodos();
+  // Los formularios que se pintan después (alta rápida, filas nuevas) llaman a esto.
+  (window as any).forgeMontarCamposFecha = montarTodos;
+</script>

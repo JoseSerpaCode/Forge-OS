@@ -29,6 +29,8 @@ function conEspacio() {
   db.prepare('INSERT OR IGNORE INTO workspaces (id, name, sys_tag, created_by) VALUES (?,?,?,?)')
     .run(crypto.randomUUID(), 'Capas', ESPACIO, yo.id);
   const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(ESPACIO) as any;
+  // El menú del sprint solo existe con los sprints encendidos.
+  db.prepare('UPDATE workspaces SET feat_sprints = 1 WHERE id = ?').run(ws.id);
   db.prepare("INSERT OR IGNORE INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?,?,'owner')")
     .run(ws.id, yo.id);
   return ws.id;

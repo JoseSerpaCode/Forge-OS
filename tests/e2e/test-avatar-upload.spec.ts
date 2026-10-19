@@ -42,7 +42,7 @@ test.describe('Avatar and Workspace Uploads', () => {
       headers: {
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
         'Cookie': `forge_session=${sessionCookie?.value}`,
-        'Origin': 'http://localhost:4322'
+        'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
       },
       data: payload
     });

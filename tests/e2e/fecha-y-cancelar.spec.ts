@@ -24,6 +24,10 @@ function conEspacio() {
   db.prepare('INSERT OR IGNORE INTO workspaces (id, name, sys_tag, created_by) VALUES (?,?,?,?)')
     .run(crypto.randomUUID(), 'Fecha y cancelar', ESPACIO, yo.id);
   const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(ESPACIO) as any;
+  // Con la medición de tiempo encendida el panel pide la tarea dos veces al
+  // abrirse (la segunda, tras cargar los registros de horas): es la carrera que
+  // fija la prueba de la fecha lenta. Apagada, solo hay una petición.
+  db.prepare('UPDATE workspaces SET feat_time = 1 WHERE id = ?').run(ws.id);
   db.prepare("INSERT OR IGNORE INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?,?,'owner')")
     .run(ws.id, yo.id);
   return { db, yo, ws };

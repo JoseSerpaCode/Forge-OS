@@ -55,7 +55,7 @@ test('crear un tipo propio y verlo en el tablero', async ({ page }) => {
   // El desplegable de nuevo ticket lo ofrece: si no, el tipo existe y no se
   // puede usar, que es peor que no existir.
   await page.goto(`/w/${ESPACIO}/board?sprint=backlog`);
-  await expect(page.locator('#new-issue-type option[value="incidencia"]')).toHaveCount(1);
+  await expect(page.locator('#nt-tipo option[value="incidencia"]')).toHaveCount(1);
 });
 
 test('la tarjeta pinta el nombre y el color del tipo', async ({ page }) => {
@@ -96,7 +96,8 @@ test('borrar un tipo en uso pregunta a dónde van los tickets', async ({ page })
   const modal = page.locator('#tipo-borrar-modal');
   await expect(modal).toBeVisible();
   // Con el número delante, no con un «puede que afecte a algunos tickets».
-  await expect(modal).toContainText(/1 ticket|tickets/);
+  // «tarea» desde que el tablero dejó de llamarlas «ticket».
+  await expect(modal).toContainText(/1 (ticket|task|tarea)|tickets|tasks|tareas/);
   await expect(modal).not.toContainText('error_code');
 
   // El que se borra no puede ser su propio destino.

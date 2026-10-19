@@ -10,7 +10,7 @@ import { getTestDb } from '../test-utils';
  * Ni el árbol, ni el editor, ni las dos páginas que los alojan tenían una sola
  * utilidad responsive.
  */
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 const ESPACIO = 'ws-kb-movil';
 
 async function entrar(page: any) {

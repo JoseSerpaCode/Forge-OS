@@ -12,7 +12,7 @@ import { getTestDb } from './test-utils';
  * Lo que se comprueba es lo que importa: que lo que sale del navegador es
  * mucho más pequeño que lo que se eligió.
  */
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 
 async function entrar(page: any) {
   await page.goto('/login');

@@ -17,7 +17,7 @@ test('el rechazo de una solicitud inexistente no filtra la fila', async ({ page 
   await page.waitForURL('**/');
 
   const res = await page.request.post('/api/friends/reject/no-existe-este-id', {
-    headers: { Origin: 'http://localhost:4322' },
+    headers: { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` },
   });
   expect(res.status()).toBe(404);
 

@@ -2,6 +2,9 @@
 import { useTranslations } from '../../i18n/ui';
 import { nombreVisible } from '../../lib/issueTypes';
 import LabelPicker from '../labels/LabelPicker.astro';
+import CampoFecha from '../forms/CampoFecha.astro';
+import { OPCIONES as PRIORIDADES } from '../../lib/prioridad';
+import type { Funciones } from '../../lib/funcionesEspacio';
 interface Props {
   sprints?: any[];
   currentSprintId?: string | null;
@@ -9,8 +12,11 @@ interface Props {
   labels?: Array<{ id: string; name: string; color: string }>;
   issueTypes?: Array<{ id: string; key: string; name: string; color: string; isBuiltin: boolean }>;
   sysTag?: string;
+  /** Propietario: ve el enlace para gestionar los tipos. */
+  canManageTypes?: boolean;
+  funciones?: Funciones;
 }
-const { sprints = [], currentSprintId = null, workspaceMembers = [], labels = [], issueTypes = [], sysTag = '' } = Astro.props;
+const { sprints = [], currentSprintId = null, workspaceMembers = [], labels = [], issueTypes = [], sysTag = '', canManageTypes = false, funciones = { sprints: false, tiempo: false, puntos: false } } = Astro.props;
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -67,11 +73,27 @@ const t = useTranslations(lang);
   <!-- Header -->
   <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-forge-border/30 flex flex-wrap justify-between items-center gap-y-2 bg-gradient-to-r from-forge-panel to-forge-bg sticky top-0 z-10">
     <div class="flex items-center gap-3 min-w-0">
-      <select id="modal-issue-type" aria-label={t('a11y.issue_type')} class="px-2 py-1 rounded-md text-[11px] font-bold tracking-wider bg-forge-bg/50 text-forge-text border border-forge-border/50 focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/50 focus:outline-none uppercase transition-all shadow-sm">
-        {issueTypes.map((ti) => (
-          <option value={ti.key}>{nombreVisible(ti, t)}</option>
-        ))}
-      </select>
+      {/* El selector de tipo, a tamaño de leer.
+          Era un desplegable de 11 px en mayúsculas forzadas; el punto de color
+          delante dice de un vistazo qué tipo es, como en la tarjeta. Los datos
+          de cada tipo viajan en `data-tipos` para que, al cambiarlo, la
+          tarjeta se repinte con el nombre y el color de verdad y no con la
+          clave cruda. */}
+      <span class="flex items-center gap-2 min-w-0">
+        <span id="modal-issue-type-dot" class="w-2.5 h-2.5 rounded-full shrink-0" aria-hidden="true"></span>
+        <select id="modal-issue-type" aria-label={t('a11y.issue_type')}
+          data-tipos={JSON.stringify(issueTypes.map((ti) => ({ key: ti.key, nombre: nombreVisible(ti, t), color: ti.color })))}
+          data-t-saved={t('issue.type_saved')}
+          data-t-error={t('issue.type_error')}
+          class="px-2 py-1 rounded-md text-sm font-semibold bg-forge-bg/50 text-forge-text border border-forge-border/50 focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/50 focus:outline-none transition-all shadow-sm">
+          {issueTypes.map((ti) => (
+            <option value={ti.key}>{nombreVisible(ti, t)}</option>
+          ))}
+        </select>
+        {canManageTypes && (
+          <a href={`/w/${sysTag}/settings#tipos-ticket`} class="hidden sm:inline text-xs text-forge-muted hover:text-forge-accent-text underline-offset-2 hover:underline whitespace-nowrap">{t('modal.manage_types')}</a>
+        )}
+      </span>
       <span id="modal-issue-id" class="font-mono text-[13px] text-forge-muted tracking-wide font-medium truncate">ID-XXX</span>
     </div>
     <div class="flex items-center gap-1.5 sm:gap-3 ml-auto">
@@ -153,16 +175,28 @@ const t = useTranslations(lang);
       </div>
     </div>
     
+    {/* Sprint, prioridad y puntos. El sprint y los puntos solo si el espacio
+        los usa: lo que no se usa no se pinta, ni deshabilitado. */}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      {funciones.sprints && (
       <div class="space-y-2">
         <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-sprint">{t('modal.sprint')}</label>
-        <select id="modal-issue-sprint" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+        <select id="modal-issue-sprint" data-t-error={t('issue.sprint_error')} class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
           <option value="backlog">{t('modal.backlog')}</option>
           {sprints.map((s: any) => (
             <option value={s.id}>{s.name}</option>
           ))}
         </select>
       </div>
+      )}
+      <div class="space-y-2">
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-priority">{t('priority.label')}</label>
+        <select id="modal-issue-priority" data-t-saved={t('priority.saved')} data-t-error={t('priority.error')}
+          class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+          {PRIORIDADES.map((p) => <option value={p.valor} selected={p.valor === 'medium'}>{t(`priority.${p.nivel}`)}</option>)}
+        </select>
+      </div>
+      {funciones.puntos && (
       <div class="space-y-2 relative group/sp">
         <label for="modal-issue-points" class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex justify-between items-center cursor-help">
           <span>{t('modal.story_points')}</span>
@@ -170,11 +204,11 @@ const t = useTranslations(lang);
         </label>
         
         <div class="absolute bottom-full right-0 mb-2 w-64 bg-forge-panel border border-forge-border p-3 rounded-lg shadow-xl opacity-0 invisible group-hover/sp:opacity-100 group-hover/sp:visible transition-all z-50 text-[11px] text-forge-text font-normal normal-case leading-relaxed">
-          <p class="font-bold mb-1 text-forge-accent-text">Fibonacci Estimation (1, 2, 3, 5, 8...)</p>
+          <p class="font-bold mb-1 text-forge-accent-text">{t('modal.points_help_title')}</p>
           <ul class="space-y-1 text-forge-muted">
-            <li><strong class="text-forge-text">1-2:</strong> Trivial or very simple tasks.</li>
-            <li><strong class="text-forge-text">3-5:</strong> Standard tasks with known scope.</li>
-            <li><strong class="text-forge-text">8-13:</strong> Complex tasks or high uncertainty.</li>
+            <li><strong class="text-forge-text">1-2:</strong> {t('modal.points_help_1')}</li>
+            <li><strong class="text-forge-text">3-5:</strong> {t('modal.points_help_3')}</li>
+            <li><strong class="text-forge-text">8-13:</strong> {t('modal.points_help_8')}</li>
           </ul>
         </div>
         
@@ -185,11 +219,24 @@ const t = useTranslations(lang);
           <input type="number" id="modal-issue-points" value="0" min="0" class="w-full bg-forge-bg border border-forge-border/50 rounded-lg py-2.5 pl-9 pr-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm font-mono" />
         </div>
       </div>
+      )}
     </div>
-    
+
     <div class="space-y-2 relative">
-      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-due-date">{t('modal.due_date') || 'Due Date'}</label>
-      <input type="date" id="modal-issue-due-date" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm font-mono" />
+      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-due-date-texto">{t('modal.due_date')}</label>
+      <div class="grid grid-cols-[1fr_6.5rem] gap-2 items-start">
+        <CampoFecha id="modal-issue-due-date" inputClass="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm" />
+        {/* Texto y no `<input type="time">`: el nativo sale en 12 h con AM/PM
+            según el navegador, igual que la fecha salía en mm/dd. */}
+        <div>
+          <label class="sr-only" for="modal-issue-due-time">{t('modal.due_time')}</label>
+          <input type="text" id="modal-issue-due-time" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5"
+            aria-describedby="modal-issue-due-time-error"
+            data-t-invalid={t('modal.due_time_invalid')}
+            class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm font-mono text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm" />
+          <p id="modal-issue-due-time-error" class="hidden mt-1 text-xs text-forge-error" role="alert">{t('modal.due_time_invalid')}</p>
+        </div>
+      </div>
     </div>
 
     {/* Etiquetas. El mismo selector que usan las páginas: aquí la entidad
@@ -199,7 +246,27 @@ const t = useTranslations(lang);
       <LabelPicker sysTag={sysTag} entityType="issue" catalog={labels} class="modal-labels" />
     </div>
 
-    <!-- Time Tracking Section -->
+    {/* Apuntes vinculados: la tarea y lo que se apuntó en clase sobre ella.
+        Es lo que une el tablero con la base de conocimiento. */}
+    <div class="space-y-2" id="modal-apuntes"
+      data-sys-tag={sysTag}
+      data-t-none={t('notes.none')}
+      data-t-unlink={t('notes.unlink')}
+      data-t-error={t('notes.error')}
+      data-t-no-results={t('notes.no_results')}>
+      <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('notes.section')}</span>
+      <ul id="modal-apuntes-lista" class="space-y-1"></ul>
+      <div class="relative modal-apuntes-editar">
+        <label class="sr-only" for="modal-apuntes-buscar">{t('notes.search')}</label>
+        <input type="text" id="modal-apuntes-buscar" role="combobox" aria-expanded="false" aria-controls="modal-apuntes-resultados" aria-autocomplete="list" autocomplete="off"
+          placeholder={t('notes.link')}
+          class="w-full bg-forge-panel/40 border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 text-xs text-forge-text focus:border-forge-secondary outline-none" />
+        <ul id="modal-apuntes-resultados" role="listbox" class="hidden absolute z-30 top-full left-0 right-0 mt-1 bg-forge-panel border border-forge-border rounded-xl shadow-xl p-1 max-h-60 overflow-y-auto"></ul>
+      </div>
+    </div>
+
+    {/* Medición de tiempo: solo si el espacio la usa. */}
+    {funciones.tiempo && (
     <div class="bg-forge-panel/20 border border-forge-border/40 rounded-xl p-5 space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="text-[11px] font-bold text-forge-text uppercase tracking-widest flex items-center gap-2">
@@ -207,9 +274,9 @@ const t = useTranslations(lang);
           {t('modal.time_tracking')}
         </h3>
         <div class="flex items-center gap-2">
-          <button id="btn-stop-timer" class="hidden bg-red-500/10 hover:bg-red-500/20 text-forge-error text-xs font-bold px-3 py-1.5 rounded-lg border border-red-500/30 transition-all flex items-center gap-1.5 animate-pulse">
+          <button id="btn-stop-timer" data-t-stopping={t('card.timer_stopping')} class="hidden bg-red-500/10 hover:bg-red-500/20 text-forge-error text-xs font-bold px-3 py-1.5 rounded-lg border border-red-500/30 transition-all flex items-center gap-1.5 animate-pulse">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>
-            Stop Timer
+            {t('card.timer_stop_long')}
           </button>
           <button id="btn-log-work" class="bg-forge-secondary/10 hover:bg-forge-secondary/20 text-forge-accent-text text-xs font-bold px-3 py-1.5 rounded-lg border border-forge-secondary/30 transition-all flex items-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -234,11 +301,9 @@ const t = useTranslations(lang);
         </div>
       </div>
 
-      <!-- Work Logs Container -->
-      <div id="work-logs-container" class="space-y-2 mt-4 pt-4 border-t border-forge-border/30 hidden">
-        <!-- Work logs will be rendered here -->
-      </div>
+      <div id="work-logs-container" class="space-y-2 mt-4 pt-4 border-t border-forge-border/30 hidden"></div>
     </div>
+    )}
     
     {/* Archivos del ticket. **Una sola sección.**
 
@@ -304,8 +369,8 @@ const t = useTranslations(lang);
         <input type="number" id="log-work-hours" step="0.25" min="0.25" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-forge-text focus:border-forge-secondary focus:outline-none font-mono" placeholder="e.g. 2.5">
       </div>
       <div>
-        <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-1.5" for="log-work-date">{t('modal.date_worked')}</label>
-        <input type="date" id="log-work-date" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-forge-text focus:border-forge-secondary focus:outline-none font-mono" />
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-1.5" for="log-work-date-texto">{t('modal.date_worked')}</label>
+        <CampoFecha id="log-work-date" inputClass="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-forge-text focus:border-forge-secondary focus:outline-none" />
       </div>
     </div>
     <div>
@@ -323,6 +388,20 @@ const t = useTranslations(lang);
 <script>
   import { escaparHtml } from '../../lib/texto';
   import { fecha, vencida, diaDeCalendario } from '../../lib/fechas';
+  import { prioridadVisible } from '../../lib/prioridad';
+
+  /**
+   * La tarjeta de una tarea, por `data-issue-id`.
+   *
+   * Con el tablero agrupado por etiqueta, una tarea con dos etiquetas sale dos
+   * veces y su `id` del DOM lleva el carril: buscarla por `getElementById`
+   * ya no la encuentra. Esto devuelve la primera; quien necesite todas usa
+   * `tarjetasDe`.
+   */
+  const tarjetaDe = (issueId: string) =>
+    document.querySelector<HTMLElement>(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`);
+  const tarjetasDe = (issueId: string) =>
+    Array.from(document.querySelectorAll<HTMLElement>(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`));
   const closeBtn = document.getElementById('close-modal-btn');
   const modal = document.getElementById('issue-details-modal');
   const backdrop = document.getElementById('issue-details-backdrop');
@@ -354,32 +433,62 @@ const t = useTranslations(lang);
     });
   }
 
-  // Type change
+  /**
+   * Cambiar el tipo.
+   *
+   * Cuatro fallos que tenía: escribía en la insignia la **clave** («task»,
+   * «incidencia-critica») en vez del nombre y se llevaba por delante el punto
+   * de color; ponía clases `border-l-*` que ya no pinta nadie, así que la
+   * franja no cambiaba; no miraba la respuesta, y avisaba «Type saved» en
+   * inglés aunque el servidor lo hubiera rechazado. Al recargar se veía bien,
+   * y por eso parecía que funcionaba «a veces».
+   */
   const typeEl = document.getElementById('modal-issue-type') as HTMLSelectElement;
+  const typeDot = document.getElementById('modal-issue-type-dot');
+  const tiposDelEspacio: Array<{ key: string; nombre: string; color: string }> =
+    JSON.parse(typeEl?.dataset.tipos || '[]');
+  const tipoPorClave = (clave: string) => tiposDelEspacio.find((x) => x.key === clave);
+  const pintarPuntoTipo = () => {
+    if (typeDot) typeDot.style.background = tipoPorClave(typeEl.value)?.color ?? 'transparent';
+  };
+  let tipoAnterior = typeEl?.value ?? '';
+  // El tablero pone el valor al abrir una tarea; esto deja el punto y el
+  // «anterior» al día para poder volver atrás si el cambio falla.
+  typeEl?.addEventListener('tipo-sincronizar', () => { tipoAnterior = typeEl.value; pintarPuntoTipo(); });
+  typeEl?.addEventListener('focus', () => { tipoAnterior = typeEl.value; });
+
   typeEl?.addEventListener('change', async () => {
-    const idEl = document.getElementById('modal-issue-id');
-    const issueId = idEl?.getAttribute('data-full-id');
+    const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
     if (!issueId) return;
+    const clave = typeEl.value;
+    pintarPuntoTipo();
     try {
-      await fetch(`/api/issues/${issueId}`, {
+      const res = await fetch(`/api/issues/${issueId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: typeEl.value })
+        body: JSON.stringify({ type: clave })
       });
-      // Update DOM
-      const card = document.getElementById(issueId);
-      if (card) {
-        const badge = card.querySelector('.issue-type-badge');
-        if (badge) badge.textContent = typeEl.value;
-        // Update border color
-        card.classList.remove('border-l-red-500', 'border-l-green-500', 'border-l-blue-500');
-        if (typeEl.value === 'bug') card.classList.add('border-l-red-500');
-        else if (typeEl.value === 'story') card.classList.add('border-l-green-500');
-        else card.classList.add('border-l-blue-500');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const tipo = tipoPorClave(clave);
+      const card = tarjetaDe(issueId);
+      const badge = card?.querySelector<HTMLElement>('.issue-type-badge');
+      if (card && badge && tipo) {
+        badge.dataset.typeKey = clave;
+        badge.style.borderColor = `${tipo.color}55`;
+        const punto = badge.querySelector<HTMLElement>('[aria-hidden="true"]');
+        if (punto) punto.style.background = tipo.color;
+        const nombre = badge.querySelector<HTMLElement>('.text-forge-muted');
+        if (nombre) nombre.textContent = tipo.nombre;
+        card.style.setProperty('--franja', tipo.color);
       }
-      if (window.showToast) window.showToast('Type saved');
+      tipoAnterior = clave;
+      window.showToast?.(typeEl.dataset.tSaved || '');
     } catch (e) {
-      console.error(e);
+      console.error('cambiar tipo:', e);
+      typeEl.value = tipoAnterior;
+      pintarPuntoTipo();
+      window.showToast?.(typeEl.dataset.tError || '', true);
     }
   });
 
@@ -395,7 +504,7 @@ const t = useTranslations(lang);
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: titleEl.value })
       });
-      const card = document.getElementById(issueId);
+      const card = tarjetaDe(issueId);
       if (card) {
         const h4 = card.querySelector('h4');
         if (h4) h4.textContent = titleEl.value;
@@ -417,7 +526,7 @@ const t = useTranslations(lang);
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assignee_id: assigneeEl.value || null })
       });
-      const card = document.getElementById(issueId);
+      const card = tarjetaDe(issueId);
       if (card) {
         card.setAttribute('data-assignee-id', assigneeEl.value || '');
         const initialsDiv = card.querySelector('div[title]');
@@ -444,7 +553,7 @@ const t = useTranslations(lang);
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reporter_id: reporterEl.value === 'system' ? null : reporterEl.value })
       });
-      const card = document.getElementById(issueId);
+      const card = tarjetaDe(issueId);
       if (card) {
         card.setAttribute('data-reporter-id', reporterEl.value || '');
       }
@@ -614,14 +723,14 @@ const t = useTranslations(lang);
 
     picker.addEventListener('labels-changed', (e) => {
       const issueId = idActual();
-      const card = document.getElementById(issueId);
+      const card = tarjetaDe(issueId);
       if (!card) return;
       card.dataset.labels = JSON.stringify((e as CustomEvent).detail.labels || []);
       repintarTarjeta(issueId);
     });
 
     (window as any).forgeLabelsOpen = (issueId: string) => {
-      const card = document.getElementById(issueId);
+      const card = tarjetaDe(issueId);
       let etiquetas = [];
       try { etiquetas = JSON.parse(card?.dataset.labels || '[]'); } catch { etiquetas = []; }
       (picker as any).setEntity?.(issueId, etiquetas);
@@ -637,7 +746,7 @@ const t = useTranslations(lang);
    * cada cambio no es la respuesta: es una tarjeta, se puede repintar.
    */
   function repintarTarjeta(issueId: string) {
-    const card = document.getElementById(issueId);
+    const card = tarjetaDe(issueId);
     if (!card) return;
     const raizModal = document.getElementById('issue-details-modal');
 
@@ -666,9 +775,11 @@ const t = useTranslations(lang);
        * se corrigió una vez en `IssueCard.astro`; aquí quedó una copia suelta.
        *
        * Se llama a `fecha()` en vez de repetir las opciones a mano, que es
-       * exactamente cómo se llega a tener dos formatos.
+       * exactamente cómo se llega a tener dos formatos. La hora de entrega va
+       * detrás, como en la tarjeta.
        */
-      fechaEl.textContent = `${etiqueta} ${fecha(iso, raizModal?.dataset.lang || 'en')}`;
+      const hora = card.dataset.dueTime || '';
+      fechaEl.textContent = `${etiqueta} ${fecha(iso, raizModal?.dataset.lang || 'en')}${hora ? ` · ${hora}` : ''}`;
       // El rojo de vencida se recalcula aquí: si no, una fecha movida al futuro
       // seguiría pintada en rojo hasta recargar.
       //
@@ -676,7 +787,7 @@ const t = useTranslations(lang);
       // `new Date(iso + 'T00:00:00') < new Date()`, que da por vencida una
       // entrega de hoy desde la medianoche: la tarjeta salía en gris y, al
       // tocar cualquier campo del modal, pasaba a rojo.
-      const estaVencida = card.dataset.status !== 'done' && vencida(iso);
+      const estaVencida = card.dataset.status !== 'done' && vencida(iso, new Date(), hora);
       fechaEl.classList.toggle('text-forge-error', estaVencida);
       fechaEl.classList.toggle('font-bold', estaVencida);
       fechaEl.classList.toggle('text-forge-muted', !estaVencida);
@@ -758,7 +869,7 @@ const t = useTranslations(lang);
       // seguía enseñando el texto viejo hasta recargar, así que la conclusión
       // razonable era que no se había guardado —y a base de reintentos se
       // creaban duplicados.
-      const tarjeta = document.getElementById(issueId);
+      const tarjeta = tarjetaDe(issueId);
       if (tarjeta) {
         tarjeta.dataset.description = descEl.value;
         repintarTarjeta(issueId);
@@ -821,7 +932,7 @@ const t = useTranslations(lang);
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ due_date: dueDateEl.value || null })
       });
-      const card = document.getElementById(issueId);
+      const card = tarjetaDe(issueId);
       if (card) {
         card.setAttribute('data-due-date', dueDateEl.value || '');
         repintarTarjeta(issueId);
@@ -850,7 +961,7 @@ const t = useTranslations(lang);
     const issueId = idEl?.getAttribute('data-full-id');
     if (!issueId) return;
 
-    stopTimerBtn.textContent = 'Stopping...';
+    stopTimerBtn.textContent = stopTimerBtn.dataset.tStopping || '';
     try {
       const res = await fetch(`/api/issues/${issueId}/timer`, { method: 'DELETE' });
       const data = await res.json();
@@ -1130,14 +1241,23 @@ const t = useTranslations(lang);
         // nueva, así que la tarjeta y el campo acababan diciendo cosas
         // distintas.
         const dueDateInput = document.getElementById('modal-issue-due-date') as HTMLInputElement;
-        if (dueDateInput && document.activeElement !== dueDateInput) {
+        // Con `CampoFecha`, el que tiene el foco al escribir es el campo de
+        // texto visible (`-texto`), no el `<input type="date">` oculto que
+        // guarda el valor: hay que mirar los dos.
+        const editandoFecha = document.activeElement === dueDateInput
+          || document.activeElement?.id === 'modal-issue-due-date-texto';
+        if (dueDateInput && !editandoFecha) {
           dueDateInput.value = issue.due_date ? (diaDeCalendario(issue.due_date) ?? '') : '';
         }
+        const dueTimeInput = document.getElementById('modal-issue-due-time') as HTMLInputElement | null;
+        if (dueTimeInput && document.activeElement !== dueTimeInput) dueTimeInput.value = issue.due_time || '';
       }
 
-      // Check active timer
-      const timerRes = await fetch(`/api/issues/${issueId}/timer`);
-      if (timerRes.ok) {
+      // El cronómetro, solo si el espacio mide el tiempo: sin la sección, no
+      // hay botón que enseñar y la petición sobra.
+      const stopTimerBoton = document.getElementById('btn-stop-timer');
+      const timerRes = stopTimerBoton ? await fetch(`/api/issues/${issueId}/timer`) : null;
+      if (timerRes?.ok) {
         const timerData = await timerRes.json();
         const stopBtn = document.getElementById('btn-stop-timer');
         if (timerData.active) {
@@ -1431,7 +1551,7 @@ const t = useTranslations(lang);
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ story_points: parseInt(pointsEl.value) || 0 })
       });
-      const card = document.getElementById(issueId);
+      const card = tarjetaDe(issueId);
       if (card) {
         card.setAttribute('data-points', pointsEl.value);
         const spSpan = card.querySelector('.issue-type-badge')?.nextElementSibling;
@@ -1452,7 +1572,7 @@ const t = useTranslations(lang);
     
     // To move sprint, we need to preserve status. 
     // We will find the current status from the card in the DOM.
-    const card = document.getElementById(issueId);
+    const card = tarjetaDe(issueId);
     if (!card) return;
     const currentStatus = card.closest('.board-column')?.getAttribute('data-status') || 'todo';
     
@@ -1469,7 +1589,7 @@ const t = useTranslations(lang);
         // Reload page to reflect new sprint filtering
         window.location.reload();
       } else {
-        alert('Error changing sprint');
+        window.showToast?.(sprintEl.dataset.tError || '', true);
       }
     } catch (e) {
       console.error('Failed to update sprint', e);
@@ -1493,8 +1613,256 @@ const t = useTranslations(lang);
   // Duplicar parece inocuo —no toca el original— pero crea trabajo en el
   // tablero de los demás, y eso es exactamente lo que un rol de lectura no
   // debe poder hacer.
-  if (role !== 'viewer') {
+  //
+  // El rol lo dice el tablero (`data-can-edit`): `body[data-user-role]` vale
+  // «user» o «sysadmin» y nunca «viewer», así que con esa comprobación los
+  // botones salían a todo el mundo (el servidor sí lo denegaba).
+  if (document.querySelector<HTMLElement>('.kanban-container')?.dataset.canEdit === 'true') {
     deleteBtn?.classList.remove('hidden');
     document.getElementById('btn-duplicate-issue')?.classList.remove('hidden');
   }
+
+  // ── Prioridad ──────────────────────────────────────────────────────────────
+  //
+  // Existía en la base desde el principio y solo servía para ordenar: no había
+  // forma de ponerla. Al cambiarla, la bandera de la tarjeta se repinta sin
+  // recargar; si el servidor dice que no, el desplegable vuelve atrás.
+  (() => {
+    const sel = document.getElementById('modal-issue-priority') as HTMLSelectElement | null;
+    if (!sel) return;
+    let anterior = sel.value;
+    sel.addEventListener('prioridad-sincronizar', () => { anterior = sel.value; });
+    sel.addEventListener('focus', () => { anterior = sel.value; });
+    sel.addEventListener('change', async () => {
+      const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
+      if (!issueId) return;
+      const valor = sel.value;
+      try {
+        const res = await fetch(`/api/issues/${issueId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ priority: valor }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        anterior = valor;
+        const etiqueta = sel.selectedOptions[0]?.textContent || '';
+        const nombre = document.querySelector('label[for="modal-issue-priority"]')?.textContent || '';
+        tarjetasDe(issueId).forEach((card) => {
+          card.dataset.priority = valor;
+          card.querySelector('.card-priority')?.remove();
+          const visible = prioridadVisible(valor);
+          if (visible.nivel === 'normal') return;
+          const marca = document.createElement('span');
+          marca.className = `card-priority flex items-center gap-1 text-[10px] font-bold ${visible.clase}`;
+          marca.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg>';
+          const sr = document.createElement('span');
+          sr.className = 'sr-only';
+          sr.textContent = `${nombre}:`;
+          marca.append(sr, document.createTextNode(etiqueta));
+          card.querySelector('.issue-type-badge')?.after(marca);
+        });
+        window.showToast?.(sel.dataset.tSaved || '');
+      } catch (e) {
+        console.error('cambiar prioridad:', e);
+        sel.value = anterior;
+        window.showToast?.(sel.dataset.tError || '', true);
+      }
+    });
+  })();
+
+  // ── Hora de entrega ────────────────────────────────────────────────────────
+  //
+  // `HH:MM` de pared, sin zona. Admite «18», «1800» o «18.00» y lo deja como
+  // «18:00»; lo que no sea una hora no se guarda y se avisa.
+  (() => {
+    const campo = document.getElementById('modal-issue-due-time') as HTMLInputElement | null;
+    const error = document.getElementById('modal-issue-due-time-error');
+    if (!campo) return;
+    const normalizar = (v: string) => {
+      const limpio = v.trim().replace(/[.h]/gi, ':');
+      if (!limpio) return '';
+      const m = /^(\d{1,2})(?::?(\d{2}))?$/.exec(limpio);
+      if (!m) return null;
+      const h = Number(m[1]), min = Number(m[2] ?? 0);
+      if (h > 23 || min > 59) return null;
+      return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    };
+    campo.addEventListener('change', async () => {
+      const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
+      if (!issueId) return;
+      const hora = normalizar(campo.value);
+      const malo = hora === null;
+      error?.classList.toggle('hidden', !malo);
+      campo.setAttribute('aria-invalid', String(malo));
+      if (malo) return;
+      campo.value = hora;
+      try {
+        const res = await fetch(`/api/issues/${issueId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ due_time: hora || null }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        tarjetasDe(issueId).forEach((card) => { card.dataset.dueTime = hora; });
+        repintarTarjeta(issueId);
+      } catch (e) {
+        console.error('hora de entrega:', e);
+        window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      }
+    });
+  })();
+
+  // ── Apuntes vinculados ─────────────────────────────────────────────────────
+  (() => {
+    const raizApuntes = document.getElementById('modal-apuntes');
+    const lista = document.getElementById('modal-apuntes-lista');
+    const buscar = document.getElementById('modal-apuntes-buscar') as HTMLInputElement | null;
+    const resultados = document.getElementById('modal-apuntes-resultados');
+    if (!raizApuntes || !lista || !buscar || !resultados) return;
+    const sysTagApuntes = raizApuntes.dataset.sysTag;
+    const textoErrorApuntes = raizApuntes.dataset.tError || '';
+    // El rol del espacio lo sabe el tablero. `body[data-user-role]` no sirve:
+    // dice «user» o «sysadmin», nunca «viewer».
+    const soloLectura = document.querySelector<HTMLElement>('.kanban-container')?.dataset.canEdit !== 'true';
+    if (soloLectura) raizApuntes.querySelector('.modal-apuntes-editar')?.remove();
+    let tareaActual = '';
+    let vinculados: Array<{ id: string; title: string }> = [];
+
+    const pintar = () => {
+      lista.replaceChildren();
+      if (vinculados.length === 0) {
+        const vacio = document.createElement('li');
+        vacio.className = 'text-xs text-forge-muted';
+        vacio.textContent = raizApuntes.dataset.tNone || '';
+        lista.append(vacio);
+        return;
+      }
+      for (const p of vinculados) {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-2 text-sm';
+        const a = document.createElement('a');
+        a.href = `/w/${sysTagApuntes}/p/${encodeURIComponent(p.id)}`;
+        a.className = 'text-forge-text hover:text-forge-accent-text hover:underline underline-offset-2 truncate';
+        a.textContent = p.title || '—';
+        li.append(a);
+        if (!soloLectura) {
+          const quitar = document.createElement('button');
+          quitar.type = 'button';
+          quitar.className = 'shrink-0 text-forge-muted hover:text-forge-error text-xs px-1';
+          quitar.setAttribute('aria-label', (raizApuntes.dataset.tUnlink || '').replace('{titulo}', p.title));
+          quitar.textContent = '×';
+          quitar.addEventListener('click', () => cambiar('DELETE', p.id));
+          li.append(quitar);
+        }
+        lista.append(li);
+      }
+    };
+
+    const actualizarContador = () => {
+      tarjetasDe(tareaActual).forEach((card) => {
+        let marca = card.querySelector('.card-notes');
+        if (vinculados.length === 0) { marca?.remove(); return; }
+        if (!marca) {
+          marca = document.createElement('span');
+          marca.className = 'card-notes flex items-center gap-1 text-[10px] text-forge-muted';
+          card.querySelector('.issue-type-badge')?.parentElement?.append(marca);
+        }
+        marca.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        marca.append(document.createTextNode(String(vinculados.length)));
+      });
+    };
+
+    async function cargar() {
+      if (!tareaActual) return;
+      const res = await fetch(`/api/issues/${tareaActual}/linked-pages`);
+      vinculados = res.ok ? await res.json() : [];
+      pintar();
+    }
+
+    async function cambiar(metodo: 'POST' | 'DELETE', pageId: string) {
+      try {
+        const res = await fetch(`/api/issues/${tareaActual}/linked-pages`, {
+          method: metodo,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ page_id: pageId }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await cargar();
+        actualizarContador();
+      } catch (e) {
+        console.error('apuntes:', e);
+        window.showToast?.(textoErrorApuntes, true);
+      }
+    }
+
+    let activo = -1;
+    let opciones: Array<{ id: string; title: string }> = [];
+    const cerrar = () => {
+      resultados.classList.add('hidden');
+      buscar.setAttribute('aria-expanded', 'false');
+      buscar.removeAttribute('aria-activedescendant');
+      activo = -1;
+    };
+    const resaltar = (i: number) => {
+      activo = i;
+      resultados.querySelectorAll('[role="option"]').forEach((el, k) => {
+        el.setAttribute('aria-selected', String(k === i));
+        el.classList.toggle('bg-forge-bg', k === i);
+      });
+      if (i >= 0) buscar.setAttribute('aria-activedescendant', `apunte-op-${i}`);
+    };
+    let temporizador: ReturnType<typeof setTimeout> | undefined;
+    buscar.addEventListener('input', () => {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(async () => {
+        const res = await fetch(`/api/w/${sysTagApuntes}/pages/search?q=${encodeURIComponent(buscar.value)}`);
+        const todas: Array<{ id: string; title: string }> = res.ok ? await res.json() : [];
+        opciones = todas.filter((p) => !vinculados.some((v) => v.id === p.id));
+        resultados.replaceChildren();
+        if (opciones.length === 0) {
+          const li = document.createElement('li');
+          li.className = 'px-2 py-1.5 text-xs text-forge-muted';
+          li.textContent = raizApuntes.dataset.tNoResults || '';
+          resultados.append(li);
+        }
+        opciones.forEach((p, i) => {
+          const li = document.createElement('li');
+          li.id = `apunte-op-${i}`;
+          li.setAttribute('role', 'option');
+          li.setAttribute('aria-selected', 'false');
+          li.className = 'px-2 py-1.5 rounded-lg text-sm text-forge-text cursor-pointer hover:bg-forge-bg truncate';
+          li.textContent = p.title || '—';
+          li.addEventListener('mousedown', (e) => { e.preventDefault(); elegir(i); });
+          resultados.append(li);
+        });
+        resultados.classList.remove('hidden');
+        buscar.setAttribute('aria-expanded', 'true');
+        resaltar(-1);
+      }, 150);
+    });
+    const elegir = (i: number) => {
+      const p = opciones[i];
+      if (!p) return;
+      buscar.value = '';
+      cerrar();
+      cambiar('POST', p.id);
+    };
+    buscar.addEventListener('keydown', (e) => {
+      if (resultados.classList.contains('hidden')) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); resaltar(Math.min(activo + 1, opciones.length - 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); resaltar(Math.max(activo - 1, 0)); }
+      else if (e.key === 'Enter' && activo >= 0) { e.preventDefault(); elegir(activo); }
+      else if (e.key === 'Escape') { e.stopPropagation(); cerrar(); }
+    });
+    buscar.addEventListener('blur', () => setTimeout(cerrar, 100));
+
+    (window as any).forgeApuntesOpen = (issueId: string) => {
+      tareaActual = issueId;
+      vinculados = [];
+      buscar.value = '';
+      cerrar();
+      lista.replaceChildren();
+      cargar();
+    };
+  })();
 </script>

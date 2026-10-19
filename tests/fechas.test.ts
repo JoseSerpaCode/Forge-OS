@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deSQLite, fecha, relativo, hoyLocal, vencida } from '../src/lib/fechas';
+import { deSQLite, fecha, relativo, hoyLocal, vencida, patronFecha, leerFechaUsuario, fechaCorta } from '../src/lib/fechas';
 
 /**
  * El desfase que veía el usuario.
@@ -91,5 +91,56 @@ describe('vencimientos', () => {
     const nocheEnBogota = new Date(2026, 7, 17, 21, 0, 0); // 17 de agosto, local
     expect(hoyLocal(nocheEnBogota)).toBe('2026-08-17');
     expect(vencida('2026-08-17', nocheEnBogota)).toBe(false);
+  });
+});
+
+describe('fechas que escribe una persona', () => {
+  it('el orden lo da el idioma de la aplicación, no el del navegador', () => {
+    expect(patronFecha('es')).toBe('dd/mm/aaaa');
+    expect(patronFecha('en')).toBe('mm/dd/yyyy');
+  });
+
+  it('el mismo texto es otra fecha en otro idioma', () => {
+    expect(leerFechaUsuario('05/03/2027', 'es')).toBe('2027-03-05');
+    expect(leerFechaUsuario('05/03/2027', 'en')).toBe('2027-05-03');
+  });
+
+  it('admite cifras sueltas, otros separadores y años de dos cifras', () => {
+    expect(leerFechaUsuario('5-3-27', 'es')).toBe('2027-03-05');
+    expect(leerFechaUsuario('5.3.2027', 'es')).toBe('2027-03-05');
+  });
+
+  it('una fecha imposible es null, no el día que la desborda', () => {
+    expect(leerFechaUsuario('31/02/2027', 'es')).toBeNull();
+    expect(leerFechaUsuario('29/02/2027', 'es')).toBeNull();
+    expect(leerFechaUsuario('29/02/2028', 'es')).toBe('2028-02-29');
+    expect(leerFechaUsuario('12/13/2027', 'es')).toBeNull();
+    expect(leerFechaUsuario('mañana', 'es')).toBeNull();
+    expect(leerFechaUsuario('', 'es')).toBeNull();
+  });
+
+  it('ida y vuelta', () => {
+    expect(fechaCorta('2027-03-05', 'es')).toBe('05/03/2027');
+    expect(fechaCorta('2027-03-05', 'en')).toBe('03/05/2027');
+    expect(fechaCorta('2027-03-05 00:00:00', 'es')).toBe('05/03/2027');
+    expect(fechaCorta(null, 'es')).toBe('');
+    expect(leerFechaUsuario(fechaCorta('2027-11-22', 'es'), 'es')).toBe('2027-11-22');
+  });
+});
+
+describe('vencimientos con hora', () => {
+  it('con hora vence en ese minuto, no al día siguiente', () => {
+    const a1800 = new Date(2026, 9, 24, 18, 0, 0);
+    const a1801 = new Date(2026, 9, 24, 18, 1, 0);
+    expect(vencida('2026-10-24', a1800, '18:00')).toBe(false);
+    expect(vencida('2026-10-24', a1801, '18:00')).toBe(true);
+  });
+  it('sin hora, la de hoy no vence hasta mañana', () => {
+    expect(vencida('2026-10-24', new Date(2026, 9, 24, 23, 59, 0), null)).toBe(false);
+    expect(vencida('2026-10-24', new Date(2026, 9, 25, 0, 1, 0), null)).toBe(true);
+  });
+  it('una hora de otro día no cambia nada', () => {
+    expect(vencida('2026-10-25', new Date(2026, 9, 24, 23, 0, 0), '08:00')).toBe(false);
+    expect(vencida('2026-10-23', new Date(2026, 9, 24, 1, 0, 0), '23:00')).toBe(true);
   });
 });

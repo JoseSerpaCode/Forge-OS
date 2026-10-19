@@ -18,7 +18,7 @@ import { getTestDb } from './test-utils';
  */
 
 const PW = process.env.TEST_PASSWORD || 'LocalDevPass123!';
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 
 async function entrar(page: any, usuario: string) {
   await page.goto('/login');

@@ -5,6 +5,7 @@ import Sidebar from '../components/layout/Sidebar.astro';
 import BottomNav from '../components/layout/BottomNav.astro';
 import Footer from '../components/layout/Footer.astro';
 import GuestBanner from '../components/layout/GuestBanner.astro';
+import NuevaTarea from '../components/jira/NuevaTarea.astro';
 import { useTranslations } from '../i18n/ui';
 
 interface Props {
@@ -152,6 +153,9 @@ Astro.response.headers.set('Pragma', 'no-cache');
   </head>
   <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-dvh overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin}>
     <Sidebar workspaceId={workspaceId} workspaceName={workspaceName} />
+    {/* El alta de tareas, en toda página de un espacio: `C` funciona también
+        desde los apuntes. Solo se pinta para quien puede crear. */}
+    {workspaceId && <NuevaTarea workspaceId={workspaceId} />}
     <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity opacity-0 backdrop-blur-sm max-md:backdrop-blur-none cursor-pointer"></div>
     <div class="flex-1 flex flex-col min-w-0">
       <TopBar title={title} workspaceName={workspaceName} />
@@ -170,11 +174,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
     </div>
     
     <!-- Global UI Components -->
-    <div id="forge-toast" role="status" aria-live="polite" aria-atomic="true" class="fixed bottom-6 right-6 bg-forge-panel/95 backdrop-blur-md max-md:backdrop-blur-none border border-forge-border/50 text-forge-text px-6 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] transform translate-y-20 opacity-0 transition-all duration-400 ease-out z-[100] flex items-center gap-4">
+    <div id="forge-toast" role="status" aria-live="polite" aria-atomic="true" class="pointer-events-none fixed bottom-6 right-6 bg-forge-panel/95 backdrop-blur-md max-md:backdrop-blur-none border border-forge-border/50 text-forge-text px-6 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] transform translate-y-20 opacity-0 transition-all duration-400 ease-out z-[100] flex items-center gap-4">
       <span id="forge-toast-icon" aria-hidden="true" class="text-forge-accent-text flex-shrink-0 bg-forge-secondary/10 p-1.5 rounded-full">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
       </span>
       <span id="forge-toast-msg" class="text-sm font-semibold tracking-wide"></span>
+      {/* «Deshacer» y similares. Escondido salvo que el aviso traiga una acción. */}
+      <button type="button" id="forge-toast-action" class="hidden shrink-0 text-sm font-bold text-forge-accent-text hover:underline underline-offset-2"></button>
     </div>
 
 
@@ -280,21 +286,46 @@ Astro.response.headers.set('Pragma', 'no-cache');
     </script>
 
     <script is:inline>
-      window.showToast = function(msg, type = false) {
+      /**
+       * `opciones.accion` + `opciones.alPulsar` añaden un botón al aviso
+       * («Deshacer»). Con acción, el aviso dura más: ocho segundos para
+       * arrepentirse, no los cuatro de un aviso que solo informa.
+       *
+       * El temporizador se guarda y se reinicia: sin eso, un aviso que llegaba
+       * dos segundos después de otro se escondía a los dos segundos, con el
+       * temporizador del primero.
+       */
+      let temporizadorAviso = null;
+      window.showToast = function(msg, type = false, opciones = null) {
         const toast = document.getElementById('forge-toast');
         const text = document.getElementById('forge-toast-msg');
+        const accion = document.getElementById('forge-toast-action');
         if (toast && text) {
           text.textContent = msg;
+          if (accion) {
+            const hay = !!(opciones && opciones.accion && opciones.alPulsar);
+            accion.classList.toggle('hidden', !hay);
+            accion.textContent = hay ? opciones.accion : '';
+            accion.onclick = hay ? () => {
+              accion.onclick = null;
+              toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+              opciones.alPulsar();
+            } : null;
+          }
           const isError = type === true || type === 'error';
           if (isError) {
              toast.classList.replace('border-forge-secondary', 'border-red-500');
           } else {
              toast.classList.replace('border-red-500', 'border-forge-secondary');
           }
-          toast.classList.remove('translate-y-20', 'opacity-0');
-          setTimeout(() => {
-            toast.classList.add('translate-y-20', 'opacity-0');
-          }, 4000);
+          toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+          clearTimeout(temporizadorAviso);
+          const ms = (opciones && opciones.ms) || (opciones && opciones.accion ? 8000 : 4000);
+          temporizadorAviso = setTimeout(() => {
+            // Escondido no basta: con opacidad 0 el botón seguía ahí, pulsable.
+            toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            if (accion) accion.onclick = null;
+          }, ms);
         }
       };
 
@@ -370,12 +401,12 @@ Astro.response.headers.set('Pragma', 'no-cache');
         }
 
 
-        // 'c' to quickly create issue if button exists
-        if (e.key === 'c' || e.key === 'C') {
-          const newIssueBtn = document.getElementById('btn-new-issue');
-          if (newIssueBtn) {
+        // `C` abre el alta de tareas en cualquier página de un espacio, no solo
+        // en el tablero. Sin modificadores: Ctrl+C sigue siendo copiar.
+        if ((e.key === 'c' || e.key === 'C') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          if (window.forgeNuevaTarea) {
             e.preventDefault();
-            newIssueBtn.click();
+            window.forgeNuevaTarea();
           }
         }
         

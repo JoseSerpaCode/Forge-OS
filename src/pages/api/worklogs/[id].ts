@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import { funciones, funcionApagada } from '../../../lib/funcionesEspacio';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import crypto from 'crypto';
 
@@ -17,6 +18,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 
   const access = checkWorkspaceAccess(user.id, user.is_sysadmin, log.workspace_id, 'editor');
   if (!access.granted) return new Response('Forbidden', { status: 403 });
+  // Borrar un registro sí se deja con el tiempo apagado: es limpiar.
+  if (!funciones(log.workspace_id).tiempo) return funcionApagada('tiempo');
 
   // Only the author or a workspace owner can edit the log
   if (log.user_id !== user.id && access.role !== 'owner' && user.is_sysadmin !== 1) {

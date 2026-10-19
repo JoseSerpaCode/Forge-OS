@@ -54,8 +54,8 @@ test('el nombre nuevo de un tipo de fábrica llega al tablero y al modal', async
   await expect(tarjeta.locator('.issue-type-badge')).toContainText('Incidencia');
 
   // 2. El desplegable del modal de crear.
-  await expect(page.locator('#new-issue-type option').first()).toHaveText('Incidencia');
+  await expect(page.locator('#nt-tipo option').first()).toHaveText('Incidencia');
 
   // Y lo que no puede romperse: los que nadie tocó siguen traduciéndose.
-  await expect(page.locator('#new-issue-type')).toContainText('Bug');
+  await expect(page.locator('#nt-tipo')).toContainText('Bug');
 });

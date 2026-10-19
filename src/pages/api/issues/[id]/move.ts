@@ -3,7 +3,9 @@ import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
 import { ForgeEvents } from '../../../../lib/automations';
 import crypto from 'crypto';
-import { finalizeIssueSessions } from './timer';
+import { finalizeIssueSessions } from '../../../../lib/sesionesTiempo';
+import { SET_DONE_AT } from '../../../../lib/IssueService';
+import { funciones } from '../../../../lib/funcionesEspacio';
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   const issueId = params.id as string;
@@ -44,8 +46,12 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     // Encontrar vecinos en el nuevo grupo
     let neighborsQuery = `SELECT id, position FROM issues WHERE workspace_id = ? AND status = ?`;
     let params: any[] = [oldIssue.workspace_id, status];
-    
-    if (newSprintId) {
+
+    // Sin sprints, el tablero enseña todas las tareas juntas: los vecinos son
+    // los de toda la columna, no los del sprint al que la tarea perteneció.
+    if (!funciones(oldIssue.workspace_id).sprints) {
+      // sin filtro de sprint
+    } else if (newSprintId) {
       neighborsQuery += ` AND sprint_id = ?`;
       params.push(newSprintId);
     } else {
@@ -84,8 +90,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     }
     
     // Update issue
-    let sql = 'UPDATE issues SET position = ?, status = ?, updated_at = CURRENT_TIMESTAMP';
-    let updateParams: any[] = [finalPosition, status];
+    let sql = `UPDATE issues SET position = ?, status = ?, updated_at = CURRENT_TIMESTAMP, ${SET_DONE_AT}`;
+    let updateParams: any[] = [finalPosition, status, status];
     
     if (sprint_id !== undefined) {
       sql += ', sprint_id = ?';

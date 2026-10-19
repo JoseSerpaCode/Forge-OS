@@ -3,11 +3,36 @@ import { checkWorkspaceAccess } from '../lib/guard';
 import type { Issue } from '../types/db';
 import { NotificationService } from './NotificationService';
 import crypto from 'crypto';
-import { finalizeIssueSessions } from '../pages/api/issues/[id]/timer';
+import fs from 'fs';
+import path from 'path';
+import { STORAGE_DIR } from './storage';
+import { finalizeIssueSessions } from './sesionesTiempo';
 import { ApiError } from './errors';
 import { escaparLike } from './texto';
 
 export { ApiError } from './errors';
+import { esPrioridad } from './prioridad';
+import { esPaginaDelEspacio, vincular } from './apuntes';
+
+/**
+ * El fragmento de `SET` que mantiene `done_at` al cambiar el estado.
+ *
+ * Entrar en Hecho pone la hora; quedarse en Hecho no la toca (editar una tarea
+ * terminada no la vuelve «recién terminada»); salir de Hecho la borra. Dentro
+ * de un `UPDATE`, `status` es el valor **anterior**, que es justo lo que hace
+ * falta para distinguir «entra» de «ya estaba».
+ *
+ * Lo usan los dos caminos que cambian el estado —`update()` y `move.ts`—. Si
+ * hubiera un tercero, tiene que usar esto: con dos copias, una acabaría
+ * olvidándose de borrar la fecha al reabrir.
+ *
+ * Lleva un parámetro: el estado nuevo.
+ */
+export const SET_DONE_AT =
+  "done_at = CASE WHEN ? = 'done' THEN (CASE WHEN status = 'done' AND done_at IS NOT NULL THEN done_at ELSE CURRENT_TIMESTAMP END) ELSE NULL END";
+
+/** `HH:MM` válido o vacío. La `CHECK` de la base también lo exige; esto da un 400 en vez de un 500. */
+export const esHora = (v: unknown) => v === null || v === '' || (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v));
 
 export class IssueService {
   /**
@@ -39,7 +64,13 @@ export class IssueService {
     }
 
     // Whitelist allowed fields to prevent SQL injection via keys
-    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'sprint_id', 'position', 'due_date'];
+    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'sprint_id', 'position', 'due_date', 'due_time'];
+
+    // Validar antes de escribir: la `CHECK` de la base rechazaría lo mismo,
+    // pero con un 500 que no dice qué campo estaba mal.
+    if ('priority' in data && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
+    if ('due_time' in data && !esHora((data as any).due_time)) throw new ApiError(400, 'Invalid due_time');
+    if ((data as any).due_time === '') (data as any).due_time = null;
     const safeData: any = {};
     for (const key of Object.keys(data)) {
       if (allowedFields.includes(key)) {
@@ -52,9 +83,13 @@ export class IssueService {
 
     const setClause = keys.map(k => `${k} = ?`).join(', ');
     const values = Object.values(safeData);
-    
-    // Add updated_at
-    const finalClause = `${setClause}, updated_at = CURRENT_TIMESTAMP`;
+
+    // Add updated_at, y `done_at` si cambia el estado.
+    let finalClause = `${setClause}, updated_at = CURRENT_TIMESTAMP`;
+    if ('status' in safeData) {
+      finalClause += `, ${SET_DONE_AT}`;
+      values.push(safeData.status);
+    }
     values.push(issueId); // for WHERE id = ?
 
     db.prepare(`UPDATE issues SET ${finalClause} WHERE id = ?`).run(...values);
@@ -96,8 +131,43 @@ export class IssueService {
       throw new ApiError(403, access.error || 'Forbidden');
     }
 
-    db.prepare('DELETE FROM issues WHERE id = ?').run(issueId);
+    IssueService.borrarSinComprobar([issueId]);
     return { success: true };
+  }
+
+  /**
+   * Borrar tareas con lo que cuelga de ellas **sin clave foránea**.
+   *
+   * `DELETE FROM issues` a secas dejaba huérfanos: los adjuntos (`attachments`
+   * es polimórfica, `entity_type`/`entity_id`, sin clave foránea) con sus
+   * ficheros en disco, y los vínculos a archivos de Drive y a recursos. Lo que
+   * sí tiene clave foránea —etiquetas, registros de horas, subtareas, apuntes
+   * vinculados— cae en cascada.
+   *
+   * Los archivos de Drive **no** se borran: son del espacio y pueden estar en
+   * otras tareas. Se quita el vínculo, nada más.
+   *
+   * Sin comprobar permisos: quien llama ya lo hizo. Lo usan el botón «Eliminar»
+   * del panel y el borrado de un sprint con tareas que se descartan.
+   */
+  static borrarSinComprobar(ids: string[]) {
+    const ficheros: string[] = [];
+    db.transaction(() => {
+      for (const id of ids) {
+        const adjuntos = db.prepare("SELECT file_path FROM attachments WHERE entity_type = 'issue' AND entity_id = ?").all(id) as Array<{ file_path: string }>;
+        ficheros.push(...adjuntos.map((a) => a.file_path));
+        db.prepare("DELETE FROM attachments WHERE entity_type = 'issue' AND entity_id = ?").run(id);
+        db.prepare("DELETE FROM drive_file_links WHERE entity_type = 'issue' AND entity_id = ?").run(id);
+        db.prepare("DELETE FROM resource_links WHERE entity_type = 'issue' AND entity_id = ?").run(id);
+        db.prepare('DELETE FROM issues WHERE id = ?').run(id);
+      }
+    })();
+    // Los ficheros, después de confirmar: borrados no vuelven si la
+    // transacción fallara. Solo el nombre, nunca una ruta que venga de la base.
+    for (const ruta of ficheros) {
+      try { fs.unlinkSync(path.join(STORAGE_DIR, path.basename(ruta.replace('/api/storage/', '')))); }
+      catch (err) { console.error('borrar adjunto del disco:', err); }
+    }
   }
   static async create(data: Partial<Issue>, userId: string, isSysadmin: number) {
     if (!data.title || !data.workspace_id) throw new ApiError(400, 'Title and workspaceId are required');
@@ -117,6 +187,34 @@ export class IssueService {
       const isMember = db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(data.workspace_id, data.assignee_id);
       if (!isMember) throw new ApiError(400, 'Assignee is not a member of this workspace');
     }
+
+    /**
+     * Etiquetas, apuntes, prioridad y hora **al crear**.
+     *
+     * El formulario de alta se había quedado atrás: no dejaba poner etiquetas
+     * y había que crear la tarea y volver a abrirla. Se validan todas antes de
+     * escribir nada —una etiqueta o un apunte de otro espacio rechaza el alta
+     * entera— y se insertan en la misma transacción que la tarea, así que no
+     * puede quedar una tarea a medio etiquetar.
+     */
+    const extra = data as Partial<Issue> & { label_ids?: unknown; page_ids?: unknown };
+    const lista = (v: unknown, campo: string): string[] => {
+      if (v === undefined || v === null) return [];
+      if (!Array.isArray(v) || v.length > 20 || v.some((x) => typeof x !== 'string')) throw new ApiError(400, `Invalid ${campo}`);
+      return [...new Set(v as string[])];
+    };
+    const etiquetas = lista(extra.label_ids, 'label_ids');
+    const paginas = lista(extra.page_ids, 'page_ids');
+    for (const id of etiquetas) {
+      if (!db.prepare('SELECT 1 FROM labels WHERE id = ? AND workspace_id = ?').get(id, data.workspace_id)) {
+        throw new ApiError(400, 'Label not found in this workspace');
+      }
+    }
+    for (const id of paginas) {
+      if (!esPaginaDelEspacio(id, data.workspace_id)) throw new ApiError(400, 'Page not found in this workspace');
+    }
+    if (data.priority !== undefined && data.priority !== null && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
+    if (data.due_time !== undefined && !esHora(data.due_time)) throw new ApiError(400, 'Invalid due_time');
 
     const issueId = crypto.randomUUID();
     const status = 'todo';
@@ -142,10 +240,17 @@ export class IssueService {
     const estimadas = Number(data.estimated_hours);
     const horas = Number.isFinite(estimadas) && estimadas > 0 ? estimadas : 0;
 
-    db.prepare(`
-      INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, description, estimated_hours)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position, data.assignee_id || null, data.due_date || null, data.description || null, horas);
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, due_time, description, estimated_hours, priority)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position,
+        data.assignee_id || null, data.due_date || null, (data.due_date && data.due_time) || null, data.description || null, horas,
+        data.priority || 'medium');
+      const ponerEtiqueta = db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) VALUES (?, ?)');
+      for (const id of etiquetas) ponerEtiqueta.run(issueId, id);
+      for (const id of paginas) vincular(issueId, id, userId);
+    })();
 
     // Avisar a quien queda asignado **al crear**, no solo al editar después.
     //

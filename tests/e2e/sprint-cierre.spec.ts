@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { getTestDb } from './test-utils';
+import { encenderFunciones } from './helpers/funciones';
 
 /**
  * Cerrar un sprint con trabajo dentro, y volver al backlog.
@@ -32,6 +33,7 @@ test.beforeAll(async ({ browser }) => {
   });
   // 409 si ya existe de una corrida anterior: sirve igual.
   expect([200, 201, 409]).toContain(r.status());
+  encenderFunciones(ESPACIO);
   await page.close();
 });
 

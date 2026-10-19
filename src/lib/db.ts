@@ -1165,6 +1165,69 @@ const MIGRATIONS: Migration[] = [
       db.exec('CREATE INDEX IF NOT EXISTS idx_pages_orden ON pages(workspace_id, parent_page_id, position)');
     }
   },
+  {
+    version: 40,
+    description: 'workspaces: sprints, tiempo y puntos como funciones que se encienden',
+    run: () => {
+      // Apagar en vez de borrar.
+      //
+      // Forge se pensó para equipos con sprints, pero hay quien lo usa solo y
+      // para la universidad: los sprints, el cronómetro y los puntos le sobran.
+      // Quitarlos del código rompería a quien sí planifica así; apagarlos por
+      // espacio no rompe a nadie y no pierde nada —`sprint_id`, los registros de
+      // horas y los puntos se quedan en la base, solo se dejan de mirar—.
+      //
+      // Columnas y no un JSON: se leen con un `SELECT` normal, la `CHECK` las
+      // protege y se encuentran con grep.
+      const FUNCIONES = ['feat_sprints', 'feat_time', 'feat_points'];
+      for (const col of FUNCIONES) {
+        if (!hasColumn('workspaces', col)) {
+          db.exec(`ALTER TABLE workspaces ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0 CHECK (${col} IN (0, 1))`);
+        }
+      }
+      // Los espacios que ya existían encienden **solo lo que ya usaban**: nadie
+      // abre el tablero tras desplegar y descubre que le han escondido algo.
+      // Los nuevos nacen con todo apagado (el DEFAULT de arriba).
+      db.exec(`UPDATE workspaces SET feat_sprints = 1
+               WHERE EXISTS (SELECT 1 FROM sprints s WHERE s.workspace_id = workspaces.id)`);
+      db.exec(`UPDATE workspaces SET feat_time = 1
+               WHERE EXISTS (SELECT 1 FROM issues i WHERE i.workspace_id = workspaces.id
+                             AND (i.estimated_hours > 0 OR i.logged_hours > 0))
+                  OR EXISTS (SELECT 1 FROM time_tracking_sessions t JOIN issues i ON i.id = t.issue_id
+                             WHERE i.workspace_id = workspaces.id)`);
+      db.exec(`UPDATE workspaces SET feat_points = 1
+               WHERE EXISTS (SELECT 1 FROM issues i WHERE i.workspace_id = workspaces.id AND i.story_points > 0)`);
+    }
+  },
+  {
+    version: 41,
+    description: 'issues: done_at, cuándo se terminó',
+    run: () => {
+      // «Hecho» enseña las últimas que se terminaron, y para eso hay que saber
+      // cuándo. `updated_at` no vale: cambia también al editar la descripción
+      // de algo que se cerró hace un mes.
+      if (!hasColumn('issues', 'done_at')) db.exec('ALTER TABLE issues ADD COLUMN done_at DATETIME');
+      // Para lo ya terminado, `updated_at` es la mejor aproximación que hay:
+      // puede ser posterior al cierre si se editó después, nunca anterior.
+      db.exec("UPDATE issues SET done_at = updated_at WHERE status = 'done' AND done_at IS NULL");
+      db.exec('CREATE INDEX IF NOT EXISTS idx_issues_done ON issues(workspace_id, status, done_at DESC)');
+    }
+  },
+  {
+    version: 42,
+    description: 'issues: due_time, la hora de entrega',
+    run: () => {
+      // Columna aparte y **hora de pared**, sin zona.
+      //
+      // `due_date` guarda solo el día, y `lib/fechas.ts` lee las cadenas de
+      // SQLite como UTC. Meter la hora dentro haría que «viernes 18:00» en
+      // Bogotá se guardara como las 18:00 UTC y se pintara a las 13:00. Una
+      // entrega «a las 18:00» es a las 18:00 de quien la apunta.
+      if (!hasColumn('issues', 'due_time')) {
+        db.exec("ALTER TABLE issues ADD COLUMN due_time TEXT CHECK (due_time IS NULL OR due_time GLOB '[0-2][0-9]:[0-5][0-9]')");
+      }
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

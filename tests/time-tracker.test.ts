@@ -19,7 +19,8 @@ describe('Time Tracker Backend Logic', () => {
     // Create test environment
     db.prepare('INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(userId1, 'testuser1', 'hash');
     db.prepare('INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(userId2, 'testuser2', 'hash');
-    db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, ?, ?, ?)').run(wsId, 'Test WS', 'test_ws_timer', userId1);
+    db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by, feat_time) VALUES (?, ?, ?, ?, 1)').run(wsId, 'Test WS', 'test_ws_timer', userId1);
+    // El cronómetro es una función que se enciende por espacio; aquí se prueba encendida.
     db.prepare('INSERT INTO issues (id, workspace_id, type, title, reporter_id) VALUES (?, ?, ?, ?, ?)').run(issueId, wsId, 'task', 'Test Issue', userId1);
   });
 

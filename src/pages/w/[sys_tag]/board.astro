@@ -4,7 +4,9 @@ import KanbanBoard from '../../../components/jira/KanbanBoard.astro';
 import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
-import { deVarias, listar as listarEtiquetas } from '../../../lib/labels';
+import { listar as listarEtiquetas } from '../../../lib/labels';
+import { cargarTablero } from '../../../lib/tablero';
+import { funciones } from '../../../lib/funcionesEspacio';
 import { listar as listarTipos, nombreVisible } from '../../../lib/issueTypes';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
@@ -19,130 +21,65 @@ const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
 if (!acceso.ok) return Astro.redirect(acceso.redirigir);
 const workspace = acceso.ws;
 
-// Read sprint from URL
-const requestedSprintId = Astro.url.searchParams.get('sprint');
-let activeSprintId = null;
-let currentSprintObj = null;
-
-if (!Astro.url.search.includes('sprint=')) {
-  const savedSprint = Astro.cookies.get(`forge_last_sprint_${workspace.id}`)?.value;
-  if (savedSprint && savedSprint !== 'backlog') {
-    return Astro.redirect(`/w/${sys_tag}/board?sprint=${savedSprint}`);
-  }
-}
-
-// Sin sprint en la URL ni cookie, se abre el **sprint activo**, no el backlog.
-//
-// Antes caía en el backlog, que en un espacio bien llevado está casi siempre
-// vacío: la primera visita a un tablero con un sprint en marcha y doce issues
-// dentro mostraba «Tu tablero kanban está vacío». Es la peor primera impresión
-// posible, y además invitaba a crear un issue suelto fuera del sprint.
-//
-// Solo se aplica cuando no hay elección previa: si alguien pide el backlog a
-// propósito —o eligió otro sprint y quedó en la cookie— se respeta.
-let defaultSprintId: string | null = null;
-if (!Astro.url.search.includes('sprint=')) {
-  const active = db
-    .prepare("SELECT id FROM sprints WHERE workspace_id = ? AND status = 'active' ORDER BY rowid DESC LIMIT 1")
-    .get(workspace.id) as { id: string } | undefined;
-  if (active) defaultSprintId = active.id;
-}
-
-// IDOR Protection: Validate requested sprint belongs to this workspace
-if (requestedSprintId && requestedSprintId !== 'backlog') {
-  const sprintCheck = db.prepare('SELECT workspace_id, status FROM sprints WHERE id = ?').get(requestedSprintId) as any;
-  if (!sprintCheck || sprintCheck.workspace_id !== workspace.id) {
-    return new Response('Sprint Not Found', { status: 404 });
-  }
-  activeSprintId = requestedSprintId;
-  currentSprintObj = sprintCheck;
-} else if (defaultSprintId) {
-  activeSprintId = defaultSprintId;
-  currentSprintObj = db
-    .prepare('SELECT workspace_id, status FROM sprints WHERE id = ?')
-    .get(defaultSprintId) as any;
-}
-
-// Fetch all sprints for the dropdown
-const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace_id = ? ORDER BY start_date DESC, rowid DESC').all(workspace.id) as any[];
+const funcs = funciones(workspace.id);
 
 /**
- * Ordenar el tablero.
+ * El sprint que se mira, solo si el espacio usa sprints.
  *
- * Es una **vista**, no un cambio: se aplica en el `ORDER BY` de la consulta y
- * no toca `position`, que es el orden que la gente colocó a mano arrastrando
- * tarjetas. Reescribir `position` para «ordenar por prioridad» destruiría ese
- * trabajo, y volver a «manual» ya no devolvería nada porque no quedaría a qué
- * volver.
- *
- * La consecuencia hay que asumirla y decirla: con un orden que no es el manual,
- * **arrastrar no puede funcionar**. Soltar una tarjeta escribiría un `position`
- * que la vista ignora, así que volvería a su sitio sola y parecería que la
- * aplicación está rota. Con un orden activo se desactiva el arrastre y se
- * explica por qué.
- *
- * Cada orden se escribe **dos veces**, con y sin el prefijo de la tabla: uno va
- * en el `ROW_NUMBER() OVER (...)` que recorta a cien por columna, donde la
- * consulta tiene alias, y otro en el `ORDER BY` de fuera, donde ya no los hay.
- * Se escriben a mano en vez de reescribir el SQL con una expresión regular:
- * generar SQL a base de sustituciones es exactamente como se cuelan cosas donde
- * no deben.
- *
- * `NULLS LAST` a mano con `IS NULL`: SQLite ordena los nulos primero, y un
- * tablero ordenado por fecha de entrega que empieza por las tarjetas **sin**
- * fecha entierra justo lo que se buscaba.
+ * Con la función apagada no hay selector, ni cookie, ni filtro: el tablero
+ * enseña **todas** las tareas del espacio. Un `?sprint=` que llegue en un
+ * enlace viejo se ignora en vez de dar 404.
  */
-const PRIORIDAD_SQL = (c: string) =>
-  // `CASE` y no alfabético: 'high' va antes que 'low' en el diccionario, lo que
-  // dejaría lo urgente en medio de la columna.
-  `CASE ${c}priority WHEN 'highest' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 WHEN 'lowest' THEN 4 ELSE 2 END ASC`;
+let activeSprintId: string | null = null;
+let currentSprintObj: any = null;
+let sprints: any[] = [];
 
-const ORDENES: Record<string, (c: string) => string> = {
-  manual:   (c) => `${c}position ASC, ${c}id ASC`,
-  priority: (c) => `${PRIORIDAD_SQL(c)}, ${c}position ASC`,
-  due:      (c) => `${c}due_date IS NULL ASC, ${c}due_date ASC, ${c}position ASC`,
-  created:  (c) => `${c}created_at DESC, ${c}position ASC`,
-  updated:  (c) => `${c}updated_at DESC, ${c}position ASC`,
-  title:    (c) => `${c}title COLLATE NOCASE ASC`,
-  points:   (c) => `${c}story_points DESC, ${c}position ASC`,
-};
+if (funcs.sprints) {
+  const requestedSprintId = Astro.url.searchParams.get('sprint');
+  const savedSprint = Astro.cookies.get(`forge_last_sprint_${workspace.id}`)?.value;
+  if (!Astro.url.search.includes('sprint=')) {
+    if (savedSprint && savedSprint !== 'backlog') {
+      return Astro.redirect(`/w/${sys_tag}/board?sprint=${savedSprint}`);
+    }
+  }
 
-const ordenPedido = Astro.url.searchParams.get('sort') ?? 'manual';
-// Con `hasOwn` y no con `in`: `'toString' in ORDENES` es cierto por la cadena
-// de prototipos, y devolvería una función donde tiene que ir SQL.
-const ordenActivo = Object.hasOwn(ORDENES, ordenPedido) ? ordenPedido : 'manual';
-const ordenSQL = ORDENES[ordenActivo];
+  // Sin sprint en la URL ni cookie, se abre el **sprint activo**, no el
+  // backlog: en un espacio bien llevado el backlog está casi siempre vacío y
+  // la primera visita mostraba «Tu tablero kanban está vacío».
+  //
+  // Solo cuando no hay elección previa. La cookie `backlog` no redirigía, pero
+  // este bloque abría el sprint activo igualmente porque la URL seguía sin
+  // `sprint=`: elegir el backlog nunca se recordaba.
+  let defaultSprintId: string | null = null;
+  if (!Astro.url.search.includes('sprint=') && savedSprint !== 'backlog') {
+    const active = db
+      .prepare("SELECT id FROM sprints WHERE workspace_id = ? AND status = 'active' ORDER BY rowid DESC LIMIT 1")
+      .get(workspace.id) as { id: string } | undefined;
+    if (active) defaultSprintId = active.id;
+  }
 
-let issuesQuery = `
-  SELECT i.*, 
-         i.logged_hours,
-         u1.username as reporter_username, 
-         u1.avatar_url as reporter_avatar,
-         u2.username as assignee_username,
-         u2.avatar_url as assignee_avatar,
-         (SELECT started_at FROM time_tracking_sessions WHERE issue_id = i.id AND user_id = ?) as active_session_start,
-         ROW_NUMBER() OVER (PARTITION BY i.status ORDER BY ${ordenSQL('i.')}) AS rn
-  FROM issues i
-  LEFT JOIN users u1 ON i.reporter_id = u1.id
-  LEFT JOIN users u2 ON i.assignee_id = u2.id
-  WHERE i.workspace_id = ?
-`;
-const queryParams: any[] = [user.id, workspace.id];
+  // IDOR: el sprint pedido tiene que ser de este espacio.
+  if (requestedSprintId && requestedSprintId !== 'backlog') {
+    const sprintCheck = db.prepare('SELECT workspace_id, status FROM sprints WHERE id = ?').get(requestedSprintId) as any;
+    if (!sprintCheck || sprintCheck.workspace_id !== workspace.id) {
+      return new Response('Sprint Not Found', { status: 404 });
+    }
+    activeSprintId = requestedSprintId;
+    currentSprintObj = sprintCheck;
+  } else if (defaultSprintId) {
+    activeSprintId = defaultSprintId;
+    currentSprintObj = db.prepare('SELECT workspace_id, status FROM sprints WHERE id = ?').get(defaultSprintId) as any;
+  }
 
-if (activeSprintId) {
-  issuesQuery += ' AND i.sprint_id = ?';
-  queryParams.push(activeSprintId);
-} else {
-  issuesQuery += ' AND i.sprint_id IS NULL';
+  sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace_id = ? ORDER BY start_date DESC, rowid DESC').all(workspace.id) as any[];
 }
 
 /**
  * Filtro por etiqueta.
  *
- * Va en la consulta y no en el navegador porque el tablero solo trae cien
- * tarjetas por columna: filtrar en pantalla buscaría dentro de esas cien y
- * diría que no hay nada más, cuando lo que se busca puede estar entre las que
- * no llegaron. Se comprueba que la etiqueta sea **de este espacio** antes de
+ * Va en la consulta y no en el navegador porque el tablero no trae todas las
+ * tarjetas: filtrar en pantalla buscaría dentro de las que llegaron y diría que
+ * no hay más. Se comprueba que la etiqueta sea **de este espacio** antes de
  * usarla; si no lo es, se ignora en vez de fingir un tablero vacío.
  */
 const etiquetaPedida = Astro.url.searchParams.get('label');
@@ -151,98 +88,48 @@ const etiquetaFiltro = etiquetaPedida
       .get(etiquetaPedida, workspace.id) as any) ?? null
   : null;
 
-if (etiquetaFiltro) {
-  issuesQuery += ' AND EXISTS (SELECT 1 FROM issue_labels il WHERE il.issue_id = i.id AND il.label_id = ?)';
-  queryParams.push(etiquetaFiltro.id);
-}
+/** Un carril por etiqueta. En la URL, como el filtro: el enlace se puede pasar. */
+const agrupar = Astro.url.searchParams.get('group') === 'label';
 
-/**
- * Tope por columna.
- *
- * La consulta no tenía ninguno: pintaba **todos** los issues del sprint. Medido
- * en local, un backlog de 2.000 issues genera 5 MB de HTML en una sola carga —y
- * la tarjeta escribe la descripción dos veces, visible y en `data-description`,
- * de donde la lee el modal—. En la `e2-micro` de producción eso son dos
- * problemas: el proceso renderiza 5 MB con 1 GB de RAM y un núcleo compartido,
- * y el tier gratuito da **1 GB de egress al mes**, así que doscientas aperturas
- * del tablero se lo comen entero. Cloudflare no puede ayudar: es HTML privado
- * por usuario, no cacheable.
- *
- * El tope va **por columna** y no sobre el total: con un tope global, 300
- * issues en «Por hacer» dejarían «Hecho» vacío y el tablero mentiría sobre el
- * estado del sprint. `ROW_NUMBER() OVER (PARTITION BY status)` reparte el
- * presupuesto entre las cuatro, así que el techo real son 4 × COLUMN_LIMIT.
- *
- * Lo que se corta se cuenta y se dice, más abajo, en cada cabecera de columna:
- * un tablero que esconde trabajo sin avisar es peor que uno lento.
- */
-const COLUMN_LIMIT = 100;
-
-// Cuántos hay de verdad en cada columna, para poder decir «100 de 743».
-const countsQuery = issuesQuery.replace(
-  /SELECT[\s\S]*?FROM issues i/,
-  'SELECT i.status, COUNT(*) as n FROM issues i'
-) + ' GROUP BY i.status';
-const statusCounts = Object.fromEntries(
-  (db.prepare(countsQuery).all(...queryParams.slice(1)) as { status: string; n: number }[])
-    .map((r) => [r.status, r.n])
-);
-
-const pagedQuery = `
-  SELECT * FROM (
-    ${issuesQuery}
-  ) WHERE rn <= ${COLUMN_LIMIT}
-  ORDER BY ${ordenSQL('')}
-`;
-const issues = db.prepare(pagedQuery).all(...queryParams) as any[];
-
-// Las etiquetas de todas las tarjetas en **una** consulta. Una por tarjeta
-// serían cien consultas por carga de tablero.
-const etiquetasPorIssue = deVarias('issue', issues.map((i) => i.id));
-for (const issue of issues) issue.labels = etiquetasPorIssue.get(issue.id) ?? [];
+const { tarjetas: issues, conteos: statusCounts } = cargarTablero({
+  workspaceId: workspace.id,
+  userId: user.id,
+  sprintId: funcs.sprints ? activeSprintId : undefined,
+  labelId: etiquetaFiltro?.id ?? null,
+  agruparPorEtiqueta: agrupar,
+});
 
 const etiquetasDelEspacio = listarEtiquetas(workspace.id);
 const tiposDelEspacio = listarTipos(workspace.id);
 
-const activeSprintName = activeSprintId ? sprints.find(s => s.id === activeSprintId)?.name : 'Backlog';
-
-// Fetch workspace members for assignee/reporter dropdowns
 const workspaceMembers = db.prepare(`
-  SELECT u.id, u.username 
-  FROM workspace_members wm 
-  JOIN users u ON wm.user_id = u.id 
+  SELECT u.id, u.username
+  FROM workspace_members wm
+  JOIN users u ON wm.user_id = u.id
   WHERE wm.workspace_id = ?
 `).all(workspace.id) as any[];
 
 /**
- * Horas del sprint **o del backlog**.
+ * Horas de lo que se está mirando: el sprint, el backlog o, sin sprints, todo.
  *
- * Solo se calculaban con un sprint abierto, así que en el backlog el bloque
- * desaparecía y la cabecera daba un salto. Pero el backlog también tiene
- * trabajo estimado y horas registradas: es lo que hay pendiente de planificar, y
- * saber cuánto es exactamente para lo que sirve mirarlo.
- *
- * `sprint_id IS NULL` y no un `sprint_id = ?`: en el backlog están justamente
- * los tickets que no pertenecen a ninguno.
+ * Solo con la medición de tiempo encendida; apagada, el bloque no se pinta.
  */
-const totales = db.prepare(`
-  SELECT SUM(logged_hours) AS total_logged, SUM(estimated_hours) AS total_estimated
-  FROM issues
-  WHERE workspace_id = ? AND ${activeSprintId ? 'sprint_id = ?' : 'sprint_id IS NULL'}
-`).get(...(activeSprintId ? [workspace.id, activeSprintId] : [workspace.id])) as any;
-
-/**
- * Redondeado a dos decimales antes de pintarlo.
- *
- * Se suman fracciones de sesión y en coma flotante eso da `11.032300000000001`.
- * Es el mismo fallo que ya se arregló en el modal del ticket y que aquí seguía:
- * arreglar una copia y no la otra es lo que pasa cuando el mismo cálculo vive
- * en dos sitios.
- */
-const enHoras = (n: number) => parseFloat((n || 0).toFixed(2));
-const totalLogged = enHoras(totales?.total_logged || 0);
-const totalEstimated = enHoras(totales?.total_estimated || 0);
+let totalLogged = 0;
+let totalEstimated = 0;
+if (funcs.tiempo) {
+  const filtroSprint = !funcs.sprints ? '' : activeSprintId ? 'AND sprint_id = ?' : 'AND sprint_id IS NULL';
+  const totales = db.prepare(`
+    SELECT SUM(logged_hours) AS total_logged, SUM(estimated_hours) AS total_estimated
+    FROM issues WHERE workspace_id = ? ${filtroSprint}
+  `).get(...(funcs.sprints && activeSprintId ? [workspace.id, activeSprintId] : [workspace.id])) as any;
+  // Redondeado: sumar fracciones de sesión en coma flotante da 11.032300000000001.
+  const enHoras = (n: number) => parseFloat((n || 0).toFixed(2));
+  totalLogged = enHoras(totales?.total_logged || 0);
+  totalEstimated = enHoras(totales?.total_estimated || 0);
+}
 const metaDescription = `${workspace.name} board on Forge OS. Track issues, sprints, and tasks efficiently.`;
+const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
+
 ---
 
 <MainLayout hideFooter={true}
@@ -262,16 +149,20 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     {/* En móvil el `<h1>` no se pinta: la barra superior ya dice «Captura /
         Tablero» dos centímetros más arriba, y repetirlo cuesta una fila entera
         de las pocas que hay antes de la primera tarjeta. */}
-    <header class="mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-x-4 gap-y-3">
-      <div class="flex items-center gap-4 min-w-0">
-        <h1 class="hidden sm:block text-xl sm:text-2xl font-bold text-forge-text truncate max-w-[11rem] lg:max-w-[15rem]" title={`${workspace.name} Board`}>{workspace.name} Board</h1>
+    {/* El título se lee entero: se parte en líneas en vez de recortarse.
+        Recortado a 15rem salía «Atlas Platform Boa…», y con los botones nuevos
+        de la cabecera el hueco era aún menor. Hasta `xl` va encima de los
+        controles; a partir de ahí, al lado, ocupando lo que dejen. */}
+    <header class="mb-4 flex flex-col xl:flex-row justify-between items-start gap-x-4 gap-y-3">
+      <div class="flex items-center gap-4 min-w-0 w-full xl:w-auto xl:flex-1">
+        <h1 class="hidden sm:block min-w-0 text-xl sm:text-2xl font-bold text-forge-text leading-tight [overflow-wrap:anywhere]">{workspace.name} · {t('nav.board')}</h1>
         {/*
           La etiqueta encima y la cifra debajo, no una al lado de la otra.
           En horizontal, «0h registradas — sin estimar» no cabía junto a
           «TIEMPO» y se partía a mitad de frase, encima del rótulo.
         */}
-        {(
-          <div class="hidden lg:flex flex-col w-[11rem] shrink-0 bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-2 shadow-sm" id="sprint-time-container" data-logged={totalLogged} data-estimated={totalEstimated}>
+        {funcs.tiempo && (
+          <div class="hidden lg:flex flex-col w-[11rem] shrink-0 bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-2 shadow-sm" id="sprint-time-container" data-t-no-estimate={t('dashboard.logged_no_estimate')} data-logged={totalLogged} data-estimated={totalEstimated}>
             <span class="text-[9px] font-mono text-forge-muted font-bold tracking-widest uppercase leading-none">{t('dashboard.time') || 'Time'}</span>
             <span class="text-[11px] font-mono font-bold text-forge-accent-text leading-tight mt-1 mb-1.5 truncate" id="sprint-time-text">
               {totalEstimated > 0
@@ -298,23 +189,61 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
         entre el título y la primera tarjeta se iban 160 px de pantalla. Una
         rejilla los deja en dos filas parejas y ocupa la mitad.
       */}
-      <div class="grid grid-cols-2 gap-2 w-full items-center sm:flex sm:flex-wrap sm:gap-x-2 sm:gap-y-2.5 xl:w-auto xl:justify-end">
-        <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="w-full sm:w-auto min-w-0 bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
-          <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
-          {sprints.map(s => (
-            <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? '(Active)' : s.status === 'completed' ? '(Completed)' : ''}</option>
-          ))}
-        </select>
-        <label class="sr-only" for="board-sort">{t('board.sort')}</label>
-        <select id="board-sort" class="w-full sm:w-auto min-w-0 bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
-          <option value="manual" selected={ordenActivo === 'manual'}>{t('board.sort_manual')}</option>
-          <option value="priority" selected={ordenActivo === 'priority'}>{t('board.sort_priority')}</option>
-          <option value="due" selected={ordenActivo === 'due'}>{t('board.sort_due')}</option>
-          <option value="points" selected={ordenActivo === 'points'}>{t('board.sort_points')}</option>
-          <option value="updated" selected={ordenActivo === 'updated'}>{t('board.sort_updated')}</option>
-          <option value="created" selected={ordenActivo === 'created'}>{t('board.sort_created')}</option>
-          <option value="title" selected={ordenActivo === 'title'}>{t('board.sort_title')}</option>
-        </select>
+      <div class="grid grid-cols-2 gap-2 w-full items-center sm:flex sm:flex-wrap sm:gap-x-2 sm:gap-y-2.5 xl:w-auto xl:max-w-[70%] xl:justify-end">
+        {funcs.sprints && (
+          <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="w-full sm:w-auto min-w-0 bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
+            <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
+            {sprints.map(s => (
+              <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? t('board.sprint_active_suffix') : s.status === 'completed' ? t('board.sprint_completed_suffix') : ''}</option>
+            ))}
+          </select>
+        )}
+
+        {/*
+          Ordenar es una **acción**, no una vista.
+
+          Antes era un desplegable que cambiaba el `ORDER BY` sin tocar
+          `position`; como lo que se veía no era el orden guardado, arrastrar no
+          podía funcionar y el tablero pedía volver al orden manual. Ahora
+          ordenar reescribe el orden de cada columna una vez —con «Deshacer»— y
+          se puede seguir arrastrando a partir de ahí. «Hecho» no se toca: va
+          siempre por cuándo se terminó.
+        */}
+        {puedeEditar && (
+          <div class="relative" id="sort-menu-root">
+            <button id="btn-sort-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sort-menu"
+              class="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-forge-bg border border-forge-border rounded-md px-3 py-1.5 text-sm text-forge-text hover:border-forge-secondary transition-colors">
+              {t('board.sort_action')}
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="sort-menu" role="menu" class="hidden menu-sprint absolute sm:left-0 top-full mt-1 min-w-[13rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1"
+              data-t-done={t('board.sorted_by')}
+              data-t-undo={t('board.undo')}
+              data-t-undone={t('board.sort_undone')}
+              data-t-error={t('board.sort_error')}>
+              {[
+                ['priority', t('board.sort_priority')],
+                ['due', t('board.sort_due')],
+                ['title', t('board.sort_title')],
+                ['created', t('board.sort_created')],
+                ...(funcs.puntos ? [['points', t('board.sort_points')]] : []),
+              ].map(([clave, texto]) => (
+                <button type="button" role="menuitem" class="sprint-menu-item orden-item" data-orden={clave}>{texto}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Un carril por etiqueta: con una etiqueta por asignatura, cada
+            asignatura con sus cuatro columnas. */}
+        {etiquetasDelEspacio.length > 0 && (
+          <button type="button" id="btn-group-label" aria-pressed={agrupar ? 'true' : 'false'}
+            class:list={['w-full sm:w-auto flex items-center justify-center gap-1.5 border rounded-md px-3 py-1.5 text-sm transition-colors',
+              agrupar ? 'bg-forge-secondary/10 border-forge-secondary text-forge-text' : 'bg-forge-bg border-forge-border text-forge-text hover:border-forge-secondary']}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg>
+            {t('board.group_label')}
+          </button>
+        )}
 
         {/* Filtro por etiqueta. Solo aparece si hay etiquetas: un desplegable
             con una única opción vacía es ruido. */}
@@ -339,7 +268,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
           porque se usan una vez cada mucho, no en cada visita. Lo que se usa a
           diario se queda fuera.
         */}
-        {acceso.rol !== 'viewer' && (
+        {funcs.sprints && acceso.rol !== 'viewer' && (
           <div class="relative" id="sprint-menu-root">
             <button
               id="btn-sprint-menu"
@@ -362,6 +291,13 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
                   <button type="button" role="menuitem" id="btn-new-sprint" class="sprint-menu-item">
                     {t('board.create_sprint')}
                   </button>
+                  {/* Borrar se podía solo con el sprint abierto delante, y desde
+                      el backlog no había forma de llegar. */}
+                  {acceso.rol === 'owner' && sprints.length > 0 && (
+                    <button type="button" role="menuitem" id="btn-manage-sprints" class="sprint-menu-item">
+                      {t('sprint.manage')}
+                    </button>
+                  )}
                   <div class="h-px bg-forge-border/50 my-1"></div>
                 </>
               )}
@@ -408,15 +344,58 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} sortMode={ordenActivo} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} />
     </div>
   </div>
 
+  {/* Gestionar sprints: la lista, con borrar en cada uno. */}
+  {funcs.sprints && acceso.rol === 'owner' && (
+    <dialog id="gestionar-sprints" aria-labelledby="gestionar-sprints-titulo" class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-[calc(100vw-2rem)] max-w-[440px] text-forge-text shadow-xl backdrop:bg-black/50">
+      <h2 id="gestionar-sprints-titulo" class="text-lg font-bold mb-4">{t('sprint.manage_title')}</h2>
+      <ul class="space-y-2">
+        {sprints.map((sp) => (
+          <li class="flex items-center justify-between gap-3 border border-forge-border rounded-xl px-3 py-2">
+            <span class="min-w-0 truncate text-sm">{sp.name} <span class="text-forge-muted">{sp.status === 'active' ? t('board.sprint_active_suffix') : sp.status === 'completed' ? t('board.sprint_completed_suffix') : ''}</span></span>
+            <button type="button" class="btn-borrar-sprint shrink-0 text-xs font-bold text-forge-muted hover:text-forge-error px-2 py-1 rounded" data-sprint-id={sp.id}
+              aria-label={t('sprint.delete_named').replace('{nombre}', sp.name)}>{t('board.delete_sprint')}</button>
+          </li>
+        ))}
+      </ul>
+      <div class="flex justify-end mt-5">
+        <button type="button" class="px-4 py-2 text-sm text-forge-muted hover:text-forge-text" onclick="document.getElementById('gestionar-sprints').close()">{t('common.close')}</button>
+      </div>
+    </dialog>
+
+    <dialog id="borrar-sprint-modal" aria-labelledby="borrar-sprint-titulo"
+      data-t-backlog={t('sprint.delete_to_backlog')}
+      data-t-to-sprint={t('sprint.delete_to_sprint')}
+      data-t-discard={t('sprint.delete_discard')}
+      data-t-target-for={t('sprint.delete_target_for')}
+      data-t-summary={t('sprint.delete_summary')}
+      data-t-confirm={t('sprint.delete_confirm')}
+      data-t-confirm-danger={t('sprint.delete_confirm_danger')}
+      data-t-error={t('sprint.err_delete')}
+      class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-[calc(100vw-2rem)] max-w-[560px] max-h-[85vh] flex-col text-forge-text shadow-xl backdrop:bg-black/60 open:flex">
+      <h2 id="borrar-sprint-titulo" class="text-lg font-bold mb-1">{t('sprint.delete_title')}</h2>
+      <p class="text-sm text-forge-muted mb-4">{t('sprint.delete_lead')}</p>
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <label class="text-xs font-semibold text-forge-muted" for="borrar-sprint-todas">{t('sprint.delete_all')}</label>
+        <select id="borrar-sprint-todas" class="bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text focus:border-forge-secondary outline-none"></select>
+      </div>
+      <ul id="borrar-sprint-lista" class="space-y-2 overflow-y-auto flex-1 min-h-0 pr-1"></ul>
+      <p id="borrar-sprint-resumen" class="text-sm text-forge-muted mt-4" aria-live="polite"></p>
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" class="px-4 py-2 text-sm font-bold text-forge-muted hover:text-forge-text" onclick="document.getElementById('borrar-sprint-modal').close()">{t('modal.cancel')}</button>
+        <button type="button" id="borrar-sprint-confirmar" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"></button>
+      </div>
+    </dialog>
+  )}
+
   <!-- New Sprint Modal -->
-  <dialog id="new-sprint-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
+  <dialog id="new-sprint-modal" data-t-name-required={t('board.sprint_name_required')} class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
     <h2 class="text-xl font-bold mb-4">{t('board.create_sprint')}</h2>
     <div class="mb-4">
-      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="sprint-name">Name</label>
+      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="sprint-name">{t('board.sprint_name')}</label>
       <input type="text" id="sprint-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" placeholder={t('board.sprint_name_ph')}>
     </div>
     <div class="flex justify-end gap-3 mt-6">
@@ -477,75 +456,22 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     </div>
   </dialog>
 
-  <!-- New Issue Modal -->
-  <dialog id="new-issue-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[500px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 class="text-xl font-bold mb-4">{t('modal.create_issue')}</h2>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-title">{t('modal.title')}</label>
-        <input type="text" id="new-issue-title" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none" placeholder={t('modal.title_placeholder') as string}>
-      </div>
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-type">{t('modal.type')}</label>
-        <select id="new-issue-type" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
-          {tiposDelEspacio.map((ti) => (
-            <option value={ti.key}>{nombreVisible(ti, t)}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-sprint">{t('modal.sprint')}</label>
-        <select id="new-issue-sprint" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
-          <option value="">{t('modal.backlog')}</option>
-          {sprints.map(s => (
-            <option value={s.id} selected={activeSprintId === s.id}>{s.name}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-assignee">{t('modal.assignee') || 'Assignee'}</label>
-        <select id="new-issue-assignee" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none">
-          <option value="">{t('modal.unassigned')}</option>
-          {workspaceMembers.map(m => (
-            <option value={m.id}>{m.username}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-due-date">{t('modal.due_date') || 'Due Date'}</label>
-        <input type="date" id="new-issue-due-date" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none font-mono" />
-      </div>
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-estimated">{t('modal.estimated_hours')}</label>
-        <input type="number" id="new-issue-estimated" min="0" step="0.5" placeholder="0" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary outline-none font-mono" />
-      </div>
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="new-issue-desc">{t('modal.description') || 'Description'}</label>
-        <textarea id="new-issue-desc" rows="3" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-sm text-forge-text focus:border-forge-secondary outline-none placeholder:text-forge-muted" placeholder={t('modal.desc_placeholder') as string}></textarea>
-      </div>
-    </div>
-    <div class="flex justify-end gap-3 mt-6">
-      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-issue-modal').close()">{t('modal.cancel')}</button>
-      <button type="button" id="btn-save-issue" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity">{t('modal.create')}</button>
-    </div>
-  </dialog>
 
   <script>
     const workspaceId = document.querySelector('.kanban-container')?.getAttribute('data-workspace') || 'default';
 
-    // PERSIST SPRINT SELECTION
-    const urlParams = new URLSearchParams(window.location.search);
-    const sprintParam = urlParams.get('sprint');
-    
-    const sprintToSave = sprintParam || 'backlog';
-    localStorage.setItem(`forge_last_sprint_${workspaceId}`, sprintToSave);
-    document.cookie = `forge_last_sprint_${workspaceId}=${sprintToSave}; path=/; max-age=31536000`;
-
-    // SPRINT SELECTOR
-    const selector = document.getElementById('sprint-selector') as HTMLSelectElement;
+    // Recordar el sprint elegido, solo si el espacio usa sprints: sin selector
+    // no hay nada que recordar, y una cookie de sprint en un espacio sin
+    // sprints redirigiría a un `?sprint=` que ya no significa nada.
+    const selector = document.getElementById('sprint-selector') as HTMLSelectElement | null;
+    if (selector) {
+      const sprintToSave = new URLSearchParams(window.location.search).get('sprint') || 'backlog';
+      try { localStorage.setItem(`forge_last_sprint_${workspaceId}`, sprintToSave); } catch { /* sin almacenamiento */ }
+      document.cookie = `forge_last_sprint_${workspaceId}=${sprintToSave}; path=/; max-age=31536000`;
+    }
     selector?.addEventListener('change', (e) => {
       const val = (e.target as HTMLSelectElement).value;
-      localStorage.setItem(`forge_last_sprint_${workspaceId}`, val);
+      try { localStorage.setItem(`forge_last_sprint_${workspaceId}`, val); } catch { /* sin almacenamiento */ }
       const url = new URL(window.location.href);
       // `?sprint=backlog` explícito, **no** quitar el parámetro.
       //
@@ -563,19 +489,12 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     // se puede pegar en un mensaje y le abre a otro lo mismo que estás viendo.
     // Y a diferencia del sprint, no se recuerda entre visitas: un filtro
     // pegajoso hace creer que el tablero se ha vaciado.
-    /**
-     * El orden va en la URL, como el filtro de etiqueta.
-     *
-     * Así «el tablero ordenado por lo que vence antes» se puede pegar en un
-     * mensaje. Y como el filtro, **no se recuerda entre visitas**: un orden
-     * pegajoso hace creer que las tarjetas se han movido solas.
-     */
-    const selectorOrden = document.getElementById('board-sort') as HTMLSelectElement | null;
-    selectorOrden?.addEventListener('change', (e) => {
-      const val = (e.target as HTMLSelectElement).value;
+    // Agrupar por etiqueta: en la URL como el filtro, y sin recordarse.
+    document.getElementById('btn-group-label')?.addEventListener('click', (e) => {
+      const activo = (e.currentTarget as HTMLElement).getAttribute('aria-pressed') === 'true';
       const url = new URL(window.location.href);
-      if (val && val !== 'manual') url.searchParams.set('sort', val);
-      else url.searchParams.delete('sort');
+      if (activo) url.searchParams.delete('group');
+      else url.searchParams.set('group', 'label');
       window.location.href = url.toString();
     });
 
@@ -597,7 +516,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
 
     saveSprintBtn?.addEventListener('click', async () => {
       const name = (document.getElementById('sprint-name') as HTMLInputElement).value;
-      if (!name) return window.showToast?.('Name required', 'error');
+      if (!name) return window.showToast?.(sprintModal?.dataset.tNameRequired || '', 'error');
       
       const res = await fetch('/api/sprints', {
         method: 'POST',
@@ -615,49 +534,6 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       }
     });
 
-    // NEW ISSUE MODAL
-    const newIssueBtn = document.getElementById('btn-new-issue');
-    const issueModal = document.getElementById('new-issue-modal') as HTMLDialogElement;
-    const saveIssueBtn = document.getElementById('btn-save-issue');
-
-    newIssueBtn?.addEventListener('click', () => issueModal?.showModal());
-
-    saveIssueBtn?.addEventListener('click', async () => {
-      const title = (document.getElementById('new-issue-title') as HTMLInputElement).value;
-      const type = (document.getElementById('new-issue-type') as HTMLSelectElement).value;
-      const sprintId = (document.getElementById('new-issue-sprint') as HTMLSelectElement).value;
-      const assigneeId = (document.getElementById('new-issue-assignee') as HTMLSelectElement).value;
-      const dueDate = (document.getElementById('new-issue-due-date') as HTMLInputElement).value;
-      const description = (document.getElementById('new-issue-desc') as HTMLTextAreaElement).value;
-      const estimated = (document.getElementById('new-issue-estimated') as HTMLInputElement)?.value;
-
-      if (!title) return window.showToast?.(dialogoCierre?.getAttribute('data-t-err-title') || '', 'error');
-
-      saveIssueBtn.textContent = dialogoCierre?.getAttribute('data-t-creating') || '';
-      const sysTag = window.location.pathname.split('/')[2];
-      const res = await fetch(`/api/w/${sysTag}/issues`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          title, 
-          type, 
-          sprint_id: sprintId || null, 
-          assignee_id: assigneeId || null,
-          due_date: dueDate || null,
-          description: description || null,
-          estimated_hours: estimated ? Number(estimated) : 0
-        })
-      });
-
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        // El cuerpo de la respuesta es para el registro, no para la pantalla.
-        console.error('crear issue:', await res.text());
-        window.showToast?.(dialogoCierre?.getAttribute('data-t-err-create') || '', 'error');
-      }
-    });
-
     /**
      * El menú de acciones del sprint.
      *
@@ -665,9 +541,9 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
      * Escape, devolviendo el foco. Sin lo segundo, quien navega con teclado
      * queda atrapado dentro de un menú abierto.
      */
-    (() => {
-      const boton = document.getElementById('btn-sprint-menu');
-      const menu = document.getElementById('sprint-menu');
+    function menuDesplegable(idBoton: string, idMenu: string) {
+      const boton = document.getElementById(idBoton);
+      const menu = document.getElementById(idMenu);
       if (!boton || !menu) return;
 
       const cerrar = () => {
@@ -693,6 +569,68 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       });
       // Al elegir una acción el menú sobra: lo que sigue es un diálogo.
       menu.addEventListener('click', () => cerrar());
+    }
+    menuDesplegable('btn-sprint-menu', 'sprint-menu');
+    menuDesplegable('btn-sort-menu', 'sort-menu');
+
+    /**
+     * Ordenar: reescribe el orden de las columnas de trabajo y ofrece deshacer.
+     *
+     * Tras ordenar hay que recargar —las tarjetas cambian de sitio en tres
+     * columnas—, así que lo necesario para deshacer se guarda en
+     * `sessionStorage` y el aviso con «Deshacer» sale ya en la página nueva.
+     */
+    (() => {
+      const menu = document.getElementById('sort-menu');
+      if (!menu) return;
+      const sysTag = window.location.pathname.split('/')[2];
+      const CLAVE = `forge_reorden_${sysTag}`;
+      // El ámbito es lo que se está viendo: el sprint que pintó el servidor
+      // (que puede venir de la cookie, no de la URL) y la etiqueta filtrada.
+      const tablero = document.querySelector<HTMLElement>('.kanban-container');
+      const ambito = { label: tablero?.dataset.label || null, sprint: tablero?.dataset.sprint || null };
+
+      menu.querySelectorAll<HTMLButtonElement>('.orden-item').forEach((item) => {
+        item.addEventListener('click', async () => {
+          try {
+            const res = await fetch(`/api/w/${sysTag}/board/reorder`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ by: item.dataset.orden, ...ambito }),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const { previo } = await res.json();
+            try {
+              sessionStorage.setItem(CLAVE, JSON.stringify({ previo, nombre: item.textContent?.trim() || '' }));
+            } catch { /* sin almacenamiento: se ordena igual, sin deshacer */ }
+            window.location.reload();
+          } catch (e) {
+            console.error('ordenar:', e);
+            window.showToast?.(menu.dataset.tError || '', true);
+          }
+        });
+      });
+
+      let pendiente: { previo: Array<{ id: string; position: number }>; nombre: string } | null = null;
+      try {
+        pendiente = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+        sessionStorage.removeItem(CLAVE);
+      } catch { pendiente = null; }
+      if (pendiente?.previo?.length) {
+        const datos = pendiente;
+        window.showToast?.((menu.dataset.tDone || '').replace('{orden}', datos.nombre.toLowerCase()), false, {
+          accion: menu.dataset.tUndo || '',
+          alPulsar: async () => {
+            const res = await fetch(`/api/w/${sysTag}/board/reorder`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ previo: datos.previo }),
+            });
+            if (res.ok) window.location.reload();
+            else window.showToast?.(menu.dataset.tError || '', true);
+          },
+        });
+      }
     })();
 
     const dialogoCierre = document.getElementById('close-sprint-modal') as HTMLDialogElement | null;
@@ -827,44 +765,105 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
     });
 
     /**
-     * Borrar el sprint.
+     * Borrar un sprint, decidiendo tarea por tarea.
      *
-     * No existía forma de hacerlo: los sprints creados por error se quedaban
-     * para siempre en el desplegable, que es la única lista por la que se
-     * navega el trabajo.
-     *
-     * Si tiene tickets dentro, el servidor se niega y devuelve cuántos son y a
-     * qué sprints pueden pasar. Los tickets **no** se borran con el sprint: son
-     * trabajo con horas, etiquetas y adjuntos, y borrarlos en cascada
-     * convertiría una limpieza en una pérdida irreversible.
+     * Sin tareas dentro se borra sin preguntar. Con tareas, el servidor
+     * responde con la lista y aquí se elige qué pasa con cada una: al backlog,
+     * a otro sprint o borrarla. «Borrar» nunca es lo que viene marcado: perder
+     * trabajo tiene que ser una decisión, no un descuido al pulsar «aceptar».
      */
-    document.getElementById('btn-delete-sprint')?.addEventListener('click', async (e) => {
-      const sprintId = (e.currentTarget as HTMLElement).getAttribute('data-sprint-id');
-      if (!sprintId) return;
+    async function borrarSprint(sprintId: string) {
+      const enviar = (cuerpo: Record<string, unknown>) => fetch(`/api/sprints/${sprintId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cuerpo),
+      });
+      const fin = () => { window.location.href = window.location.pathname + '?sprint=backlog'; };
 
-      const borrar = (cuerpo: Record<string, unknown> | null) =>
-        fetch(`/api/sprints/${sprintId}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cuerpo ?? {}),
-        });
-
-      const res = await borrar(null);
-      if (res.ok) { window.location.href = window.location.pathname + '?sprint=backlog'; return; }
-
+      const res = await enviar({});
+      if (res.ok) { fin(); return; }
       let datos: any = null;
       try { datos = await res.clone().json(); } catch { /* no era JSON */ }
-
-      if (res.status === 409 && datos?.error_code === 'sprint_not_empty') {
-        // Se reutiliza el diálogo de cerrar sprint: la pregunta es la misma
-        // —«¿a dónde van estos tickets?»— y tener dos diálogos que preguntan lo
-        // mismo con otras palabras es como se separan los comportamientos.
-        abrirDialogoCierre(datos.pending, borrar, true);
+      const dlg = document.getElementById('borrar-sprint-modal') as HTMLDialogElement | null;
+      if (!(res.status === 409 && datos?.error_code === 'sprint_not_empty' && dlg)) {
+        window.showToast?.(dialogoCierre?.getAttribute('data-t-err-delete') || '', 'error');
         return;
       }
 
-      // @ts-ignore
-      window.showToast(dialogoCierre?.getAttribute('data-t-err-delete') || '', 'error');
+      const t = dlg.dataset;
+      const opciones: Array<[string, string]> = [
+        ['backlog', t.tBacklog || ''],
+        ...(datos.candidates as Array<{ id: string; name: string }>).map((c): [string, string] => [c.id, (t.tToSprint || '').replace('{nombre}', c.name)]),
+        ['borrar', t.tDiscard || ''],
+      ];
+      const rellenar = (sel: HTMLSelectElement) => {
+        sel.replaceChildren(...opciones.map(([v, texto]) => new Option(texto, v)));
+        sel.value = 'backlog';
+      };
+      const lista = document.getElementById('borrar-sprint-lista')!;
+      const todas = document.getElementById('borrar-sprint-todas') as HTMLSelectElement;
+      const resumen = document.getElementById('borrar-sprint-resumen')!;
+      const confirmar = document.getElementById('borrar-sprint-confirmar') as HTMLButtonElement;
+      rellenar(todas);
+
+      // Un desplegable por tarea, con `aria-label` y no `id` fijo: se repiten.
+      lista.replaceChildren(...(datos.issues as Array<{ id: string; title: string }>).map((tarea) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-3 border border-forge-border rounded-xl px-3 py-2';
+        const nombre = document.createElement('span');
+        nombre.className = 'min-w-0 truncate text-sm';
+        nombre.textContent = tarea.title;
+        const sel = document.createElement('select');
+        sel.className = 'destino-tarea shrink-0 max-w-[45%] bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text focus:border-forge-secondary outline-none';
+        sel.dataset.issueId = tarea.id;
+        sel.setAttribute('aria-label', (t.tTargetFor || '').replace('{titulo}', tarea.title));
+        rellenar(sel);
+        li.append(nombre, sel);
+        return li;
+      }));
+
+      const actualizar = () => {
+        const sels = Array.from(lista.querySelectorAll<HTMLSelectElement>('.destino-tarea'));
+        const borrar = sels.filter((s) => s.value === 'borrar').length;
+        resumen.textContent = (t.tSummary || '').replace('{mover}', String(sels.length - borrar)).replace('{borrar}', String(borrar));
+        confirmar.textContent = borrar > 0 ? (t.tConfirmDanger || '').replace('{n}', String(borrar)) : (t.tConfirm || '');
+        // Rojo solo cuando de verdad se va a perder algo.
+        confirmar.classList.toggle('bg-forge-error', borrar > 0);
+        confirmar.classList.toggle('text-white', borrar > 0);
+        confirmar.classList.toggle('bg-forge-primary', borrar === 0);
+        confirmar.classList.toggle('text-forge-on-accent', borrar === 0);
+      };
+      lista.onchange = actualizar;
+      todas.onchange = () => {
+        lista.querySelectorAll<HTMLSelectElement>('.destino-tarea').forEach((s) => { s.value = todas.value; });
+        actualizar();
+      };
+      actualizar();
+
+      confirmar.onclick = async () => {
+        const destinos: Record<string, string> = {};
+        lista.querySelectorAll<HTMLSelectElement>('.destino-tarea').forEach((s) => { destinos[s.dataset.issueId!] = s.value; });
+        confirmar.disabled = true;
+        const r = await enviar({ destinos });
+        confirmar.disabled = false;
+        if (r.ok) { fin(); return; }
+        window.showToast?.(t.tError || '', 'error');
+      };
+      dlg.showModal();
+    }
+
+    document.getElementById('btn-delete-sprint')?.addEventListener('click', (e) => {
+      const sprintId = (e.currentTarget as HTMLElement).getAttribute('data-sprint-id');
+      if (sprintId) borrarSprint(sprintId);
+    });
+    document.getElementById('btn-manage-sprints')?.addEventListener('click', () => {
+      (document.getElementById('gestionar-sprints') as HTMLDialogElement | null)?.showModal();
+    });
+    document.querySelectorAll<HTMLButtonElement>('.btn-borrar-sprint').forEach((b) => {
+      b.addEventListener('click', () => {
+        (document.getElementById('gestionar-sprints') as HTMLDialogElement | null)?.close();
+        borrarSprint(b.dataset.sprintId!);
+      });
     });
 
     const deactivateSprintBtn = document.getElementById('btn-deactivate-sprint');
@@ -911,7 +910,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       if (estimated > 0) {
         text.textContent = `${displayLogged}h / ${displayEst}h`;
       } else {
-        text.textContent = `${displayLogged}h logged — no estimate`;
+        text.textContent = (container.dataset.tNoEstimate || '').replace('{h}', String(displayLogged));
       }
 
       if (estimated > 0) {
@@ -946,7 +945,7 @@ const metaDescription = `${workspace.name} board on Forge OS. Track issues, spri
       if (estimated > 0) {
         text.textContent = `${displayLogged}h / ${displayEst}h`;
       } else {
-        text.textContent = `${displayLogged}h logged — no estimate`;
+        text.textContent = (container.dataset.tNoEstimate || '').replace('{h}', String(displayLogged));
       }
 
       if (estimated > 0) {

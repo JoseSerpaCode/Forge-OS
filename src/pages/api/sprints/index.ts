@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import { funciones, funcionApagada } from '../../../lib/funcionesEspacio';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import crypto from 'crypto';
 
@@ -18,6 +19,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       if (access.reason === 'not_member') return new Response('Not Found', { status: 404 });
       return new Response(access.error || 'Forbidden', { status: 403 });
     }
+    if (!funciones(workspaceId).sprints) return funcionApagada('sprints');
 
     const newId = crypto.randomUUID();
     

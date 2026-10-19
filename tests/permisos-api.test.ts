@@ -31,6 +31,9 @@ const ESPERADO: Record<string, string[]> = {
   'labels/assign.ts':         ['editor'],
   'members/search.ts':        ['owner'],   // listar personas invitables
   'resources.ts':             ['viewer', 'editor'],
+  'features.ts':              ['viewer', 'owner'],  // leer lo encendido es viewer; cambiarlo, owner
+  'board/reorder.ts':         ['editor'],  // reordena el tablero de todos
+  'pages/search.ts':          ['viewer'],  // buscar apuntes es leer
 };
 
 function ficheros(dir: string, acc: string[] = []): string[] {

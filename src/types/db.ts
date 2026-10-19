@@ -23,6 +23,9 @@ export interface Workspace {
   description: string | null;
   created_by: string;
   created_at: string;
+  feat_sprints: 0 | 1;
+  feat_time: 0 | 1;
+  feat_points: 0 | 1;
 }
 
 export type WorkspaceRole = 'owner' | 'editor' | 'viewer';
@@ -63,6 +66,10 @@ export interface Issue {
   created_at: string;
   updated_at: string;
   due_date: string | null;
+  /** Cuándo pasó a Hecho. `NULL` mientras no lo esté. */
+  done_at: string | null;
+  /** `HH:MM`, hora de pared de quien la apuntó. Sin zona a propósito. */
+  due_time: string | null;
 }
 
 export interface WorkLog {

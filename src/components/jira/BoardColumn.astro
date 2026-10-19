@@ -8,11 +8,18 @@ interface Props {
   total?: number;
   /** Cuántos se han pintado. Si es menor que `total`, se avisa. */
   shown?: number;
+  /** El carril (id de etiqueta, o '' para «sin etiqueta») si el tablero va agrupado. */
+  carril?: string | null;
+  /**
+   * Hecho no se recorta en silencio: enseña las últimas y un botón para
+   * traer las siguientes. `cursor` es el de la última tarjeta pintada.
+   */
+  verMas?: { cursor: string } | null;
 }
 
 import { useTranslations } from '../../i18n/ui';
 
-const { title, status, total, shown, activaEnMovil = false } = Astro.props;
+const { title, status, total, shown, activaEnMovil = false, carril = null, verMas = null } = Astro.props;
 const t = useTranslations(Astro.locals.lang || 'en');
 
 // El contador del encabezado lo pisa el JavaScript al arrastrar tarjetas, pero
@@ -36,7 +43,7 @@ const truncated = typeof total === 'number' && typeof shown === 'number' && tota
 
   En `sm` y por encima no cambia nada: las cuatro columnas, como siempre.
 */}
-<div class:list={["board-column shrink-0 max-sm:w-full sm:w-auto sm:shrink sm:flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden sm:min-w-[320px] shadow-sm relative group/boardcol", !activaEnMovil && "max-sm:hidden"]} data-status={status} data-total={headerCount} data-shown={shown ?? 0}>
+<div class:list={["board-column shrink-0 max-sm:w-full sm:w-auto sm:shrink sm:flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden sm:min-w-[320px] shadow-sm relative group/boardcol", !activaEnMovil && "max-sm:hidden"]} data-status={status} data-carril={carril ?? undefined} data-total={headerCount} data-shown={shown ?? 0}>
   <!-- Subtle top accent line for column -->
   <div class="h-1 w-full bg-gradient-to-r from-forge-secondary/10 via-forge-secondary/40 to-forge-secondary/10 opacity-0 group-hover/boardcol:opacity-100 transition-opacity"></div>
   <div class="bg-forge-panel/70 backdrop-blur-sm max-md:backdrop-blur-none border-b border-forge-border/40 p-4 font-bold text-[13px] tracking-wide text-forge-text uppercase flex items-center justify-between">
@@ -57,7 +64,15 @@ const truncated = typeof total === 'number' && typeof shown === 'number' && tota
 
     {/* Esconder trabajo sin decirlo es peor que ir lento: si la columna se ha
         recortado, se dice cuánto queda fuera y dónde verlo. */}
-    {truncated && (
+    {truncated && verMas && (
+      <button type="button" class="ver-mas w-full text-xs font-bold text-forge-accent-text hover:underline underline-offset-2 py-3 border-t border-forge-border/40 mt-2"
+        data-cursor={verMas.cursor}
+        data-t-plantilla={t('board.show_more')}
+        data-t-cargando={t('board.loading')}>
+        {t('board.show_more').replace('{n}', String((total ?? 0) - (shown ?? 0)))}
+      </button>
+    )}
+    {truncated && !verMas && (
       <p class="text-[11px] text-forge-muted font-mono text-center py-3 border-t border-forge-border/40 mt-2">
         {shown} / {total} · {t('board.truncated')}
       </p>

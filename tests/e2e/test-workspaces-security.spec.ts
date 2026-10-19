@@ -28,7 +28,7 @@ test('Workspaces: Cross-workspace IDOR isolation for members and deletions', asy
   const resDelC = await request.delete(`/api/workspaces/${wsCId}`, {
     headers: { 
       'Cookie': `forge_session=${sessionCookie?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   expect(resDelC.status()).toBe(404);
@@ -38,7 +38,7 @@ test('Workspaces: Cross-workspace IDOR isolation for members and deletions', asy
     data: { username: 'test-user-notion-d', role: 'owner' },
     headers: { 
       'Cookie': `forge_session=${sessionCookie?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   expect(resAddC.status()).toBe(404);
@@ -58,7 +58,7 @@ test('Workspaces: Cross-workspace IDOR isolation for members and deletions', asy
   const resDelE = await request.delete(`/api/workspaces/${wsCId}`, {
     headers: { 
       'Cookie': `forge_session=${sessionCookieE?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   expect(resDelE.status()).toBe(403);
@@ -68,7 +68,7 @@ test('Workspaces: Cross-workspace IDOR isolation for members and deletions', asy
     data: { username: 'TestUserNotionE', role: 'owner' },
     headers: { 
       'Cookie': `forge_session=${sessionCookieE?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   expect(resAddE.status()).toBe(403);

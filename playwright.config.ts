@@ -3,6 +3,17 @@ import { defineConfig, devices } from '@playwright/test';
 process.env.NODE_ENV = 'test';
 
 /**
+ * El puerto del servidor de pruebas, cambiable con `E2E_PORT`.
+ *
+ * Fijo en 4322 y sin reutilizar un servidor ya levantado, dos ejecuciones a la
+ * vez —dos worktrees, dos sesiones— chocaban: la segunda fallaba con el puerto
+ * ocupado. Se exporta a `process.env` para que los tests que mandan `Origin` a
+ * mano (la protección CSRF lo compara) usen el mismo.
+ */
+const PUERTO = Number(process.env.E2E_PORT || 4322);
+process.env.E2E_PORT = String(PUERTO);
+
+/**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
@@ -29,7 +40,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: 'http://localhost:4322',
+    baseURL: `http://localhost:${PUERTO}`,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -92,8 +103,8 @@ export default defineConfig({
    * al oeste de Greenwich se ve bien. Es la zona de quien usa esto a diario.
    */
   webServer: {
-    command: 'NODE_ENV=test PORT=4322 npm run build && TZ=America/Bogota NODE_ENV=test PORT=4322 node server.mjs',
-    url: 'http://localhost:4322/login', // Use /login so it waits for the astro server to actually be ready to handle requests
+    command: `NODE_ENV=test PORT=${PUERTO} npm run build && TZ=America/Bogota NODE_ENV=test PORT=${PUERTO} node server.mjs`,
+    url: `http://localhost:${PUERTO}/login`, // Use /login so it waits for the astro server to actually be ready to handle requests
     reuseExistingServer: false,
     timeout: 120 * 1000,
   },

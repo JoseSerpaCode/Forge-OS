@@ -27,6 +27,8 @@ function conEspacio() {
   db.prepare('INSERT OR IGNORE INTO workspaces (id, name, sys_tag, created_by) VALUES (?,?,?,?)')
     .run(crypto.randomUUID(), 'Estimado', ESPACIO, yo.id);
   const ws = db.prepare('SELECT id FROM workspaces WHERE sys_tag = ?').get(ESPACIO) as any;
+  // Las horas estimadas solo existen con la medición de tiempo encendida.
+  db.prepare('UPDATE workspaces SET feat_time = 1 WHERE id = ?').run(ws.id);
   db.prepare("INSERT OR IGNORE INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?,?,'owner')")
     .run(ws.id, yo.id);
   return ws.id;
@@ -41,9 +43,12 @@ test('el formulario guarda las horas estimadas', async ({ page }) => {
   await page.goto(`/w/${ESPACIO}/board`);
   await page.locator('#btn-new-issue').click();
 
-  await page.fill('#new-issue-title', 'Con estimación');
-  await page.fill('#new-issue-estimated', '3.5');
-  await page.locator('#btn-save-issue').click();
+  // El alta nueva: la línea rápida y, en «Más opciones», las horas (solo con
+  // la medición de tiempo encendida, que `conEspacio` enciende).
+  await page.fill('#nt-linea', 'Con estimación');
+  await page.locator('#nt-mas summary').click();
+  await page.fill('#nt-estimado', '3.5');
+  await page.locator('#nt-crear').click();
 
   await expect
     .poll(() => {
@@ -64,7 +69,7 @@ test('sin estimación se guarda cero, no basura', async ({ page }) => {
   // El número llega de fuera, así que un texto no puede entrar en la columna.
   const res = await page.request.post(`/api/w/${ESPACIO}/issues`, {
     data: { title: 'Sin estimación', type: 'task', estimated_hours: 'muchas' },
-    headers: { Origin: 'http://localhost:4322' },
+    headers: { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` },
   });
   expect([200, 201]).toContain(res.status());
 

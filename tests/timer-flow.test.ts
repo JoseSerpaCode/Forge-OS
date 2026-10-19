@@ -15,7 +15,8 @@ describe('Timer and Work Log Integration', () => {
     testIssueId = crypto.randomUUID();
 
     db.prepare('INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(testUserId, 'testuser-' + Date.now(), 'hash');
-    db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, ?, ?, ?)').run(testWorkspaceId, 'Test WS', 'test-ws-' + Date.now(), testUserId);
+    db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by, feat_time) VALUES (?, ?, ?, ?, 1)').run(testWorkspaceId, 'Test WS', 'test-ws-' + Date.now(), testUserId);
+    // El cronómetro es una función que se enciende por espacio; aquí se prueba encendida.
     db.prepare('INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)').run(testWorkspaceId, testUserId, 'owner');
     db.prepare('INSERT INTO issues (id, workspace_id, type, title, reporter_id) VALUES (?, ?, ?, ?, ?)').run(testIssueId, testWorkspaceId, 'task', 'Test Issue for Timer', testUserId);
   });
