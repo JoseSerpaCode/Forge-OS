@@ -21,8 +21,9 @@
  */
 
 import { DE_ATAJO, type Prioridad } from './prioridad';
+import { diaDe, primera, type Dia } from './recurrencia';
 
-export type TipoTramo = 'fecha' | 'hora' | 'etiqueta' | 'prioridad' | 'apunte';
+export type TipoTramo = 'fecha' | 'hora' | 'etiqueta' | 'prioridad' | 'apunte' | 'repeticion' | 'trabajo';
 
 export interface Tramo {
   tipo: TipoTramo;
@@ -41,6 +42,10 @@ export interface Interpretacion {
   prioridad: Prioridad | null;
   /** Títulos de los `[[apuntes]]` cerrados. Quien llama los traduce a ids. */
   apuntes: string[];
+  /** Regla de repetición (`lib/recurrencia.ts`), o `null`. */
+  recurrencia: string | null;
+  /** «hacer el martes»: el día en que se hace, aparte de la entrega. */
+  fechaTrabajo: string | null;
   tramos: Tramo[];
 }
 
@@ -150,6 +155,51 @@ function buscarFechas(texto: string, hoy: Date, lang: string): Candidato[] {
   return hallados;
 }
 
+const DIAS_REGLA_ES: Record<string, Dia> = { lunes: 'MO', martes: 'TU', miercoles: 'WE', jueves: 'TH', viernes: 'FR', sabado: 'SA', domingo: 'SU' };
+const DIAS_REGLA_EN: Record<string, Dia> = { monday: 'MO', tuesday: 'TU', wednesday: 'WE', thursday: 'TH', friday: 'FR', saturday: 'SA', sunday: 'SU' };
+
+/**
+ * «cada lunes», «cada 2 semanas», «cada mes el 15», «cada fin de mes».
+ *
+ * Las que dependen del día —«cada semana», «cada mes»— se escriben con `?` y
+ * se completan al final con el día de la fecha (o de hoy si no hay fecha).
+ */
+function buscarRepeticiones(texto: string, lang: string): Candidato[] {
+  const hallados: Candidato[] = [];
+  const poner = (m: RegExpMatchArray, valor: string) =>
+    hallados.push({ tipo: 'repeticion', inicio: m.index!, fin: m.index! + m[0].length, valor });
+  const sinTildes = (x: string) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const re = (fuente: string) => new RegExp(`${ANTES}${fuente}${DESPUES}`, 'giu');
+
+  if (lang === 'es') {
+    const dia = '(?:lunes|martes|mi[ée]rcoles|jueves|viernes|s[áa]bado|domingo)';
+    for (const m of texto.matchAll(re(`(?:cada\\s+d[ií]a|todos\\s+los\\s+d[ií]as|a\\s+diario)`))) poner(m, 'd:1');
+    for (const m of texto.matchAll(re(`cada\\s+(\\d{1,2})\\s+d[ií]as`))) poner(m, `d:${Number(m[1])}`);
+    for (const m of texto.matchAll(re(`cada\\s+fin\\s+de\\s+mes`))) poner(m, 'm:1:-1');
+    for (const m of texto.matchAll(re(`cada\\s+mes(?:\\s+el(?:\\s+d[ií]a)?\\s+(\\d{1,2}))?`))) poner(m, `m:1:${m[1] ? Number(m[1]) : '?'}`);
+    for (const m of texto.matchAll(re(`cada\\s+(\\d{1,2})\\s+semanas(?:\\s+el\\s+(${dia}))?`))) {
+      poner(m, `w:${Number(m[1])}:${m[2] ? DIAS_REGLA_ES[sinTildes(m[2])] : '?'}`);
+    }
+    for (const m of texto.matchAll(re(`cada\\s+semana`))) poner(m, 'w:1:?');
+    for (const m of texto.matchAll(re(`cada\\s+(${dia}(?:\\s*(?:,|y)\\s*${dia})*)`))) {
+      const dias = m[1].split(/\s*(?:,|y)\s*/).map((d) => DIAS_REGLA_ES[sinTildes(d)]).filter(Boolean);
+      poner(m, `w:1:${dias.join(',')}`);
+    }
+  } else {
+    const dia = '(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)';
+    for (const m of texto.matchAll(re(`(?:every\\s+day|daily)`))) poner(m, 'd:1');
+    for (const m of texto.matchAll(re(`every\\s+(\\d{1,2})\\s+days`))) poner(m, `d:${Number(m[1])}`);
+    for (const m of texto.matchAll(re(`every\\s+month`))) poner(m, 'm:1:?');
+    for (const m of texto.matchAll(re(`every\\s+(\\d{1,2})\\s+weeks`))) poner(m, `w:${Number(m[1])}:?`);
+    for (const m of texto.matchAll(re(`every\\s+week`))) poner(m, 'w:1:?');
+    for (const m of texto.matchAll(re(`every\\s+(${dia}(?:\\s*(?:,|and)\\s*${dia})*)`))) {
+      const dias = m[1].split(/\s*(?:,|and)\s*/).map((d) => DIAS_REGLA_EN[d.toLowerCase()]).filter(Boolean);
+      poner(m, `w:1:${dias.join(',')}`);
+    }
+  }
+  return hallados;
+}
+
 function buscarHoras(texto: string): Candidato[] {
   const hallados: Candidato[] = [];
   const poner = (m: RegExpMatchArray, h: number, min: number) => {
@@ -204,7 +254,21 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
     const valor = /^[1-4]$/.test(clave) ? DE_ATAJO[clave] : NOMBRES_PRIORIDAD[clave];
     if (valor) candidatos.push({ tipo: 'prioridad', inicio: m.index!, fin: m.index! + m[0].length, valor });
   }
-  candidatos.push(...buscarFechas(texto, ctx.hoy, lang), ...buscarHoras(texto));
+  candidatos.push(...buscarRepeticiones(texto, lang), ...buscarHoras(texto));
+
+
+  /**
+   * «hacer el martes», «trabajar el 15/11», «do tue»: una fecha precedida de
+   * esas palabras es el día de trabajo, no la entrega. El prefijo se come con
+   * ella para que no quede en el título.
+   */
+  const fechas = buscarFechas(texto, ctx.hoy, lang);
+  const prefijo = lang === 'es' ? /(?<![\p{L}\p{N}])(?:hacer(?:lo)?|trabajar(?:lo)?|lo\s+hago)\s+$/iu : /(?<![\p{L}\p{N}])(?:do(?:\s+it)?|work\s+on)\s+$/iu;
+  for (const f of fechas) {
+    const m = prefijo.exec(texto.slice(0, f.inicio));
+    if (m) candidatos.push({ ...f, tipo: 'trabajo', inicio: m.index });
+    else candidatos.push(f);
+  }
 
   // Sin solapes: gana el que empieza antes y, a igualdad, el más largo
   // («pasado mañana» antes que «mañana»; «15 de marzo» antes que «el 15»).
@@ -218,7 +282,7 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
   }
 
   const r: Interpretacion = {
-    titulo: '', fecha: null, hora: null, etiquetas: [], etiquetasNuevas: [], prioridad: null, apuntes: [], tramos: [],
+    titulo: '', fecha: null, hora: null, etiquetas: [], etiquetasNuevas: [], prioridad: null, apuntes: [], recurrencia: null, fechaTrabajo: null, tramos: [],
   };
   const usados: Candidato[] = [];
   for (const c of elegidos) {
@@ -228,6 +292,8 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
     else if (c.tipo === 'hora') { if (r.hora) continue; r.hora = c.valor as string; }
     else if (c.tipo === 'prioridad') { if (r.prioridad) continue; r.prioridad = c.valor as Prioridad; }
     else if (c.tipo === 'apunte') r.apuntes.push(c.valor as string);
+    else if (c.tipo === 'repeticion') { if (r.recurrencia) continue; r.recurrencia = c.valor as string; }
+    else if (c.tipo === 'trabajo') { if (r.fechaTrabajo) continue; r.fechaTrabajo = c.valor as string; }
     else if (c.tipo === 'etiqueta') {
       const buscada = normalizar(c.valor as string);
       const hallada = catalogo.find((e) => normalizar(e.name) === buscada);
@@ -237,6 +303,16 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
     usados.push(c);
     r.tramos.push({ tipo: c.tipo, inicio: c.inicio, fin: c.fin, texto: texto.slice(c.inicio, c.fin) });
   }
+
+  // «cada semana» y «cada mes» toman el día de la fecha, o el de hoy.
+  if (r.recurrencia?.includes('?')) {
+    const base = r.fecha ?? iso(soloDia(ctx.hoy));
+    r.recurrencia = r.recurrencia.startsWith('w')
+      ? r.recurrencia.replace('?', diaDe(base))
+      : r.recurrencia.replace('?', String(Number(base.slice(8, 10))));
+  }
+  // Una tarea que se repite necesita fecha: la primera que toca.
+  if (r.recurrencia && !r.fecha) r.fecha = primera(r.recurrencia, iso(soloDia(ctx.hoy)));
 
   // Una hora sin fecha es para hoy: «18:00 entregar» se entiende como hoy.
   if (r.hora && !r.fecha) r.fecha = iso(soloDia(ctx.hoy));

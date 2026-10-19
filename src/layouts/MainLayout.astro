@@ -151,7 +151,7 @@ Astro.response.headers.set('Pragma', 'no-cache');
       })();
     </script>
   </head>
-  <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-dvh overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin}>
+  <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-dvh overflow-hidden selection:bg-forge-primary selection:text-white" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin} data-tz={user ? (user.timezone ?? '') : undefined}>
     <Sidebar workspaceId={workspaceId} workspaceName={workspaceName} />
     {/* El alta de tareas, en toda página de un espacio: `C` funciona también
         desde los apuntes. Solo se pinta para quien puede crear. */}
@@ -286,6 +286,26 @@ Astro.response.headers.set('Pragma', 'no-cache');
     </script>
 
     <script is:inline>
+      // La zona horaria se guarda sola: si la del navegador no es la que tiene
+      // la cuenta, se manda. «Hoy» y «vencida» se calculan en el servidor con
+      // ella. Sin sesión no hay `data-tz` y no se manda nada.
+      (function () {
+        var guardada = document.body.dataset.tz;
+        if (guardada === undefined) return;
+        try {
+          var actual = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (actual && actual !== guardada) {
+            fetch('/api/user/timezone', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ timezone: actual })
+            }).catch(function () {});
+          }
+        } catch (e) { /* sin Intl: se queda en UTC */ }
+      })();
+    </script>
+
+    <script is:inline>
       /**
        * `opciones.accion` + `opciones.alPulsar` añaden un botón al aviso
        * («Deshacer»). Con acción, el aviso dura más: ocho segundos para
@@ -296,6 +316,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
        * temporizador del primero.
        */
       let temporizadorAviso = null;
+      // Un aviso que viene de la página anterior (se crea algo y se recarga).
+      document.addEventListener('DOMContentLoaded', function () {
+        try {
+          var pendiente = sessionStorage.getItem('forge_aviso');
+          if (pendiente) { sessionStorage.removeItem('forge_aviso'); window.showToast(pendiente); }
+        } catch (e) { /* sin almacenamiento */ }
+      });
       window.showToast = function(msg, type = false, opciones = null) {
         const toast = document.getElementById('forge-toast');
         const text = document.getElementById('forge-toast-msg');

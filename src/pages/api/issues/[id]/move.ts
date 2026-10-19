@@ -4,7 +4,7 @@ import { checkWorkspaceAccess } from '../../../../lib/guard';
 import { ForgeEvents } from '../../../../lib/automations';
 import crypto from 'crypto';
 import { finalizeIssueSessions } from '../../../../lib/sesionesTiempo';
-import { SET_DONE_AT } from '../../../../lib/IssueService';
+import { SET_DONE_AT, IssueService } from '../../../../lib/IssueService';
 import { funciones } from '../../../../lib/funcionesEspacio';
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
@@ -39,6 +39,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   }
 
   // 4. Transacción Segura: Mover y Rebalancear si es necesario
+  // Lo que pasó con la tarea siguiente si se repite (ver `trasCambioDeEstado`).
+  let recurrencia: ReturnType<typeof IssueService.trasCambioDeEstado> = {};
   const updateTransaction = db.transaction(() => {
     const newSprintId = sprint_id !== undefined ? sprint_id : oldIssue.sprint_id;
     
@@ -102,6 +104,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     
     db.prepare(sql).run(...updateParams);
     
+    // En la misma transacción que el cambio de estado: o las dos cosas o ninguna.
+    recurrencia = IssueService.trasCambioDeEstado(issueId, oldIssue.status, status, user.id);
+
     // 5. Auto-stop time tracker si pasa a review o done
     if (status === 'review' || status === 'done') {
       finalizeIssueSessions(issueId, 'Auto-registrado al completar');
@@ -126,7 +131,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   
   try {
     updateTransaction();
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return new Response(JSON.stringify({ success: true, recurrencia }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err: any) {
     return new Response(err.message, { status: 500 });
   }

@@ -53,9 +53,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // ser públicas por definición: quien vuelve de Google todavía no tiene sesión,
   // y sin esta excepción el middleware lo mandaría al login justo en el paso que
   // iba a crearla.
+  //
+  // `/cal/<token>.ics` también: lo pide Google Calendar sin sesión, y la llave
+  // es el token del propio enlace.
   const isPublicRoute =
     PUBLIC_ROUTES.has(context.url.pathname) ||
-    context.url.pathname.startsWith('/api/auth/oauth/');
+    context.url.pathname.startsWith('/api/auth/oauth/') ||
+    /^\/cal\/[A-Za-z0-9_-]+\.ics$/.test(context.url.pathname);
 
   if (!sessionId) {
     if (isPublicRoute) {
@@ -83,7 +87,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const sessionData = db.prepare(`
     SELECT u.id, u.username, u.avatar_url, u.is_sysadmin, u.is_guest,
            u.theme_preference, u.last_workspace_id, u.last_page_id,
-           u.bio, u.pronouns, u.public_email, u.github_id, u.google_id,
+           u.bio, u.pronouns, u.public_email, u.github_id, u.google_id, u.timezone,
            s.expires_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id

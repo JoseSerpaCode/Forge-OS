@@ -5,8 +5,10 @@ import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
 import { listar as listarEtiquetas } from '../../../lib/labels';
-import { cargarTablero } from '../../../lib/tablero';
+import { cargarTablero, cargarVista } from '../../../lib/tablero';
+import { hoyEn, sumarDiasIso } from '../../../lib/fechas';
 import { funciones } from '../../../lib/funcionesEspacio';
+import { OPCIONES as OPCIONES_PRIORIDAD } from '../../../lib/prioridad';
 import { listar as listarTipos, nombreVisible } from '../../../lib/issueTypes';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
@@ -88,16 +90,72 @@ const etiquetaFiltro = etiquetaPedida
       .get(etiquetaPedida, workspace.id) as any) ?? null
   : null;
 
+/**
+ * Filtros de prioridad, «vence en N días» y responsable.
+ *
+ * Cada valor se valida: una prioridad de las cuatro, un número de días acotado
+ * y una persona que **sea miembro de este espacio** (o `yo`). Lo que no vale se
+ * ignora en vez de vaciar el tablero.
+ */
+const qp = Astro.url.searchParams;
+const prioridadPedida = qp.get('prioridad');
+const filtroPrioridad = (['highest', 'high', 'medium', 'low'] as const).find((p) => p === prioridadPedida) ?? null;
+const venceDias = Number(qp.get('vence'));
+const filtroVence = Number.isInteger(venceDias) && venceDias >= 1 && venceDias <= 60 ? venceDias : null;
+const responsablePedido = qp.get('responsable');
+const filtroResponsable = responsablePedido === 'yo'
+  ? user.id
+  : responsablePedido && db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(workspace.id, responsablePedido)
+    ? responsablePedido
+    : null;
+
 /** Un carril por etiqueta. En la URL, como el filtro: el enlace se puede pasar. */
 const agrupar = Astro.url.searchParams.get('group') === 'label';
 
-const { tarjetas: issues, conteos: statusCounts } = cargarTablero({
+/**
+ * La vista: el tablero de columnas, «Hoy» o «Próximos».
+ *
+ * Las dos últimas miran fechas y no columnas, en el día de **quien mira**
+ * (`users.timezone`): el servidor corre en UTC.
+ */
+const vistaPedida = Astro.url.searchParams.get('vista');
+const vista: 'tablero' | 'hoy' | 'proximos' = vistaPedida === 'hoy' || vistaPedida === 'proximos' ? vistaPedida : 'tablero';
+const hoy = hoyEn(user.timezone);
+const filtrosExtra = {
+  prioridad: filtroPrioridad,
+  vence: filtroVence ? { hoy, hasta: sumarDiasIso(hoy, filtroVence - 1) } : null,
+  responsable: filtroResponsable,
+};
+const dias = Math.min(Math.max(Number(Astro.url.searchParams.get('dias')) || 14, 14), 84);
+const grupos = vista === 'tablero' ? [] : cargarVista({
   workspaceId: workspace.id,
   userId: user.id,
-  sprintId: funcs.sprints ? activeSprintId : undefined,
   labelId: etiquetaFiltro?.id ?? null,
-  agruparPorEtiqueta: agrupar,
+  ...filtrosExtra,
+  vista,
+  hoy,
+  hasta: sumarDiasIso(hoy, dias - 1),
 });
+
+const { tarjetas: issues, conteos: statusCounts } = vista === 'tablero'
+  ? cargarTablero({
+      workspaceId: workspace.id,
+      userId: user.id,
+      sprintId: funcs.sprints ? activeSprintId : undefined,
+      labelId: etiquetaFiltro?.id ?? null,
+      agruparPorEtiqueta: agrupar,
+      ...filtrosExtra,
+    })
+  : { tarjetas: [] as any[], conteos: {} as Record<string, number> };
+
+/** Enlace a otra vista conservando el filtro de etiqueta. */
+const enlaceVista = (v: string) => {
+  const u = new URL(Astro.url);
+  u.searchParams.delete('dias');
+  u.searchParams.delete('group');
+  if (v === 'tablero') u.searchParams.delete('vista'); else u.searchParams.set('vista', v);
+  return `${u.pathname}${u.search}`;
+};
 
 const etiquetasDelEspacio = listarEtiquetas(workspace.id);
 const tiposDelEspacio = listarTipos(workspace.id);
@@ -190,7 +248,18 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
         rejilla los deja en dos filas parejas y ocupa la mitad.
       */}
       <div class="grid grid-cols-2 gap-2 w-full items-center sm:flex sm:flex-wrap sm:gap-x-2 sm:gap-y-2.5 xl:w-auto xl:max-w-[70%] xl:justify-end">
-        {funcs.sprints && (
+        {/* La vista: enlaces con `aria-current`, no pestañas que fingen serlo. */}
+        <nav aria-label={t('view.switcher')} class="col-span-2 sm:col-span-1 flex rounded-md border border-forge-border overflow-hidden text-sm">
+          {([['tablero', t('view.board')], ['hoy', t('view.today')], ['proximos', t('view.upcoming')]] as const).map(([v, texto]) => (
+            <a href={enlaceVista(v)} aria-current={vista === v ? 'page' : undefined}
+              class:list={['flex-1 sm:flex-none text-center px-3 py-1.5 transition-colors',
+                vista === v ? 'bg-forge-primary text-forge-on-accent font-semibold' : 'bg-forge-bg text-forge-text hover:bg-forge-panel']}>
+              {texto}
+            </a>
+          ))}
+        </nav>
+
+        {vista === 'tablero' && funcs.sprints && (
           <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="w-full sm:w-auto min-w-0 bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
             <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
             {sprints.map(s => (
@@ -209,7 +278,7 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
           se puede seguir arrastrando a partir de ahí. «Hecho» no se toca: va
           siempre por cuándo se terminó.
         */}
-        {puedeEditar && (
+        {vista === 'tablero' && puedeEditar && (
           <div class="relative" id="sort-menu-root">
             <button id="btn-sort-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sort-menu"
               class="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-forge-bg border border-forge-border rounded-md px-3 py-1.5 text-sm text-forge-text hover:border-forge-secondary transition-colors">
@@ -236,7 +305,7 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
 
         {/* Un carril por etiqueta: con una etiqueta por asignatura, cada
             asignatura con sus cuatro columnas. */}
-        {etiquetasDelEspacio.length > 0 && (
+        {vista === 'tablero' && etiquetasDelEspacio.length > 0 && (
           <button type="button" id="btn-group-label" aria-pressed={agrupar ? 'true' : 'false'}
             class:list={['w-full sm:w-auto flex items-center justify-center gap-1.5 border rounded-md px-3 py-1.5 text-sm transition-colors',
               agrupar ? 'bg-forge-secondary/10 border-forge-secondary text-forge-text' : 'bg-forge-bg border-forge-border text-forge-text hover:border-forge-secondary']}>
@@ -244,6 +313,49 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
             {t('board.group_label')}
           </button>
         )}
+
+        {/* Más filtros y guardar la vista, en un desplegable: la barra ya no
+            da para más controles sueltos. */}
+        <details class="relative" id="filtros-tablero" data-sys-tag={sys_tag}
+          data-t-saved={t('views.saved')} data-t-error={t('views.error')}>
+          <summary class:list={['list-none cursor-pointer flex items-center justify-center gap-1.5 border rounded-md px-3 py-1.5 text-sm transition-colors',
+            (filtroPrioridad || filtroVence || responsablePedido) ? 'bg-forge-secondary/10 border-forge-secondary text-forge-text' : 'bg-forge-bg border-forge-border text-forge-text hover:border-forge-secondary']}>
+            {t('filters.button')}
+          </summary>
+          <div class="menu-sprint absolute sm:right-0 top-full mt-1 w-64 bg-forge-panel border border-forge-border rounded-xl shadow-xl z-50 p-3 space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-forge-muted mb-1" for="filtro-prioridad">{t('priority.label')}</label>
+              <select id="filtro-prioridad" data-param="prioridad" class="filtro-param w-full bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text">
+                <option value="">{t('filters.priority_any')}</option>
+                {OPCIONES_PRIORIDAD.map((p) => (
+                  <option value={p.valor} selected={filtroPrioridad === p.valor}>{t(`priority.${p.nivel}`)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-forge-muted mb-1" for="filtro-vence">{t('filters.due')}</label>
+              <select id="filtro-vence" data-param="vence" class="filtro-param w-full bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text">
+                <option value="">{t('filters.due_any')}</option>
+                {[3, 7, 14, 30].map((n) => <option value={n} selected={filtroVence === n}>{t('filters.due_days').replace('{n}', String(n))}</option>)}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-forge-muted mb-1" for="filtro-responsable">{t('filters.assignee')}</label>
+              <select id="filtro-responsable" data-param="responsable" class="filtro-param w-full bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text">
+                <option value="">{t('filters.assignee_any')}</option>
+                <option value="yo" selected={responsablePedido === 'yo'}>{t('filters.me')}</option>
+                {workspaceMembers.filter((m) => m.id !== user.id).map((m) => <option value={m.id} selected={responsablePedido === m.id}>{m.username}</option>)}
+              </select>
+            </div>
+            <div class="border-t border-forge-border/60 pt-3">
+              <label class="block text-xs font-semibold text-forge-muted mb-1" for="vista-nombre">{t('views.save_label')}</label>
+              <div class="flex gap-1.5">
+                <input id="vista-nombre" type="text" maxlength="40" class="flex-1 min-w-0 bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text" />
+                <button type="button" id="btn-guardar-vista" class="shrink-0 bg-forge-primary text-forge-on-accent font-bold rounded-lg px-2.5 text-xs">{t('views.save')}</button>
+              </div>
+            </div>
+          </div>
+        </details>
 
         {/* Filtro por etiqueta. Solo aparece si hay etiquetas: un desplegable
             con una única opción vacía es ruido. */}
@@ -268,7 +380,7 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
           porque se usan una vez cada mucho, no en cada visita. Lo que se usa a
           diario se queda fuera.
         */}
-        {funcs.sprints && acceso.rol !== 'viewer' && (
+        {vista === 'tablero' && funcs.sprints && acceso.rol !== 'viewer' && (
           <div class="relative" id="sprint-menu-root">
             <button
               id="btn-sprint-menu"
@@ -344,7 +456,7 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} filtrosUrl={new URLSearchParams(Object.entries({ prioridad: filtroPrioridad ?? '', vence: filtroVence ? String(filtroVence) : '', responsable: responsablePedido && filtroResponsable ? responsablePedido : '' }).filter(([, v]) => v)).toString()} vista={vista} grupos={grupos} hoy={hoy} dias={dias} />
     </div>
   </div>
 
@@ -496,6 +608,38 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
       if (activo) url.searchParams.delete('group');
       else url.searchParams.set('group', 'label');
       window.location.href = url.toString();
+    });
+
+    // Filtros de prioridad, vencimiento y responsable: en la URL, como el de
+    // etiqueta, para que se puedan pasar y guardar.
+    document.querySelectorAll<HTMLSelectElement>('.filtro-param').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const url = new URL(window.location.href);
+        if (sel.value) url.searchParams.set(sel.dataset.param!, sel.value);
+        else url.searchParams.delete(sel.dataset.param!);
+        window.location.href = url.toString();
+      });
+    });
+
+    /**
+     * Guardar la vista: los parámetros de la URL actual, con nombre. El
+     * servidor se queda solo con los que reconoce.
+     */
+    document.getElementById('btn-guardar-vista')?.addEventListener('click', async () => {
+      const raiz = document.getElementById('filtros-tablero')!;
+      const nombre = (document.getElementById('vista-nombre') as HTMLInputElement).value.trim();
+      if (!nombre) { (document.getElementById('vista-nombre') as HTMLInputElement).focus(); return; }
+      const p = new URLSearchParams(window.location.search);
+      const query: Record<string, string | number> = {};
+      for (const clave of ['vista', 'label', 'group', 'prioridad', 'vence', 'responsable']) {
+        const v = p.get(clave);
+        if (v) query[clave] = clave === 'vence' ? Number(v) : v;
+      }
+      const res = await fetch(`/api/w/${raiz.dataset.sysTag}/views`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: nombre, query }),
+      }).catch(() => null);
+      if (res?.ok) { window.showToast?.(raiz.dataset.tSaved || ''); window.location.reload(); }
+      else window.showToast?.(raiz.dataset.tError || '', true);
     });
 
     const filtroEtiqueta = document.getElementById('label-filter') as HTMLSelectElement | null;

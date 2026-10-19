@@ -168,4 +168,13 @@ export const es = {
   'ws.settings.feat_points_desc': 'Estimar el esfuerzo en puntos y ordenar por ellos.',
   'ws.settings.feat_saved': 'Guardado.',
   'ws.settings.feat_error': 'No se ha podido guardar el cambio.',
+  'dashboard.this_week': 'Esta semana',
+  'dashboard.done_week': '{n} terminadas en los últimos 7 días',
+  'dashboard.overdue_count': '{n} vencidas',
+  'dashboard.upcoming': 'Próximas entregas',
+  'dashboard.no_upcoming': 'Nada con fecha próximamente.',
+  'ws.settings.templates': 'Plantillas de tareas',
+  'ws.settings.templates_desc': 'Se crean desde el panel de una tarea («Guardar como plantilla») y se usan al crear una nueva.',
+  'ws.settings.templates_none': 'No hay plantillas.',
+  'ws.settings.template_delete': 'Borrar la plantilla «{nombre}»',
 } as const;

@@ -26,6 +26,7 @@ const t = useTranslations(lang);
 
 <!-- Drawer container -->
 <div id="issue-details-modal"
+  data-t-del-subtasks={t('subtasks.delete_also')}
   data-t-loading={t('modal.loading')}
   data-t-loading-logs={t('modal.loading_logs')}
   data-t-load-failed={t('modal.load_failed')}
@@ -107,6 +108,9 @@ const t = useTranslations(lang);
       <button id="btn-duplicate-issue" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1 hidden" title={t('issue.duplicate_hint')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         <span class="hidden sm:inline">{t('issue.duplicate')}</span>
+      </button>
+      <button id="btn-guardar-plantilla" type="button" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1 hidden" title={t('tpl.save')} aria-label={t('tpl.save')}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       </button>
       <button id="btn-delete-issue" class="text-forge-error hover:bg-red-400/10 hover:text-forge-error px-3 py-1.5 rounded-md text-xs font-bold transition-all hidden border border-transparent hover:border-red-400/20">
         {t('modal.delete')}
@@ -196,6 +200,25 @@ const t = useTranslations(lang);
           {PRIORIDADES.map((p) => <option value={p.valor} selected={p.valor === 'medium'}>{t(`priority.${p.nivel}`)}</option>)}
         </select>
       </div>
+      {/* Repetir. Las opciones que dependen del día («el mismo día») se
+          resuelven con la fecha de entrega al guardar: `@` es ese día. */}
+      <div class="space-y-2">
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-repeat">{t('repeat.label')}</label>
+        <select id="modal-issue-repeat"
+          data-t-custom={t('repeat.custom')}
+          data-t-needs-date={t('repeat.needs_date')}
+          data-t-saved={t('repeat.saved')}
+          data-t-error={t('repeat.error')}
+          data-t-card={t('repeat.card')}
+          class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+          <option value="">{t('repeat.never')}</option>
+          <option value="d:1">{t('repeat.daily')}</option>
+          <option value="w:1:@">{t('repeat.weekly')}</option>
+          <option value="w:2:@">{t('repeat.biweekly')}</option>
+          <option value="m:1:@">{t('repeat.monthly')}</option>
+          <option value="m:1:-1">{t('repeat.month_end')}</option>
+        </select>
+      </div>
       {funciones.puntos && (
       <div class="space-y-2 relative group/sp">
         <label for="modal-issue-points" class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex justify-between items-center cursor-help">
@@ -239,11 +262,35 @@ const t = useTranslations(lang);
       </div>
     </div>
 
+    {/* El día en que se hace, aparte de la entrega. */}
+    <div class="space-y-2">
+      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-planned-date-texto">{t('modal.planned_date')}</label>
+      <CampoFecha id="modal-issue-planned-date" inputClass="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm" />
+    </div>
+
     {/* Etiquetas. El mismo selector que usan las páginas: aquí la entidad
         cambia con cada apertura del modal, y se le dice con `setEntity`. */}
     <div class="space-y-2">
       <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('labels.assign')}</span>
       <LabelPicker sysTag={sysTag} entityType="issue" catalog={labels} class="modal-labels" />
+    </div>
+
+    {/* Subtareas: pasos dentro de la tarea. No son tarjetas del tablero. */}
+    <div class="space-y-2" id="modal-subtareas"
+      data-t-title={t('subtasks.title')}
+      data-t-toggle={t('subtasks.toggle')}
+      data-t-delete={t('subtasks.delete')}
+      data-t-error={t('subtasks.error')}
+      data-t-all-done={t('subtasks.all_done')}
+      data-t-complete-parent={t('subtasks.complete_parent')}
+      data-t-progress={t('subtasks.progress')}>
+      <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('subtasks.section')}</span>
+      <ul id="modal-subtareas-lista" class="space-y-1"></ul>
+      <div class="modal-subtareas-editar">
+        <label class="sr-only" for="modal-subtareas-nueva">{t('subtasks.add')}</label>
+        <input type="text" id="modal-subtareas-nueva" autocomplete="off" maxlength="200" placeholder={`+ ${t('subtasks.add')}`}
+          class="w-full bg-forge-panel/40 border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 text-xs text-forge-text focus:border-forge-secondary outline-none" />
+      </div>
     </div>
 
     {/* Apuntes vinculados: la tarea y lo que se apuntó en clase sobre ella.
@@ -385,10 +432,24 @@ const t = useTranslations(lang);
 </dialog>
 
 
+<dialog id="dlg-plantilla" aria-labelledby="dlg-plantilla-titulo" class="bg-forge-panel border border-forge-border rounded-2xl p-5 w-[calc(100vw-2rem)] max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50"
+  data-sys-tag={sysTag} data-t-saved={t('tpl.saved')} data-t-error={t('tpl.error')}>
+  <h2 id="dlg-plantilla-titulo" class="text-lg font-bold mb-3">{t('tpl.title')}</h2>
+  <label class="block text-xs font-semibold text-forge-muted mb-1" for="tpl-nombre">{t('tpl.name')}</label>
+  <input id="tpl-nombre" type="text" maxlength="60" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text mb-3" />
+  <label class="block text-xs font-semibold text-forge-muted mb-1" for="tpl-offset">{t('tpl.offset')}</label>
+  <input id="tpl-offset" type="number" min="0" max="365" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text font-mono" />
+  <div class="flex justify-end gap-2 mt-5">
+    <button type="button" class="px-4 py-2 text-sm text-forge-muted hover:text-forge-text" onclick="document.getElementById('dlg-plantilla').close()">{t('modal.cancel')}</button>
+    <button type="button" id="tpl-guardar" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded-lg text-sm font-bold">{t('modal.save')}</button>
+  </div>
+</dialog>
+
 <script>
   import { escaparHtml } from '../../lib/texto';
   import { fecha, vencida, diaDeCalendario } from '../../lib/fechas';
   import { prioridadVisible } from '../../lib/prioridad';
+  import { describir, diaDe } from '../../lib/recurrencia';
 
   /**
    * La tarjeta de una tarea, por `data-issue-id`.
@@ -1249,6 +1310,10 @@ const t = useTranslations(lang);
         if (dueDateInput && !editandoFecha) {
           dueDateInput.value = issue.due_date ? (diaDeCalendario(issue.due_date) ?? '') : '';
         }
+        const plannedInput = document.getElementById('modal-issue-planned-date') as HTMLInputElement | null;
+        const editandoTrabajo = document.activeElement === plannedInput
+          || document.activeElement?.id === 'modal-issue-planned-date-texto';
+        if (plannedInput && !editandoTrabajo) plannedInput.value = issue.planned_date || '';
         const dueTimeInput = document.getElementById('modal-issue-due-time') as HTMLInputElement | null;
         if (dueTimeInput && document.activeElement !== dueTimeInput) dueTimeInput.value = issue.due_time || '';
       }
@@ -1282,7 +1347,10 @@ const t = useTranslations(lang);
     if (!issueId || !workspaceId) return;
     
     // @ts-ignore
-    window.forgeConfirm(raiz?.dataset.tDelConfirm || '', async () => {
+    // Las subtareas se van con la tarea (en cascada): se dice cuántas.
+    const nSub = Number(tarjetaDe(issueId)?.dataset.subtareasTotal || 0);
+    const aviso = (raiz?.dataset.tDelConfirm || '') + (nSub > 0 ? ` ${(raiz?.dataset.tDelSubtasks || '').replace('{n}', String(nSub))}` : '');
+    (window as any).forgeConfirm(aviso, async () => {
       try {
         const res = await fetch(`/api/issues/${issueId}`, {
           method: 'DELETE',
@@ -1620,6 +1688,7 @@ const t = useTranslations(lang);
   if (document.querySelector<HTMLElement>('.kanban-container')?.dataset.canEdit === 'true') {
     deleteBtn?.classList.remove('hidden');
     document.getElementById('btn-duplicate-issue')?.classList.remove('hidden');
+    document.getElementById('btn-guardar-plantilla')?.classList.remove('hidden');
   }
 
   // ── Prioridad ──────────────────────────────────────────────────────────────
@@ -1865,4 +1934,248 @@ const t = useTranslations(lang);
       cargar();
     };
   })();
+
+  // ── Subtareas ──────────────────────────────────────────────────────────────
+  (() => {
+    const raizSub = document.getElementById('modal-subtareas');
+    const lista = document.getElementById('modal-subtareas-lista');
+    const nueva = document.getElementById('modal-subtareas-nueva') as HTMLInputElement | null;
+    if (!raizSub || !lista || !nueva) return;
+    const raizEl: HTMLElement = raizSub;
+    const listaEl: HTMLElement = lista;
+    const textos = raizEl.dataset;
+    const soloLectura = () => document.querySelector<HTMLElement>('.kanban-container')?.dataset.canEdit !== 'true';
+    let madre = '';
+    let filas: Array<{ id: string; title: string; status: string }> = [];
+
+    const avisarError = () => window.showToast?.(textos.tError || '', true);
+    const patch = (id: string, cuerpo: Record<string, unknown>) => fetch(`/api/issues/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo),
+    });
+
+    /** «2/5» en la tarjeta, sin recargar. */
+    function actualizarTarjeta() {
+      const total = filas.length;
+      const hechas = filas.filter((f) => f.status === 'done').length;
+      tarjetasDe(madre).forEach((card) => {
+        card.dataset.subtareasTotal = String(total);
+        card.dataset.subtareasHechas = String(hechas);
+        let marca = card.querySelector<HTMLElement>('.card-subtareas');
+        if (total === 0) { marca?.remove(); return; }
+        if (!marca) {
+          marca = document.createElement('span');
+          marca.className = 'card-subtareas flex items-center gap-1 text-[10px] font-mono text-forge-muted';
+          card.querySelector('.issue-type-badge')?.parentElement?.append(marca);
+        }
+        const frase = (textos.tProgress || '').replace('{hechas}', String(hechas)).replace('{total}', String(total));
+        marca.title = frase;
+        marca.replaceChildren();
+        const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = frase;
+        const visible = document.createElement('span'); visible.setAttribute('aria-hidden', 'true'); visible.textContent = `${hechas}/${total}`;
+        marca.append(sr, visible);
+      });
+    }
+
+    function pintar() {
+      listaEl.replaceChildren();
+      const ro = soloLectura();
+      raizEl.querySelector('.modal-subtareas-editar')?.classList.toggle('hidden', ro);
+      for (const f of filas) {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-2';
+        const casilla = document.createElement('input');
+        casilla.type = 'checkbox';
+        casilla.checked = f.status === 'done';
+        casilla.disabled = ro;
+        casilla.className = 'accent-forge-primary shrink-0';
+        casilla.setAttribute('aria-label', (textos.tToggle || '').replace('{titulo}', f.title));
+        casilla.addEventListener('change', async () => {
+          const estado = casilla.checked ? 'done' : 'todo';
+          const res = await patch(f.id, { status: estado }).catch(() => null);
+          if (!res?.ok) { casilla.checked = !casilla.checked; avisarError(); return; }
+          f.status = estado;
+          actualizarTarjeta();
+          // Completar la última no completa la tarea: se ofrece.
+          if (filas.length > 0 && filas.every((x) => x.status === 'done')) {
+            window.showToast?.(textos.tAllDone || '', false, {
+              accion: textos.tCompleteParent || '',
+              alPulsar: () => (window as any).forgeCompletarTarea?.(madre),
+            });
+          }
+        });
+        const titulo = document.createElement('input');
+        titulo.type = 'text';
+        titulo.value = f.title;
+        titulo.readOnly = ro;
+        titulo.maxLength = 200;
+        titulo.setAttribute('aria-label', (textos.tTitle || '').replace('{titulo}', f.title));
+        titulo.className = 'flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-forge-border/50 focus:border-forge-secondary outline-none text-sm text-forge-text py-0.5';
+        if (f.status === 'done') titulo.classList.add('line-through');
+        titulo.addEventListener('change', async () => {
+          const limpio = titulo.value.trim();
+          if (!limpio) { titulo.value = f.title; return; }
+          const res = await patch(f.id, { title: limpio }).catch(() => null);
+          if (!res?.ok) { titulo.value = f.title; avisarError(); return; }
+          f.title = limpio;
+        });
+        titulo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titulo.blur(); } });
+        li.append(casilla, titulo);
+        if (!ro) {
+          const quitar = document.createElement('button');
+          quitar.type = 'button';
+          quitar.className = 'shrink-0 text-forge-muted hover:text-forge-error text-xs px-1';
+          quitar.setAttribute('aria-label', (textos.tDelete || '').replace('{titulo}', f.title));
+          quitar.textContent = '×';
+          quitar.addEventListener('click', async () => {
+            const res = await fetch(`/api/issues/${f.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => null);
+            if (!res?.ok) { avisarError(); return; }
+            filas = filas.filter((x) => x.id !== f.id);
+            pintar();
+            actualizarTarjeta();
+          });
+          li.append(quitar);
+        }
+        listaEl.append(li);
+      }
+    }
+
+    // Enter añade y deja el campo listo para la siguiente: los pasos de una
+    // tarea se escriben de corrido.
+    nueva.addEventListener('keydown', async (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const titulo = nueva.value.trim();
+      if (!titulo || !madre) return;
+      const res = await fetch(`/api/issues/${madre}/subtareas`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: titulo }),
+      }).catch(() => null);
+      if (!res?.ok) { avisarError(); return; }
+      filas.push(await res.json());
+      nueva.value = '';
+      pintar();
+      actualizarTarjeta();
+      nueva.focus();
+    });
+
+    (window as any).forgeSubtareasOpen = async (issueId: string) => {
+      madre = issueId;
+      filas = [];
+      nueva.value = '';
+      pintar();
+      const res = await fetch(`/api/issues/${issueId}/subtareas`).catch(() => null);
+      if (res?.ok && madre === issueId) { filas = await res.json(); pintar(); }
+    };
+  })();
+
+  // ── Repetir ────────────────────────────────────────────────────────────────
+  (() => {
+    const selOpt = document.getElementById('modal-issue-repeat') as HTMLSelectElement | null;
+    const fechaEl = document.getElementById('modal-issue-due-date') as HTMLInputElement | null;
+    if (!selOpt) return;
+    const sel: HTMLSelectElement = selOpt;
+    const textos = sel.dataset;
+    const lang = document.getElementById('issue-details-modal')?.dataset.lang || 'es';
+    let anterior = '';
+
+    /** La regla de una opción, con `@` sustituido por el día de la entrega. */
+    const reglaDe = (valor: string, iso: string) => {
+      if (!valor.includes('@')) return valor;
+      return valor.startsWith('w') ? valor.replace('@', diaDe(iso)) : valor.replace('@', String(Number(iso.slice(8, 10))));
+    };
+    /** Al abrir: la opción que corresponde a la regla guardada, o una «personalizada». */
+    function sincronizar(regla: string) {
+      sel.querySelector('option[data-personalizada]')?.remove();
+      const iso = fechaEl?.value || '';
+      const coincide = Array.from(sel.options).find((o) => o.value && iso && reglaDe(o.value, iso) === regla);
+      if (!regla) sel.value = '';
+      else if (coincide) sel.value = coincide.value;
+      else {
+        const op = new Option((textos.tCustom || '').replace('{regla}', describir(regla, lang)), regla);
+        op.dataset.personalizada = '1';
+        sel.append(op);
+        sel.value = regla;
+      }
+      anterior = sel.value;
+    }
+    sel.addEventListener('repeticion-sincronizar', () => sincronizar(sel.dataset.regla || ''));
+
+    sel.addEventListener('change', async () => {
+      const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
+      if (!issueId) return;
+      const iso = fechaEl?.value || '';
+      if (sel.value && !iso) {
+        sel.value = anterior;
+        window.showToast?.(textos.tNeedsDate || '', true);
+        return;
+      }
+      const regla = sel.value ? reglaDe(sel.value, iso) : null;
+      try {
+        const res = await fetch(`/api/issues/${issueId}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recurrence: regla }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        anterior = sel.value;
+        tarjetasDe(issueId).forEach((card) => {
+          card.dataset.recurrence = regla || '';
+          card.querySelector('.card-repeat')?.remove();
+          if (!regla) return;
+          const frase = (textos.tCard || '').replace('{regla}', describir(regla, lang));
+          const marca = document.createElement('span');
+          marca.className = 'card-repeat flex items-center gap-1 text-[10px] text-forge-muted';
+          marca.title = frase;
+          marca.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+          const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = frase;
+          marca.append(sr);
+          card.querySelector('.issue-type-badge')?.parentElement?.append(marca);
+        });
+        window.showToast?.(textos.tSaved || '');
+      } catch (e) {
+        console.error('repetir:', e);
+        sel.value = anterior;
+        window.showToast?.(textos.tError || '', true);
+      }
+    });
+  })();
+
+  // ── Día de trabajo ─────────────────────────────────────────────────────────
+  document.getElementById('modal-issue-planned-date')?.addEventListener('change', async (e) => {
+    const campo = e.currentTarget as HTMLInputElement;
+    const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
+    if (!issueId) return;
+    try {
+      const res = await fetch(`/api/issues/${issueId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ planned_date: campo.value || null }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      tarjetasDe(issueId).forEach((card) => { card.dataset.plannedDate = campo.value; });
+    } catch (err) {
+      console.error('día de trabajo:', err);
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+    }
+  });
+
+  // ── Guardar como plantilla ─────────────────────────────────────────────────
+  (() => {
+    const dlg = document.getElementById('dlg-plantilla') as HTMLDialogElement | null;
+    if (!dlg) return;
+    document.getElementById('btn-guardar-plantilla')?.addEventListener('click', () => {
+      const titulo = (document.getElementById('modal-issue-title') as HTMLInputElement | null)?.value || '';
+      (document.getElementById('tpl-nombre') as HTMLInputElement).value = titulo;
+      (document.getElementById('tpl-offset') as HTMLInputElement).value = '';
+      dlg.showModal();
+    });
+    document.getElementById('tpl-guardar')?.addEventListener('click', async () => {
+      const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
+      const nombre = (document.getElementById('tpl-nombre') as HTMLInputElement).value.trim();
+      const offset = (document.getElementById('tpl-offset') as HTMLInputElement).value;
+      if (!issueId || !nombre) return;
+      const res = await fetch(`/api/w/${dlg.dataset.sysTag}/templates`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issue_id: issueId, name: nombre, due_offset: offset === '' ? null : Number(offset) }),
+      }).catch(() => null);
+      if (res?.ok) { dlg.close(); window.showToast?.(dlg.dataset.tSaved || ''); }
+      else window.showToast?.(dlg.dataset.tError || '', true);
+    });
+  })();
+
 </script>

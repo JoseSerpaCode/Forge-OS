@@ -5,6 +5,8 @@ import IssueDetailsModal from './IssueDetailsModal.astro';
 import LabelChip from '../labels/LabelChip.astro';
 import { claveConteo, cursorDe } from '../../lib/tablero';
 import type { Funciones } from '../../lib/funcionesEspacio';
+import { sumarDiasIso } from '../../lib/fechas';
+import type { Grupo } from '../../lib/tablero';
 
 interface Props {
   issues: any[];
@@ -25,6 +27,14 @@ interface Props {
   agrupar?: boolean;
   /** La etiqueta por la que se filtra, para que «ver más» respete el filtro. */
   filtroEtiqueta?: string | null;
+  /** Prioridad, vencimiento y responsable, como parámetros de URL: «ver más» los respeta. */
+  filtrosUrl?: string;
+  /** Tablero de columnas, o las vistas por fecha. */
+  vista?: 'tablero' | 'hoy' | 'proximos';
+  grupos?: Grupo[];
+  /** `AAAA-MM-DD` en la zona de quien mira. */
+  hoy?: string;
+  dias?: number;
 }
 
 import { useTranslations } from '../../i18n/ui';
@@ -35,7 +45,30 @@ const {
   issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer',
   statusCounts = {}, labels = [], issueTypes = [], sysTag = '',
   funciones = { sprints: false, tiempo: false, puntos: false }, agrupar = false, filtroEtiqueta = null,
+  vista = 'tablero', grupos = [], hoy = '', dias = 14, filtrosUrl = '',
 } = Astro.props;
+
+/**
+ * «Próximos» pinta **todos** los días del intervalo, también los vacíos: un
+ * día sin tareas tiene que estar ahí para poder soltarle una encima.
+ */
+const diasProximos = vista === 'proximos'
+  ? Array.from({ length: dias }, (_, i) => {
+      const fecha = sumarDiasIso(hoy, i);
+      return { clave: fecha, fecha, tarjetas: grupos.find((g) => g.clave === fecha)?.tarjetas ?? [] };
+    })
+  : [];
+// Mayúscula solo en la primera letra: «Lunes, 19 oct». La clase `capitalize`
+// la ponía en cada palabra y salía «19 Oct», que en español no se escribe.
+const nombreDia = (iso: string) => {
+  const texto = new Date(`${iso}T12:00:00Z`).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return texto.charAt(0).toLocaleUpperCase(lang) + texto.slice(1);
+};
+const masDias = (() => {
+  const u = new URL(Astro.url);
+  u.searchParams.set('dias', String(dias + 14));
+  return `${u.pathname}${u.search}`;
+})();
 
 // Por clave, para no recorrer la lista una vez por tarjeta.
 const tiposPorClave = new Map(issueTypes.map((t) => [t.key, t]));
@@ -92,6 +125,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     así que la información se traslada aquí: qué estados hay, cuál se está
     mirando y cuánto hay en cada uno, en una fila.
   */}
+  {vista === 'tablero' && (
   <div class="sm:hidden shrink-0 mb-3 grid grid-cols-4 gap-1 p-1 bg-forge-panel border border-forge-border rounded-xl" role="tablist" aria-label={t('board.status_filter')}>
     {columns.map((col) => (
       <button
@@ -109,15 +143,20 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       </button>
     ))}
   </div>
+  )}
 
   <div
-    class:list={['kanban-container h-full pb-4', agrupar ? 'flex flex-col gap-4 overflow-y-auto' : 'flex gap-4 overflow-x-auto']}
+    class:list={['kanban-container h-full pb-4', agrupar || vista !== 'tablero' ? 'flex flex-col gap-4 overflow-y-auto' : 'flex gap-4 overflow-x-auto']}
+    data-vista={vista}
+    data-t-moved-day={t('view.moved_day')}
+    data-t-move-day-error={t('view.move_error')}
     data-workspace={workspaceId}
     data-sys-tag={sysTag}
     data-can-edit={canEdit.toString()}
     data-tiempo={funciones.tiempo ? 'true' : 'false'}
     data-agrupar={agrupar ? 'true' : 'false'}
     data-label={filtroEtiqueta ?? ''}
+    data-filtros={filtrosUrl}
     data-sprint={funciones.sprints ? (currentSprintId ?? 'backlog') : ''}
     data-t-timer-start={t('card.timer_start')}
     data-t-timer-starting={t('card.timer_starting')}
@@ -126,10 +165,44 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     data-t-completed={t('card.completed_toast')}
     data-t-completed-timer={t('card.completed_timer_toast')}
     data-t-complete-error={t('card.complete_error')}
+    data-t-next-created={t('repeat.next_created')}
     data-t-undo={t('board.undo')}
     data-t-lane-only={t('board.lane_drop_only')}
   >
-    {carriles.map((carril) => {
+    {/* «Hoy»: vencidas y de hoy. «Próximos»: un bloque por día. Las tarjetas
+        son las mismas del tablero, así que abrirlas y completarlas funciona
+        igual. */}
+    {vista === 'hoy' && (grupos.length === 0
+      ? <p class="text-sm text-forge-muted py-10 text-center">{t('view.nothing_today')}</p>
+      : grupos.map((g) => (
+        <section class="vista-grupo" data-grupo={g.clave}>
+          <h2 class:list={['text-sm font-bold mb-2', g.clave === 'vencidas' ? 'text-forge-error' : 'text-forge-text']}>
+            {g.clave === 'vencidas' ? t('view.overdue') : t('view.today')} <span class="font-mono text-forge-muted font-normal">{g.tarjetas.length}</span>
+          </h2>
+          <div class="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
+            {g.tarjetas.map((issue) => <IssueCard issue={issue} canEdit={canEdit} tipo={tiposPorClave.get(issue.type) ?? null} funciones={funciones} />)}
+          </div>
+        </section>
+      )))}
+    {vista === 'proximos' && (
+      <>
+        {diasProximos.map((d) => (
+          <section class="dia-proximos rounded-xl border border-forge-border/40 p-3 transition-colors" data-fecha={d.fecha}>
+            <h2 class:list={['text-sm font-bold mb-2', d.fecha === hoy ? 'text-forge-accent-text' : 'text-forge-text']}>
+              {nombreDia(d.fecha)} <span class="font-mono text-forge-muted font-normal">{d.tarjetas.length || ''}</span>
+            </h2>
+            {d.tarjetas.length === 0
+              ? <p class="text-xs text-forge-muted">{t('view.empty_day')}</p>
+              : <div class="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {d.tarjetas.map((issue) => <IssueCard issue={issue} canEdit={canEdit} tipo={tiposPorClave.get(issue.type) ?? null} funciones={funciones} />)}
+                </div>}
+          </section>
+        ))}
+        <a href={masDias} class="self-center text-sm font-bold text-forge-accent-text hover:underline underline-offset-2 py-2">{t('view.more_days')}</a>
+      </>
+    )}
+
+    {vista === 'tablero' && carriles.map((carril) => {
       const columnas = (
         <div class:list={['flex gap-4', agrupar ? 'overflow-x-auto pb-1 carril-columnas' : 'h-full w-full']}>
           {columns.map((col) => {
@@ -168,7 +241,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     })}
   </div>
 
-  {issues.length === 0 && (
+  {vista === 'tablero' && issues.length === 0 && (
     <div class="tablero-vacio absolute inset-0 z-10 flex flex-col items-center justify-center p-8 text-center bg-forge-bg/60 backdrop-blur-sm max-md:backdrop-blur-none rounded-xl border border-forge-border/30 m-4 shadow-xl">
       <div class="w-20 h-20 bg-forge-panel rounded-full border border-forge-border shadow-lg flex items-center justify-center mb-6">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 8h4"></path><path d="M13 12h2"></path></svg>
@@ -272,6 +345,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       body: JSON.stringify({ status, position, workspaceId }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json().catch(() => ({})) as Promise<{ recurrencia?: { creada?: { id: string; due_date: string } } }>;
   }
 
   /**
@@ -321,8 +395,9 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     const posicionAntes = Number(card.dataset.position || 0);
     const habiaCronometro = !!card.querySelector('.active-timer-display');
 
+    let respuesta: Awaited<ReturnType<typeof mover>> = {};
     try {
-      await mover(issueId, 'done', posicionAntes);
+      respuesta = await mover(issueId, 'done', posicionAntes);
     } catch (err) {
       console.error('completar:', err);
       window.showToast?.(texto('complete-error'), true);
@@ -349,7 +424,12 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     });
     updateCounts();
 
-    window.showToast?.(habiaCronometro ? texto('completed-timer') : texto('completed'), false, {
+    // Si se repite, el aviso dice cuándo queda la siguiente.
+    const siguiente = respuesta.recurrencia?.creada?.due_date;
+    const mensaje = siguiente
+      ? texto('next-created').replace('{fecha}', new Date(`${siguiente}T12:00:00Z`).toLocaleDateString(document.documentElement.lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }))
+      : habiaCronometro ? texto('completed-timer') : texto('completed');
+    window.showToast?.(mensaje, false, {
       accion: texto('undo'),
       alPulsar: async () => {
         try {
@@ -370,7 +450,8 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
   async function verMas(boton: HTMLButtonElement) {
     const columna = columnaDe(boton);
     if (!columna) return;
-    const params = new URLSearchParams({ despues: boton.dataset.cursor || '' });
+    const params = new URLSearchParams(container?.dataset.filtros || '');
+    params.set('despues', boton.dataset.cursor || '');
     if (container?.dataset.label) params.set('label', container.dataset.label);
     if (container?.dataset.sprint) params.set('sprint', container.dataset.sprint);
     if (container?.dataset.agrupar === 'true') {
@@ -443,6 +524,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     w.forgeLabelsOpen?.(issueId);
     w.forgeDriveFilesOpen?.(issueId);
     w.forgeApuntesOpen?.(issueId);
+    w.forgeSubtareasOpen?.(issueId);
 
     // La clave viaja en un `data-*` de la insignia: sacarla de su texto fallaba
     // con la interfaz en español y con tipos propios.
@@ -465,6 +547,17 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     const reporterSelect = document.getElementById('modal-issue-reporter') as HTMLSelectElement | null;
     if (assigneeSelect) assigneeSelect.value = card.dataset.assigneeId || '';
     if (reporterSelect) reporterSelect.value = card.dataset.reporterId || 'system';
+
+    // La repetición, después de la fecha: «el mismo día» se lee de la entrega.
+    const repEl = document.getElementById('modal-issue-repeat') as HTMLSelectElement | null;
+    const fechaOculta = document.getElementById('modal-issue-due-date') as HTMLInputElement | null;
+    if (fechaOculta) fechaOculta.value = card.dataset.dueDate || '';
+    const trabajoOculto = document.getElementById('modal-issue-planned-date') as HTMLInputElement | null;
+    if (trabajoOculto) trabajoOculto.value = card.dataset.plannedDate || '';
+    if (repEl) {
+      repEl.dataset.regla = card.dataset.recurrence || '';
+      repEl.dispatchEvent(new Event('repeticion-sincronizar'));
+    }
 
     w.loadIssueAttachments?.(issueId);
     // `refreshTimeTrackingUI` además rellena la fecha de entrega: se llama
@@ -567,6 +660,12 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     }
   });
 
+  // Completar desde fuera del tablero (el aviso de «todas las subtareas hechas»).
+  (window as any).forgeCompletarTarea = (issueId: string) => {
+    const card = document.querySelector<HTMLElement>(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`);
+    if (card && card.dataset.status !== 'done') completar(card);
+  };
+
   // ── Arrastrar ──────────────────────────────────────────────────────────────
   let arrastrada: HTMLElement | null = null;
 
@@ -658,6 +757,44 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       } catch (error) {
         console.error('[SYS.NET] Update failed', error);
         window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      }
+    });
+  }
+
+  /**
+   * «Próximos»: arrastrar una tarea a otro día le cambia la fecha.
+   *
+   * Sin ratón o en móvil, la fecha se cambia en el panel de la tarea, que es
+   * un campo normal.
+   */
+  if (canEdit && container?.dataset.vista === 'proximos') {
+    const diaDe = (el: EventTarget | null) => (el as HTMLElement | null)?.closest?.<HTMLElement>('.dia-proximos') ?? null;
+    container.addEventListener('dragover', (e: DragEvent) => {
+      const dia = diaDe(e.target);
+      if (!dia || !arrastrada) return;
+      e.preventDefault();
+      dia.classList.add('bg-forge-secondary/10');
+    });
+    container.addEventListener('dragleave', (e: DragEvent) => diaDe(e.target)?.classList.remove('bg-forge-secondary/10'));
+    container.addEventListener('drop', async (e: DragEvent) => {
+      const dia = diaDe(e.target);
+      const card = arrastrada;
+      if (!dia || !card) return;
+      e.preventDefault();
+      dia.classList.remove('bg-forge-secondary/10');
+      if ((card.dataset.plannedDate || card.dataset.dueDate) === dia.dataset.fecha) return;
+      try {
+        // Arrastrar cambia el día en que se **hace**, nunca la entrega.
+        const res = await fetch(`/api/issues/${card.dataset.issueId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planned_date: dia.dataset.fecha }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        window.location.reload();
+      } catch (err) {
+        console.error('cambiar de día:', err);
+        window.showToast?.(texto('move-day-error'), true);
       }
     });
   }

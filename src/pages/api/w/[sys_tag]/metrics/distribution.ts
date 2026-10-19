@@ -34,7 +34,7 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
         u.username as assignee, i.status, COUNT(i.id) as count
         FROM issues i
         LEFT JOIN users u ON i.assignee_id = u.id
-        WHERE i.workspace_id = ? AND i.sprint_id = ?
+        WHERE i.workspace_id = ? AND i.sprint_id = ? AND i.parent_issue_id IS NULL
         GROUP BY i.assignee_id, i.status
       `).all(workspace.id, sprintId);
     } else {
@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
         SELECT u.username as assignee, i.status, COUNT(i.id) as count
         FROM issues i
         LEFT JOIN users u ON i.assignee_id = u.id
-        WHERE i.workspace_id = ?
+        WHERE i.workspace_id = ? AND i.parent_issue_id IS NULL
         GROUP BY i.assignee_id, i.status
       `).all(workspace.id);
     }

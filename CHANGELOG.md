@@ -6,6 +6,22 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.31.0] - 2026-10-19
+
+Vistas por fecha, subtareas, repeticiones y lo que hace falta para organizarse sin sprints.
+
+### Added
+
+- **Vistas «Hoy» y «Próximos»** junto al tablero. «Hoy» enseña lo vencido y lo de hoy; «Próximos», una agenda de catorce días (ampliable). Ninguna enseña las hechas, y las dos ignoran los sprints.
+- **La zona horaria de cada persona** (`users.timezone`, migración 43), que el navegador manda sola. «Hoy» y «vencida» se calculaban en el servidor, que corre en UTC: en Bogotá, a partir de las siete de la tarde, el servidor ya creía que era mañana.
+- **Subtareas** dentro del panel de una tarea: se añaden con Enter, se marcan y la tarjeta enseña «2/5». No son tarjetas del tablero ni cuentan en ningún total. Al terminar la última se ofrece completar la tarea. Migración 44.
+- **Tareas que se repiten** («cada lunes», «cada 2 semanas», «el día 15 de cada mes», «cada fin de mes»), desde el alta rápida o el panel. Al completarla se crea la siguiente con sus etiquetas, apuntes y subtareas pendientes; la base es la fecha prevista y no el día en que se completa, y un retraso de varias semanas crea una sola. «Hoy» es el de quien completa, no el del servidor. Reabrir la deshace solo si nadie ha tocado la siguiente: ni el título, las horas, el estado, las etiquetas, los apuntes o las subtareas, ni le ha colgado adjuntos, archivos de Drive o registros de horas. Migración 45.
+- **Fecha de trabajo** aparte de la de entrega («hacer el martes»). «Próximos» coloca cada tarea en el día en que se hace y arrastrar cambia ese día, nunca la entrega. Migración 46.
+- **Vistas guardadas**: filtros por prioridad, «vence en los próximos N días» y responsable, guardados con nombre en la barra lateral. Son personales. Migración 47.
+- **Plantillas de tareas** («Guardar como plantilla» en el panel, «Desde plantilla» o `/nombre` en el alta), con su entrega relativa. Las etiquetas que ya no existen se saltan y se dice. El botón no sale a quien solo puede mirar. Migración 48.
+- **Calendario `.ics`** de solo lectura para suscribirse desde Google Calendar (Ajustes de la cuenta): solo entregas pendientes, sin descripción, con el token guardado como hash y la pertenencia a cada espacio comprobada en cada petición. Migración 49.
+- **El resumen de un espacio sin sprints** enseña la semana —terminadas en los últimos siete días y vencidas— y las próximas entregas, en vez del sprint activo y el roadmap.
+
 ## [1.30.0] - 2026-10-19
 
 Un tablero que también sirve para usarlo a solas.

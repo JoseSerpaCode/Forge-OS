@@ -144,7 +144,7 @@ export function tareasPendientes(userId: string): TareaPendiente[] {
            w.sys_tag, w.id AS workspace_id, w.icon AS workspace_icon, w.name AS workspace_name
     FROM issues i
     JOIN workspaces w ON i.workspace_id = w.id
-    WHERE i.assignee_id = ? AND i.status != 'done'
+    WHERE i.assignee_id = ? AND i.status != 'done' AND i.parent_issue_id IS NULL
     ORDER BY
       i.due_date IS NULL ASC,
       i.due_date ASC,

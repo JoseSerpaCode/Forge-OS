@@ -150,6 +150,46 @@ describe('en inglés', () => {
   });
 });
 
+describe('repeticiones', () => {
+  it('cada lunes: regla semanal y la fecha es el próximo lunes', () => {
+    const r = es('Leer cada lunes');
+    expect(r.recurrencia).toBe('w:1:MO');
+    expect(r.fecha).toBe('2026-10-26');
+    expect(r.titulo).toBe('Leer');
+  });
+  it('cada lunes y jueves, cada 2 semanas el viernes, cada 3 días', () => {
+    expect(es('Gimnasio cada lunes y jueves').recurrencia).toBe('w:1:MO,TH');
+    expect(es('Informe cada 2 semanas el viernes').recurrencia).toBe('w:2:FR');
+    expect(es('Regar cada 3 días').recurrencia).toBe('d:3');
+  });
+  it('cada mes toma el día de la fecha; cada fin de mes; el 15', () => {
+    expect(es('Pagar cada mes 05/11').recurrencia).toBe('m:1:5');
+    expect(es('Pagar cada fin de mes').recurrencia).toBe('m:1:-1');
+    expect(es('Pagar cada mes el 15').recurrencia).toBe('m:1:15');
+  });
+  it('cada semana toma el día de la fecha si la hay', () => {
+    expect(es('Repaso cada semana el viernes').recurrencia).toBe('w:1:FR');
+  });
+  it('en inglés', () => {
+    expect(interpretar('Run every monday and friday', { hoy: MARTES, lang: 'en' }).recurrencia).toBe('w:1:MO,FR');
+    expect(interpretar('Stretch every day', { hoy: MARTES, lang: 'en' }).recurrencia).toBe('d:1');
+  });
+});
+
+describe('fecha de trabajo', () => {
+  it('«entregar viernes hacer martes»: la primera es la entrega, la de «hacer» el día de trabajo', () => {
+    const r = es('Informe viernes hacer el lunes');
+    expect(r.fecha).toBe('2026-10-23');
+    expect(r.fechaTrabajo).toBe('2026-10-26');
+    expect(r.titulo).toBe('Informe');
+  });
+  it('solo «hacer el jueves»: sin entrega', () => {
+    const r = es('Repasar hacer el jueves');
+    expect(r.fecha).toBeNull();
+    expect(r.fechaTrabajo).toBe('2026-10-22');
+  });
+});
+
 describe('prioridad por nombre', () => {
   it('!urgente, !alta, !normal, !baja y en inglés, sin importar mayúsculas', () => {
     expect(es('Algo !urgente').prioridad).toBe('highest');

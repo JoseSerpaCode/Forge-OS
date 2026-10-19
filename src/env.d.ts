@@ -15,6 +15,8 @@ declare namespace App {
       public_email?: string;
       github_id?: string;
       google_id?: string;
+      /** Zona IANA (`America/Bogota`), la manda el navegador. `null` hasta la primera visita. */
+      timezone?: string | null;
       /** Caducidad de la sesión en ms. El middleware la selecciona junto al
           usuario; la interfaz la necesita para avisar al invitado antes de que
           pierda su espacio de trabajo. */

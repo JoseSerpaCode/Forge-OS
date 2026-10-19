@@ -20,6 +20,7 @@ import { funciones as funcionesDe } from '../../lib/funcionesEspacio';
 import { listar as listarEtiquetas, COLOR_POR_DEFECTO } from '../../lib/labels';
 import { listar as listarTipos, nombreVisible } from '../../lib/issueTypes';
 import { OPCIONES as PRIORIDADES } from '../../lib/prioridad';
+import { listar as listarPlantillas } from '../../lib/plantillas';
 import CampoFecha from '../forms/CampoFecha.astro';
 import LabelChip from '../labels/LabelChip.astro';
 
@@ -42,6 +43,7 @@ const miembros = puede
 const sprints = puede && funcs.sprints
   ? db.prepare("SELECT id, name FROM sprints WHERE workspace_id = ? AND status != 'completed' ORDER BY start_date DESC, rowid DESC").all(ws!.id) as Array<{ id: string; name: string }>
   : [];
+const plantillas = puede ? listarPlantillas(ws!.id).map((p) => ({ id: p.id, name: p.name })) : [];
 const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary outline-none';
 ---
 {puede && (
@@ -58,6 +60,8 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     data-t-chip-etiqueta-nueva={t('quick.chip_new_label')}
     data-t-chip-prioridad={t('quick.chip_priority')}
     data-t-chip-apunte={t('quick.chip_note')}
+    data-t-chip-repeticion={t('quick.chip_repeat')}
+    data-t-chip-trabajo={t('quick.chip_work')}
     data-t-create-label={t('quick.create_label')}
     data-t-note-missing={t('quick.note_missing')}
     data-t-created={t('quick.created')}
@@ -66,6 +70,10 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     data-t-err-create={t('issue.err_create')}
     data-t-label-error={t('quick.label_error')}
     data-t-creating={t('issue.creating')}
+    data-plantillas={JSON.stringify(plantillas)}
+    data-t-tpl-created={t('tpl.created')}
+    data-t-tpl-skipped={t('tpl.skipped')}
+    data-t-tpl-error={t('tpl.use_error')}
     class="bg-forge-panel border border-forge-border rounded-2xl p-5 sm:p-6 w-[calc(100vw-2rem)] max-w-[560px] text-forge-text shadow-xl backdrop:bg-black/50">
     <h2 id="nueva-tarea-titulo" class="text-lg font-bold mb-3">{t('modal.create_issue')}</h2>
 
@@ -79,6 +87,18 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       <ul id="nt-apuntes-sugeridos" role="listbox" class="hidden absolute z-40 top-full left-0 right-0 mt-1 bg-forge-panel border border-forge-border rounded-xl shadow-xl p-1 max-h-60 overflow-y-auto"></ul>
     </div>
     <p id="nt-ayuda" class="text-xs text-forge-muted mt-1.5">{t('quick.help')}</p>
+
+    {/* Plantillas: un clic crea la tarea con todo lo que lleva. También se
+        usan escribiendo `/nombre` en la línea y Enter. */}
+    {plantillas.length > 0 && (
+      <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
+        <span class="text-xs text-forge-muted">{t('tpl.from')}:</span>
+        {plantillas.map((p) => (
+          <button type="button" class="nt-plantilla text-xs border border-forge-border rounded-full px-2.5 py-0.5 text-forge-text hover:border-forge-secondary" data-id={p.id} data-nombre={p.name}
+            aria-label={t('tpl.use').replace('{nombre}', p.name)}>{p.name}</button>
+        ))}
+      </div>
+    )}
 
     {/* Lo que la línea ha reconocido. Cada chip se puede quitar: devuelve sus
         palabras al título. */}
@@ -102,6 +122,11 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
             <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-hora">{t('modal.due_time')}</label>
             <input type="text" id="nt-hora" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5" class={`${campo} font-mono`} />
           </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-trabajo-texto">{t('modal.planned_date')}</label>
+          <CampoFecha id="nt-trabajo" inputClass={campo} />
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -168,6 +193,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
 
 <script>
   import { interpretar, normalizar, type Interpretacion, type Tramo } from '../../lib/altaRapida';
+  import { describir } from '../../lib/recurrencia';
 
   const dlg = document.getElementById('nueva-tarea') as HTMLDialogElement | null;
   if (dlg) montar(dlg);
@@ -192,7 +218,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     /** Tramos descartados, por tipo y texto: los desplazamientos cambian al seguir escribiendo. */
     const descartados = new Set<string>();
     /** Campos que alguien tocó a mano: la línea ya no los pisa. */
-    const manual = { fecha: false, hora: false, prioridad: false };
+    const manual = { fecha: false, hora: false, prioridad: false, trabajo: false };
     const encendidas = new Set<string>();
     const apagadas = new Set<string>();
     /** Título normalizado del apunte → id, al elegirlo en el buscador. */
@@ -209,6 +235,8 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       ultima = r;
 
       if (!manual.fecha) fecha.value = r.fecha ?? '';
+      const trabajo = $<HTMLInputElement>('nt-trabajo');
+      if (trabajo && !manual.trabajo) trabajo.value = r.fechaTrabajo ?? '';
       if (!manual.hora) hora.value = r.hora ?? '';
       if (!manual.prioridad) prioridad.value = r.prioridad ?? 'medium';
       const desdeLinea = new Set(r.etiquetas.map((e) => e.id));
@@ -245,12 +273,15 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       chips.replaceChildren();
       const nombres: Record<string, string> = {
         fecha: d.tChipFecha || '', hora: d.tChipHora || '', etiqueta: d.tChipEtiqueta || '',
-        prioridad: d.tChipPrioridad || '', apunte: d.tChipApunte || '',
+        prioridad: d.tChipPrioridad || '', apunte: d.tChipApunte || '', repeticion: d.tChipRepeticion || '',
+        trabajo: d.tChipTrabajo || '',
       };
       const faltan: string[] = [];
       for (const t of r.tramos) {
         let visible = t.texto.trim();
+        if (t.tipo === 'trabajo' && r.fechaTrabajo) visible = `${visible} → ${new Date(`${r.fechaTrabajo}T00:00:00`).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`;
         if (t.tipo === 'fecha' && r.fecha) visible = `${visible} → ${new Date(`${r.fecha}T00:00:00`).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+        if (t.tipo === 'repeticion' && r.recurrencia) visible = describir(r.recurrencia, lang);
         if (t.tipo === 'apunte') {
           const titulo = t.texto.slice(2, -2).trim();
           if (!apuntesElegidos.has(normalizar(titulo))) faltan.push(titulo);
@@ -308,6 +339,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       b.setAttribute('aria-pressed', String(on));
     });
     fecha.addEventListener('change', () => { manual.fecha = true; });
+    $<HTMLInputElement>('nt-trabajo')?.addEventListener('change', () => { manual.trabajo = true; });
     hora.addEventListener('change', () => { manual.hora = true; });
     prioridad.addEventListener('change', () => { manual.prioridad = true; });
 
@@ -406,8 +438,42 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       return ids;
     }
 
+    // ── Plantillas ───────────────────────────────────────────────────────────
+    const plantillas: Array<{ id: string; name: string }> = JSON.parse(d.plantillas || '[]');
+    async function usarPlantilla(id: string, nombre: string) {
+      if (enviando) return;
+      enviando = true;
+      try {
+        const sprint = $<HTMLSelectElement>('nt-sprint')?.value || null;
+        const res = await fetch(`/api/w/${sysTag}/templates/usar`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, sprint_id: sprint }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const r = await res.json();
+        const aviso = r.etiquetasSaltadas > 0
+          ? (d.tTplSkipped || '').replace('{n}', String(r.etiquetasSaltadas))
+          : (d.tTplCreated || '').replace('{nombre}', nombre);
+        // El aviso viaja a la página siguiente: aquí se recarga el tablero.
+        try { sessionStorage.setItem('forge_aviso', aviso); } catch { /* sin almacenamiento */ }
+        window.location.href = `/w/${sysTag}/board?issue=${encodeURIComponent(r.id)}`;
+      } catch (err) {
+        console.error('usar plantilla:', err);
+        window.showToast?.(d.tTplError || '', true);
+        enviando = false;
+      }
+    }
+    dlg.querySelectorAll<HTMLButtonElement>('.nt-plantilla').forEach((b) =>
+      b.addEventListener('click', () => usarPlantilla(b.dataset.id!, b.dataset.nombre || '')));
+
     async function crear(abrir: boolean) {
       if (enviando) return;
+      // `/nombre` + Enter usa esa plantilla.
+      const barra = /^\/(.+)$/.exec(linea.value.trim());
+      if (barra) {
+        const buscado = normalizar(barra[1]);
+        const p = plantillas.find((x) => normalizar(x.name) === buscado) ?? plantillas.find((x) => normalizar(x.name).startsWith(buscado));
+        if (p) { usarPlantilla(p.id, p.name); return; }
+      }
       analizar();
       const r = ultima!;
       const titulo = r.titulo.trim();
@@ -431,6 +497,9 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
           assignee_id: $<HTMLSelectElement>('nt-responsable')?.value || null,
           label_ids: etiquetasElegidas,
           page_ids: await idsDeApuntes(r.apuntes),
+          // Una repetición sin fecha no se manda: el servidor la rechazaría.
+          recurrence: r.recurrencia && fecha.value ? r.recurrencia : null,
+          planned_date: ($<HTMLInputElement>('nt-trabajo')?.value) || r.fechaTrabajo || null,
         };
         const sprint = $<HTMLSelectElement>('nt-sprint');
         if (sprint) cuerpo.sprint_id = sprint.value || null;
@@ -480,7 +549,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       encendidas.clear();
       apagadas.clear();
       apuntesElegidos.clear();
-      manual.fecha = manual.hora = manual.prioridad = false;
+      manual.fecha = manual.hora = manual.prioridad = manual.trabajo = false;
       const est = $<HTMLInputElement>('nt-estimado');
       if (est) est.value = '';
       // El último tipo usado en este espacio, no siempre el primero de la lista.

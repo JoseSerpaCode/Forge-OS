@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
    * salía entremezclada. Cada filtro se comprueba como del espacio, o un id
    * ajeno serviría para reordenar en otro.
    */
-  const donde: string[] = ['workspace_id = ?', 'status = ?'];
+  const donde: string[] = ['workspace_id = ?', 'status = ?', 'parent_issue_id IS NULL'];
   const extra: unknown[] = [];
   let etiqueta: string | null = null;
   if (datos.label) {

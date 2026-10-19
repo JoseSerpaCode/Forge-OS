@@ -13,6 +13,8 @@ import { escaparLike } from './texto';
 export { ApiError } from './errors';
 import { esPrioridad } from './prioridad';
 import { esPaginaDelEspacio, vincular } from './apuntes';
+import { esRegla, siguiente as siguienteFecha } from './recurrencia';
+import { hoyEn, diaDeCalendario } from './fechas';
 
 /**
  * El fragmento de `SET` que mantiene `done_at` al cambiar el estado.
@@ -30,6 +32,9 @@ import { esPaginaDelEspacio, vincular } from './apuntes';
  */
 export const SET_DONE_AT =
   "done_at = CASE WHEN ? = 'done' THEN (CASE WHEN status = 'done' AND done_at IS NOT NULL THEN done_at ELSE CURRENT_TIMESTAMP END) ELSE NULL END";
+
+/** `AAAA-MM-DD` de un día que existe. */
+export const esDia = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && diaDeCalendario(v) === v;
 
 /** `HH:MM` válido o vacío. La `CHECK` de la base también lo exige; esto da un 400 en vez de un 500. */
 export const esHora = (v: unknown) => v === null || v === '' || (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v));
@@ -64,13 +69,31 @@ export class IssueService {
     }
 
     // Whitelist allowed fields to prevent SQL injection via keys
-    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'sprint_id', 'position', 'due_date', 'due_time'];
+    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'sprint_id', 'position', 'due_date', 'due_time', 'recurrence', 'planned_date'];
 
     // Validar antes de escribir: la `CHECK` de la base rechazaría lo mismo,
     // pero con un 500 que no dice qué campo estaba mal.
     if ('priority' in data && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
     if ('due_time' in data && !esHora((data as any).due_time)) throw new ApiError(400, 'Invalid due_time');
     if ((data as any).due_time === '') (data as any).due_time = null;
+    if ('planned_date' in data) {
+      const dia = (data as any).planned_date;
+      if (dia === '' || dia === null) (data as any).planned_date = null;
+      else if (!esDia(dia)) throw new ApiError(400, 'Invalid planned_date');
+    }
+    if ('recurrence' in data) {
+      const regla = (data as any).recurrence;
+      if (regla === '' || regla === null) (data as any).recurrence = null;
+      else if (!esRegla(regla)) throw new ApiError(400, 'Invalid recurrence');
+      else {
+        // Una regla sin fecha no tiene de dónde contar.
+        const fecha = 'due_date' in data ? data.due_date : (db.prepare('SELECT due_date FROM issues WHERE id = ?').get(issueId) as any)?.due_date;
+        if (!fecha) throw new ApiError(400, 'Recurrence needs a due date');
+      }
+    }
+    const estadoAntes = 'status' in data
+      ? (db.prepare('SELECT status FROM issues WHERE id = ?').get(issueId) as any)?.status
+      : undefined;
     const safeData: any = {};
     for (const key of Object.keys(data)) {
       if (allowedFields.includes(key)) {
@@ -93,6 +116,7 @@ export class IssueService {
     values.push(issueId); // for WHERE id = ?
 
     db.prepare(`UPDATE issues SET ${finalClause} WHERE id = ?`).run(...values);
+    if (estadoAntes !== undefined) IssueService.trasCambioDeEstado(issueId, estadoAntes, safeData.status, userId);
 
     // Automation logic could be hooked here (EventEmitter pattern)
     
@@ -136,6 +160,154 @@ export class IssueService {
   }
 
   /**
+   * Subtareas: pasos dentro de una tarea, en su panel.
+   *
+   * Tres reglas que no se ven en el esquema:
+   * - **Un solo nivel.** Una subtarea no tiene subtareas: el panel enseña una
+   *   lista, no un árbol, y un árbol en un tablero personal es organizar por
+   *   organizar.
+   * - **Del espacio de su madre**, siempre. El espacio se copia de la madre y no
+   *   se acepta del cliente.
+   * - **Fuera de los sprints** (`sprint_id` NULL). Así ninguna cuenta de sprint
+   *   las incluye; las listas del espacio las excluyen con
+   *   `parent_issue_id IS NULL`.
+   */
+  static listarSubtareas(madreId: string) {
+    return db.prepare(`
+      SELECT id, title, status, position FROM issues
+      WHERE parent_issue_id = ? ORDER BY position ASC, created_at ASC
+    `).all(madreId) as Array<{ id: string; title: string; status: string; position: number }>;
+  }
+
+  static crearSubtarea(madreId: string, titulo: unknown, userId: string, isSysadmin: number) {
+    const madre = db.prepare('SELECT id, workspace_id, parent_issue_id, type FROM issues WHERE id = ?').get(madreId) as any;
+    if (!madre) throw new ApiError(404, 'Issue Not Found');
+    const access = checkWorkspaceAccess(userId, isSysadmin, madre.workspace_id, 'editor');
+    if (!access.granted) {
+      if (access.reason === 'not_member') throw new ApiError(404, 'Issue Not Found');
+      throw new ApiError(403, access.error || 'Forbidden');
+    }
+    if (madre.parent_issue_id) throw new ApiError(400, 'Subtasks cannot have subtasks');
+    const limpio = typeof titulo === 'string' ? titulo.trim().slice(0, 200) : '';
+    if (!limpio) throw new ApiError(400, 'Title is required');
+
+    const ultima = db.prepare('SELECT MAX(position) AS p FROM issues WHERE parent_issue_id = ?').get(madreId) as any;
+    const id = crypto.randomUUID();
+    db.prepare(`
+      INSERT INTO issues (id, workspace_id, sprint_id, parent_issue_id, type, title, status, reporter_id, position)
+      VALUES (?, ?, NULL, ?, ?, ?, 'todo', ?, ?)
+    `).run(id, madre.workspace_id, madreId, madre.type || 'task', limpio, userId, (ultima?.p ?? 0) + 100000);
+    return { id, title: limpio, status: 'todo' };
+  }
+
+  /**
+   * Lo que pasa al cambiar el estado de una tarea, sea por el camino que sea
+   * (`update()` o `move.ts`): las tareas que se repiten.
+   *
+   * - **Entrar en Hecho** con regla y sin siguiente: se crea la siguiente con la
+   *   fecha que toca y la regla **pasa** a ella. Cada ocurrencia es una tarea,
+   *   para que Hecho cuente la verdad; la completada se queda sin regla y no
+   *   genera nada si se reabre y se vuelve a cerrar. Comprobar
+   *   `next_issue_id IS NULL` aquí es lo que impide que un doble clic cree dos.
+   * - **Salir de Hecho** con siguiente: si nadie la ha tocado (sin cambios ni
+   *   horas), se borra y la regla vuelve. Si ya se tocó, se queda.
+   *
+   * Devuelve lo que pasó, para que la interfaz lo diga.
+   */
+  static trasCambioDeEstado(issueId: string, antes: string | undefined, despues: string, userId: string, ahora: Date = new Date()):
+    { creada?: { id: string; due_date: string }; deshecha?: boolean; conservada?: boolean } {
+    if (antes === despues) return {};
+    const t = db.prepare('SELECT * FROM issues WHERE id = ?').get(issueId) as any;
+    if (!t) return {};
+
+    if (despues === 'done' && t.recurrence && !t.next_issue_id && t.due_date) {
+      // «Hoy» es el de quien la completa, no el del servidor (que corre en
+      // UTC): una diaria completada a las 21:00 en Bogotá es del día de Bogotá.
+      const zona = (db.prepare('SELECT timezone FROM users WHERE id = ?').get(userId) as any)?.timezone;
+      const fecha = siguienteFecha(t.recurrence, String(t.due_date).slice(0, 10), hoyEn(zona, ahora));
+      if (!fecha) return {};
+      // Si se planificaba hacerla unos días antes de la entrega, la siguiente
+      // conserva esa misma distancia.
+      let planificada: string | null = null;
+      if (t.planned_date) {
+        const dias = (Date.parse(`${String(t.due_date).slice(0, 10)}T00:00:00Z`) - Date.parse(`${t.planned_date}T00:00:00Z`)) / 86_400_000;
+        planificada = new Date(Date.parse(`${fecha}T00:00:00Z`) - dias * 86_400_000).toISOString().slice(0, 10);
+      }
+      const id = crypto.randomUUID();
+      db.transaction(() => {
+        // Un sprint cerrado no recibe trabajo nuevo.
+        const sprint = t.sprint_id ? db.prepare('SELECT status FROM sprints WHERE id = ?').get(t.sprint_id) as any : null;
+        const sprintId = sprint && sprint.status !== 'completed' ? t.sprint_id : null;
+        const ultima = db.prepare("SELECT MAX(position) AS p FROM issues WHERE workspace_id = ? AND status = 'todo'").get(t.workspace_id) as any;
+        db.prepare(`
+          INSERT INTO issues (id, workspace_id, sprint_id, type, title, description, status, priority, story_points,
+                              estimated_hours, reporter_id, assignee_id, position, due_date, due_time, recurrence, planned_date)
+          VALUES (?, ?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, t.workspace_id, sprintId, t.type, t.title, t.description, t.priority, t.story_points,
+          t.estimated_hours, userId, t.assignee_id, (ultima?.p ?? 0) + 100000, fecha, t.due_time, t.recurrence, planificada);
+        db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) SELECT ?, label_id FROM issue_labels WHERE issue_id = ?').run(id, issueId);
+        db.prepare('INSERT OR IGNORE INTO issue_page_links (issue_id, page_id, linked_by) SELECT ?, page_id, ? FROM issue_page_links WHERE issue_id = ?').run(id, userId, issueId);
+        IssueService.copiarSubtareas(issueId, id, userId);
+        db.prepare('UPDATE issues SET recurrence = NULL, next_issue_id = ? WHERE id = ? AND next_issue_id IS NULL').run(id, issueId);
+      })();
+      return { creada: { id, due_date: fecha } };
+    }
+
+    if (antes === 'done' && t.next_issue_id) {
+      const sig = db.prepare('SELECT id, recurrence, created_at, updated_at, logged_hours, status FROM issues WHERE id = ?').get(t.next_issue_id) as any;
+      if (!sig) return {};
+      if (!IssueService.siguienteIntacta(sig, issueId)) return { conservada: true };
+      db.transaction(() => {
+        db.prepare('UPDATE issues SET recurrence = ?, next_issue_id = NULL WHERE id = ?').run(sig.recurrence, issueId);
+        IssueService.borrarSinComprobar([sig.id]);
+      })();
+      return { deshecha: true };
+    }
+    return {};
+  }
+
+  /**
+   * ¿Se puede borrar la siguiente de una repetida sin perder trabajo?
+   *
+   * `updated_at` no basta: marcar una subtarea, ponerle una etiqueta, vincular
+   * un apunte o adjuntar un archivo no lo cambia. Se mira todo lo que la
+   * siguiente pudo recibir después de crearse, comparándolo con lo que se le
+   * copió de la original. Ante la duda, se conserva.
+   */
+  static siguienteIntacta(sig: any, origenId: string): boolean {
+    if (sig.created_at !== sig.updated_at || sig.logged_hours > 0 || sig.status !== 'todo') return false;
+    const conjunto = (sql: string, id: string) =>
+      (db.prepare(sql).all(id) as Array<{ v: string }>).map((r) => r.v).sort().join('\u0000');
+    const etiquetas = 'SELECT label_id AS v FROM issue_labels WHERE issue_id = ?';
+    const apuntes = 'SELECT page_id AS v FROM issue_page_links WHERE issue_id = ?';
+    if (conjunto(etiquetas, sig.id) !== conjunto(etiquetas, origenId)) return false;
+    if (conjunto(apuntes, sig.id) !== conjunto(apuntes, origenId)) return false;
+    // Subtareas: las mismas, todas pendientes y sin tocar.
+    const subs = db.prepare('SELECT title, status, created_at, updated_at FROM issues WHERE parent_issue_id = ? ORDER BY position').all(sig.id) as any[];
+    const originales = IssueService.listarSubtareas(origenId).map((x) => x.title);
+    if (subs.length !== originales.length || subs.some((x, i) => x.title !== originales[i] || x.status !== 'todo' || x.created_at !== x.updated_at)) return false;
+    // Nada colgado que no se copió.
+    const algo = (sql: string) => Boolean(db.prepare(sql).get(sig.id));
+    if (algo("SELECT 1 FROM attachments WHERE entity_type = 'issue' AND entity_id = ?")) return false;
+    if (algo("SELECT 1 FROM drive_file_links WHERE entity_type = 'issue' AND entity_id = ?")) return false;
+    if (algo('SELECT 1 FROM work_logs WHERE issue_id = ?')) return false;
+    if (algo('SELECT 1 FROM time_tracking_sessions WHERE issue_id = ?')) return false;
+    return true;
+  }
+
+  /** Copiar las subtareas de una tarea a otra, todas pendientes. Sin comprobar permisos. */
+  static copiarSubtareas(origenId: string, destinoId: string, userId: string) {
+    const destino = db.prepare('SELECT workspace_id, type FROM issues WHERE id = ?').get(destinoId) as any;
+    if (!destino) return;
+    for (const st of IssueService.listarSubtareas(origenId)) {
+      db.prepare(`
+        INSERT INTO issues (id, workspace_id, sprint_id, parent_issue_id, type, title, status, reporter_id, position)
+        VALUES (?, ?, NULL, ?, ?, ?, 'todo', ?, ?)
+      `).run(crypto.randomUUID(), destino.workspace_id, destinoId, destino.type || 'task', st.title, userId, st.position);
+    }
+  }
+
+  /**
    * Borrar tareas con lo que cuelga de ellas **sin clave foránea**.
    *
    * `DELETE FROM issues` a secas dejaba huérfanos: los adjuntos (`attachments`
@@ -150,10 +322,16 @@ export class IssueService {
    * Sin comprobar permisos: quien llama ya lo hizo. Lo usan el botón «Eliminar»
    * del panel y el borrado de un sprint con tareas que se descartan.
    */
-  static borrarSinComprobar(ids: string[]) {
+  static borrarSinComprobar(idsPedidos: string[]) {
     const ficheros: string[] = [];
+    // Las subtareas caen en cascada con su madre, pero sus adjuntos no: se
+    // recorren también.
+    const ids = [...idsPedidos];
+    for (const id of idsPedidos) {
+      for (const h of db.prepare('SELECT id FROM issues WHERE parent_issue_id = ?').all(id) as Array<{ id: string }>) ids.push(h.id);
+    }
     db.transaction(() => {
-      for (const id of ids) {
+      for (const id of [...ids].reverse()) {
         const adjuntos = db.prepare("SELECT file_path FROM attachments WHERE entity_type = 'issue' AND entity_id = ?").all(id) as Array<{ file_path: string }>;
         ficheros.push(...adjuntos.map((a) => a.file_path));
         db.prepare("DELETE FROM attachments WHERE entity_type = 'issue' AND entity_id = ?").run(id);
@@ -215,6 +393,11 @@ export class IssueService {
     }
     if (data.priority !== undefined && data.priority !== null && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
     if (data.due_time !== undefined && !esHora(data.due_time)) throw new ApiError(400, 'Invalid due_time');
+    const planificada = (data as any).planned_date || null;
+    if (planificada && !esDia(planificada)) throw new ApiError(400, 'Invalid planned_date');
+    const regla = (data as any).recurrence || null;
+    if (regla && !esRegla(regla)) throw new ApiError(400, 'Invalid recurrence');
+    if (regla && !data.due_date) throw new ApiError(400, 'Recurrence needs a due date');
 
     const issueId = crypto.randomUUID();
     const status = 'todo';
@@ -242,11 +425,11 @@ export class IssueService {
 
     db.transaction(() => {
       db.prepare(`
-        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, due_time, description, estimated_hours, priority)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, due_time, description, estimated_hours, priority, recurrence, planned_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position,
         data.assignee_id || null, data.due_date || null, (data.due_date && data.due_time) || null, data.description || null, horas,
-        data.priority || 'medium');
+        data.priority || 'medium', regla, planificada);
       const ponerEtiqueta = db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) VALUES (?, ?)');
       for (const id of etiquetas) ponerEtiqueta.run(issueId, id);
       for (const id of paginas) vincular(issueId, id, userId);
@@ -342,8 +525,8 @@ export class IssueService {
         INSERT INTO issues (
           id, workspace_id, sprint_id, parent_issue_id, type, title, description,
           status, priority, story_points, estimated_hours, logged_hours,
-          position, reporter_id, assignee_id, due_date
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+          position, reporter_id, assignee_id, due_date, due_time
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
       `).run(
         nuevoId,
         original.workspace_id,
@@ -361,13 +544,22 @@ export class IssueService {
         // las preguntas sobre este ticket nuevo van a quien lo creó.
         userId,
         assigneeId,
-        original.due_date ?? null
+        original.due_date ?? null,
+        original.due_time ?? null
       );
 
       db.prepare(`
         INSERT OR IGNORE INTO issue_labels (issue_id, label_id)
         SELECT ?, label_id FROM issue_labels WHERE issue_id = ?
       `).run(nuevoId, issueId);
+
+      // Los apuntes vinculados y las subtareas también: una copia que pierde
+      // la lista de pasos no es una copia. Las subtareas empiezan pendientes.
+      db.prepare(`
+        INSERT OR IGNORE INTO issue_page_links (issue_id, page_id, linked_by)
+        SELECT ?, page_id, ? FROM issue_page_links WHERE issue_id = ?
+      `).run(nuevoId, userId, issueId);
+      IssueService.copiarSubtareas(issueId, nuevoId, userId);
     })();
 
     if (assigneeId && assigneeId !== userId) {

@@ -69,6 +69,9 @@ CREATE TABLE issues (
  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, due_date DATETIME,
  done_at DATETIME, -- cuándo pasó a Hecho (migración 41)
  due_time TEXT CHECK (due_time IS NULL OR due_time GLOB '[0-2][0-9]:[0-5][0-9]'), -- hora de pared, sin zona (migración 42)
+ recurrence TEXT, -- regla de repetición, ver src/lib/recurrencia.ts (migración 45)
+ next_issue_id TEXT REFERENCES issues(id) ON DELETE SET NULL, -- la siguiente creada al completar (migración 45)
+ planned_date DATE, -- el día en que se piensa hacer; due_date es la entrega (migración 46)
  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
  FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL,
  FOREIGN KEY (parent_issue_id) REFERENCES issues(id) ON DELETE CASCADE,
@@ -284,4 +287,39 @@ CREATE TABLE workspace_join_requests (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (workspace_id, user_id)
+);
+
+-- Tablero (migraciones 44–49): ver src/lib/db.ts.
+CREATE INDEX IF NOT EXISTS idx_issues_parent ON issues(parent_issue_id);
+CREATE TABLE IF NOT EXISTS saved_views (
+ id TEXT PRIMARY KEY,
+ workspace_id TEXT NOT NULL,
+ user_id TEXT NOT NULL,
+ name TEXT NOT NULL,
+ query_json TEXT NOT NULL,
+ position INTEGER NOT NULL DEFAULT 0,
+ created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+ FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS task_templates (
+ id TEXT PRIMARY KEY,
+ workspace_id TEXT NOT NULL,
+ name TEXT NOT NULL,
+ payload_json TEXT NOT NULL,
+ created_by TEXT,
+ created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+ FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE TABLE IF NOT EXISTS calendar_feeds (
+ id TEXT PRIMARY KEY,
+ user_id TEXT NOT NULL,
+ workspace_id TEXT,
+ token_hash TEXT NOT NULL UNIQUE,
+ created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ last_fetched_at DATETIME,
+ revoked_at DATETIME,
+ FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+ FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
 );

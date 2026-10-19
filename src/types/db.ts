@@ -70,6 +70,12 @@ export interface Issue {
   done_at: string | null;
   /** `HH:MM`, hora de pared de quien la apuntó. Sin zona a propósito. */
   due_time: string | null;
+  /** Regla de repetición (`lib/recurrencia.ts`). */
+  recurrence: string | null;
+  /** La tarea que se creó al completar esta, si se repite. */
+  next_issue_id: string | null;
+  /** El día en que se piensa hacer. `due_date` es la entrega. */
+  planned_date: string | null;
 }
 
 export interface WorkLog {

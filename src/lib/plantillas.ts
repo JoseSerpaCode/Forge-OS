@@ -1,0 +1,128 @@
+import crypto from 'crypto';
+import db from './db';
+import { IssueService } from './IssueService';
+import { esPrioridad } from './prioridad';
+import { esRegla } from './recurrencia';
+import { diasHasta, sumarDiasIso } from './fechas';
+
+/**
+ * Plantillas de tareas: «Parcial», con su descripción, su etiqueta, sus pasos y
+ * la entrega a los siete días.
+ *
+ * Son del espacio. Lo que se guarda pasa por una lista blanca de campos, igual
+ * que el alta: una plantilla es una tarea en conserva, y nada entra en una
+ * tarea por aquí que no pudiera entrar por el formulario.
+ *
+ * La entrega se guarda **relativa** (`due_offset`, días desde el día en que se
+ * usa): una plantilla con fecha fija serviría una vez.
+ */
+
+export interface Contenido {
+  title: string;
+  description?: string;
+  type?: string;
+  priority?: string;
+  label_ids?: string[];
+  subtareas?: string[];
+  recurrence?: string;
+  due_offset?: number;
+  due_time?: string;
+}
+
+const LARGO_NOMBRE = 60;
+const MAX_SUBTAREAS = 30;
+
+export function limpiarContenido(entrada: unknown): Contenido | null {
+  const c = (entrada && typeof entrada === 'object' ? entrada : {}) as Record<string, unknown>;
+  const titulo = typeof c.title === 'string' ? c.title.trim().slice(0, 200) : '';
+  if (!titulo) return null;
+  const fuera: Contenido = { title: titulo };
+  if (typeof c.description === 'string' && c.description.trim()) fuera.description = c.description.slice(0, 20_000);
+  if (typeof c.type === 'string' && /^[a-z0-9-]{1,30}$/.test(c.type)) fuera.type = c.type;
+  if (esPrioridad(c.priority)) fuera.priority = c.priority;
+  if (Array.isArray(c.label_ids)) fuera.label_ids = c.label_ids.filter((x): x is string => typeof x === 'string').slice(0, 20);
+  if (Array.isArray(c.subtareas)) {
+    fuera.subtareas = c.subtareas.filter((x): x is string => typeof x === 'string' && !!x.trim()).map((x) => x.trim().slice(0, 200)).slice(0, MAX_SUBTAREAS);
+  }
+  if (esRegla(c.recurrence)) fuera.recurrence = c.recurrence as string;
+  const off = Number(c.due_offset);
+  if (c.due_offset !== undefined && c.due_offset !== null && Number.isInteger(off) && off >= 0 && off <= 365) fuera.due_offset = off;
+  if (typeof c.due_time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(c.due_time)) fuera.due_time = c.due_time;
+  // Repetir necesita fecha: sin desplazamiento, la regla no tiene de dónde contar.
+  if (fuera.recurrence && fuera.due_offset === undefined) delete fuera.recurrence;
+  return fuera;
+}
+
+export interface Plantilla { id: string; name: string; contenido: Contenido }
+
+export function listar(workspaceId: string): Plantilla[] {
+  const filas = db.prepare('SELECT id, name, payload_json FROM task_templates WHERE workspace_id = ? ORDER BY name COLLATE NOCASE')
+    .all(workspaceId) as Array<{ id: string; name: string; payload_json: string }>;
+  return filas.flatMap((f) => {
+    let c: Contenido | null = null;
+    try { c = limpiarContenido(JSON.parse(f.payload_json)); } catch { /* fila rota */ }
+    return c ? [{ id: f.id, name: f.name, contenido: c }] : [];
+  });
+}
+
+export type Resultado = { ok: true; id: string } | { ok: false; error: 'nombre_vacio' | 'nombre_largo' | 'no_existe' };
+
+/**
+ * Guardar una tarea como plantilla: su título, descripción, tipo, prioridad,
+ * etiquetas, los títulos de sus subtareas y su regla. La entrega, como días
+ * desde hoy (lo que se pase, o lo que falte hasta su fecha).
+ */
+export function desdeTarea(issueId: string, workspaceId: string, nombre: unknown, userId: string, desplazamiento?: unknown): Resultado {
+  const n = typeof nombre === 'string' ? nombre.trim() : '';
+  if (!n) return { ok: false, error: 'nombre_vacio' };
+  if (n.length > LARGO_NOMBRE) return { ok: false, error: 'nombre_largo' };
+  const t = db.prepare('SELECT * FROM issues WHERE id = ? AND workspace_id = ?').get(issueId, workspaceId) as any;
+  if (!t) return { ok: false, error: 'no_existe' };
+  const etiquetas = (db.prepare('SELECT label_id FROM issue_labels WHERE issue_id = ?').all(issueId) as Array<{ label_id: string }>).map((r) => r.label_id);
+  // `null`: sin fecha, a propósito. Sin indicar: lo que falta hasta la entrega.
+  const pedido = Number(desplazamiento);
+  const offset = desplazamiento === null || desplazamiento === ''
+    ? undefined
+    : desplazamiento !== undefined && Number.isInteger(pedido)
+      ? pedido
+      : t.due_date ? Math.max(0, diasHasta(t.due_date) ?? 0) : undefined;
+  const contenido = limpiarContenido({
+    title: t.title, description: t.description, type: t.type, priority: t.priority, label_ids: etiquetas,
+    subtareas: IssueService.listarSubtareas(issueId).map((s) => s.title),
+    recurrence: t.recurrence, due_offset: offset, due_time: t.due_time,
+  });
+  if (!contenido) return { ok: false, error: 'no_existe' };
+  const id = crypto.randomUUID();
+  db.prepare('INSERT INTO task_templates (id, workspace_id, name, payload_json, created_by) VALUES (?, ?, ?, ?, ?)')
+    .run(id, workspaceId, n, JSON.stringify(contenido), userId);
+  return { ok: true, id };
+}
+
+export function borrar(id: string, workspaceId: string): boolean {
+  return db.prepare('DELETE FROM task_templates WHERE id = ? AND workspace_id = ?').run(id, workspaceId).changes > 0;
+}
+
+/**
+ * Crear una tarea desde una plantilla.
+ *
+ * Las etiquetas que ya no existen se **saltan y se dice cuántas**, en vez de
+ * fallar —la plantilla seguiría sin servir— o crearlas —aparecerían etiquetas
+ * que alguien borró a propósito—.
+ */
+export async function usar(id: string, workspaceId: string, userId: string, isSysadmin: number, hoy: string, sprintId?: string | null) {
+  const fila = db.prepare('SELECT payload_json FROM task_templates WHERE id = ? AND workspace_id = ?').get(id, workspaceId) as any;
+  if (!fila) return null;
+  let c: Contenido | null = null;
+  try { c = limpiarContenido(JSON.parse(fila.payload_json)); } catch { /* fila rota */ }
+  if (!c) return null;
+  const vivas = (c.label_ids ?? []).filter((l) => db.prepare('SELECT 1 FROM labels WHERE id = ? AND workspace_id = ?').get(l, workspaceId));
+  const tipoValido = c.type && db.prepare('SELECT 1 FROM issue_types WHERE workspace_id = ? AND key = ?').get(workspaceId, c.type) ? c.type : undefined;
+  const due = c.due_offset !== undefined ? sumarDiasIso(hoy, c.due_offset) : undefined;
+  const { id: nuevo } = await IssueService.create({
+    workspace_id: workspaceId, title: c.title, description: c.description, type: tipoValido as any, priority: c.priority as any,
+    due_date: due, due_time: due ? c.due_time : undefined, sprint_id: sprintId ?? undefined,
+    label_ids: vivas, recurrence: due ? c.recurrence : undefined,
+  } as any, userId, isSysadmin);
+  for (const titulo of c.subtareas ?? []) IssueService.crearSubtarea(nuevo, titulo, userId, isSysadmin);
+  return { id: nuevo, etiquetasSaltadas: (c.label_ids?.length ?? 0) - vivas.length };
+}

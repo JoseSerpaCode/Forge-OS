@@ -1228,6 +1228,119 @@ const MIGRATIONS: Migration[] = [
       }
     }
   },
+  {
+    version: 43,
+    description: 'users: timezone, la zona horaria de cada persona',
+    run: () => {
+      // «Hoy» depende de dónde está quien mira, y el servidor corre en UTC: a
+      // las 19:00 en Bogotá el servidor ya cree que es mañana, y la vista «Hoy»
+      // enseñaría las tareas de mañana. El navegador la manda al cargar
+      // (`Intl...resolvedOptions().timeZone`). `NULL` = UTC hasta entonces.
+      if (!hasColumn('users', 'timezone')) db.exec('ALTER TABLE users ADD COLUMN timezone TEXT');
+    }
+  },
+  {
+    version: 44,
+    description: 'issues: índice de subtareas',
+    run: () => {
+      // `parent_issue_id` existe desde el principio y hasta ahora solo lo
+      // tocaba `duplicate`. Con subtareas, cada panel y cada tarjeta preguntan
+      // «¿qué hijas tiene esta?»: sin índice, un recorrido entero por tarea.
+      db.exec('CREATE INDEX IF NOT EXISTS idx_issues_parent ON issues(parent_issue_id)');
+    }
+  },
+  {
+    version: 45,
+    description: 'issues: recurrence y next_issue_id, tareas que se repiten',
+    run: () => {
+      // `recurrence`: la regla, en el formato corto de `lib/recurrencia.ts`.
+      // `next_issue_id`: la tarea que se creó al completar esta. Es lo que
+      // impide que un doble clic cree dos siguientes, y lo que permite
+      // deshacerla al reabrir.
+      if (!hasColumn('issues', 'recurrence')) db.exec('ALTER TABLE issues ADD COLUMN recurrence TEXT');
+      if (!hasColumn('issues', 'next_issue_id')) {
+        db.exec('ALTER TABLE issues ADD COLUMN next_issue_id TEXT REFERENCES issues(id) ON DELETE SET NULL');
+      }
+    }
+  },
+  {
+    version: 46,
+    description: 'issues: planned_date, el día en que se hace',
+    run: () => {
+      // `due_date` es cuándo se entrega; esto es cuándo se piensa hacer. En la
+      // universidad no coinciden casi nunca: el informe se entrega el viernes y
+      // se escribe el martes. Solo día, como `due_date`.
+      if (!hasColumn('issues', 'planned_date')) db.exec('ALTER TABLE issues ADD COLUMN planned_date DATE');
+    }
+  },
+  {
+    version: 47,
+    description: 'saved_views: filtros guardados del tablero',
+    run: () => {
+      // Personales: cada vista es de una persona en un espacio. `CASCADE` en las
+      // dos claves: si fueran `NO ACTION`, borrar una cuenta reventaría en
+      // `accountDeletion.ts`, que es justo el fallo que describe CLAUDE.md.
+      // No se reutiliza `dynamic_views`: está reservada para las bases dinámicas.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS saved_views (
+          id TEXT PRIMARY KEY,
+          workspace_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          query_json TEXT NOT NULL,
+          position INTEGER NOT NULL DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_saved_views_dueno ON saved_views(user_id, workspace_id, position)');
+    }
+  },
+  {
+    version: 48,
+    description: 'task_templates: plantillas de tareas del espacio',
+    run: () => {
+      // Del **espacio**, como los tipos: la plantilla «Parcial» sirve a todo el
+      // que trabaja en él. `created_by` con `SET NULL` para que borrar una
+      // cuenta no rompa ni se lleve las plantillas de los demás.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS task_templates (
+          id TEXT PRIMARY KEY,
+          workspace_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          payload_json TEXT NOT NULL,
+          created_by TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_task_templates_ws ON task_templates(workspace_id, name)');
+    }
+  },
+  {
+    version: 49,
+    description: 'calendar_feeds: enlaces .ics de solo lectura',
+    run: () => {
+      // Se guarda **solo el hash** del token: el enlace es una llave de lectura
+      // a los títulos de las tareas, y la base se copia entera cada noche.
+      // `workspace_id` NULL = todas las tareas de la persona.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS calendar_feeds (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          workspace_id TEXT,
+          token_hash TEXT NOT NULL UNIQUE,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          last_fetched_at DATETIME,
+          revoked_at DATETIME,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+        )
+      `);
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

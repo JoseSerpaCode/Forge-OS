@@ -14,6 +14,8 @@ import { fecha, relativo, deSQLite, diasHasta } from '../../../lib/fechas';
 import { mapaPorClave } from '../../../lib/issueTypes';
 import TaskTable from '../../../components/dashboard/TaskTable.astro';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
+import { funciones } from '../../../lib/funcionesEspacio';
+import { hoyEn } from '../../../lib/fechas';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
@@ -22,11 +24,14 @@ if (!acceso.ok) return Astro.redirect(acceso.redirigir);
 const workspace = acceso.ws;
 
 // ──── Stats ────
-const activeSprints = db.prepare(`
+// Sin sprints, ni sprint activo ni roadmap: el resumen enseña la semana y las
+// próximas entregas. Las subtareas no cuentan en ningún total.
+const funcs = funciones(workspace.id);
+const activeSprints = funcs.sprints ? db.prepare(`
   SELECT id, name, start_date, end_date, goal 
   FROM sprints WHERE workspace_id = ? AND status = 'active' 
   ORDER BY start_date ASC
-`).all(workspace.id) as any[];
+`).all(workspace.id) as any[] : [];
 
 const urlSprintId = Astro.url.searchParams.get('sprint');
 let activeSprint = activeSprints.find(s => s.id === urlSprintId);
@@ -69,26 +74,43 @@ if (activeSprint) {
 } else {
   pendingIssues = db.prepare(`
     SELECT COUNT(*) as count FROM issues 
-    WHERE workspace_id = ? AND status != 'done'
+    WHERE workspace_id = ? AND status != 'done' AND parent_issue_id IS NULL
   `).get(workspace.id) as any;
 
   blockedIssues = db.prepare(`
     SELECT COUNT(*) as count FROM issues 
-    WHERE workspace_id = ? AND status = 'blocked'
+    WHERE workspace_id = ? AND status = 'blocked' AND parent_issue_id IS NULL
   `).get(workspace.id) as any;
 }
+
+// La semana, para quien no planifica por sprints. «Hoy» es el de quien mira.
+const hoy = hoyEn(user.timezone);
+const hechasSemana = (db.prepare(`
+  SELECT COUNT(*) AS n FROM issues
+  WHERE workspace_id = ? AND parent_issue_id IS NULL AND status = 'done' AND done_at >= datetime('now', '-7 days')
+`).get(workspace.id) as any).n as number;
+const vencidasTotal = (db.prepare(`
+  SELECT COUNT(*) AS n FROM issues
+  WHERE workspace_id = ? AND parent_issue_id IS NULL AND status != 'done' AND due_date IS NOT NULL AND substr(due_date, 1, 10) < ?
+`).get(workspace.id, hoy) as any).n as number;
+const proximasEntregas = funcs.sprints ? [] : db.prepare(`
+  SELECT id, title, due_date, due_time FROM issues
+  WHERE workspace_id = ? AND parent_issue_id IS NULL AND status != 'done' AND due_date IS NOT NULL AND substr(due_date, 1, 10) >= ?
+  ORDER BY substr(due_date, 1, 10) ASC, due_time IS NULL ASC, due_time ASC
+  LIMIT 6
+`).all(workspace.id, hoy) as Array<{ id: string; title: string; due_date: string; due_time: string | null }>;
 
 const totalPages = db.prepare(`
   SELECT COUNT(*) as count FROM pages WHERE workspace_id = ?
 `).get(workspace.id) as any;
 
 // ──── Roadmap (All sprints) ────
-const allSprints = db.prepare(`
+const allSprints = funcs.sprints ? db.prepare(`
   SELECT id, name, start_date, end_date, status, goal
   FROM sprints WHERE workspace_id = ?
   ORDER BY COALESCE(start_date, '9999') ASC
   LIMIT 6
-`).all(workspace.id) as any[];
+`).all(workspace.id) as any[] : [];
 
 // ──── Milestones ────
 const milestones = db.prepare(`
@@ -121,7 +143,7 @@ const members = db.prepare(`
 for (const member of members) {
   const openIssues = db.prepare(`
     SELECT COUNT(*) as count FROM issues 
-    WHERE workspace_id = ? AND assignee_id = ? AND status != 'done'
+    WHERE workspace_id = ? AND assignee_id = ? AND status != 'done' AND parent_issue_id IS NULL
   `).get(workspace.id, member.id) as any;
   member.openCount = openIssues.count;
 }
@@ -131,7 +153,7 @@ const maxWorkload = Math.max(...members.map((m: any) => m.openCount), 1);
 const myTasks = db.prepare(`
   SELECT i.id, i.title, i.status, i.priority, i.sprint_id, i.type, i.due_date 
   FROM issues i
-  WHERE i.workspace_id = ? AND i.status != 'done' AND i.assignee_id = ?
+  WHERE i.workspace_id = ? AND i.status != 'done' AND i.assignee_id = ? AND i.parent_issue_id IS NULL
   ORDER BY 
     CASE i.priority WHEN 'highest' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END ASC
   LIMIT 5
@@ -211,7 +233,8 @@ const priorityColor: Record<string, string> = {
 
     <!-- Stats Row -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Sprint activo -->
+      {funcs.sprints ? (
+      /* Sprint activo */
       <div class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors group">
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.active_sprint')}</span>
@@ -245,6 +268,13 @@ const priorityColor: Record<string, string> = {
           </div>
         )}
       </div>
+      ) : (
+        <a href={`/w/${sys_tag}/board?vista=hoy`} class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors">
+          <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.this_week')}</span>
+          <div class="text-xl font-black text-forge-text mt-3 mb-1">{t('dashboard.done_week').replace('{n}', String(hechasSemana))}</div>
+          <span class:list={['text-xs', vencidasTotal > 0 ? 'text-forge-error font-bold' : 'text-forge-muted']}>{t('dashboard.overdue_count').replace('{n}', String(vencidasTotal))}</span>
+        </a>
+      )}
 
       <!-- Issues pendientes -->
       <a href={`/w/${sys_tag}/board${activeSprint ? `?sprint=${activeSprint.id}` : ''}`} class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors group block">
@@ -272,7 +302,8 @@ const priorityColor: Record<string, string> = {
     <!-- Middle Row: Roadmap -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      <!-- Roadmap -->
+      {funcs.sprints ? (
+      /* Roadmap */
       <div class="lg:col-span-2 bg-forge-panel border border-forge-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-forge-text flex items-center gap-2">
@@ -359,6 +390,28 @@ const priorityColor: Record<string, string> = {
           </div>
         )}
       </div>
+      ) : (
+        <div class="lg:col-span-2 bg-forge-panel border border-forge-border rounded-xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-forge-text">{t('dashboard.upcoming')}</h2>
+            <a href={`/w/${sys_tag}/board?vista=proximos`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors">{t('view.upcoming')}</a>
+          </div>
+          {proximasEntregas.length === 0 ? (
+            <p class="py-6 text-center text-forge-muted text-sm">{t('dashboard.no_upcoming')}</p>
+          ) : (
+            <ul class="space-y-2">
+              {proximasEntregas.map((tarea) => (
+                <li>
+                  <a href={`/w/${sys_tag}/board?issue=${tarea.id}`} class="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-forge-bg transition-colors">
+                    <span class="text-sm text-forge-text truncate">{tarea.title}</span>
+                    <span class="text-xs font-mono text-forge-muted shrink-0">{fecha(tarea.due_date, lang)}{tarea.due_time ? ` · ${tarea.due_time}` : ''}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <!-- Workload -->
       <div class="bg-forge-panel border border-forge-border rounded-xl p-5">
