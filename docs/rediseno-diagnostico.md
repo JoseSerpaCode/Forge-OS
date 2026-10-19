@@ -396,8 +396,40 @@ Los actuales pasan las cinco comprobaciones (banda de luminosidad, croma
 mínimo, separación para daltonismo, separación con visión normal y ≥ 3:1
 sobre la superficie) en los dos temas.
 
-**Maquetas:** `docs/rediseno/index.html` enlaza once pantallas estáticas de
-esta identidad, en claro y oscuro.
+**Maquetas:** `docs/rediseno/index.html` enlaza las pantallas estáticas de
+esta identidad, en claro y oscuro. Además de las once primeras:
+
+- **Pantallas que faltaban:** ajustes del espacio (miembros y roles,
+  solicitudes, tipos, etiquetas, automatizaciones, Drive, borrado con
+  confirmación escrita), registro, personas, perfil público, actividad,
+  índice de notas, editor en uso (menú «/», barra de formato, asa, tabla en
+  edición, enlace a ticket) y 404.
+- **`ventanas.html`:** las 16 capas (nuevo ticket, nuevo sprint, cerrar
+  sprint, registrar tiempo, menú del sprint, nueva tabla, nueva fila,
+  borrado, nuevo espacio, añadir miembro, automatización, ⌘ K,
+  notificaciones, etiquetas, cambio de espacio y avisos).
+- **`estados.html`:** esqueletos estáticos, errores de formulario con
+  resumen, sin permiso (lectura, prueba, invitado, 403), sin conexión,
+  error del servidor y vacíos tipográficos, sin ilustraciones.
+- **`movil.html`:** cuatro pantallas reales a 390 px — barra inferior de
+  cuatro destinos (Panel, Tablero, Notas, Más), ticket como hoja, editor con
+  teclado y la hoja «Más».
+- **`componentes.html`:** cada pieza en reposo, encima, foco, pulsado,
+  deshabilitado, error y cargando; 51 iconos propios (las piezas con forma
+  de columna acaban en arco); tabla de movimiento con su alternativa para
+  `prefers-reduced-motion`; y la regla de colores elegidos por el equipo,
+  con el contraste calculado: el color nunca tiñe texto, va en punto y
+  tinte, y con esos tintes cualquier color deja el texto por encima de
+  4,5:1.
+- **`marca.html`:** imagen para redes de 1200 × 630, favicons de 16 y 32,
+  icono de Apple, 192, 512 y adaptable de Android, exportados a
+  `docs/rediseno/marca/` desde el mismo trazado.
+- **Métricas:** ayuda flotante en el burndown y conmutador «Gráfica |
+  Tabla»: cada gráfica tiene su tabla.
+
+Las 27 páginas pasan **axe-core** (WCAG 2.1 A/AA y buenas prácticas) sin
+fallos, en los dos temas, a 1280 y a 390 px, y ninguna desborda en
+horizontal a 390 px.
 
 **Tipografía:**
 

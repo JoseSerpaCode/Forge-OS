@@ -111,11 +111,57 @@ ICONS = {
     'play': '<path d="M8 5v14l11-7z"/>',
     'link': '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
     'menu': '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    'check': '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    'chev-down': '<path d="m6 9 6 6 6-6"/>',
+    'chev-right': '<path d="m9 6 6 6-6 6"/>',
+    'chev-left': '<path d="m15 6-6 6 6 6"/>',
+    'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    'more': '<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',
+    'grip': ''.join(f'<circle cx="{x}" cy="{y}" r="1.3" fill="currentColor" stroke="none"/>' for y in (6, 12, 18) for x in (9, 15)),
+    # Las piezas con forma de columna terminan en arco, como el símbolo.
+    'home': '<path d="M4 20v-8a8 8 0 0 1 16 0v8z"/><path d="M9.5 20v-4.5a2.5 2.5 0 0 1 5 0V20"/>',
+    'panel': '<rect x="3.5" y="3.5" width="7" height="9" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="5" rx="1.5"/><rect x="13.5" y="11.5" width="7" height="9" rx="1.5"/><rect x="3.5" y="15.5" width="7" height="5" rx="1.5"/>',
+    'board': '<path d="M3.5 20V6.5a2.5 2.5 0 0 1 5 0V20zM9.5 15V6.5a2.5 2.5 0 0 1 5 0V15zM15.5 11V6.5a2.5 2.5 0 0 1 5 0V11z"/>',
+    'note': '<path d="M6 3.5h8.5L19 8v12.5H6z"/><path d="M14 3.5V8.5h5M9 12.5h6.5M9 16h6.5"/>',
+    'table': '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10"/>',
+    'chart': '<path d="M4 20h16"/><path d="M6.5 20v-6a2 2 0 0 1 4 0v6M13.5 20V8a2 2 0 0 1 4 0v12"/>',
+    'file': '<path d="M14 3.5H7a1.5 1.5 0 0 0-1.5 1.5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3.5V8h4.5"/>',
+    'folder': '<path d="M3.5 7a1.5 1.5 0 0 1 1.5-1.5h4.5l2 2.5h7.5A1.5 1.5 0 0 1 20.5 9.5V18a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18z"/>',
+    'activity': '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+    'user': '<circle cx="12" cy="7.5" r="3.5"/><path d="M6 20.5v-3a6 6 0 0 1 12 0v3z"/>',
+    'users': '<circle cx="9" cy="8" r="3"/><path d="M3.5 20v-2.5a5.5 5.5 0 0 1 11 0V20z"/><path d="M15 5.2a3 3 0 0 1 0 5.6M17 14a5.5 5.5 0 0 1 3.5 5V20h-3"/>',
+    'settings': '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+    'trash': '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    'edit': '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+    'copy': '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
+    'clock': '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    'calendar': '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    'flag': '<path d="M5 21V4M5 4h12l-2.5 4L17 12H5"/>',
+    'filter': '<path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/>',
+    'sort': '<path d="M7 4v16M3.5 16.5 7 20l3.5-3.5M17 20V4M13.5 7.5 17 4l3.5 3.5"/>',
+    'upload': '<path d="M12 15V4M7 9l5-5 5 5M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/>',
+    'download': '<path d="M12 4v11M7 10l5 5 5-5M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/>',
+    'cloud': '<path d="M7 18.5a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19.4 11a3.8 3.8 0 0 1-1.4 7.5z"/>',
+    'tag': '<path d="M3.5 12.5v-8a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8.5" cy="8.5" r="1.5"/>',
+    'at': '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+    'mail': '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/>',
+    'lock': '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+    'globe': '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    'eye': '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+    'bolt': '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+    'stop': '<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>',
+    'refresh': '<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/>',
+    'alert': '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5h.01"/>',
+    'info': '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
+    'wifi-off': '<path d="M2 8.5a15 15 0 0 1 4.5-2.8M10 5.1A15 15 0 0 1 22 8.5M5 12a10 10 0 0 1 3.2-2M15 10.2a10 10 0 0 1 4 1.8M8.5 15.5a5 5 0 0 1 7 0M12 19.5h.01M3 3l18 18"/>',
+    'keyboard': '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h1M10.5 10h1M14.5 10h1M8 14h8"/>',
+    'logout': '<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 8l-4 4 4 4M6 12h10"/>',
 }
 
 
-def icon(name):
-    return f'<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">{ICONS[name]}</svg>'
+def icon(name, size=None):
+    wh = f' style="width:{size}px;height:{size}px"' if size else ''
+    return f'<svg class="icon" viewBox="0 0 24 24"{wh} aria-hidden="true">{ICONS[name]}</svg>'
 
 
 HEAD = """<!doctype html>
@@ -146,19 +192,33 @@ THEME_BTN = (f'<button class="btn btn-ghost btn-icon" type="button" onclick="cam
 
 NAV = [
     ('inicio', 'Inicio', 'inicio.html', ''),
-    ('actividad', 'Actividad', 'inicio.html#actividad', ''),
+    ('actividad', 'Actividad', 'actividad.html', ''),
+    ('personas', 'Personas', 'personas.html', ''),
     None,
     ('panel', 'Panel', 'panel.html', ''),
     ('tablero', 'Tablero', 'tablero.html', '9'),
-    ('notas', 'Notas', 'notas.html', '6'),
+    ('notas', 'Notas', 'notas-indice.html', '6'),
     ('tablas', 'Tablas', 'tablas.html', '3'),
     ('archivos', 'Archivos', 'archivos.html', '14'),
     ('metricas', 'Métricas', 'metricas.html', ''),
-    ('ajustes-espacio', 'Ajustes del espacio', '#', ''),
+    ('ajustes-espacio', 'Ajustes del espacio', 'ajustes-espacio.html', ''),
 ]
 
 
-def shell(active, crumbs, body, title, overlay=''):
+# En el móvil la barra lateral se sustituye por cuatro destinos fijos abajo;
+# el resto vive en la hoja «Más».
+BOTTOM = [('panel', 'Panel', 'panel.html', 'panel'), ('tablero', 'Tablero', 'tablero.html', 'board'),
+          ('notas', 'Notas', 'notas-indice.html', 'note'), ('mas', 'Más', 'movil-mas.html', 'menu')]
+
+
+def bottom_nav(active):
+    cur = active if active in ('panel', 'tablero', 'notas') else 'mas'
+    return '<nav class="bottom-nav" aria-label="Secciones">' + ''.join(
+        f'<a href="{h}"{" aria-current=\"page\"" if k == cur else ""}>{icon(i)}<span>{l}</span></a>'
+        for k, l, h, i in BOTTOM) + '</nav>'
+
+
+def shell(active, crumbs, body, title, overlay='', extra_head=''):
     items = []
     for n in NAV:
         if n is None:
@@ -176,13 +236,13 @@ def shell(active, crumbs, body, title, overlay=''):
             crumb_html.append(f'<span aria-current="page">{c}</span>')
         else:
             crumb_html.append(f'<a href="panel.html">{c}</a>')
-    return HEAD.format(title=f'{title} · Forge OS', favicon=FAVICON) + f"""<body>
+    return HEAD.format(title=f'{title} · Forge OS', favicon=FAVICON).replace('</head>', extra_head + '</head>') + f"""<body>
 <div class="app">
   <aside class="sidebar" aria-label="Navegación principal">
     <div class="sidebar-head"><a href="index.html" aria-label="Índice de la propuesta">{brand(24)}</a></div>
-    <button class="ws-switch" type="button" aria-label="Cambiar de espacio">
+    <a class="ws-switch" href="ventanas.html#espacios" aria-label="Cambiar de espacio: Atlas Platform">
       <span><strong>Atlas Platform</strong><span class="mono">#atlas</span></span>
-    </button>
+    </a>
     <nav class="nav">{''.join(items)}</nav>
     <div class="sidebar-foot">
       <span class="avatar avatar-lg p-avery">av</span>
@@ -194,13 +254,14 @@ def shell(active, crumbs, body, title, overlay=''):
     <div class="search" role="search">{icon('search')}<span>Buscar en Forge</span><kbd>/</kbd></div>
     <div class="top-actions">
       {THEME_BTN}
-      <button class="btn btn-ghost btn-icon" type="button" aria-label="Notificaciones: 2 sin leer">{icon('bell')}</button>
+      <a class="btn btn-ghost btn-icon" href="ventanas.html#notificaciones" aria-label="Notificaciones: 2 sin leer">{icon('bell')}</a>
     </div>
   </header>
   <main class="main" id="contenido">
 {body}
   </main>
 </div>
+{bottom_nav(active)}
 {overlay}
 </body>
 </html>
@@ -239,6 +300,12 @@ STATUS = [('todo', 'Por hacer'), ('progress', 'En curso'), ('review', 'En revisi
 STATUS_NAME = dict(STATUS)
 # En las pestañas del móvil no cabe «En revisión 2» en una línea.
 SHORT = {'todo': 'Por hacer', 'progress': 'En curso', 'review': 'Revisión', 'done': 'Hecho'}
+
+
+def segmented(items, cur, label):
+    """Control segmentado: botones con aria-pressed dentro de un grupo con nombre."""
+    b = ''.join(f'<button type="button" aria-pressed="{"true" if i == cur else "false"}">{t}</button>' for i, t in enumerate(items))
+    return f'<span class="seg" role="group" aria-label="{label}">{b}</span>'
 
 
 def chip(name):
@@ -345,7 +412,7 @@ write('tablero.html', shell('tablero', ['Atlas Platform', 'Tablero'], board_page
 
 # ── Ticket ──────────────────────────────────────────────────────────────────
 drawer = f"""<div class="scrim" aria-hidden="true"></div>
-<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="t-titulo">
+<div class="drawer" role="dialog" aria-modal="true" aria-labelledby="t-titulo">
   <div class="drawer-head">
     <span class="select select-inline" style="height:28px">Historia</span>
     <span style="flex:1"></span>
@@ -388,7 +455,7 @@ drawer = f"""<div class="scrim" aria-hidden="true"></div>
     </section>
     <p class="hint">Creado por avery el 3 oct · actualizado hace 2 h</p>
   </div>
-</aside>"""
+</div>"""
 write('ticket.html', shell('tablero', ['Atlas Platform', 'Tablero'], board_page(False), 'Ticket', overlay=drawer))
 
 # ── Panel del espacio ───────────────────────────────────────────────────────
@@ -482,11 +549,11 @@ inicio = f"""<div class="page page-narrow">
   <div class="notice" style="margin-bottom:20px"><div style="flex:1"><b>noor</b> te invitó a <b>Semillero de robótica</b>.<span class="hint" style="display:block">Entrarías como miembro. Verías su tablero, sus notas y sus archivos.</span></div><button class="btn btn-secondary btn-sm" type="button">Rechazar</button><button class="btn btn-primary btn-sm" type="button">Aceptar</button></div>
   <section style="margin-bottom:28px">
     <h2 class="section-title">Pendiente para ti</h2>
-    <div class="panel"><table class="table"><thead><tr><th>Ticket</th><th>Espacio</th><th>Estado</th><th class="num">Vence</th></tr></thead><tbody>{pending}</tbody></table></div>
+    <div class="panel" tabindex="0" role="region" aria-label="Pendiente para ti (se desplaza)"><table class="table"><thead><tr><th>Ticket</th><th>Espacio</th><th>Estado</th><th class="num">Vence</th></tr></thead><tbody>{pending}</tbody></table></div>
   </section>
   <section style="margin-bottom:28px">
     <h2 class="section-title">Tus espacios</h2>
-    <div class="panel"><table class="table"><thead><tr><th>Espacio</th><th>Etiqueta</th><th>Tu rol</th><th class="num">Personas</th><th class="num">Abiertos</th></tr></thead><tbody>{spaces}</tbody></table></div>
+    <div class="panel" tabindex="0" role="region" aria-label="Tus espacios (se desplaza)"><table class="table"><thead><tr><th>Espacio</th><th>Etiqueta</th><th>Tu rol</th><th class="num">Personas</th><th class="num">Abiertos</th></tr></thead><tbody>{spaces}</tbody></table></div>
   </section>
   <section id="actividad">
     <h2 class="section-title">Actividad</h2>
@@ -522,7 +589,7 @@ notas = f"""<div class="notes">
         </ul>
         <h2>Copias de seguridad</h2>
         <p>La base está en modo WAL. Copiar el archivo da una copia incompleta, así que la copia nocturna pasa por <code>.backup</code> y comprueba el resultado:</p>
-        <pre>sqlite3 forge.db ".backup /var/backups/forge-$(date +%F).db"
+        <pre tabindex="0">sqlite3 forge.db ".backup /var/backups/forge-$(date +%F).db"
 sqlite3 /var/backups/forge-$(date +%F).db "PRAGMA integrity_check;"</pre>
         <table><thead><tr><th>Pieza</th><th>Dónde vive</th><th>Quién responde</th></tr></thead>
         <tbody><tr><td>Base de datos</td><td><code>/var/lib/forge-os</code></td><td>avery</td></tr>
@@ -592,7 +659,7 @@ archivos = f"""<div class="page">
     <div class="page-actions"><button class="btn btn-secondary" type="button">Abrir en Drive</button><button class="btn btn-primary" type="button">{icon('plus')}Subir archivo</button></div>
   </div>
   <div class="toolbar"><div class="toolbar-group"><div class="search" style="margin:0;width:280px">{icon('search')}<span>Buscar por nombre</span></div><span class="select select-inline">Todas las etiquetas</span><span class="select select-inline">Cualquier ticket</span></div><span class="hint" style="align-self:center">14 archivos · 41 MB en Drive</span></div>
-  <div class="panel"><table class="table"><thead><tr><th>Nombre</th><th>Etiquetas</th><th>Ticket</th><th class="num">Tamaño</th><th>Subido por</th><th class="num">Fecha</th></tr></thead><tbody>{frows}
+  <div class="panel" tabindex="0" role="region" aria-label="Archivos (se desplaza)"><table class="table"><thead><tr><th>Nombre</th><th>Etiquetas</th><th>Ticket</th><th class="num">Tamaño</th><th>Subido por</th><th class="num">Fecha</th></tr></thead><tbody>{frows}
   <tr><td class="title"><span class="file-kind">DOC</span> requisitos-cliente.docx</td><td><span class="muted">—</span></td><td colspan="4"><span class="due late">Sin acceso.</span> <span class="muted">El permiso de Drive se revocó. El archivo sigue en ese Drive; vuelve a conectar la cuenta para verlo.</span></td></tr>
   </tbody></table></div>
 </div>"""
@@ -610,6 +677,15 @@ def burndown():
     xlab = ''.join(f'<text x="{x(d)}" y="{H - 6}" text-anchor="middle">{s}</text>' for d, s in [(0, '26 sep'), (7, '3 oct'), (14, '10 oct'), (21, '17 oct'), (28, '23 oct')])
     pts = ' '.join(f'{x(i):.1f},{y(v):.1f}' for i, v in enumerate(real))
     last = len(real) - 1
+    # Lo que se ve al pasar el ratón (o al tocar) un día: la guía, el punto y
+    # una caja con la fecha, el valor y la distancia al ideal.
+    d = 17
+    tx, ty = x(d), y(real[d])
+    tip = (f'<g class="tip"><line x1="{tx}" x2="{tx}" y1="{t}" y2="{y(0)}" stroke="var(--text)" stroke-width="1" stroke-dasharray="2 3"/>'
+           f'<circle cx="{tx}" cy="{ty}" r="5" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2"/>'
+           f'<g transform="translate({tx - 150} {ty - 74})"><rect width="136" height="56" rx="10" fill="var(--text)"/>'
+           f'<text x="12" y="20" style="fill:var(--bg);font-weight:700">13 oct · 21 pts</text>'
+           f'<text x="12" y="40" style="fill:var(--bg)">ideal 15,7 · +5,3</text></g></g>')
     return f"""<svg viewBox="0 0 {W} {H}" role="img" aria-label="Burndown del sprint 14: quedan 14 de 40 puntos con 4 días por delante; la línea ideal marcaría unos 6.">
   <g class="grid">{grid}</g>{ylab}{xlab}
   <line class="axis" x1="{l}" x2="{W - r}" y1="{y(0)}" y2="{y(0)}"/>
@@ -620,6 +696,7 @@ def burndown():
   <text x="{x(last) + 8}" y="{t + 12}" class="lbl">Hoy</text>
   <text x="{x(last) + 10}" y="{y(real[-1]) + 4}" class="lbl">14 pts</text>
   <text x="{x(28) + 6}" y="{y(0) - 6}">Ideal</text>
+  {tip}
 </svg>"""
 
 
@@ -693,12 +770,17 @@ metricas = f"""<div class="page">
     <div class="page-actions"><span class="select select-inline">Sprint 14 — Facturación y búsqueda</span></div>
   </div>
   <div class="charts">
-    <section class="panel chart"><div class="panel-head"><h2>Puntos pendientes</h2><span class="hint">va por detrás: 14 pts con 4 días</span></div>
-      <div class="panel-body"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div>{burndown()}</div></section>
+    <section class="panel chart"><div class="panel-head"><h2>Puntos pendientes</h2>{segmented(["Gráfica", "Tabla"], 0, "Vista de la gráfica")}</div>
+      <div class="panel-body"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span><span class="hint" style="margin-left:auto">va por detrás: 14 pts con 4 días</span></div>{burndown()}</div></section>
     <section class="panel chart"><div class="panel-head"><h2>Carga por persona</h2><span class="hint">tickets del sprint</span></div>
       <div class="panel-body"><div class="legend">{legend_status}</div>{workload()}</div></section>
-    <section class="panel chart"><div class="panel-head"><h2>Puntos cerrados por sprint</h2><span class="hint">últimos 4 sprints</span></div>
-      <div class="panel-body">{velocity()}</div></section>
+    <section class="panel chart"><div class="panel-head"><h2>Puntos cerrados por sprint</h2>{segmented(["Gráfica", "Tabla"], 1, "Vista de la gráfica")}</div>
+      <div class="panel-body"><table class="table chart-table"><caption class="sr-only">Puntos cerrados por sprint</caption><thead><tr><th>Sprint</th><th>Fechas</th><th class="num">Comprometidos</th><th class="num">Cerrados</th><th class="num">%</th></tr></thead><tbody>
+        <tr><td class="title">Sprint 11</td><td class="muted">15 – 28 ago</td><td class="num">24</td><td class="num">21</td><td class="num">88</td></tr>
+        <tr><td class="title">Sprint 12</td><td class="muted">29 ago – 11 sep</td><td class="num">28</td><td class="num">26</td><td class="num">93</td></tr>
+        <tr><td class="title">Sprint 13</td><td class="muted">12 – 25 sep</td><td class="num">24</td><td class="num">24</td><td class="num">100</td></tr>
+        <tr><td class="title">Sprint 14 <span class="hint">en curso</span></td><td class="muted">26 sep – 23 oct</td><td class="num">40</td><td class="num">9</td><td class="num">23</td></tr>
+      </tbody></table><p class="hint" style="margin-top:10px">Cada gráfica tiene su tabla: los mismos datos, para lector de pantalla, para copiar o para comparar cifras exactas.</p></div></section>
     <section class="panel chart"><div class="panel-head"><h2>Estimado y registrado</h2><span class="hint">horas, sprint 14</span></div>
       <div class="panel-body"><div class="legend"><span><i style="--c:var(--border-strong)"></i>Estimado</span><span><i style="--c:var(--text)"></i>Registrado</span></div>{estimation()}</div></section>
   </div>
@@ -814,6 +896,7 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
       <a class="btn btn-primary" href="acceso.html">Crear cuenta</a>
     </nav>
   </header>
+  <main>
   <section class="hero-x">
     <h1 class="hero-title">
       <span class="ln"><span class="w">Tablero,</span><span class="inl inl-col" aria-hidden="true"><i></i>En curso<b>3</b></span></span>
@@ -869,6 +952,7 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
     <div class="actions"><a class="btn btn-ink" href="tablero.html">Probar sin cuenta</a><a class="btn btn-ink-outline" href="#">Instalarlo</a></div>
   </section>
 
+  </main>
   <footer class="site-foot">{brand(20)}<span>MIT · hecho en Bogotá</span><span style="margin-left:auto">v1.28.5</span></footer>
 </div>
 </body>
@@ -947,7 +1031,7 @@ acceso = HEAD.format(title='Entrar · Forge OS', favicon=FAVICON) + f"""<body>
     </div>
     <div class="auth-scene" aria-hidden="true">{PLAYGROUND}</div>
   </aside>
-  <div class="auth-form">
+  <main class="auth-form">
     <form aria-labelledby="acc-t" onsubmit="return false">
       <div style="display:flex;justify-content:space-between;align-items:center"><a class="link" href="portada.html">← Portada</a>{THEME_BTN}</div>
       <div><h1 id="acc-t" class="page-title">Entrar</h1><p class="page-sub">En tu cuenta de esta instancia.</p></div>
@@ -961,7 +1045,7 @@ acceso = HEAD.format(title='Entrar · Forge OS', favicon=FAVICON) + f"""<body>
       <p class="hint">Crea un espacio temporal de 30 días. Al registrarte, te lo llevas.</p>
       <p style="font-size:var(--t-13)">¿No tienes cuenta? <a class="link" href="#">Crear una</a></p>
     </form>
-  </div>
+  </main>
 </div>
 </body>
 </html>
@@ -985,7 +1069,20 @@ SCREENS = [('logo.html', 'Logo', 'Las cuatro propuestas dibujadas desde cero y p
            ('metricas.html', 'Métricas', 'Cuatro gráficas con los colores de estado y etiquetas directas.'),
            ('ajustes.html', 'Ajustes', 'Formularios con un solo tipo de campo y la zona de borrado.'),
            ('portada.html', 'Portada', 'Sin bento, sin halo, sin ventana falsa: el producto y una ficha técnica.'),
-           ('acceso.html', 'Entrar', 'Panel de marca en tinta y formulario.')]
+           ('acceso.html', 'Entrar', 'Panel de marca en tinta y formulario.'),
+           ('registro.html', 'Crear cuenta', 'Captcha de suma sin terceros, pista de contraseña que coincide con el servidor.'),
+           ('ajustes-espacio.html', 'Ajustes del espacio', 'Miembros y roles, solicitudes, tipos, etiquetas, automatizaciones, Drive y borrado.'),
+           ('notas-indice.html', 'Índice de notas', 'Fijadas con forma de arco y la lista completa con su ruta.'),
+           ('notas-edicion.html', 'Editor en uso', 'Menú «/», barra de formato, asa de arrastre, tabla en edición y enlace a ticket.'),
+           ('actividad.html', 'Actividad', 'Por días, con acciones seguidas agrupadas.'),
+           ('personas.html', 'Personas', 'Tarjetas con solicitudes; el caso del invitado, que no las recibe.'),
+           ('perfil.html', 'Perfil público', 'Lo que se ve de otra persona, y qué no.'),
+           ('404.html', 'No encontrado', 'La fragua apagada, sin dibujos de más.'),
+           ('movil.html', 'Móvil', 'Cuatro pantallas reales a 390 px: barra inferior, hoja, teclado y «Más».'),
+           ('ventanas.html', 'Ventanas y capas', 'Las 16: crear ticket o sprint, cerrar sprint, tiempo, tablas, borrado, ⌘ K, avisos…'),
+           ('estados.html', 'Estados', 'Cargando, errores, sin permiso, sin conexión y vacíos tipográficos.'),
+           ('componentes.html', 'Componentes', 'Cada pieza en todos sus estados, iconos, movimiento y colores del equipo.'),
+           ('marca.html', 'Marca en uso', 'Imagen para redes, favicons, icono adaptable y manifiesto.')]
 screens = ''.join(f'<a href="{h}"><strong>{t}</strong><span>{d}</span></a>' for h, t, d in SCREENS)
 RULES = ['Cada decisión visual se justifica con una frase sobre Forge.',
          'Un color significa una cosa: naranja es acción, los estados son estado, rojo es error.',
@@ -1001,6 +1098,7 @@ rules = ''.join(f'<li><span>{r}</span></li>' for r in RULES)
 index = HEAD.format(title='Rediseño de Forge OS', favicon=FAVICON) + f"""<body>
 <div class="sheet-page">
   <header class="site-head" style="margin-bottom:40px">{brand(22)}<nav><span class="hint">Maqueta estática · 19 oct 2026</span>{THEME_BTN}</nav></header>
+<main>
 
   <div class="index-hero"><div>
   <h1 class="page-title" style="font-size:clamp(3rem,8vw,6.2rem);font-stretch:64%">Propuesta «Taller»</h1>
@@ -1079,6 +1177,7 @@ index = HEAD.format(title='Rediseño de Forge OS', favicon=FAVICON) + f"""<body>
     <h2>Reglas</h2>
     <ol class="rules">{rules}</ol>
   </section>
+</main>
 </div>
 </body>
 </html>
@@ -1127,7 +1226,7 @@ def concept_section(i, k):
     locks = (f'<div class="lk" style="background:{PAPER};border:1px solid #CFCAC0">{lockup(fn, 30, INK, ORANGE, INK)}</div>'
              f'<div class="lk" style="background:{INK}">{lockup(fn, 30, PAPER, ORANGE, PAPER)}</div>'
              f'<div class="lk" style="background:{ORANGE}">{lockup(fn, 30, INK, PAPER, INK)}</div>'
-             f'<div class="lk" style="background:{PAPER};border:1px solid #CFCAC0">{lockup(fn, 30, INK, INK, INK)}<span class="hint" style="margin-left:12px">una tinta</span></div>')
+             f'<div class="lk" style="background:{PAPER};border:1px solid #CFCAC0">{lockup(fn, 30, INK, INK, INK)}<span class="hint" style="margin-left:12px;color:#57534B">una tinta</span></div>')
     why = ''.join(f'<li>{w}</li>' for w in k['why'])
     tag = '<span class="chip" style="border-color:var(--text);font-weight:700">Elegida</span>' if k.get('rec') else ''
     big = (f'<svg viewBox="-4 -4 72 72" width="100%" style="max-width:360px;display:block;margin:auto" role="img" aria-label="Logo {k["name"]} sobre rejilla">'
@@ -1198,6 +1297,7 @@ logo_css = """<style>
 logo_page = HEAD.format(title='Logo · Forge OS', favicon=FAVICON).replace('</head>', logo_css + '</head>') + f"""<body>
 <div class="sheet-page">
   <header class="site-head" style="margin-bottom:40px"><a href="index.html" class="link">← Índice de la propuesta</a><nav><span class="hint">Logo · 4 propuestas</span>{THEME_BTN}</nav></header>
+<main>
   <h1 class="page-title" style="font-size:clamp(2.4rem,5vw,3.6rem)">Un logo nuevo para Forge OS</h1>
   <p class="page-sub" style="max-width:72ch;font-size:var(--t-16);line-height:1.6">Cuatro símbolos dibujados desde cero, todos sobre la misma rejilla de 64 × 64. Cada uno se ve a tamaño real, como icono de aplicación y favicon, junto al nombre y en una tinta. Sustituyen al cartucho «FO» de la propuesta anterior.</p>
 
@@ -1225,9 +1325,16 @@ logo_page = HEAD.format(title='Logo · Forge OS', favicon=FAVICON).replace('</he
       <p class="muted">Antes de adoptarla conviene una búsqueda de marcas registradas en la clase 9 (software) y 42 (servicios informáticos) con «Forge» y un arco o una llama. No la he hecho: este documento propone formas, no garantiza que estén libres.</p>
     </div>
   </section>
+</main>
 </div>
 </body>
 </html>
 """
 write('logo.html', logo_page)
 print('logo ok')
+
+# Pantallas, capas, estados y piezas de sistema añadidas después.
+for _m in ('mas_sistema.py', 'mas_ventanas.py', 'mas_pantallas.py', 'mas_movil.py'):
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), _m)
+    if os.path.exists(_p):
+        exec(compile(open(_p, encoding='utf-8').read(), _p, 'exec'))
