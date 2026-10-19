@@ -1416,6 +1416,44 @@ kbd, .kbd {
   .pf-placa { right: 32px; width: 40px; }
 }
 
+/* ── Ticket abierto: piezas que faltaban ───────────────────────────────── */
+.caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--text); vertical-align: -0.18em; margin-left: 1px; }
+.desc-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.desc-actions .hint { margin-right: auto; }
+.timer-run { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 10%, var(--surface-1)); margin-bottom: 12px; }
+.timer-run b { font-size: var(--t-20); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
+.time-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--t-13); margin-bottom: 6px; }
+.input-xs { display: inline-flex; width: 56px; height: 26px; padding: 0 8px; font-size: var(--t-13); vertical-align: middle; }
+.files-list .fname { min-width: 0; overflow-wrap: anywhere; }
+.files-list .push { margin-left: auto; }
+.log .icon { color: var(--muted); }
+.hero-stickers { display: none; }
+@media (max-width: 640px) {
+  .hide-sm { display: none !important; }
+  .site-head nav { margin-left: auto; flex-wrap: nowrap; gap: 4px; }
+  .site-head { flex-wrap: nowrap; }
+  .site-head .btn { padding-inline: 10px; }
+  .hero-x { padding-block: 32px 28px; }
+  .hero-title { font-size: clamp(3.6rem, 19vw, 5rem); }
+  .hero-title .inl { display: none; }
+  .hero-title .ln-wide { font-size: 0.4em; margin-top: 0.45em; text-wrap: balance; }
+  .hero-stickers { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; margin: 22px 0 6px; font-size: 5.6rem; }
+  .hero-stickers .inl-note { transform: rotate(2deg); }
+  .hero-stickers .inl-file { margin-left: auto; margin-right: 22px; }
+  .showcase-board { height: auto; padding-bottom: 18px; }
+  .showcase .column { min-height: 0; }
+  /* El tablero ya se ve justo encima, en el escaparate: aquí sobra. */
+  .feature:first-child .feature-demo { display: none; }
+  .demo-fname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .showcase .column-body > .card:nth-of-type(n+3) { display: none; }
+  .changes li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .changes .d { display: inline; margin-left: 8px; }
+  .feature-demo .file-row, .feature-demo li { min-width: 0; }
+  .timer-run b { font-size: var(--t-16); }
+}
+.card.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */

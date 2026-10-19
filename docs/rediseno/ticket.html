@@ -1416,6 +1416,44 @@ kbd, .kbd {
   .pf-placa { right: 32px; width: 40px; }
 }
 
+/* ── Ticket abierto: piezas que faltaban ───────────────────────────────── */
+.caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--text); vertical-align: -0.18em; margin-left: 1px; }
+.desc-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.desc-actions .hint { margin-right: auto; }
+.timer-run { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 10%, var(--surface-1)); margin-bottom: 12px; }
+.timer-run b { font-size: var(--t-20); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
+.time-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--t-13); margin-bottom: 6px; }
+.input-xs { display: inline-flex; width: 56px; height: 26px; padding: 0 8px; font-size: var(--t-13); vertical-align: middle; }
+.files-list .fname { min-width: 0; overflow-wrap: anywhere; }
+.files-list .push { margin-left: auto; }
+.log .icon { color: var(--muted); }
+.hero-stickers { display: none; }
+@media (max-width: 640px) {
+  .hide-sm { display: none !important; }
+  .site-head nav { margin-left: auto; flex-wrap: nowrap; gap: 4px; }
+  .site-head { flex-wrap: nowrap; }
+  .site-head .btn { padding-inline: 10px; }
+  .hero-x { padding-block: 32px 28px; }
+  .hero-title { font-size: clamp(3.6rem, 19vw, 5rem); }
+  .hero-title .inl { display: none; }
+  .hero-title .ln-wide { font-size: 0.4em; margin-top: 0.45em; text-wrap: balance; }
+  .hero-stickers { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; margin: 22px 0 6px; font-size: 5.6rem; }
+  .hero-stickers .inl-note { transform: rotate(2deg); }
+  .hero-stickers .inl-file { margin-left: auto; margin-right: 22px; }
+  .showcase-board { height: auto; padding-bottom: 18px; }
+  .showcase .column { min-height: 0; }
+  /* El tablero ya se ve justo encima, en el escaparate: aquí sobra. */
+  .feature:first-child .feature-demo { display: none; }
+  .demo-fname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .showcase .column-body > .card:nth-of-type(n+3) { display: none; }
+  .changes li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .changes .d { display: inline; margin-left: 8px; }
+  .feature-demo .file-row, .feature-demo li { min-width: 0; }
+  .timer-run b { font-size: var(--t-16); }
+}
+.card.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */
@@ -1481,7 +1519,7 @@ kbd, .kbd {
 </section><section class="column s-progress" aria-label="En curso, 3 tickets">
   <header class="column-head"><h2>En curso</h2><span class="n">3</span></header>
   <div class="tape"></div>
-  <div class="column-body"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#6B3FA0"></span>Épica · 13 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="avatar p-avery" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card " style="--type:#2E7D6B"><h3>Generar facturas en PDF</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#2E7D6B"></span>Historia · 5 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="due late">Vence hoy</span><span class="avatar p-blake" title="blake">bl</span></span></div></article><article class="card " style="--type:#B42318"><h3>La búsqueda pierde resultados después de la página 3</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#B42318"></span>Error · 3 pts</span><span class="chip" style="--c:#0E7490"><span class="sw"></span>Búsqueda</span><span class="push"><span class="avatar p-noor" title="noor">no</span></span></div></article></div>
+  <div class="column-body"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#6B3FA0"></span>Épica · 13 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="avatar p-avery" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card is-open" style="--type:#2E7D6B"><h3>Generar facturas en PDF</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#2E7D6B"></span>Historia · 5 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="due late">Vence hoy</span><span class="avatar p-blake" title="blake">bl</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card " style="--type:#B42318"><h3>La búsqueda pierde resultados después de la página 3</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#B42318"></span>Error · 3 pts</span><span class="chip" style="--c:#0E7490"><span class="sw"></span>Búsqueda</span><span class="push"><span class="avatar p-noor" title="noor">no</span></span></div></article></div>
 </section><section class="column s-review" aria-label="En revisión, 2 tickets">
   <header class="column-head"><h2>En revisión</h2><span class="n">2</span></header>
   <div class="tape"></div>
@@ -1498,43 +1536,56 @@ kbd, .kbd {
 <div class="scrim" aria-hidden="true"></div>
 <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="t-titulo">
   <div class="drawer-head">
-    <span class="select select-inline" style="height:28px">Historia</span>
+    <span class="select select-inline" style="height:30px" aria-label="Tipo de ticket"><span style="display:inline-flex;gap:8px;align-items:center"><span class="sw" style="--c:#2E7D6B"></span>Historia</span></span>
     <span style="flex:1"></span>
-    <button class="btn btn-ghost btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Copiar enlace</button>
-    <button class="btn btn-ghost btn-sm" type="button">Duplicar</button>
-    <button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Borrar</button>
+    <button class="btn btn-ghost btn-sm" type="button" aria-label="Copiar enlace"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span class="hide-sm">Copiar enlace</span></button>
+    <button class="btn btn-ghost btn-sm" type="button" aria-label="Duplicar"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg><span class="hide-sm">Duplicar</span></button>
+    <button class="btn btn-ghost btn-sm" type="button" aria-label="Borrar" style="color:var(--danger)"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="hide-sm">Borrar</span></button>
     <a class="btn btn-ghost btn-icon" href="tablero.html" aria-label="Cerrar"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></a>
   </div>
   <div class="drawer-body">
-    <h2 class="drawer-title" id="t-titulo">Generar facturas en PDF</h2>
+    <div>
+      <p class="hint" style="margin-bottom:6px">Atlas Platform · Sprint 14</p>
+      <h2 class="drawer-title" id="t-titulo">Generar facturas en PDF</h2>
+    </div>
     <dl class="props">
-      <dt>Estado</dt><dd><span class="select select-inline"><span class="status s-progress"><span class="sw"></span>En curso</span></span></dd>
-      <dt>Responsable</dt><dd><span class="select select-inline"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar p-blake">bl</span>blake</span></span></dd>
-      <dt>Informador</dt><dd><span class="avatar p-avery">av</span>avery</dd>
-      <dt>Sprint</dt><dd><span class="select select-inline">Sprint 14 — Facturación y búsqueda</span></dd>
+      <dt>Estado</dt><dd><span class="select select-inline" aria-label="Estado"><span class="status s-progress"><span class="sw"></span>En curso</span></span></dd>
+      <dt>Responsable</dt><dd><span class="select select-inline" aria-label="Responsable"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar p-blake">bl</span>blake</span></span></dd>
+      <dt>Informador</dt><dd><span class="select select-inline" aria-label="Informador"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar p-avery">av</span>avery</span></span></dd>
+      <dt>Sprint</dt><dd><span class="select select-inline" aria-label="Sprint">Sprint 14 — Facturación y búsqueda</span></dd>
       <dt>Puntos</dt><dd><span class="input" style="width:72px">5</span></dd>
-      <dt>Vence</dt><dd><span class="input" style="width:160px">19/10/2026</span><span class="due late">Vence hoy</span></dd>
+      <dt>Vence</dt><dd><span class="input" style="width:150px">19/10/2026</span><span class="due late">Vence hoy</span></dd>
       <dt>Etiquetas</dt><dd><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="chip" style="--c:#A16207"><span class="sw"></span>Q4</span><button class="btn btn-ghost btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir</button></dd>
     </dl>
     <section>
-      <h3 class="block-title">Descripción</h3>
-      <div class="textarea">Renderizar las facturas en el servidor y guardarlas como adjuntos del espacio. El PDF lleva el número de factura, el periodo y el desglose por consumo que calcula la API de medición.</div>
+      <h3 class="block-title">Descripción <span class="hint" style="font-weight:500">editando</span></h3>
+      <div class="textarea is-focus" style="min-height:120px"><span>Renderizar las facturas en el servidor y guardarlas como adjuntos del espacio. El PDF lleva el número de factura, el periodo y el desglose por consumo que calcula la API de medición.<br><br>Hecho cuando: la factura de septiembre de Ferretería Norte sale igual que la del sistema anterior<span class="caret"></span></span></div>
+      <div class="desc-actions"><span class="hint">Esc descarta los cambios</span><button class="btn btn-ghost btn-sm" type="button">Descartar</button><button class="btn btn-primary btn-sm" type="button">Guardar <kbd>⌘ ↵</kbd></button></div>
     </section>
     <section>
       <h3 class="block-title">Tiempo <button class="btn btn-secondary btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Registrar tiempo</button></h3>
-      <div style="display:flex;justify-content:space-between;font-size:var(--t-13);margin-bottom:6px"><span><b>6 h</b> de 16 h estimadas</span><span class="muted">38 %</span></div>
+      <div class="timer-run"><span class="live-dot" aria-hidden="true"></span><span><b class="wide">00:42:13</b><span class="hint" style="display:block">En marcha desde las 9:14 · blake</span></span><button class="btn btn-secondary btn-sm" type="button" style="margin-left:auto"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg>Parar</button></div>
+      <div class="time-sum"><span><b>6 h</b> registradas de <span class="input input-xs" aria-label="Horas estimadas">16 h</span> estimadas</span><span class="muted">38 %</span></div>
       <div class="bar" aria-hidden="true"><span style="width:38%;--c:var(--text)"></span></div>
       <ul class="log" style="margin-top:10px">
         <li><span class="avatar p-blake">bl</span>blake<span class="muted">Plantilla y estilos de impresión</span><span class="push">3 h · 18 oct</span></li>
         <li><span class="avatar p-blake">bl</span>blake<span class="muted">Cola de generación</span><span class="push">2 h · 17 oct</span></li>
-        <li><span class="avatar p-avery">av</span>avery<span class="muted">Revisión del desglose</span><span class="push">1 h · 16 oct</span></li>
+        <li><span class="avatar p-avery">av</span>avery<span class="muted">Revisión del desglose</span><span class="push">1 h · 16 oct</span><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="Borrar este registro de 1 h"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></li>
       </ul>
+    </section>
+    <section>
+      <h3 class="block-title">Archivos <span class="toolbar-group" style="gap:6px"><button class="btn btn-secondary btn-sm" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>Subir</button><a class="btn btn-secondary btn-sm" href="ventanas.html#adjuntar"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19.4 11a3.8 3.8 0 0 1-1.4 7.5z"/></svg>Elegir del espacio</a></span></h3>
+      <ul class="log files-list">
+        <li><span class="file-kind">PDF</span><span class="fname">factura-plantilla.pdf<span class="hint" style="display:block">En el Drive del espacio · hereda 2 etiquetas del ticket</span></span><button class="btn btn-ghost btn-icon btn-sm push" type="button" aria-label="Quitar factura-plantilla.pdf del ticket"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></li>
+        <li><span class="file-kind">PNG</span><span class="fname">totales-septiembre.png<span class="hint" style="display:block">En este servidor · 340 KB · subido por blake</span></span><button class="btn btn-ghost btn-icon btn-sm push" type="button" aria-label="Quitar totales-septiembre.png del ticket"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></li>
+      </ul>
+      <p class="hint" style="margin-top:8px;line-height:1.5">Lo que subes aquí se queda en este servidor, hasta 20 MB. Lo que eliges del espacio vive en el Drive conectado y hereda las etiquetas del ticket.</p>
     </section>
     <section>
       <h3 class="block-title">Notas enlazadas</h3>
       <ul class="log">
-        <li><a class="link" href="notas.html">Arquitectura general</a><span class="push">editada hace 5 min</span></li>
-        <li><a class="link" href="notas.html">Acta del sprint 14</a><span class="push">editada el 14 oct</span></li>
+        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5L19 8v12.5H6z"/><path d="M14 3.5V8.5h5M9 12.5h6.5M9 16h6.5"/></svg><a class="link" href="notas.html">Arquitectura general</a><span class="push">editada hace 5 min</span></li>
+        <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5L19 8v12.5H6z"/><path d="M14 3.5V8.5h5M9 12.5h6.5M9 16h6.5"/></svg><a class="link" href="notas.html">Acta del sprint 14</a><span class="push">editada el 14 oct</span></li>
       </ul>
     </section>
     <p class="hint">Creado por avery el 3 oct · actualizado hace 2 h</p>

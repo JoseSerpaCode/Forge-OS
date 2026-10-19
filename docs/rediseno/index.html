@@ -1416,6 +1416,44 @@ kbd, .kbd {
   .pf-placa { right: 32px; width: 40px; }
 }
 
+/* ── Ticket abierto: piezas que faltaban ───────────────────────────────── */
+.caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--text); vertical-align: -0.18em; margin-left: 1px; }
+.desc-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.desc-actions .hint { margin-right: auto; }
+.timer-run { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 10%, var(--surface-1)); margin-bottom: 12px; }
+.timer-run b { font-size: var(--t-20); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
+.time-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--t-13); margin-bottom: 6px; }
+.input-xs { display: inline-flex; width: 56px; height: 26px; padding: 0 8px; font-size: var(--t-13); vertical-align: middle; }
+.files-list .fname { min-width: 0; overflow-wrap: anywhere; }
+.files-list .push { margin-left: auto; }
+.log .icon { color: var(--muted); }
+.hero-stickers { display: none; }
+@media (max-width: 640px) {
+  .hide-sm { display: none !important; }
+  .site-head nav { margin-left: auto; flex-wrap: nowrap; gap: 4px; }
+  .site-head { flex-wrap: nowrap; }
+  .site-head .btn { padding-inline: 10px; }
+  .hero-x { padding-block: 32px 28px; }
+  .hero-title { font-size: clamp(3.6rem, 19vw, 5rem); }
+  .hero-title .inl { display: none; }
+  .hero-title .ln-wide { font-size: 0.4em; margin-top: 0.45em; text-wrap: balance; }
+  .hero-stickers { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; margin: 22px 0 6px; font-size: 5.6rem; }
+  .hero-stickers .inl-note { transform: rotate(2deg); }
+  .hero-stickers .inl-file { margin-left: auto; margin-right: 22px; }
+  .showcase-board { height: auto; padding-bottom: 18px; }
+  .showcase .column { min-height: 0; }
+  /* El tablero ya se ve justo encima, en el escaparate: aquí sobra. */
+  .feature:first-child .feature-demo { display: none; }
+  .demo-fname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .showcase .column-body > .card:nth-of-type(n+3) { display: none; }
+  .changes li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .changes .d { display: inline; margin-left: 8px; }
+  .feature-demo .file-row, .feature-demo li { min-width: 0; }
+  .timer-run b { font-size: var(--t-16); }
+}
+.card.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */
@@ -1442,7 +1480,7 @@ kbd, .kbd {
 
   <section class="site-section" style="padding-top:0;border-top:0">
     <h2>Pantallas</h2>
-    <div class="screens"><a href="logo.html"><strong>Logo</strong><span>Las cuatro propuestas dibujadas desde cero y por qué se eligió «Fragua».</span></a><a href="tablero.html"><strong>Tablero</strong><span>Cuatro columnas a 1280 px, tarjeta compacta, una tarjeta en pleno arrastre.</span></a><a href="ticket.html"><strong>Ticket</strong><span>Cajón lateral sobre el tablero: propiedades, tiempo y notas enlazadas.</span></a><a href="panel.html"><strong>Panel del espacio</strong><span>Estado del sprint, tus tickets, sprints, carga y actividad.</span></a><a href="inicio.html"><strong>Inicio</strong><span>Lo pendiente en todos tus espacios, sin banners ni saludo.</span></a><a href="notas.html"><strong>Notas</strong><span>Árbol sin caja y medida de lectura de 68 caracteres.</span></a><a href="tablas.html"><strong>Tablas</strong><span>Hoja de cálculo con el tipo de cada columna a la vista.</span></a><a href="archivos.html"><strong>Archivos</strong><span>Lista de Drive, con el caso de un archivo sin acceso.</span></a><a href="metricas.html"><strong>Métricas</strong><span>Cuatro gráficas con los colores de estado y etiquetas directas.</span></a><a href="ajustes.html"><strong>Ajustes</strong><span>Formularios con un solo tipo de campo y la zona de borrado.</span></a><a href="portada.html"><strong>Portada</strong><span>Sin bento, sin halo, sin ventana falsa: el producto y una ficha técnica.</span></a><a href="acceso.html"><strong>Entrar</strong><span>Panel de marca en tinta y formulario.</span></a><a href="registro.html"><strong>Crear cuenta</strong><span>Captcha de suma sin terceros, pista de contraseña que coincide con el servidor.</span></a><a href="ajustes-espacio.html"><strong>Ajustes del espacio</strong><span>Miembros y roles, solicitudes, tipos, etiquetas, automatizaciones, Drive y borrado.</span></a><a href="notas-indice.html"><strong>Índice de notas</strong><span>Fijadas con forma de arco y la lista completa con su ruta.</span></a><a href="notas-edicion.html"><strong>Editor en uso</strong><span>Menú «/», barra de formato, asa de arrastre, tabla en edición y enlace a ticket.</span></a><a href="actividad.html"><strong>Actividad</strong><span>Por días, con acciones seguidas agrupadas.</span></a><a href="personas.html"><strong>Personas</strong><span>Tarjetas con solicitudes; el caso del invitado, que no las recibe.</span></a><a href="perfil.html"><strong>Perfil público</strong><span>Lo que se ve de otra persona, y qué no.</span></a><a href="404.html"><strong>No encontrado</strong><span>La fragua apagada, sin dibujos de más.</span></a><a href="movil.html"><strong>Móvil</strong><span>Cuatro pantallas reales a 390 px: barra inferior, hoja, teclado y «Más».</span></a><a href="ventanas.html"><strong>Ventanas y capas</strong><span>Las 16: crear ticket o sprint, cerrar sprint, tiempo, tablas, borrado, ⌘ K, avisos…</span></a><a href="estados.html"><strong>Estados</strong><span>Cargando, errores, sin permiso, sin conexión y vacíos tipográficos.</span></a><a href="componentes.html"><strong>Componentes</strong><span>Cada pieza en todos sus estados, iconos, movimiento y colores del equipo.</span></a><a href="marca.html"><strong>Marca en uso</strong><span>Imagen para redes, favicons, icono adaptable y manifiesto.</span></a></div>
+    <div class="screens"><a href="logo.html"><strong>Logo</strong><span>Las cuatro propuestas dibujadas desde cero y por qué se eligió «Fragua».</span></a><a href="tablero.html"><strong>Tablero</strong><span>Cuatro columnas a 1280 px, tarjeta compacta, una tarjeta en pleno arrastre.</span></a><a href="ticket.html"><strong>Ticket abierto</strong><span>Cajón sobre el tablero: propiedades, descripción en edición, temporizador en marcha, registros, archivos y notas enlazadas.</span></a><a href="panel.html"><strong>Panel del espacio</strong><span>Estado del sprint, tus tickets, sprints, carga y actividad.</span></a><a href="inicio.html"><strong>Inicio</strong><span>Lo pendiente en todos tus espacios, sin banners ni saludo.</span></a><a href="notas.html"><strong>Notas</strong><span>Árbol sin caja y medida de lectura de 68 caracteres.</span></a><a href="tablas.html"><strong>Tablas</strong><span>Hoja de cálculo con el tipo de cada columna a la vista.</span></a><a href="archivos.html"><strong>Archivos</strong><span>Lista de Drive, con el caso de un archivo sin acceso.</span></a><a href="metricas.html"><strong>Métricas</strong><span>Cuatro gráficas con los colores de estado y etiquetas directas.</span></a><a href="ajustes.html"><strong>Ajustes</strong><span>Formularios con un solo tipo de campo y la zona de borrado.</span></a><a href="portada.html"><strong>Portada</strong><span>Sin bento, sin halo, sin ventana falsa: el producto y una ficha técnica.</span></a><a href="acceso.html"><strong>Entrar</strong><span>Panel de marca en tinta y formulario.</span></a><a href="registro.html"><strong>Crear cuenta</strong><span>Captcha de suma sin terceros, pista de contraseña que coincide con el servidor.</span></a><a href="ajustes-espacio.html"><strong>Ajustes del espacio</strong><span>Miembros y roles, solicitudes, tipos, etiquetas, automatizaciones, Drive y borrado.</span></a><a href="notas-indice.html"><strong>Índice de notas</strong><span>Fijadas con forma de arco y la lista completa con su ruta.</span></a><a href="notas-edicion.html"><strong>Editor en uso</strong><span>Menú «/», barra de formato, asa de arrastre, tabla en edición y enlace a ticket.</span></a><a href="actividad.html"><strong>Actividad</strong><span>Por días, con acciones seguidas agrupadas.</span></a><a href="personas.html"><strong>Personas</strong><span>Tarjetas con solicitudes; el caso del invitado, que no las recibe.</span></a><a href="perfil.html"><strong>Perfil público</strong><span>Lo que se ve de otra persona, y qué no.</span></a><a href="404.html"><strong>No encontrado</strong><span>La fragua apagada, sin dibujos de más.</span></a><a href="movil.html"><strong>Móvil</strong><span>Cuatro pantallas reales a 390 px: barra inferior, hoja, teclado y «Más».</span></a><a href="ventanas.html"><strong>Ventanas y capas</strong><span>Las 17: crear ticket o sprint, cerrar sprint, tiempo, tablas, borrado, ⌘ K, avisos…</span></a><a href="estados.html"><strong>Estados</strong><span>Cargando, errores, sin permiso, sin conexión y vacíos tipográficos.</span></a><a href="componentes.html"><strong>Componentes</strong><span>Cada pieza en todos sus estados, iconos, movimiento y colores del equipo.</span></a><a href="marca.html"><strong>Marca en uso</strong><span>Imagen para redes, favicons, icono adaptable y manifiesto.</span></a></div>
   </section>
 
   <section class="site-section">

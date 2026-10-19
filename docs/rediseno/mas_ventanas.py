@@ -231,6 +231,19 @@ L.append(('avisos', 'Avisos', 'Abajo a la izquierda en el escritorio; encima de 
 <div class="toast">{icon('link')}Enlace copiado.</div>
 <div class="toast err" role="alert">{icon('alert')}No se pudo mover el ticket. Volvió a «En curso».<span class="act">Reintentar</span></div>""", ))
 
+# 17 · Adjuntar desde el espacio
+DRV = [('PDF', 'factura-plantilla.pdf', 'Ya está en este ticket', 'dis'), ('PDF', 'factura-agosto-ferreteria.pdf', 'blake · 2 sep · 180 KB', 'on'),
+       ('PDF', 'contrato-borrador.pdf', 'avery · 28 ago · 1,2 MB', ''), ('CSV', 'facturas-2026.csv', 'noor · 3 oct · 46 KB', '')]
+drv = ''.join(f'<span class="menu-item{" on" if st == "on" else ""}{" muted" if st == "dis" else ""}" role="option" aria-selected="{"true" if st == "on" else "false"}"{" aria-disabled=\"true\"" if st == "dis" else ""}><span class="file-kind">{k}</span><span>{n}<small class="hint" style="display:block">{d}</small></span>{"<span class=\"push\">" + icon("check") + "</span>" if st == "dis" else ""}</span>' for k, n, d, st in DRV)
+L.append(('adjuntar', 'Adjuntar desde el espacio', 'Desde «Archivos» del ticket. Busca en lo que el espacio ya tiene en Drive; al adjuntar, el archivo hereda las etiquetas del ticket. Lo que ya está adjunto aparece, pero no se puede elegir otra vez.',
+    f"""<div class="anchor"><div class="toolbar-group"><button class="btn btn-secondary btn-sm" type="button">{icon('upload')}Subir</button><button class="btn btn-secondary btn-sm is-active" type="button" aria-expanded="true">{icon('cloud')}Elegir del espacio</button></div>
+  <div class="menu" role="dialog" aria-label="Archivos del espacio" style="width:340px">
+    <span class="input is-focus" style="margin:4px 4px 8px;width:auto">{icon('search')}<span>factura<span class="caret"></span></span></span>
+    <div role="listbox" aria-label="Archivos que coinciden" style="display:flex;flex-direction:column">{drv}</div>
+    <span class="menu-sep" role="separator"></span>
+    <p class="hint" style="padding:4px 10px 6px;line-height:1.5">Se adjuntará con {chip('Facturación')} {chip('Q4')}</p>
+  </div></div>"""))
+
 nav = ''.join(f'<a href="#{i}">{n:02d} · {t}</a>' for n, (i, t, *_r) in enumerate(L, 1))
 rows = ''.join(layer(i, n, t, d, c, col=(i == 'avisos')) for n, (i, t, d, c) in enumerate(L, 1))
 

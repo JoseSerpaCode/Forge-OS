@@ -1416,6 +1416,44 @@ kbd, .kbd {
   .pf-placa { right: 32px; width: 40px; }
 }
 
+/* ── Ticket abierto: piezas que faltaban ───────────────────────────────── */
+.caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--text); vertical-align: -0.18em; margin-left: 1px; }
+.desc-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.desc-actions .hint { margin-right: auto; }
+.timer-run { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 10%, var(--surface-1)); margin-bottom: 12px; }
+.timer-run b { font-size: var(--t-20); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
+.time-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--t-13); margin-bottom: 6px; }
+.input-xs { display: inline-flex; width: 56px; height: 26px; padding: 0 8px; font-size: var(--t-13); vertical-align: middle; }
+.files-list .fname { min-width: 0; overflow-wrap: anywhere; }
+.files-list .push { margin-left: auto; }
+.log .icon { color: var(--muted); }
+.hero-stickers { display: none; }
+@media (max-width: 640px) {
+  .hide-sm { display: none !important; }
+  .site-head nav { margin-left: auto; flex-wrap: nowrap; gap: 4px; }
+  .site-head { flex-wrap: nowrap; }
+  .site-head .btn { padding-inline: 10px; }
+  .hero-x { padding-block: 32px 28px; }
+  .hero-title { font-size: clamp(3.6rem, 19vw, 5rem); }
+  .hero-title .inl { display: none; }
+  .hero-title .ln-wide { font-size: 0.4em; margin-top: 0.45em; text-wrap: balance; }
+  .hero-stickers { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; margin: 22px 0 6px; font-size: 5.6rem; }
+  .hero-stickers .inl-note { transform: rotate(2deg); }
+  .hero-stickers .inl-file { margin-left: auto; margin-right: 22px; }
+  .showcase-board { height: auto; padding-bottom: 18px; }
+  .showcase .column { min-height: 0; }
+  /* El tablero ya se ve justo encima, en el escaparate: aquí sobra. */
+  .feature:first-child .feature-demo { display: none; }
+  .demo-fname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .showcase .column-body > .card:nth-of-type(n+3) { display: none; }
+  .changes li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .changes .d { display: inline; margin-left: 8px; }
+  .feature-demo .file-row, .feature-demo li { min-width: 0; }
+  .timer-run b { font-size: var(--t-16); }
+}
+.card.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */
@@ -1454,7 +1492,7 @@ kbd, .kbd {
   <g transform="translate(320 248) rotate(0)"><path d="M-10 -4L-14 26" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -4L16 26" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L38 -94" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -42L-58 0" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E0A23A"/><circle cx="0" cy="-80" r="18" fill="#E0A23A"/></g>
 
   <path d="M20 470H44M8 450H34M24 430H44" stroke="#5C574F" stroke-width="4" stroke-linecap="round"/>
-  <g transform="translate(96 488) rotate(4)"><path d="M-8 -2L-30 30" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L26 30" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L46 -88" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -46L-34 -12" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E58FB8"/><circle cx="0" cy="-80" r="18" fill="#E58FB8"/><g transform="translate(52 -104) rotate(10)"><rect x="-30" y="-20" width="60" height="40" rx="8" fill="#F8F7F4"/><path d="M0 -9V9M-9 0H9" stroke="#E8590C" stroke-width="5" stroke-linecap="round"/></g></g>
+  <g transform="translate(96 488) rotate(4)"><path d="M-8 -2L-30 30" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L26 30" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L46 -88" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -46L-34 -12" stroke="#E58FB8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E58FB8"/><circle cx="0" cy="-80" r="18" fill="#E58FB8"/><g transform="translate(52 -104) rotate(10)"><rect x="-32" y="-21" width="64" height="42" rx="8" fill="#F8F7F4"/><path d="M-22 13V-1A8 8 0 0 1 -6 -1V13Z" fill="#E58FB8"/><circle cx="-14" cy="-8" r="5.5" fill="#E58FB8"/><rect x="1" y="-8" width="22" height="5" rx="2.5" fill="#7D776C"/><rect x="1" y="3" width="15" height="5" rx="2.5" fill="#CFCAC0"/></g></g>
 
   <path d="M602 470H626M610 450H636M598 430H618" stroke="#5C574F" stroke-width="4" stroke-linecap="round"/>
   <g transform="translate(560 488) rotate(-4)"><path d="M-8 -2L-24 30" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L18 30" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-54 -58" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -44L-48 -48" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#A98BF0"/><circle cx="0" cy="-80" r="18" fill="#A98BF0"/><circle cx="-62" cy="-64" r="15" fill="#E8590C"/><circle cx="-62" cy="-64" r="7" fill="#FF9452"/></g>

@@ -414,49 +414,64 @@ write('tablero.html', shell('tablero', ['Atlas Platform', 'Tablero'], board_page
 drawer = f"""<div class="scrim" aria-hidden="true"></div>
 <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="t-titulo">
   <div class="drawer-head">
-    <span class="select select-inline" style="height:28px">Historia</span>
+    <span class="select select-inline" style="height:30px" aria-label="Tipo de ticket"><span style="display:inline-flex;gap:8px;align-items:center"><span class="sw" style="--c:{TYPES['Historia']}"></span>Historia</span></span>
     <span style="flex:1"></span>
-    <button class="btn btn-ghost btn-sm" type="button">{icon('link')}Copiar enlace</button>
-    <button class="btn btn-ghost btn-sm" type="button">Duplicar</button>
-    <button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Borrar</button>
+    <button class="btn btn-ghost btn-sm" type="button" aria-label="Copiar enlace">{icon('link')}<span class="hide-sm">Copiar enlace</span></button>
+    <button class="btn btn-ghost btn-sm" type="button" aria-label="Duplicar">{icon('copy')}<span class="hide-sm">Duplicar</span></button>
+    <button class="btn btn-ghost btn-sm" type="button" aria-label="Borrar" style="color:var(--danger)">{icon('trash')}<span class="hide-sm">Borrar</span></button>
     <a class="btn btn-ghost btn-icon" href="tablero.html" aria-label="Cerrar">{icon('x')}</a>
   </div>
   <div class="drawer-body">
-    <h2 class="drawer-title" id="t-titulo">Generar facturas en PDF</h2>
+    <div>
+      <p class="hint" style="margin-bottom:6px">Atlas Platform · Sprint 14</p>
+      <h2 class="drawer-title" id="t-titulo">Generar facturas en PDF</h2>
+    </div>
     <dl class="props">
-      <dt>Estado</dt><dd><span class="select select-inline">{status_badge('progress')}</span></dd>
-      <dt>Responsable</dt><dd><span class="select select-inline"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar p-blake">bl</span>blake</span></span></dd>
-      <dt>Informador</dt><dd><span class="avatar p-avery">av</span>avery</dd>
-      <dt>Sprint</dt><dd><span class="select select-inline">Sprint 14 — Facturación y búsqueda</span></dd>
+      <dt>Estado</dt><dd><span class="select select-inline" aria-label="Estado">{status_badge('progress')}</span></dd>
+      <dt>Responsable</dt><dd><span class="select select-inline" aria-label="Responsable"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar p-blake">bl</span>blake</span></span></dd>
+      <dt>Informador</dt><dd><span class="select select-inline" aria-label="Informador"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar p-avery">av</span>avery</span></span></dd>
+      <dt>Sprint</dt><dd><span class="select select-inline" aria-label="Sprint">Sprint 14 — Facturación y búsqueda</span></dd>
       <dt>Puntos</dt><dd><span class="input" style="width:72px">5</span></dd>
-      <dt>Vence</dt><dd><span class="input" style="width:160px">19/10/2026</span><span class="due late">Vence hoy</span></dd>
+      <dt>Vence</dt><dd><span class="input" style="width:150px">19/10/2026</span><span class="due late">Vence hoy</span></dd>
       <dt>Etiquetas</dt><dd>{chip('Facturación')}{chip('Q4')}<button class="btn btn-ghost btn-sm" type="button">{icon('plus')}Añadir</button></dd>
     </dl>
     <section>
-      <h3 class="block-title">Descripción</h3>
-      <div class="textarea">Renderizar las facturas en el servidor y guardarlas como adjuntos del espacio. El PDF lleva el número de factura, el periodo y el desglose por consumo que calcula la API de medición.</div>
+      <h3 class="block-title">Descripción <span class="hint" style="font-weight:500">editando</span></h3>
+      <div class="textarea is-focus" style="min-height:120px"><span>Renderizar las facturas en el servidor y guardarlas como adjuntos del espacio. El PDF lleva el número de factura, el periodo y el desglose por consumo que calcula la API de medición.<br><br>Hecho cuando: la factura de septiembre de Ferretería Norte sale igual que la del sistema anterior<span class="caret"></span></span></div>
+      <div class="desc-actions"><span class="hint">Esc descarta los cambios</span><button class="btn btn-ghost btn-sm" type="button">Descartar</button><button class="btn btn-primary btn-sm" type="button">Guardar <kbd>⌘ ↵</kbd></button></div>
     </section>
     <section>
       <h3 class="block-title">Tiempo <button class="btn btn-secondary btn-sm" type="button">{icon('plus')}Registrar tiempo</button></h3>
-      <div style="display:flex;justify-content:space-between;font-size:var(--t-13);margin-bottom:6px"><span><b>6 h</b> de 16 h estimadas</span><span class="muted">38 %</span></div>
+      <div class="timer-run"><span class="live-dot" aria-hidden="true"></span><span><b class="wide">00:42:13</b><span class="hint" style="display:block">En marcha desde las 9:14 · blake</span></span><button class="btn btn-secondary btn-sm" type="button" style="margin-left:auto">{icon('stop')}Parar</button></div>
+      <div class="time-sum"><span><b>6 h</b> registradas de <span class="input input-xs" aria-label="Horas estimadas">16 h</span> estimadas</span><span class="muted">38 %</span></div>
       <div class="bar" aria-hidden="true"><span style="width:38%;--c:var(--text)"></span></div>
       <ul class="log" style="margin-top:10px">
         <li><span class="avatar p-blake">bl</span>blake<span class="muted">Plantilla y estilos de impresión</span><span class="push">3 h · 18 oct</span></li>
         <li><span class="avatar p-blake">bl</span>blake<span class="muted">Cola de generación</span><span class="push">2 h · 17 oct</span></li>
-        <li><span class="avatar p-avery">av</span>avery<span class="muted">Revisión del desglose</span><span class="push">1 h · 16 oct</span></li>
+        <li><span class="avatar p-avery">av</span>avery<span class="muted">Revisión del desglose</span><span class="push">1 h · 16 oct</span><button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="Borrar este registro de 1 h">{icon('trash')}</button></li>
       </ul>
+    </section>
+    <section>
+      <h3 class="block-title">Archivos <span class="toolbar-group" style="gap:6px"><button class="btn btn-secondary btn-sm" type="button">{icon('upload')}Subir</button><a class="btn btn-secondary btn-sm" href="ventanas.html#adjuntar">{icon('cloud')}Elegir del espacio</a></span></h3>
+      <ul class="log files-list">
+        <li><span class="file-kind">PDF</span><span class="fname">factura-plantilla.pdf<span class="hint" style="display:block">En el Drive del espacio · hereda 2 etiquetas del ticket</span></span><button class="btn btn-ghost btn-icon btn-sm push" type="button" aria-label="Quitar factura-plantilla.pdf del ticket">{icon('x')}</button></li>
+        <li><span class="file-kind">PNG</span><span class="fname">totales-septiembre.png<span class="hint" style="display:block">En este servidor · 340 KB · subido por blake</span></span><button class="btn btn-ghost btn-icon btn-sm push" type="button" aria-label="Quitar totales-septiembre.png del ticket">{icon('x')}</button></li>
+      </ul>
+      <p class="hint" style="margin-top:8px;line-height:1.5">Lo que subes aquí se queda en este servidor, hasta 20 MB. Lo que eliges del espacio vive en el Drive conectado y hereda las etiquetas del ticket.</p>
     </section>
     <section>
       <h3 class="block-title">Notas enlazadas</h3>
       <ul class="log">
-        <li><a class="link" href="notas.html">Arquitectura general</a><span class="push">editada hace 5 min</span></li>
-        <li><a class="link" href="notas.html">Acta del sprint 14</a><span class="push">editada el 14 oct</span></li>
+        <li>{icon('note')}<a class="link" href="notas.html">Arquitectura general</a><span class="push">editada hace 5 min</span></li>
+        <li>{icon('note')}<a class="link" href="notas.html">Acta del sprint 14</a><span class="push">editada el 14 oct</span></li>
       </ul>
     </section>
     <p class="hint">Creado por avery el 3 oct · actualizado hace 2 h</p>
   </div>
 </div>"""
-write('ticket.html', shell('tablero', ['Atlas Platform', 'Tablero'], board_page(False), 'Ticket', overlay=drawer))
+# En el tablero de fondo, la tarjeta abierta se marca y lleva el mismo temporizador.
+_open = card('Generar facturas en PDF', 'Historia', ['Facturación'], 'blake', 5, due='Vence hoy', late=True, timer='00:42:13', cls='is-open')
+write('ticket.html', shell('tablero', ['Atlas Platform', 'Tablero'], board_page(False).replace(COLUMNS['progress'][1], _open), 'Ticket', overlay=drawer))
 
 # ── Panel del espacio ───────────────────────────────────────────────────────
 seg = ''.join(f'<span style="width:{w}%;--c:var(--st-{k})"></span>' for k, w in
@@ -921,7 +936,7 @@ demo_note = f"""<article class="panel" style="padding:22px 24px">
 </article>"""
 demo_files = '<div class="panel" style="padding:6px 0">' + ''.join(
     f'<div style="display:flex;gap:10px;align-items:center;padding:12px 18px;{"border-top:1px solid var(--border);" if i else ""}">'
-    f'<span class="file-kind">{k}</span><b style="font-weight:600">{n}</b><span style="margin-left:auto">{chip(l)}</span></div>'
+    f'<span class="file-kind">{k}</span><b class="demo-fname" style="font-weight:600">{n}</b><span style="margin-left:auto">{chip(l)}</span></div>'
     for i, (k, n, l) in enumerate([('PDF', 'factura-plantilla.pdf', 'Facturación'), ('PNG', 'avatar-rechazado.png', 'Interfaz'), ('CSV', 'consumo-septiembre.csv', 'API')])) + '</div>'
 demo_chart = f'<div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div>{burndown()}</div>'
 
@@ -938,8 +953,8 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
   <header class="site-head">
     <a href="index.html" aria-label="Forge OS">{brand(26)}</a>
     <nav>
-      <a class="btn btn-ghost" href="#cambios">Cambios</a>
-      <a class="btn btn-ghost" href="#">Código</a>
+      <a class="btn btn-ghost hide-sm" href="#cambios">Cambios</a>
+      <a class="btn btn-ghost hide-sm" href="#">Código</a>
       {THEME_BTN}
       <a class="btn btn-ghost" href="acceso.html">Entrar</a>
       <a class="btn btn-primary" href="acceso.html">Crear cuenta</a>
@@ -953,6 +968,7 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
       <span class="ln"><span class="w">y archivos</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf{PF_HERO}</span></span>
       <span class="ln ln-wide">en un servidor tuyo.</span>
     </h1>
+    <div class="hero-stickers" aria-hidden="true"><span class="inl inl-col"><i></i>En curso<b>3</b></span><span class="inl inl-note"><i></i>Arquitectura general</span><span class="inl inl-file"><em>PDF</em>factura.pdf{PF_HERO}</span></div>
     <div class="hero-foot">
       <p>Un tablero por sprint, notas enlazadas a los tickets que describen y archivos que se guardan en tu Drive. Todo en un proceso de Node y un archivo de SQLite. Software libre, sin cuotas por persona.</p>
       <div class="hero-cta">
@@ -1081,7 +1097,7 @@ def sw(name, var, light, dark, note=''):
 
 SCREENS = [('logo.html', 'Logo', 'Las cuatro propuestas dibujadas desde cero y por qué se eligió «Fragua».'),
            ('tablero.html', 'Tablero', 'Cuatro columnas a 1280 px, tarjeta compacta, una tarjeta en pleno arrastre.'),
-           ('ticket.html', 'Ticket', 'Cajón lateral sobre el tablero: propiedades, tiempo y notas enlazadas.'),
+           ('ticket.html', 'Ticket abierto', 'Cajón sobre el tablero: propiedades, descripción en edición, temporizador en marcha, registros, archivos y notas enlazadas.'),
            ('panel.html', 'Panel del espacio', 'Estado del sprint, tus tickets, sprints, carga y actividad.'),
            ('inicio.html', 'Inicio', 'Lo pendiente en todos tus espacios, sin banners ni saludo.'),
            ('notas.html', 'Notas', 'Árbol sin caja y medida de lectura de 68 caracteres.'),
@@ -1100,7 +1116,7 @@ SCREENS = [('logo.html', 'Logo', 'Las cuatro propuestas dibujadas desde cero y p
            ('perfil.html', 'Perfil público', 'Lo que se ve de otra persona, y qué no.'),
            ('404.html', 'No encontrado', 'La fragua apagada, sin dibujos de más.'),
            ('movil.html', 'Móvil', 'Cuatro pantallas reales a 390 px: barra inferior, hoja, teclado y «Más».'),
-           ('ventanas.html', 'Ventanas y capas', 'Las 16: crear ticket o sprint, cerrar sprint, tiempo, tablas, borrado, ⌘ K, avisos…'),
+           ('ventanas.html', 'Ventanas y capas', 'Las 17: crear ticket o sprint, cerrar sprint, tiempo, tablas, borrado, ⌘ K, avisos…'),
            ('estados.html', 'Estados', 'Cargando, errores, sin permiso, sin conexión y vacíos tipográficos.'),
            ('componentes.html', 'Componentes', 'Cada pieza en todos sus estados, iconos, movimiento y colores del equipo.'),
            ('marca.html', 'Marca en uso', 'Imagen para redes, favicons, icono adaptable y manifiesto.')]

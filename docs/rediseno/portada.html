@@ -1416,6 +1416,44 @@ kbd, .kbd {
   .pf-placa { right: 32px; width: 40px; }
 }
 
+/* ── Ticket abierto: piezas que faltaban ───────────────────────────────── */
+.caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--text); vertical-align: -0.18em; margin-left: 1px; }
+.desc-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.desc-actions .hint { margin-right: auto; }
+.timer-run { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 10%, var(--surface-1)); margin-bottom: 12px; }
+.timer-run b { font-size: var(--t-20); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); flex: none; }
+.time-sum { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: var(--t-13); margin-bottom: 6px; }
+.input-xs { display: inline-flex; width: 56px; height: 26px; padding: 0 8px; font-size: var(--t-13); vertical-align: middle; }
+.files-list .fname { min-width: 0; overflow-wrap: anywhere; }
+.files-list .push { margin-left: auto; }
+.log .icon { color: var(--muted); }
+.hero-stickers { display: none; }
+@media (max-width: 640px) {
+  .hide-sm { display: none !important; }
+  .site-head nav { margin-left: auto; flex-wrap: nowrap; gap: 4px; }
+  .site-head { flex-wrap: nowrap; }
+  .site-head .btn { padding-inline: 10px; }
+  .hero-x { padding-block: 32px 28px; }
+  .hero-title { font-size: clamp(3.6rem, 19vw, 5rem); }
+  .hero-title .inl { display: none; }
+  .hero-title .ln-wide { font-size: 0.4em; margin-top: 0.45em; text-wrap: balance; }
+  .hero-stickers { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; margin: 22px 0 6px; font-size: 5.6rem; }
+  .hero-stickers .inl-note { transform: rotate(2deg); }
+  .hero-stickers .inl-file { margin-left: auto; margin-right: 22px; }
+  .showcase-board { height: auto; padding-bottom: 18px; }
+  .showcase .column { min-height: 0; }
+  /* El tablero ya se ve justo encima, en el escaparate: aquí sobra. */
+  .feature:first-child .feature-demo { display: none; }
+  .demo-fname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .showcase .column-body > .card:nth-of-type(n+3) { display: none; }
+  .changes li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .changes .d { display: inline; margin-left: 8px; }
+  .feature-demo .file-row, .feature-demo li { min-width: 0; }
+  .timer-run b { font-size: var(--t-16); }
+}
+.card.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */
@@ -1435,8 +1473,8 @@ kbd, .kbd {
   <header class="site-head">
     <a href="index.html" aria-label="Forge OS"><span class="brand"><svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/><path fill="var(--brand-orange)" d="M21 53V45A11 8 0 0 1 43 45V53Z"/></svg><span class="brand-word">Forge OS</span></span></a>
     <nav>
-      <a class="btn btn-ghost" href="#cambios">Cambios</a>
-      <a class="btn btn-ghost" href="#">Código</a>
+      <a class="btn btn-ghost hide-sm" href="#cambios">Cambios</a>
+      <a class="btn btn-ghost hide-sm" href="#">Código</a>
       <button class="btn btn-ghost btn-icon" type="button" onclick="cambiarTema()" aria-label="Cambiar entre tema claro y oscuro" title="Cambiar tema"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
       <a class="btn btn-ghost" href="acceso.html">Entrar</a>
       <a class="btn btn-primary" href="acceso.html">Crear cuenta</a>
@@ -1450,6 +1488,7 @@ kbd, .kbd {
       <span class="ln"><span class="w">y archivos</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf<svg class="pf pf-sit" viewBox="-64 -160 128 200" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(0)"><path d="M-10 -2L-16 34" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L18 32" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L36 -88" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-28 -6" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#A98BF0"/><circle cx="0" cy="-80" r="18" fill="#A98BF0"/></g></svg></span></span>
       <span class="ln ln-wide">en un servidor tuyo.</span>
     </h1>
+    <div class="hero-stickers" aria-hidden="true"><span class="inl inl-col"><i></i>En curso<b>3</b></span><span class="inl inl-note"><i></i>Arquitectura general</span><span class="inl inl-file"><em>PDF</em>factura.pdf<svg class="pf pf-sit" viewBox="-64 -160 128 200" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(0)"><path d="M-10 -2L-16 34" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L18 32" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L36 -88" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-28 -6" stroke="#A98BF0" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#A98BF0"/><circle cx="0" cy="-80" r="18" fill="#A98BF0"/></g></svg></span></div>
     <div class="hero-foot">
       <p>Un tablero por sprint, notas enlazadas a los tickets que describen y archivos que se guardan en tu Drive. Todo en un proceso de Node y un archivo de SQLite. Software libre, sin cuotas por persona.</p>
       <div class="hero-cta">
@@ -1475,7 +1514,7 @@ kbd, .kbd {
   <p class="doc-title" style="font-size:2rem">Arquitectura general</p>
   <p class="hint" style="margin:8px 0 14px">avery · editada hace 5 min</p>
   <p style="font-size:var(--t-16);line-height:1.6">Cada consulta va filtrada por <code class="mono">workspace_id</code>. Lo detalla <span class="ticket-ref"><span class="sw" style="--c:var(--st-todo)"></span>Búsqueda de texto completo</span>, que es el primer caso que lo cruza.</p>
-</article></div></div><div class="feature"><div class="feature-text"><h3>Archivos</h3><p>Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso. Las etiquetas son las mismas que las de los tickets.</p></div><div class="feature-demo"><div class="panel" style="padding:6px 0"><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;"><span class="file-kind">PDF</span><b style="font-weight:600">factura-plantilla.pdf</b><span style="margin-left:auto"><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">PNG</span><b style="font-weight:600">avatar-rechazado.png</b><span style="margin-left:auto"><span class="chip" style="--c:#4D7C0F"><span class="sw"></span>Interfaz</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">CSV</span><b style="font-weight:600">consumo-septiembre.csv</b><span style="margin-left:auto"><span class="chip" style="--c:#334155"><span class="sw"></span>API</span></span></div></div></div></div><div class="feature"><div class="feature-text"><h3>Métricas</h3><p>Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad, no con lo que se estimó.</p></div><div class="feature-demo"><div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div><svg viewBox="0 0 560 250" role="img" aria-label="Burndown del sprint 14: quedan 14 de 40 puntos con 4 días por delante; la línea ideal marcaría unos 6.">
+</article></div></div><div class="feature"><div class="feature-text"><h3>Archivos</h3><p>Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso. Las etiquetas son las mismas que las de los tickets.</p></div><div class="feature-demo"><div class="panel" style="padding:6px 0"><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;"><span class="file-kind">PDF</span><b class="demo-fname" style="font-weight:600">factura-plantilla.pdf</b><span style="margin-left:auto"><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">PNG</span><b class="demo-fname" style="font-weight:600">avatar-rechazado.png</b><span style="margin-left:auto"><span class="chip" style="--c:#4D7C0F"><span class="sw"></span>Interfaz</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">CSV</span><b class="demo-fname" style="font-weight:600">consumo-septiembre.csv</b><span style="margin-left:auto"><span class="chip" style="--c:#334155"><span class="sw"></span>API</span></span></div></div></div></div><div class="feature"><div class="feature-text"><h3>Métricas</h3><p>Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad, no con lo que se estimó.</p></div><div class="feature-demo"><div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div><svg viewBox="0 0 560 250" role="img" aria-label="Burndown del sprint 14: quedan 14 de 40 puntos con 4 días por delante; la línea ideal marcaría unos 6.">
   <g class="grid"><line x1="34" x2="496" y1="224.0" y2="224.0"/><line x1="34" x2="496" y1="170.5" y2="170.5"/><line x1="34" x2="496" y1="117.0" y2="117.0"/><line x1="34" x2="496" y1="63.5" y2="63.5"/><line x1="34" x2="496" y1="10.0" y2="10.0"/></g><text x="26" y="228.0" text-anchor="end">0</text><text x="26" y="174.5" text-anchor="end">10</text><text x="26" y="121.0" text-anchor="end">20</text><text x="26" y="67.5" text-anchor="end">30</text><text x="26" y="14.0" text-anchor="end">40</text><text x="34.0" y="244" text-anchor="middle">26 sep</text><text x="149.5" y="244" text-anchor="middle">3 oct</text><text x="265.0" y="244" text-anchor="middle">10 oct</text><text x="380.5" y="244" text-anchor="middle">17 oct</text><text x="496.0" y="244" text-anchor="middle">23 oct</text>
   <line class="axis" x1="34" x2="496" y1="224.0" y2="224.0"/>
   <line x1="34.0" y1="10.0" x2="496.0" y2="224.0" stroke="var(--border-strong)" stroke-width="2" stroke-dasharray="5 4"/>

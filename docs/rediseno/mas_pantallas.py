@@ -117,9 +117,13 @@ write('ajustes-espacio.html', shell('ajustes-espacio', ['Atlas Platform', 'Ajust
 # Misma fragua que en «Entrar», otra historia: gente que llega. Una figura
 # entra andando con su tarjeta nueva, otra trepa por el arco y la de arriba le
 # echa una mano; a la derecha traen una brasa para encender el primer sprint.
+# Su credencial nueva: una tarjeta con su avatar en su propio color.
 NEWCARD = ('<g transform="translate(52 -104) rotate(10)">'
-           '<rect x="-30" y="-20" width="60" height="40" rx="8" fill="#F8F7F4"/>'
-           '<path d="M0 -9V9M-9 0H9" stroke="#E8590C" stroke-width="5" stroke-linecap="round"/></g>')
+           '<rect x="-32" y="-21" width="64" height="42" rx="8" fill="#F8F7F4"/>'
+           '<path d="M-22 13V-1A8 8 0 0 1 -6 -1V13Z" fill="#E58FB8"/>'
+           '<circle cx="-14" cy="-8" r="5.5" fill="#E58FB8"/>'
+           '<rect x="1" y="-8" width="22" height="5" rx="2.5" fill="#7D776C"/>'
+           '<rect x="1" y="3" width="15" height="5" rx="2.5" fill="#CFCAC0"/></g>')
 EMBER = '<circle cx="-62" cy="-64" r="15" fill="#E8590C"/><circle cx="-62" cy="-64" r="7" fill="#FF9452"/>'
 ARRIVAL = f"""<svg viewBox="0 104 640 456" preserveAspectRatio="xMidYMax meet" overflow="visible">
   <rect x="-400" y="520" width="1440" height="120" fill="{FLOOR}"/>
