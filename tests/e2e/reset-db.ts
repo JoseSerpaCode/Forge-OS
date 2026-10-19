@@ -264,4 +264,10 @@ export default function resetDb() {
     INSERT INTO workspace_members (workspace_id, user_id, ws_role)
     VALUES (?, ?, ?)
   `).run('ws-notion-c', 'test-user-notion-e', 'viewer');
+
+  // Las cuentas del escenario nacen con lo social encendido: hay specs enteros
+  // de amigos, solicitudes y bloqueos que lo dan por hecho. Las cuentas nuevas
+  // de verdad lo traen apagado (migración 52); `social-apagado.spec.ts` lo
+  // apaga a propósito para comprobar ese caso.
+  db.prepare('UPDATE users SET social_enabled = 1').run();
 }

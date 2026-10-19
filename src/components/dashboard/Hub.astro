@@ -13,6 +13,8 @@ import { useTranslations } from '../../i18n/ui';
 import TaskTable from './TaskTable.astro';
 
 const user = Astro.locals.user!;
+// Amigos y solicitudes, solo si la cuenta los tiene encendidos (migración 52).
+const socialOn = !user?.is_guest && user?.social_enabled === 1;
 const lang = Astro.locals.lang || 'en';
 // El callback del proveedor marca así las vueltas que han acabado creando una
 // cuenta. Sin esto, quien acaba de borrar la suya y vuelve a pulsar «GitHub»
@@ -253,7 +255,8 @@ const vencidas = pendientes.filter((tarea) => vencida(tarea.due_date)).length;
       
     </div>
 
-    <!-- Welcome / Collaboration Banner -->
+    {/* «Forge es mejor con amigos»: solo con lo social encendido (migración 52). */}
+    {socialOn && (
     <div class="mb-10 bg-gradient-to-r from-forge-secondary/10 via-forge-primary/5 to-forge-bg border border-forge-secondary/20 rounded-2xl p-8 relative overflow-hidden group shadow-lg">
       <div class="absolute right-0 top-0 w-64 h-64 bg-forge-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:bg-forge-secondary/20 transition-colors"></div>
       
@@ -293,6 +296,7 @@ const vencidas = pendientes.filter((tarea) => vencida(tarea.due_date)).length;
         </div>
       </div>
     </div>
+    )}
 
   </main>
 

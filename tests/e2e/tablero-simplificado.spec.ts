@@ -16,6 +16,11 @@ import { getTestDb } from './test-utils';
 test.describe.configure({ mode: 'serial' });
 
 const PUERTO = process.env.E2E_PORT || 4322;
+
+// Un sufijo por ejecución en el nombre de cada espacio. Con nombres fijos, dos
+// ejecuciones a la vez —reintentos, `--repeat-each`, dos copias del repo— se
+// vaciaban el espacio la una a la otra, y fallaba una prueba cualquiera.
+const RUN = Math.random().toString(36).slice(2, 7);
 const ORIGIN = { Origin: `http://localhost:${PUERTO}` };
 
 async function entrar(page: Page, lang: 'es' | 'en' = 'es') {
@@ -57,18 +62,18 @@ function tarea(ws: { id: string; yo: string }, campos: Record<string, unknown>) 
 }
 
 test.describe('sin sprints, el tablero enseña todo', () => {
-  const ESP = 'e2e-sin-sprints';
+  const ESP = `e2e-sin-sprints-${RUN}`;
 
   test('tareas de dos sprints a la vez, sin selector; encender lo devuelve', async ({ page }) => {
     const ws = espacio(ESP);
     const db = getTestDb();
-    db.prepare("INSERT INTO sprints (id, workspace_id, name) VALUES ('ss-1', ?, 'Uno'), ('ss-2', ?, 'Dos')").run(ws.id, ws.id);
+    db.prepare(`INSERT INTO sprints (id, workspace_id, name) VALUES ('ss-1-${RUN}', ?, 'Uno'), ('ss-2-${RUN}', ?, 'Dos')`).run(ws.id, ws.id);
     db.close();
-    tarea(ws, { title: 'En el uno', sprint_id: 'ss-1' });
-    tarea(ws, { title: 'En el dos', sprint_id: 'ss-2' });
+    tarea(ws, { title: 'En el uno', sprint_id: `ss-1-${RUN}` });
+    tarea(ws, { title: 'En el dos', sprint_id: `ss-2-${RUN}` });
 
     await entrar(page);
-    const res = await page.goto(`/w/${ESP}/board?sprint=ss-1`);
+    const res = await page.goto(`/w/${ESP}/board?sprint=ss-1-${RUN}`);
     // Un `?sprint=` viejo se ignora en vez de filtrar o dar 404.
     expect(res?.status()).toBe(200);
     await expect(page.locator('.issue-card', { hasText: 'En el uno' })).toBeVisible();
@@ -77,7 +82,7 @@ test.describe('sin sprints, el tablero enseña todo', () => {
 
     const r = await page.request.patch(`/api/w/${ESP}/features`, { headers: ORIGIN, data: { sprints: true } });
     expect(r.status()).toBe(200);
-    await page.goto(`/w/${ESP}/board?sprint=ss-1`);
+    await page.goto(`/w/${ESP}/board?sprint=ss-1-${RUN}`);
     await expect(page.locator('#sprint-selector')).toBeVisible();
     await expect(page.locator('.issue-card', { hasText: 'En el dos' })).toHaveCount(0);
   });
@@ -101,7 +106,7 @@ test.describe('sin sprints, el tablero enseña todo', () => {
 });
 
 test.describe('Hecho: las diez últimas y «ver más»', () => {
-  const ESP = 'e2e-hecho';
+  const ESP = `e2e-hecho-${RUN}`;
 
   test('enseña 10 de 25, el contador dice 25 y las cargadas se abren', async ({ page }) => {
     const ws = espacio(ESP);
@@ -132,24 +137,25 @@ test.describe('Hecho: las diez últimas y «ver más»', () => {
     const ws = espacio(ESP);
     const db = getTestDb();
     db.prepare('DELETE FROM labels WHERE workspace_id = ?').run(ws.id);
-    db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES ('hp-propia', ?, 'Propia', '#FF5D00')").run(ws.id);
-    db.prepare("INSERT OR IGNORE INTO labels (id, workspace_id, name, color) VALUES ('hp-ajena', 'ws-auditoria', 'Ajena', '#FF5D00')").run();
+    db.prepare(`INSERT INTO labels (id, workspace_id, name, color) VALUES ('hp-propia-${RUN}', ?, 'Propia', '#FF5D00')`).run(ws.id);
+    db.prepare(`INSERT OR IGNORE INTO labels (id, workspace_id, name, color) VALUES ('hp-ajena-${RUN}', 'ws-auditoria', 'Ajena', '#FF5D00')`).run();
     db.close();
     await entrar(page);
-    expect((await page.request.get(`/w/${ESP}/board/hechas?group=label&carril=hp-ajena`)).status()).toBe(404);
+    expect((await page.request.get(`/w/${ESP}/board/hechas?group=label&carril=hp-ajena-${RUN}`)).status()).toBe(404);
     // Control: el mismo carril, con una etiqueta de este espacio.
-    expect((await page.request.get(`/w/${ESP}/board/hechas?group=label&carril=hp-propia`)).status()).toBe(200);
+    expect((await page.request.get(`/w/${ESP}/board/hechas?group=label&carril=hp-propia-${RUN}`)).status()).toBe(200);
   });
 });
 
 test.describe('completar con un clic', () => {
-  const ESP = 'e2e-completar';
+  const ESP = `e2e-completar-${RUN}`;
 
   test('pasa a Hecho sin recargar, no abre el panel y se deshace', async ({ page }) => {
     const ws = espacio(ESP);
     const id = tarea(ws, { title: 'Para completar', status: 'in_progress' });
     await entrar(page);
     await page.goto(`/w/${ESP}/board`);
+    await expect(page.locator('body[data-tablero-listo="true"]')).toHaveCount(1);
     const tarjeta = page.locator(`.issue-card[data-issue-id="${id}"]`);
     await tarjeta.locator('.btn-completar').click();
 
@@ -171,7 +177,7 @@ test.describe('completar con un clic', () => {
 });
 
 test.describe('ordenar es una acción', () => {
-  const ESP = 'e2e-ordenar';
+  const ESP = `e2e-ordenar-${RUN}`;
 
   test('ordenar por prioridad reescribe el orden, se puede arrastrar y se deshace', async ({ page }) => {
     const ws = espacio(ESP);
@@ -203,15 +209,15 @@ test.describe('ordenar es una acción', () => {
 });
 
 test.describe('alta rápida', () => {
-  const ESP = 'e2e-alta';
+  const ESP = `e2e-alta-${RUN}`;
 
   test('una línea crea la tarea con fecha, hora, etiqueta, prioridad y apunte', async ({ page }) => {
     const ws = espacio(ESP);
     const db = getTestDb();
     db.prepare('DELETE FROM labels WHERE workspace_id = ?').run(ws.id);
-    db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES ('lab-calc', ?, 'Cálculo', '#FF5D00')").run(ws.id);
+    db.prepare(`INSERT INTO labels (id, workspace_id, name, color) VALUES ('lab-calc-${RUN}', ?, 'Cálculo', '#FF5D00')`).run(ws.id);
     db.prepare('DELETE FROM pages WHERE workspace_id = ?').run(ws.id);
-    db.prepare("INSERT INTO pages (id, workspace_id, title, created_by) VALUES ('pag-tema3', ?, 'Tema 3', ?)").run(ws.id, ws.yo);
+    db.prepare(`INSERT INTO pages (id, workspace_id, title, created_by) VALUES ('pag-tema3-${RUN}', ?, 'Tema 3', ?)`).run(ws.id, ws.yo);
     db.close();
 
     await entrar(page);
@@ -234,7 +240,7 @@ test.describe('alta rápida', () => {
     const db2 = getTestDb();
     const fila = db2.prepare("SELECT id, due_date, due_time, priority FROM issues WHERE workspace_id = ? AND title = 'Entregar taller'").get(ws.id) as any;
     expect(fila).toMatchObject({ due_date: '2027-11-15', due_time: '18:00', priority: 'highest' });
-    expect(db2.prepare('SELECT page_id FROM issue_page_links WHERE issue_id = ?').get(fila.id)).toEqual({ page_id: 'pag-tema3' });
+    expect(db2.prepare('SELECT page_id FROM issue_page_links WHERE issue_id = ?').get(fila.id)).toEqual({ page_id: `pag-tema3-${RUN}` });
     db2.close();
   });
 
@@ -260,7 +266,7 @@ test.describe('alta rápida', () => {
 });
 
 test.describe('fecha en el idioma de la app', () => {
-  const ESP = 'e2e-fecha';
+  const ESP = `e2e-fecha-${RUN}`;
 
   test('en español se escribe dd/mm/aaaa y se guarda bien', async ({ page }) => {
     const ws = espacio(ESP);
@@ -282,7 +288,7 @@ test.describe('fecha en el idioma de la app', () => {
 });
 
 test.describe('tipo de tarea', () => {
-  const ESP = 'e2e-tipo';
+  const ESP = `e2e-tipo-${RUN}`;
 
   test('cambiarlo en el panel repinta nombre y franja sin recargar', async ({ page }) => {
     const ws = espacio(ESP);
@@ -305,18 +311,18 @@ test.describe('tipo de tarea', () => {
 });
 
 test.describe('agrupar por etiqueta', () => {
-  const ESP = 'e2e-carriles';
+  const ESP = `e2e-carriles-${RUN}`;
 
   test('un carril por etiqueta; una tarea con dos sale en los dos', async ({ page }) => {
     const ws = espacio(ESP);
     const db = getTestDb();
     db.prepare('DELETE FROM labels WHERE workspace_id = ?').run(ws.id);
-    db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES ('car-a', ?, 'Álgebra', '#FF5D00'), ('car-b', ?, 'Biología', '#3B82F6')").run(ws.id, ws.id);
+    db.prepare(`INSERT INTO labels (id, workspace_id, name, color) VALUES ('car-a-${RUN}', ?, 'Álgebra', '#FF5D00'), ('car-b-${RUN}', ?, 'Biología', '#3B82F6')`).run(ws.id, ws.id);
     db.close();
     const doble = tarea(ws, { title: 'De las dos' });
     tarea(ws, { title: 'Sin etiqueta' });
     const db2 = getTestDb();
-    db2.prepare("INSERT INTO issue_labels (issue_id, label_id) VALUES (?, 'car-a'), (?, 'car-b')").run(doble, doble);
+    db2.prepare(`INSERT INTO issue_labels (issue_id, label_id) VALUES (?, 'car-a-${RUN}'), (?, 'car-b-${RUN}')`).run(doble, doble);
     db2.close();
 
     await entrar(page);
@@ -328,56 +334,56 @@ test.describe('agrupar por etiqueta', () => {
 });
 
 test.describe('sprints encendidos: mover y borrar bien', () => {
-  const ESP = 'e2e-sprints-b2';
+  const ESP = `e2e-sprints-b2-${RUN}`;
 
   test('mover una tarea a otro sprint desde la tarjeta', async ({ page }) => {
     const ws = espacio(ESP, { sprints: 1 });
     const db = getTestDb();
-    db.prepare("INSERT INTO sprints (id, workspace_id, name) VALUES ('b2-a', ?, 'Sprint A'), ('b2-b', ?, 'Sprint B')").run(ws.id, ws.id);
+    db.prepare(`INSERT INTO sprints (id, workspace_id, name) VALUES ('b2-a-${RUN}', ?, 'Sprint A'), ('b2-b-${RUN}', ?, 'Sprint B')`).run(ws.id, ws.id);
     db.close();
-    const id = tarea(ws, { title: 'Sprint equivocado', sprint_id: 'b2-a' });
+    const id = tarea(ws, { title: 'Sprint equivocado', sprint_id: `b2-a-${RUN}` });
     await entrar(page);
-    await page.goto(`/w/${ESP}/board?sprint=b2-a`);
+    await page.goto(`/w/${ESP}/board?sprint=b2-a-${RUN}`);
     await page.locator(`.issue-card[data-issue-id="${id}"] .btn-mover-sprint`).click();
-    await page.locator('#menu-sprint-tarjeta .sprint-destino[data-sprint="b2-b"]').click();
+    await page.locator(`#menu-sprint-tarjeta .sprint-destino[data-sprint="b2-b-${RUN}"]`).click();
     await expect(page.locator(`.issue-card[data-issue-id="${id}"]`)).toHaveCount(0);
     await expect.poll(() => {
       const d = getTestDb();
       const v = (d.prepare('SELECT sprint_id FROM issues WHERE id = ?').get(id) as any).sprint_id;
       d.close();
       return v;
-    }).toBe('b2-b');
+    }).toBe(`b2-b-${RUN}`);
   });
 
   test('borrar un sprint eligiendo qué pasa con cada tarea', async ({ page }) => {
     const ws = espacio(ESP, { sprints: 1 });
     const db = getTestDb();
-    db.prepare("INSERT INTO sprints (id, workspace_id, name) VALUES ('b2-x', ?, 'Para borrar'), ('b2-y', ?, 'Destino')").run(ws.id, ws.id);
+    db.prepare(`INSERT INTO sprints (id, workspace_id, name) VALUES ('b2-x-${RUN}', ?, 'Para borrar'), ('b2-y-${RUN}', ?, 'Destino')`).run(ws.id, ws.id);
     db.close();
-    const conservar = tarea(ws, { title: 'Me quedo', sprint_id: 'b2-x' });
-    const tirar = tarea(ws, { title: 'Me voy', sprint_id: 'b2-x' });
+    const conservar = tarea(ws, { title: 'Me quedo', sprint_id: `b2-x-${RUN}` });
+    const tirar = tarea(ws, { title: 'Me voy', sprint_id: `b2-x-${RUN}` });
     await entrar(page);
-    await page.goto(`/w/${ESP}/board?sprint=b2-x`);
+    await page.goto(`/w/${ESP}/board?sprint=b2-x-${RUN}`);
     await page.locator('#btn-sprint-menu').click();
     await page.locator('#btn-delete-sprint').click();
     const dlg = page.locator('#borrar-sprint-modal');
     await expect(dlg).toBeVisible();
-    await dlg.getByLabel('Qué pasa con «Me quedo»').selectOption('b2-y');
+    await dlg.getByLabel('Qué pasa con «Me quedo»').selectOption(`b2-y-${RUN}`);
     await dlg.getByLabel('Qué pasa con «Me voy»').selectOption('borrar');
     await expect(page.locator('#borrar-sprint-confirmar')).toContainText('1');
     await page.locator('#borrar-sprint-confirmar').click();
     await page.waitForURL(/sprint=backlog/);
 
     const d = getTestDb();
-    expect((d.prepare('SELECT sprint_id FROM issues WHERE id = ?').get(conservar) as any).sprint_id).toBe('b2-y');
+    expect((d.prepare('SELECT sprint_id FROM issues WHERE id = ?').get(conservar) as any).sprint_id).toBe(`b2-y-${RUN}`);
     expect(d.prepare('SELECT 1 FROM issues WHERE id = ?').get(tirar)).toBeUndefined();
-    expect(d.prepare("SELECT 1 FROM sprints WHERE id = 'b2-x'").get()).toBeUndefined();
+    expect(d.prepare(`SELECT 1 FROM sprints WHERE id = 'b2-x-${RUN}'`).get()).toBeUndefined();
     d.close();
   });
 });
 
 test.describe('vistas Hoy y Próximos', () => {
-  const ESP = 'e2e-vistas';
+  const ESP = `e2e-vistas-${RUN}`;
   // El día de hoy en la zona del navegador de pruebas, que es la que la página
   // guarda en la cuenta al cargar.
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -422,7 +428,7 @@ test.describe('vistas Hoy y Próximos', () => {
 });
 
 test.describe('subtareas', () => {
-  const ESP = 'e2e-subtareas';
+  const ESP = `e2e-subtareas-${RUN}`;
 
   test('se añaden con Enter, la tarjeta cuenta y al terminar todas se ofrece completar', async ({ page }) => {
     const ws = espacio(ESP);
@@ -447,10 +453,37 @@ test.describe('subtareas', () => {
     await page.goto(`/w/${ESP}/board`);
     await expect(page.locator('.issue-card', { hasText: 'Tomar datos' })).toHaveCount(0);
   });
+  test('dos seguidas con el servidor lento: no se pierde ninguna', async ({ page }) => {
+    // Con la red o el servidor lentos, el campo se vaciaba al volver la
+    // respuesta de la primera y borraba lo ya escrito para la segunda.
+    const ws = espacio(ESP);
+    const id = tarea(ws, { title: 'Con prisa' });
+    await entrar(page);
+    await page.route('**/subtareas', async (ruta) => {
+      if (ruta.request().method() === 'POST') await new Promise((r) => setTimeout(r, 800));
+      await ruta.continue();
+    });
+    await page.goto(`/w/${ESP}/board`);
+    await page.locator(`.issue-card[data-issue-id="${id}"] h4`).click();
+    const nueva = page.locator('#modal-subtareas-nueva');
+    await nueva.fill('Primera');
+    const primera = page.waitForResponse((r) => r.url().endsWith('/subtareas') && r.request().method() === 'POST');
+    await nueva.press('Enter');
+    // La segunda se está escribiendo cuando vuelve la respuesta de la primera:
+    // es justo el momento en que antes se vaciaba el campo.
+    await nueva.fill('Segunda');
+    await primera;
+    await nueva.press('Enter');
+    await expect(page.locator(`.issue-card[data-issue-id="${id}"] .card-subtareas`)).toContainText('0/2');
+    const db = getTestDb();
+    const n = (db.prepare('SELECT COUNT(*) AS n FROM issues WHERE parent_issue_id = ?').get(id) as any).n;
+    db.close();
+    expect(n).toBe(2);
+  });
 });
 
 test.describe('la tarjeta y el panel dicen lo mismo', () => {
-  const ESP = 'e2e-coherencia';
+  const ESP = `e2e-coherencia-${RUN}`;
   const nombreEnPanel = (page: Page) => page.locator('#modal-issue-type option:checked').textContent();
   const nombreEnTarjeta = (page: Page, id: string) =>
     page.locator(`.issue-card[data-issue-id="${id}"] .issue-type-badge`).textContent();
@@ -459,7 +492,7 @@ test.describe('la tarjeta y el panel dicen lo mismo', () => {
     const ws = espacio(ESP);
     const db = getTestDb();
     db.prepare('DELETE FROM labels WHERE workspace_id = ?').run(ws.id);
-    db.prepare("INSERT INTO labels (id, workspace_id, name, color) VALUES ('coh-l', ?, 'Química', '#FF5D00')").run(ws.id);
+    db.prepare(`INSERT INTO labels (id, workspace_id, name, color) VALUES ('coh-l-${RUN}', ?, 'Química', '#FF5D00')`).run(ws.id);
     db.close();
     const id = tarea(ws, { title: 'Coherente', type: 'epic' });
     await entrar(page, 'es');
@@ -477,7 +510,7 @@ test.describe('la tarjeta y el panel dicen lo mismo', () => {
 
     // 2. Poner una etiqueta en el panel: sale en la tarjeta sin recargar.
     await page.locator('#issue-details-modal .lp-toggle').click();
-    await page.locator('#issue-details-modal .lp-option[data-label-id="coh-l"]').click();
+    await page.locator(`#issue-details-modal .lp-option[data-label-id="coh-l-${RUN}"]`).click();
     await expect(tarjeta.locator('.card-labels')).toContainText('Química');
 
     // 3. Recargar: lo mismo, ahora pintado por el servidor.
@@ -499,7 +532,7 @@ test.describe('la tarjeta y el panel dicen lo mismo', () => {
 });
 
 test.describe('repetir, calendario y recordatorios', () => {
-  const ESP = 'e2e-repetir';
+  const ESP = `e2e-repetir-${RUN}`;
 
   test('una tarea de cada lunes: al completarla aparece la siguiente', async ({ page }) => {
     espacio(ESP);
@@ -566,7 +599,7 @@ test.describe('repetir, calendario y recordatorios', () => {
 
 test.describe('cabecera del tablero', () => {
   test('un nombre de espacio largo se lee entero, sin recortarse', async ({ page }) => {
-    const ESP = 'e2e-nombre-largo';
+    const ESP = `e2e-nombre-largo-${RUN}`;
     espacio(ESP, { sprints: 1, tiempo: 1, puntos: 1 });
     const db = getTestDb();
     db.prepare('UPDATE workspaces SET name = ? WHERE sys_tag = ?').run('Atlas Platform de Ingeniería de Sistemas Distribuidos', ESP);

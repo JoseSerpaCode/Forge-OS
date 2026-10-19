@@ -1352,6 +1352,46 @@ const MIGRATIONS: Migration[] = [
       if (!hasColumn('issues', 'reminder_minutes')) db.exec('ALTER TABLE issues ADD COLUMN reminder_minutes INTEGER');
       if (!hasColumn('issues', 'reminded_at')) db.exec('ALTER TABLE issues ADD COLUMN reminded_at DATETIME');
     }
+  },  {
+    version: 51,
+    description: 'workspaces: automatizaciones y auditoría como funciones que se encienden',
+    run: () => {
+      // Las dos están pensadas para equipos: reglas que reaccionan a lo que
+      // hacen otros y un registro de quién cambió qué. En un espacio de una
+      // sola persona son ruido en Ajustes. Se apagan por defecto, como sprints
+      // y tiempo, y se encienden donde ya se usaban.
+      for (const col of ['feat_automations', 'feat_audit']) {
+        if (!hasColumn('workspaces', col)) {
+          db.exec(`ALTER TABLE workspaces ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0 CHECK (${col} IN (0, 1))`);
+        }
+      }
+      db.exec(`UPDATE workspaces SET feat_automations = 1
+               WHERE EXISTS (SELECT 1 FROM automations a WHERE a.workspace_id = workspaces.id)`);
+      // La auditoría se queda donde trabaja más de una persona. El registro se
+      // sigue escribiendo siempre: apagarla solo esconde la sección.
+      db.exec(`UPDATE workspaces SET feat_audit = 1
+               WHERE (SELECT COUNT(*) FROM workspace_members m WHERE m.workspace_id = workspaces.id) > 1`);
+    }
+  },
+  {
+    version: 52,
+    description: 'users: social_enabled, amigos y solicitudes se encienden por cuenta',
+    run: () => {
+      // Forge se usa sobre todo a solas, y lo social —amigos, solicitudes, el
+      // banner del Hub— estorbaba sin servir. Apagado por defecto; encendido
+      // para quien ya tenía amistades o bloqueos, que lo estaba usando.
+      if (!hasColumn('users', 'social_enabled')) {
+        db.exec('ALTER TABLE users ADD COLUMN social_enabled INTEGER NOT NULL DEFAULT 0 CHECK (social_enabled IN (0, 1))');
+      }
+      // Cuenta lo que cada cuenta **hizo**: una amistad aceptada (las dos
+      // partes), una solicitud enviada o un bloqueo puesto. Recibir una
+      // solicitud o un bloqueo no es usarlo: si contara, bastaría con que
+      // alguien te bloqueara para encenderte lo social.
+      db.exec(`UPDATE users SET social_enabled = 1 WHERE
+                 EXISTS (SELECT 1 FROM friendships f WHERE f.status = 'accepted' AND (f.user_a_id = users.id OR f.user_b_id = users.id))
+              OR EXISTS (SELECT 1 FROM friendships f WHERE f.action_user_id = users.id)
+              OR EXISTS (SELECT 1 FROM user_blocks b WHERE b.blocker_id = users.id)`);
+    }
   },
 ];
 

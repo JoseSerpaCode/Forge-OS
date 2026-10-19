@@ -52,12 +52,16 @@ const isSettings = sys_tag && currentPath.match(/\/w\/[^\/]+\/settings/);
 const isHub      = currentPath === '/';
 const isActivity = currentPath.startsWith('/activity');
 
-// Get user's workspace role
-let userRole = user?.is_sysadmin === 1 ? 'sysadmin' : 'viewer';
+// El rol es **del espacio**: fuera de uno —el Hub, Actividad, Ajustes de la
+// cuenta— no hay rol que enseñar. Antes caía a 'viewer' por defecto y el Hub
+// le decía «Lector» al dueño de todos sus espacios.
+let userRole: string | null = user?.is_sysadmin === 1 ? 'sysadmin' : null;
 if (workspaceId && user?.is_sysadmin !== 1) {
-  userRole = rolEnEspacio(workspaceId, user?.id ?? '') ?? userRole;
+  userRole = rolEnEspacio(workspaceId, user?.id ?? '') ?? 'viewer';
 }
 const isOwner = userRole === 'owner' || userRole === 'sysadmin';
+// Amigos y solicitudes, solo si la cuenta los tiene encendidos (migración 52).
+const socialOn = !user?.is_guest && user?.social_enabled === 1;
 ---
 
 {/* Fuera del DOM en móvil, no solo fuera de la pantalla.
@@ -243,9 +247,9 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
         )}
         <div class="flex-1 min-w-0 leading-tight">
           <div class="text-xs font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{user?.is_guest ? t('user.menu.guest') : (user?.username || t('user.menu.guest'))}</div>
-          <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? t('user.menu.unregistered') : nombreDeRol(userRole, lang)}</div>
+          <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? t('user.menu.unregistered') : userRole ? nombreDeRol(userRole, lang) : `@${user?.username ?? ''}`}</div>
         </div>
-        {pendientes > 0 && (
+        {socialOn && pendientes > 0 && (
           <span class="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center" aria-label={t('friends.incoming')}>
             {pendientes > 9 ? '9+' : pendientes}
           </span>
@@ -267,6 +271,7 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               {t('user.menu.profile')}
             </a>
+            {socialOn && (
             <a href="/people" role="menuitem" class="user-menu-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span class="flex-1">{t('friends.title')}</span>
@@ -274,6 +279,7 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
                 <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center">{pendientes > 9 ? '9+' : pendientes}</span>
               )}
             </a>
+            )}
             <a href="/settings" role="menuitem" class="user-menu-item">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               {t('user.menu.account')}

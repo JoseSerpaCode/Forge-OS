@@ -12,8 +12,10 @@ test.describe('Workspace Settings Features', () => {
     await page.goto(`/w/test-workspace/settings`);
     await page.waitForLoadState('networkidle');
     
-    // Check for audit logs container
-    await expect(page.locator('#audit-logs-container')).toBeVisible({ timeout: 5000 });
+    // La auditoría está apagada por defecto en un espacio de una persona
+    // (migración 51): su sección no se pinta.
+    await expect(page.locator('#funciones-tablero')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#audit-logs-container')).toHaveCount(0);
     
     // Modal Test
     const promptBtn = page.locator('#btn-delete-workspace-prompt');

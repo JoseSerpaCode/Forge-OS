@@ -14,9 +14,9 @@ test.describe('Social Phase 1 - Comprehensive Spec Validation', () => {
         userB = { id: randomUUID(), username: 'b_' + randomUUID().substring(0, 8) };
         userC = { id: randomUUID(), username: 'c_' + randomUUID().substring(0, 8) };
         
-        db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, '123')").run(userA.id, userA.username);
-        db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, '123')").run(userB.id, userB.username);
-        db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, '123')").run(userC.id, userC.username);
+        db.prepare("INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, '123', 1)").run(userA.id, userA.username);
+        db.prepare("INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, '123', 1)").run(userB.id, userB.username);
+        db.prepare("INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, '123', 1)").run(userC.id, userC.username);
 
         const sessionIdA = randomUUID(); 
         const sessionIdB = randomUUID(); 

@@ -44,7 +44,7 @@ const t = useTranslations(lang);
 const {
   issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer',
   statusCounts = {}, labels = [], issueTypes = [], sysTag = '',
-  funciones = { sprints: false, tiempo: false, puntos: false }, agrupar = false, filtroEtiqueta = null,
+  funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false }, agrupar = false, filtroEtiqueta = null,
   vista = 'tablero', grupos = [], hoy = '', dias = 14, filtrosUrl = '',
 } = Astro.props;
 
@@ -864,4 +864,9 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       window.showToast?.(window.forgeMsg?.errGenerico || '', true);
     }
   });
+
+  // El tablero ya responde a los clics. Lo leen las pruebas: con la máquina
+  // cargada, pulsar antes de que el script termine no hace nada y la prueba
+  // fallaba por eso, no por el tablero.
+  document.body.dataset.tableroListo = 'true';
 </script>

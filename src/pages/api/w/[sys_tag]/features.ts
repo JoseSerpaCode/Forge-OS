@@ -25,7 +25,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if (!datos) return json({ error_code: 'bad_request' }, 400);
 
   const cambios: Record<string, boolean> = {};
-  for (const clave of ['sprints', 'tiempo', 'puntos']) {
+  for (const clave of ['sprints', 'tiempo', 'puntos', 'automatizaciones', 'auditoria']) {
     if (clave in datos) {
       if (typeof datos[clave] !== 'boolean') return json({ error_code: 'bad_request' }, 400);
       cambios[clave] = datos[clave];

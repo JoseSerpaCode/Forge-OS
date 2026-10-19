@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import { funciones, funcionApagada } from '../../../lib/funcionesEspacio';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import crypto from 'crypto';
 
@@ -16,6 +17,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const access = checkWorkspaceAccess(user.id, user.is_sysadmin, workspaceId, 'owner');
     if (!access.granted) return new Response('Forbidden', { status: 403 });
+    if (!funciones(workspaceId).automatizaciones) return funcionApagada('automatizaciones');
 
     // Validate JSONs
     JSON.parse(trigger_condition);

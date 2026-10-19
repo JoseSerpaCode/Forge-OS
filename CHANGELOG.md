@@ -6,6 +6,20 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.33.0] - 2026-10-19
+
+### Changed
+
+- **Automatizaciones y auditoría se encienden por espacio** (migración 51), como ya pasaba con sprints, tiempo y puntos. Están pensadas para equipos y, en un espacio de una sola persona, solo ocupaban sitio en Ajustes. Vienen apagadas, salvo en los espacios que ya tenían reglas (automatizaciones) o más de un miembro (auditoría). Con las automatizaciones apagadas, las reglas se conservan pero no se ejecutan, y crearlas o reactivarlas responde 403. La auditoría se sigue registrando aunque esté apagada: solo se esconde.
+- **Amigos y solicitudes se encienden por cuenta** (migración 52), en Ajustes, junto al perfil público. Apagados, desaparecen «Personas» y el banner «Forge es mejor con amigos» del Hub, y nadie puede mandarte solicitudes ni bloquearte: `canInteractSocially` lo trata igual que a un invitado, en los dos sentidos. Mirar perfiles sigue funcionando. Vienen apagados, salvo para quien ya tenía amistades, solicitudes enviadas o bloqueos puestos. Recibir una solicitud o un bloqueo no cuenta como usarlo.
+
+### Fixed
+
+- **El Hub le decía «Lector» al dueño de todos sus espacios.** Fuera de un espacio no hay papel que tener, y el valor por defecto era «lector». Ahora se ve tu `@usuario`.
+- **Al añadir dos subtareas seguidas, la segunda podía perderse.** El campo se vaciaba al volver la respuesta del servidor y borraba lo que ya se estaba escribiendo. Además, una subtarea añadida antes de que llegara la lista al abrir el panel desaparecía de la vista.
+- Los textos de la auditoría que seguían en inglés («Filter by user...», «All Actions») pasan por el diccionario.
+- **Tests que fallaban a veces con la suite entera en marcha.** Compartían espacios, tareas o ids fijos con otros que corrían en paralelo, o pulsaban antes de que el tablero estuviera listo. Ahora cada ejecución usa sus propios espacios, y el tablero avisa cuando ya responde a los clics.
+
 ## [1.32.0] - 2026-10-19
 
 ### Added

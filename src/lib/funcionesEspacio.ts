@@ -19,26 +19,30 @@ import { finalizeIssueSessions } from './sesionesTiempo';
  * que se añada quedaría encendida en un sitio y apagada en otro.
  */
 
-export type Funcion = 'sprints' | 'tiempo' | 'puntos';
+export type Funcion = 'sprints' | 'tiempo' | 'puntos' | 'automatizaciones' | 'auditoria';
 export type Funciones = Record<Funcion, boolean>;
 
 const COLUMNA: Record<Funcion, string> = {
   sprints: 'feat_sprints',
   tiempo: 'feat_time',
   puntos: 'feat_points',
+  automatizaciones: 'feat_automations',
+  auditoria: 'feat_audit',
 };
 
-export const NINGUNA: Funciones = { sprints: false, tiempo: false, puntos: false };
+export const NINGUNA: Funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false };
 
 export function funciones(workspaceId: string): Funciones {
   const fila = db.prepare(
-    'SELECT feat_sprints, feat_time, feat_points FROM workspaces WHERE id = ?'
-  ).get(workspaceId) as { feat_sprints: number; feat_time: number; feat_points: number } | undefined;
+    'SELECT feat_sprints, feat_time, feat_points, feat_automations, feat_audit FROM workspaces WHERE id = ?'
+  ).get(workspaceId) as { feat_sprints: number; feat_time: number; feat_points: number; feat_automations: number; feat_audit: number } | undefined;
   if (!fila) return { ...NINGUNA };
   return {
     sprints: fila.feat_sprints === 1,
     tiempo: fila.feat_time === 1,
     puntos: fila.feat_points === 1,
+    automatizaciones: fila.feat_automations === 1,
+    auditoria: fila.feat_audit === 1,
   };
 }
 

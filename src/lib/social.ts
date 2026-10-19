@@ -18,9 +18,17 @@
  * quedado sin ella.
  */
 
-export type SocialParty = { is_guest?: number | boolean | null } | null | undefined;
+export type SocialParty = { is_guest?: number | boolean | null; social_enabled?: number | null } | null | undefined;
 
 const isGuest = (u: SocialParty): boolean => Boolean(u && (u.is_guest === 1 || u.is_guest === true));
+
+/**
+ * Lo social apagado en la cuenta (migración 52) cuenta igual que ser invitado:
+ * en los dos sentidos. Quien lo apaga no manda solicitudes ni bloquea, y
+ * tampoco se le pueden mandar: recibiría solicitudes que no tiene dónde ver.
+ * Sin el dato (`undefined`) no se deniega, para no romper a quien no lo lea.
+ */
+const socialApagado = (u: SocialParty): boolean => Boolean(u && u.social_enabled === 0);
 
 /**
  * ¿Pueden estas dos cuentas dirigirse una acción social?
@@ -30,7 +38,7 @@ const isGuest = (u: SocialParty): boolean => Boolean(u && (u.is_guest === 1 || u
  * dejaría un producto a medias sin proteger a nadie.
  */
 export function canInteractSocially(a: SocialParty, b: SocialParty): boolean {
-  return Boolean(a) && Boolean(b) && !isGuest(a) && !isGuest(b);
+  return Boolean(a) && Boolean(b) && !isGuest(a) && !isGuest(b) && !socialApagado(a) && !socialApagado(b);
 }
 
 /**

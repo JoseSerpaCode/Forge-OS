@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
        return new Response('Cannot block yourself', { status: 400 });
     }
 
-    const targetUser = db.prepare('SELECT id, is_guest FROM users WHERE username = ?').get(targetUsername) as {id: string, is_guest: number} | undefined;
+    const targetUser = db.prepare('SELECT id, is_guest, social_enabled FROM users WHERE username = ?').get(targetUsername) as {id: string, is_guest: number, social_enabled: number} | undefined;
     
     if (!targetUser) return new Response('User not found', { status: 404 });
 

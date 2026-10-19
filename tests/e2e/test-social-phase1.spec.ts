@@ -14,9 +14,9 @@ test.describe('Social Phase 1 - Negative & Auth Tests', () => {
         userB = { id: randomUUID(), username: 'b_' + randomUUID().substring(0, 8), password_hash: '123' };
         userC = { id: randomUUID(), username: 'c_' + randomUUID().substring(0, 8), password_hash: '123' };
         
-        db.prepare('INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(userA.id, userA.username, userA.password_hash);
-        db.prepare('INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(userB.id, userB.username, userB.password_hash);
-        db.prepare('INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)').run(userC.id, userC.username, userC.password_hash);
+        db.prepare('INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, ?, 1)').run(userA.id, userA.username, userA.password_hash);
+        db.prepare('INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, ?, 1)').run(userB.id, userB.username, userB.password_hash);
+        db.prepare('INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, ?, 1)').run(userC.id, userC.username, userC.password_hash);
 
         sessionIdA = randomUUID(); sessionIdB = randomUUID(); sessionIdC = randomUUID();
         const expires = new Date(Date.now() + 86400000).toISOString();

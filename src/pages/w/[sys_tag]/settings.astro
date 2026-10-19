@@ -434,6 +434,26 @@ const wsPendingInvites = (db.prepare(`
           </label>
         ))}
       </div>
+      <h3 class="text-sm font-bold text-forge-text mt-8 mb-1">{t('ws.settings.team')}</h3>
+      <p class="text-sm text-forge-muted mb-5">{t('ws.settings.team_desc')}</p>
+      <div class="space-y-4">
+        {([
+          ['automatizaciones', 'feat_automations'],
+          ['auditoria', 'feat_audit'],
+        ] as const).map(([clave, texto]) => (
+          <label class="flex items-center justify-between gap-6 cursor-pointer group">
+            <span>
+              <span id={`funcion-${clave}-nombre`} class="text-sm font-medium text-forge-text block mb-0.5">{t(`ws.settings.${texto}`)}</span>
+              <span id={`funcion-${clave}-desc`} class="text-xs text-forge-muted block">{t(`ws.settings.${texto}_desc`)}</span>
+            </span>
+            <span class="relative inline-flex items-center shrink-0">
+              <input type="checkbox" class="sr-only peer funcion-tablero" data-funcion={clave} data-recargar="true" checked={funcionesEspacio[clave]}
+                aria-labelledby={`funcion-${clave}-nombre`} aria-describedby={`funcion-${clave}-desc`} />
+              <span class="w-9 h-5 bg-forge-bg rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-forge-muted after:border-forge-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-forge-primary peer-checked:after:bg-white border border-forge-border/60 group-hover:border-forge-border peer-focus-visible:ring-2 peer-focus-visible:ring-forge-secondary transition-colors"></span>
+            </span>
+          </label>
+        ))}
+      </div>
     </div>
 
     <div id="plantillas-espacio" class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6" data-sys-tag={sys_tag}>
@@ -454,7 +474,8 @@ const wsPendingInvites = (db.prepare(`
       )}
     </div>
 
-    <!-- Automations Engine -->
+    {/* Solo con las automatizaciones encendidas (funciones del espacio). */}
+    {funcionesEspacio.automatizaciones && (
     <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
@@ -494,8 +515,10 @@ const wsPendingInvites = (db.prepare(`
         )}
       </div>
     </div>
+    )}
     
-    <!-- Audit Logs -->
+    {/* Solo con la auditoría encendida (funciones del espacio). */}
+    {funcionesEspacio.auditoria && (
     <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6 overflow-hidden flex flex-col max-h-[600px]">
       <div class="flex items-center justify-between mb-6 shrink-0">
         <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
@@ -506,9 +529,9 @@ const wsPendingInvites = (db.prepare(`
       </div>
       
       <div class="mb-4 flex flex-wrap gap-3 p-3 bg-forge-bg rounded-lg border border-forge-border">
-        <input type="text" id="audit-filter-user" aria-label={t('a11y.filter_user')} placeholder="Filter by user..." class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
+        <input type="text" id="audit-filter-user" aria-label={t('a11y.filter_user')} placeholder={t('ws.audit.filter_user')} class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
         <select id="audit-filter-action" aria-label={t('a11y.filter_action')} class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary">
-          <option value="">All Actions</option>
+          <option value="">{t('ws.audit.all_actions')}</option>
           {[...new Set(auditLogs.map((l: any) => l.action))].map(action => (
             <option value={action}>{action}</option>
           ))}
@@ -556,11 +579,12 @@ const wsPendingInvites = (db.prepare(`
         })}
         {auditLogs.length === 0 && (
           <div class="py-8 text-center text-forge-muted text-sm font-mono">
-            No audit logs recorded yet.
+            {t('ws.audit.empty')}
           </div>
         )}
       </div>
     </div>
+    )}
     
     <!-- Danger Zone -->
     <div class="bg-red-500/5 border border-red-500/20 rounded-lg shadow-lg p-6">
@@ -1435,6 +1459,10 @@ const wsPendingInvites = (db.prepare(`
           });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           window.showToast?.(raiz.dataset.tSaved || '');
+          // Automatizaciones y auditoría tienen su sección en esta misma
+          // página, pintada en el servidor: se recarga para que aparezca o
+          // desaparezca.
+          if (casilla.dataset.recargar === 'true') window.location.reload();
         } catch (e) {
           console.error('funciones del tablero:', e);
           casilla.checked = !valor;

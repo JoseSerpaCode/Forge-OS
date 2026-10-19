@@ -32,7 +32,13 @@ test.beforeAll(async ({ browser }) => {
 
 test('un espacio nuevo trae los cuatro tipos de siempre', async ({ page }) => {
   await entrar(page);
-  const res = await page.request.get(`/api/w/${ESPACIO}/issue-types`);
+  // Un espacio recién creado y solo para esta prueba: el compartido recibe un
+  // tipo propio en otra prueba del fichero, que corre en paralelo, y a veces
+  // ya traía cinco.
+  const nuevo = `ws-tipos-${Math.random().toString(36).slice(2, 8)}`;
+  const c = await page.request.post('/api/workspaces', { data: { name: 'Tipos nuevos', sys_tag: nuevo } });
+  expect(c.ok(), await c.text()).toBeTruthy();
+  const res = await page.request.get(`/api/w/${nuevo}/issue-types`);
   expect(res.status()).toBe(200);
   const { types } = await res.json();
   expect(types.map((t: any) => t.key)).toEqual(['task', 'bug', 'story', 'epic']);

@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import { funciones, funcionApagada } from '../../../lib/funcionesEspacio';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import crypto from 'crypto';
 
@@ -31,6 +32,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 
   const access = checkWorkspaceAccess(user.id, user.is_sysadmin, rule.workspace_id, 'owner');
   if (!access.granted) return new Response('Forbidden', { status: 403 });
+  // Reactivar una regla con la función apagada no tendría efecto visible.
+  if (!funciones(rule.workspace_id).automatizaciones) return funcionApagada('automatizaciones');
 
   try {
     const body = await request.json();

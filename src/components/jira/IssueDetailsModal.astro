@@ -16,7 +16,7 @@ interface Props {
   canManageTypes?: boolean;
   funciones?: Funciones;
 }
-const { sprints = [], currentSprintId = null, workspaceMembers = [], labels = [], issueTypes = [], sysTag = '', canManageTypes = false, funciones = { sprints: false, tiempo: false, puntos: false } } = Astro.props;
+const { sprints = [], currentSprintId = null, workspaceMembers = [], labels = [], issueTypes = [], sysTag = '', canManageTypes = false, funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false } } = Astro.props;
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -2058,12 +2058,23 @@ const t = useTranslations(lang);
       e.preventDefault();
       const titulo = nueva.value.trim();
       if (!titulo || !madre) return;
-      const res = await fetch(`/api/issues/${madre}/subtareas`, {
+      // El campo se vacía **antes** de ir al servidor. Vaciándolo al volver la
+      // respuesta, lo que ya se estuviera escribiendo para la siguiente
+      // subtarea se borraba: con dos seguidas, la segunda se perdía.
+      nueva.value = '';
+      const de = madre;
+      const res = await fetch(`/api/issues/${de}/subtareas`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: titulo }),
       }).catch(() => null);
-      if (!res?.ok) { avisarError(); return; }
-      filas.push(await res.json());
-      nueva.value = '';
+      if (!res?.ok) {
+        // Se devuelve el texto si el campo sigue vacío, para no perderlo.
+        if (!nueva.value) nueva.value = titulo;
+        avisarError();
+        return;
+      }
+      const creada = await res.json();
+      if (madre !== de) return; // se cerró o se abrió otra tarea mientras tanto
+      filas.push(creada);
       pintar();
       actualizarTarjeta();
       nueva.focus();
@@ -2075,7 +2086,13 @@ const t = useTranslations(lang);
       nueva.value = '';
       pintar();
       const res = await fetch(`/api/issues/${issueId}/subtareas`).catch(() => null);
-      if (res?.ok && madre === issueId) { filas = await res.json(); pintar(); }
+      if (res?.ok && madre === issueId) {
+        // Las que se hayan añadido mientras llegaba la lista se conservan.
+        const delServidor: typeof filas = await res.json();
+        const ids = new Set(delServidor.map((f) => f.id));
+        filas = [...delServidor, ...filas.filter((f) => !ids.has(f.id))];
+        pintar();
+      }
     };
   })();
 

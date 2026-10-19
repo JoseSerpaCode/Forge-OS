@@ -34,7 +34,7 @@ const ws = db.prepare('SELECT id, sys_tag FROM workspaces WHERE id = ?').get(wor
 const acceso = user && ws ? checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'editor') : { granted: false };
 const puede = Boolean(ws && acceso.granted);
 
-const funcs = puede ? funcionesDe(ws!.id) : { sprints: false, tiempo: false, puntos: false };
+const funcs = puede ? funcionesDe(ws!.id) : { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false };
 const etiquetas = puede ? listarEtiquetas(ws!.id) : [];
 const tipos = puede ? listarTipos(ws!.id) : [];
 const miembros = puede
