@@ -155,12 +155,20 @@ export function diaDeCalendario(valor: unknown): string | null {
   return d ? hoyLocal(d) : null;
 }
 
-/** ¿Esta fecha de entrega ya pasó? Compara días, no instantes. */
-export function vencida(valor: unknown, ahora: Date = new Date()): boolean {
+/**
+ * ¿Esta fecha de entrega ya pasó? Compara días, no instantes.
+ *
+ * Una entrega «de hoy» no está vencida a las nueve de la mañana. Con hora
+ * (`due_time`, `HH:MM` de pared y en su propia columna) vence en ese minuto: a
+ * las 18:00 todavía no, a las 18:01 sí.
+ */
+export function vencida(valor: unknown, ahora: Date = new Date(), hora?: string | null): boolean {
   const dia = diaDeCalendario(valor);
   if (!dia) return false;
-  // Una entrega «de hoy» no está vencida a las nueve de la mañana.
-  return dia < hoyLocal(ahora);
+  const hoy = hoyLocal(ahora);
+  if (dia !== hoy || !hora || !/^\d{2}:\d{2}$/.test(hora)) return dia < hoy;
+  const minutoActual = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+  return hora < minutoActual;
 }
 
 /**
@@ -183,4 +191,66 @@ export function diasHasta(valor: unknown, ahora: Date = new Date()): number | nu
     return Date.UTC(a, m - 1, d);
   };
   return Math.round((comoUTC(dia) - comoUTC(hoyLocal(ahora))) / 86_400_000);
+}
+
+/**
+ * Fechas que escribe una persona: `05/03/2027` en español, `03/05/2027` en inglés.
+ *
+ * El `<input type="date">` nativo no sirve para esto: Chrome y Firefox lo pintan
+ * con el idioma **del navegador**, no con el de la aplicación, así que con la
+ * interfaz en español salía `mm/dd/yyyy`. Ningún atributo lo cambia. Por eso el
+ * campo de fecha de la app es un texto y estas dos funciones traducen entre lo
+ * que se escribe y lo que se guarda (`AAAA-MM-DD`).
+ *
+ * El orden de día, mes y año se le pregunta a `Intl` en vez de escribirlo a mano
+ * por idioma: así un tercer idioma no obliga a tocar esto.
+ */
+export type ParteFecha = 'day' | 'month' | 'year';
+
+export function ordenFecha(lang = 'en'): ParteFecha[] {
+  const partes = new Intl.DateTimeFormat(comoLocale(lang), { day: '2-digit', month: '2-digit', year: 'numeric' })
+    .formatToParts(new Date(2027, 10, 22));
+  return partes.map((p) => p.type).filter((t): t is ParteFecha => t === 'day' || t === 'month' || t === 'year');
+}
+
+/** La pista del campo: «dd/mm/aaaa» o «mm/dd/yyyy». */
+export function patronFecha(lang = 'en'): string {
+  const letras: Record<ParteFecha, string> = lang === 'es'
+    ? { day: 'dd', month: 'mm', year: 'aaaa' }
+    : { day: 'dd', month: 'mm', year: 'yyyy' };
+  return ordenFecha(lang).map((p) => letras[p]).join('/');
+}
+
+/** `2027-03-05` → `05/03/2027` (es) o `03/05/2027` (en). Lo que no sea `AAAA-MM-DD` da cadena vacía. */
+export function fechaCorta(iso: unknown, lang = 'en'): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? ''));
+  if (!m) return '';
+  const valores: Record<ParteFecha, string> = { year: m[1], month: m[2], day: m[3] };
+  return ordenFecha(lang).map((p) => valores[p]).join('/');
+}
+
+/**
+ * Lo que escribió la persona → `AAAA-MM-DD`, o `null` si no es una fecha real.
+ *
+ * Admite `/`, `-`, `.` o espacios como separador, días y meses de una cifra y
+ * años de dos (`5/3/27` → 2027). Una fecha imposible —31 de febrero— da `null`
+ * en vez de que `Date` la desborde en silencio al 3 de marzo.
+ */
+export function leerFechaUsuario(texto: string, lang = 'en'): string | null {
+  const trozos = String(texto ?? '').trim().split(/[\/\-.\s]+/).filter(Boolean);
+  if (trozos.length !== 3 || trozos.some((t) => !/^\d+$/.test(t))) return null;
+
+  const orden = ordenFecha(lang);
+  const v: Record<ParteFecha, number> = { day: 0, month: 0, year: 0 };
+  orden.forEach((parte, i) => { v[parte] = Number(trozos[i]); });
+
+  const anioTexto = trozos[orden.indexOf('year')];
+  if (anioTexto.length === 2) v.year += 2000;
+  else if (anioTexto.length !== 4) return null;
+
+  if (v.month < 1 || v.month > 12 || v.day < 1) return null;
+  const diasDelMes = new Date(Date.UTC(v.year, v.month, 0)).getUTCDate();
+  if (v.day > diasDelMes) return null;
+
+  return `${v.year}-${String(v.month).padStart(2, '0')}-${String(v.day).padStart(2, '0')}`;
 }

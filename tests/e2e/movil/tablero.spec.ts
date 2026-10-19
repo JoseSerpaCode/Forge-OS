@@ -13,7 +13,7 @@ import { getTestDb } from '../test-utils';
  * arrastrando, ni desde el modal, que no tiene selector de estado. La función
  * no existía y nada lo decía.
  */
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 const ESPACIO = 'ws-tablero-movil';
 
 async function entrar(page: any) {

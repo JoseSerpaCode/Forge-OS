@@ -1,0 +1,505 @@
+---
+/**
+ * El alta de tareas: una línea rápida y, debajo, «Más opciones».
+ *
+ * Sustituye al formulario de `board.astro`, que se había quedado atrás: no
+ * dejaba poner etiquetas, la fecha salía en mm/dd/yyyy con la app en español y
+ * el título decía «Crear Issue». Vive en `MainLayout` y no en el tablero para
+ * que `C` funcione desde cualquier página del espacio —también desde los
+ * apuntes, que es donde suele surgir la tarea—.
+ *
+ * La línea y el formulario son el mismo estado. Lo que la línea reconoce
+ * («viernes», «#Cálculo», «!1») rellena los campos de abajo; si alguien toca un
+ * campo a mano, la línea deja de pisarlo. Las etiquetas son la unión de las
+ * dos cosas.
+ */
+import db from '../../lib/db';
+import { checkWorkspaceAccess } from '../../lib/guard';
+import { useTranslations } from '../../i18n/ui';
+import { funciones as funcionesDe } from '../../lib/funcionesEspacio';
+import { listar as listarEtiquetas, COLOR_POR_DEFECTO } from '../../lib/labels';
+import { listar as listarTipos, nombreVisible } from '../../lib/issueTypes';
+import { OPCIONES as PRIORIDADES } from '../../lib/prioridad';
+import CampoFecha from '../forms/CampoFecha.astro';
+import LabelChip from '../labels/LabelChip.astro';
+
+interface Props { workspaceId: string }
+const { workspaceId } = Astro.props;
+const user = Astro.locals.user;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+
+const ws = db.prepare('SELECT id, sys_tag FROM workspaces WHERE id = ?').get(workspaceId) as { id: string; sys_tag: string } | undefined;
+const acceso = user && ws ? checkWorkspaceAccess(user.id, user.is_sysadmin, ws.id, 'editor') : { granted: false };
+const puede = Boolean(ws && acceso.granted);
+
+const funcs = puede ? funcionesDe(ws!.id) : { sprints: false, tiempo: false, puntos: false };
+const etiquetas = puede ? listarEtiquetas(ws!.id) : [];
+const tipos = puede ? listarTipos(ws!.id) : [];
+const miembros = puede
+  ? db.prepare('SELECT u.id, u.username FROM workspace_members wm JOIN users u ON u.id = wm.user_id WHERE wm.workspace_id = ? ORDER BY u.username COLLATE NOCASE').all(ws!.id) as Array<{ id: string; username: string }>
+  : [];
+const sprints = puede && funcs.sprints
+  ? db.prepare("SELECT id, name FROM sprints WHERE workspace_id = ? AND status != 'completed' ORDER BY start_date DESC, rowid DESC").all(ws!.id) as Array<{ id: string; name: string }>
+  : [];
+const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary outline-none';
+---
+{puede && (
+  <dialog id="nueva-tarea"
+    aria-labelledby="nueva-tarea-titulo"
+    data-sys-tag={ws!.sys_tag}
+    data-lang={lang}
+    data-etiquetas={JSON.stringify(etiquetas.map((e) => ({ id: e.id, name: e.name, color: e.color })))}
+    data-color-defecto={COLOR_POR_DEFECTO}
+    data-t-remove={t('quick.remove_chip')}
+    data-t-chip-fecha={t('quick.chip_date')}
+    data-t-chip-hora={t('quick.chip_time')}
+    data-t-chip-etiqueta={t('quick.chip_label')}
+    data-t-chip-etiqueta-nueva={t('quick.chip_new_label')}
+    data-t-chip-prioridad={t('quick.chip_priority')}
+    data-t-chip-apunte={t('quick.chip_note')}
+    data-t-create-label={t('quick.create_label')}
+    data-t-note-missing={t('quick.note_missing')}
+    data-t-created={t('quick.created')}
+    data-t-see={t('quick.see')}
+    data-t-err-title={t('issue.err_title')}
+    data-t-err-create={t('issue.err_create')}
+    data-t-label-error={t('quick.label_error')}
+    data-t-creating={t('issue.creating')}
+    class="bg-forge-panel border border-forge-border rounded-2xl p-5 sm:p-6 w-[calc(100vw-2rem)] max-w-[560px] text-forge-text shadow-xl backdrop:bg-black/50">
+    <h2 id="nueva-tarea-titulo" class="text-lg font-bold mb-3">{t('modal.create_issue')}</h2>
+
+    <div class="relative">
+      <label class="sr-only" for="nt-linea">{t('quick.label')}</label>
+      <input type="text" id="nt-linea" autocomplete="off" spellcheck="true"
+        role="combobox" aria-expanded="false" aria-controls="nt-apuntes-sugeridos" aria-autocomplete="list"
+        aria-describedby="nt-ayuda"
+        placeholder={t('quick.placeholder')}
+        class="w-full bg-forge-bg border border-forge-border rounded-xl px-3 py-2.5 text-base text-forge-text focus:border-forge-secondary outline-none" />
+      <ul id="nt-apuntes-sugeridos" role="listbox" class="hidden absolute z-40 top-full left-0 right-0 mt-1 bg-forge-panel border border-forge-border rounded-xl shadow-xl p-1 max-h-60 overflow-y-auto"></ul>
+    </div>
+    <p id="nt-ayuda" class="text-xs text-forge-muted mt-1.5">{t('quick.help')}</p>
+
+    {/* Lo que la línea ha reconocido. Cada chip se puede quitar: devuelve sus
+        palabras al título. */}
+    <ul id="nt-chips" class="flex flex-wrap gap-1.5 mt-2.5 empty:hidden" aria-live="polite"></ul>
+    <p id="nt-aviso" class="hidden text-xs text-forge-error mt-2" role="alert"></p>
+
+    <details class="mt-4 group" id="nt-mas">
+      <summary class="cursor-pointer select-none text-sm font-semibold text-forge-muted hover:text-forge-text">{t('quick.more')}</summary>
+      <div class="space-y-3 mt-3">
+        <div>
+          <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-desc">{t('modal.description')}</label>
+          <textarea id="nt-desc" rows="3" class={campo} placeholder={t('modal.desc_placeholder')}></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-[1fr_6.5rem] gap-2 items-start">
+          <div>
+            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-fecha-texto">{t('modal.due_date')}</label>
+            <CampoFecha id="nt-fecha" inputClass={campo} />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-hora">{t('modal.due_time')}</label>
+            <input type="text" id="nt-hora" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5" class={`${campo} font-mono`} />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-prioridad">{t('priority.label')}</label>
+            <select id="nt-prioridad" class={campo}>
+              {PRIORIDADES.map((p) => <option value={p.valor} selected={p.valor === 'medium'}>{t(`priority.${p.nivel}`)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-tipo">{t('modal.type')}</label>
+            <select id="nt-tipo" class={campo}>
+              {tipos.map((ti) => <option value={ti.key}>{nombreVisible(ti, t)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-responsable">{t('modal.assignee')}</label>
+            {/* Por ahora solo personas con cuenta. Cuando lleguen los contactos
+                sin cuenta, entran aquí como otra opción, no como otro campo. */}
+            <select id="nt-responsable" class={campo}>
+              <option value="">{t('modal.unassigned')}</option>
+              {miembros.map((m) => <option value={m.id}>{m.username}</option>)}
+            </select>
+          </div>
+          {funcs.sprints && (
+            <div>
+              <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-sprint">{t('modal.sprint')}</label>
+              <select id="nt-sprint" class={campo}>
+                <option value="">{t('modal.backlog')}</option>
+                {sprints.map((s) => <option value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          )}
+          {funcs.tiempo && (
+            <div>
+              <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-estimado">{t('modal.estimated_hours')}</label>
+              <input type="number" id="nt-estimado" min="0" step="0.5" placeholder="0" class={`${campo} font-mono`} />
+            </div>
+          )}
+        </div>
+
+        {/* Etiquetas como botones que se encienden: cabe el catálogo entero de
+            un vistazo, que con una etiqueta por asignatura son pocas. */}
+        <fieldset>
+          <legend class="block text-xs font-semibold text-forge-muted mb-1.5">{t('quick.labels')}</legend>
+          <div id="nt-etiquetas" class="flex flex-wrap gap-1.5">
+            {etiquetas.map((e) => (
+              <button type="button" class="nt-etiqueta rounded-full border border-forge-border px-1 py-0.5 aria-pressed:border-forge-secondary aria-pressed:bg-forge-secondary/10 transition-colors" aria-pressed="false" data-id={e.id}>
+                <LabelChip name={e.name} color={e.color} size="sm" />
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      </div>
+    </details>
+
+    <div class="flex flex-wrap justify-end gap-2 mt-5">
+      <button type="button" class="px-4 py-2 text-sm text-forge-muted hover:text-forge-text" id="nt-cancelar">{t('modal.cancel')}</button>
+      <button type="button" id="nt-crear-abrir" title={t('quick.create_open_hint')} class="px-4 py-2 text-sm font-bold rounded-lg border border-forge-border text-forge-text hover:border-forge-secondary">{t('quick.create_open')}</button>
+      <button type="button" id="nt-crear" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity">{t('modal.create')}</button>
+    </div>
+  </dialog>
+)}
+
+<script>
+  import { interpretar, normalizar, type Interpretacion, type Tramo } from '../../lib/altaRapida';
+
+  const dlg = document.getElementById('nueva-tarea') as HTMLDialogElement | null;
+  if (dlg) montar(dlg);
+
+  function montar(dlg: HTMLDialogElement) {
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+    const d = dlg.dataset;
+    const sysTag = d.sysTag!;
+    const lang = d.lang || 'en';
+    const linea = $<HTMLInputElement>('nt-linea')!;
+    const sugeridos = $<HTMLUListElement>('nt-apuntes-sugeridos')!;
+    const chips = $<HTMLUListElement>('nt-chips')!;
+    const aviso = $<HTMLParagraphElement>('nt-aviso')!;
+    const fecha = $<HTMLInputElement>('nt-fecha')!;
+    const hora = $<HTMLInputElement>('nt-hora')!;
+    const prioridad = $<HTMLSelectElement>('nt-prioridad')!;
+    const tipo = $<HTMLSelectElement>('nt-tipo')!;
+    const contEtiquetas = $<HTMLDivElement>('nt-etiquetas')!;
+    const CLAVE_TIPO = `forge_ultimo_tipo_${sysTag}`;
+
+    let catalogo: Array<{ id: string; name: string; color: string }> = JSON.parse(d.etiquetas || '[]');
+    /** Tramos descartados, por tipo y texto: los desplazamientos cambian al seguir escribiendo. */
+    const descartados = new Set<string>();
+    /** Campos que alguien tocó a mano: la línea ya no los pisa. */
+    const manual = { fecha: false, hora: false, prioridad: false };
+    const encendidas = new Set<string>();
+    const apagadas = new Set<string>();
+    /** Título normalizado del apunte → id, al elegirlo en el buscador. */
+    const apuntesElegidos = new Map<string, string>();
+    let ultima: Interpretacion | null = null;
+
+    const claveTramo = (t: Tramo) => `${t.tipo}:${t.texto.toLowerCase()}`;
+
+    function analizar() {
+      const ctx = { hoy: new Date(), lang, etiquetas: catalogo };
+      const primera = interpretar(linea.value, ctx);
+      const ignorar = new Set(primera.tramos.filter((t) => descartados.has(claveTramo(t))).map((t) => t.inicio));
+      const r = ignorar.size ? interpretar(linea.value, { ...ctx, ignorar }) : primera;
+      ultima = r;
+
+      if (!manual.fecha) fecha.value = r.fecha ?? '';
+      if (!manual.hora) hora.value = r.hora ?? '';
+      if (!manual.prioridad) prioridad.value = r.prioridad ?? 'medium';
+      const desdeLinea = new Set(r.etiquetas.map((e) => e.id));
+      contEtiquetas.querySelectorAll<HTMLButtonElement>('.nt-etiqueta').forEach((b) => {
+        const id = b.dataset.id!;
+        const on = !apagadas.has(id) && (encendidas.has(id) || desdeLinea.has(id));
+        b.setAttribute('aria-pressed', String(on));
+      });
+      pintarChips(r);
+    }
+
+    function chip(textoVisible: string, tipoChip: string, quitar?: () => void) {
+      const li = document.createElement('li');
+      li.className = 'flex items-center gap-1 bg-forge-bg border border-forge-border rounded-full pl-2.5 pr-1 py-0.5 text-xs text-forge-text';
+      const etiqueta = document.createElement('span');
+      etiqueta.className = 'text-forge-muted';
+      etiqueta.textContent = `${tipoChip}:`;
+      const valor = document.createElement('span');
+      valor.textContent = textoVisible;
+      li.append(etiqueta, valor);
+      if (quitar) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'w-5 h-5 rounded-full text-forge-muted hover:text-forge-error hover:bg-forge-panel';
+        b.setAttribute('aria-label', (d.tRemove || '').replace('{texto}', textoVisible));
+        b.textContent = '×';
+        b.addEventListener('click', () => { quitar(); linea.focus(); });
+        li.append(b);
+      }
+      return li;
+    }
+
+    function pintarChips(r: Interpretacion) {
+      chips.replaceChildren();
+      const nombres: Record<string, string> = {
+        fecha: d.tChipFecha || '', hora: d.tChipHora || '', etiqueta: d.tChipEtiqueta || '',
+        prioridad: d.tChipPrioridad || '', apunte: d.tChipApunte || '',
+      };
+      const faltan: string[] = [];
+      for (const t of r.tramos) {
+        let visible = t.texto.trim();
+        if (t.tipo === 'fecha' && r.fecha) visible = `${visible} → ${new Date(`${r.fecha}T00:00:00`).toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+        if (t.tipo === 'apunte') {
+          const titulo = t.texto.slice(2, -2).trim();
+          if (!apuntesElegidos.has(normalizar(titulo))) faltan.push(titulo);
+        }
+        // Una etiqueta que no existe no se asigna: el chip lo dice, para que no
+        // parezca puesta. Crearla es el botón de al lado.
+        const nueva = t.tipo === 'etiqueta' && r.etiquetasNuevas.includes(t.texto.trim().slice(1));
+        chips.append(chip(visible, nueva ? (d.tChipEtiquetaNueva || '') : nombres[t.tipo], () => { descartados.add(claveTramo(t)); analizar(); }));
+      }
+      // Etiquetas que no existen: se ofrece crearlas, nunca se crean solas.
+      for (const nueva of r.etiquetasNuevas) {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'text-xs font-bold text-forge-accent-text border border-dashed border-forge-secondary/60 rounded-full px-2.5 py-0.5 hover:bg-forge-secondary/10';
+        b.textContent = (d.tCreateLabel || '').replace('{nombre}', nueva);
+        b.addEventListener('click', () => crearEtiqueta(nueva));
+        li.append(b);
+        chips.append(li);
+      }
+      aviso.classList.toggle('hidden', faltan.length === 0);
+      aviso.textContent = faltan.map((f) => (d.tNoteMissing || '').replace('{titulo}', f)).join(' ');
+    }
+
+    async function crearEtiqueta(nombre: string) {
+      try {
+        const res = await fetch(`/api/w/${sysTag}/labels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: nombre, color: d.colorDefecto }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const e = await res.json();
+        catalogo = [...catalogo, { id: e.id, name: e.name, color: e.color }];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'nt-etiqueta rounded-full border border-forge-border px-2 py-0.5 text-xs text-forge-text aria-pressed:border-forge-secondary aria-pressed:bg-forge-secondary/10 transition-colors';
+        b.dataset.id = e.id;
+        b.setAttribute('aria-pressed', 'true');
+        b.textContent = e.name;
+        contEtiquetas.append(b);
+        analizar();
+      } catch (err) {
+        console.error('crear etiqueta:', err);
+        window.showToast?.(d.tLabelError || '', true);
+      }
+    }
+
+    contEtiquetas.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.nt-etiqueta');
+      if (!b) return;
+      const id = b.dataset.id!;
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      if (on) { encendidas.add(id); apagadas.delete(id); } else { apagadas.add(id); encendidas.delete(id); }
+      b.setAttribute('aria-pressed', String(on));
+    });
+    fecha.addEventListener('change', () => { manual.fecha = true; });
+    hora.addEventListener('change', () => { manual.hora = true; });
+    prioridad.addEventListener('change', () => { manual.prioridad = true; });
+
+    // ── `[[` busca apuntes ───────────────────────────────────────────────────
+    let opciones: Array<{ id: string; title: string }> = [];
+    let activo = -1;
+    let temporizador: ReturnType<typeof setTimeout> | undefined;
+    const fragmentoApunte = () => /\[\[([^\]\n]*)$/.exec(linea.value.slice(0, linea.selectionStart ?? linea.value.length));
+    const cerrarSugeridos = () => {
+      sugeridos.classList.add('hidden');
+      linea.setAttribute('aria-expanded', 'false');
+      linea.removeAttribute('aria-activedescendant');
+      activo = -1;
+    };
+    const resaltar = (i: number) => {
+      activo = i;
+      sugeridos.querySelectorAll('[role="option"]').forEach((el, k) => {
+        el.setAttribute('aria-selected', String(k === i));
+        el.classList.toggle('bg-forge-bg', k === i);
+      });
+      if (i >= 0) linea.setAttribute('aria-activedescendant', `nt-op-${i}`);
+    };
+    function elegirApunte(i: number) {
+      const p = opciones[i];
+      const m = fragmentoApunte();
+      if (!p || !m) return;
+      const fin = linea.selectionStart ?? linea.value.length;
+      const inicio = fin - m[0].length;
+      const insertado = `[[${p.title}]] `;
+      linea.value = linea.value.slice(0, inicio) + insertado + linea.value.slice(fin);
+      const caret = inicio + insertado.length;
+      linea.setSelectionRange(caret, caret);
+      apuntesElegidos.set(normalizar(p.title), p.id);
+      cerrarSugeridos();
+      analizar();
+    }
+    function buscarApuntes() {
+      const m = fragmentoApunte();
+      if (!m) { cerrarSugeridos(); return; }
+      clearTimeout(temporizador);
+      temporizador = setTimeout(async () => {
+        const res = await fetch(`/api/w/${sysTag}/pages/search?q=${encodeURIComponent(m[1])}`);
+        opciones = res.ok ? await res.json() : [];
+        sugeridos.replaceChildren(...opciones.map((p, i) => {
+          const li = document.createElement('li');
+          li.id = `nt-op-${i}`;
+          li.setAttribute('role', 'option');
+          li.setAttribute('aria-selected', 'false');
+          li.className = 'px-2 py-1.5 rounded-lg text-sm text-forge-text cursor-pointer hover:bg-forge-bg truncate';
+          li.textContent = p.title || '—';
+          li.addEventListener('mousedown', (e) => { e.preventDefault(); elegirApunte(i); });
+          return li;
+        }));
+        const hay = opciones.length > 0;
+        sugeridos.classList.toggle('hidden', !hay);
+        linea.setAttribute('aria-expanded', String(hay));
+        resaltar(hay ? 0 : -1);
+      }, 120);
+    }
+
+    linea.addEventListener('input', () => { analizar(); buscarApuntes(); });
+    linea.addEventListener('blur', () => setTimeout(cerrarSugeridos, 100));
+    linea.addEventListener('keydown', (e) => {
+      const abierto = !sugeridos.classList.contains('hidden');
+      if (abierto && e.key === 'ArrowDown') { e.preventDefault(); resaltar(Math.min(activo + 1, opciones.length - 1)); return; }
+      if (abierto && e.key === 'ArrowUp') { e.preventDefault(); resaltar(Math.max(activo - 1, 0)); return; }
+      if (abierto && e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrarSugeridos(); return; }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (abierto && activo >= 0) { elegirApunte(activo); return; }
+        crear(e.shiftKey);
+      }
+    });
+    $('nt-desc')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); crear(false); }
+    });
+
+    // ── Crear ────────────────────────────────────────────────────────────────
+    const horaValida = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+    let enviando = false;
+
+    async function idsDeApuntes(titulos: string[]) {
+      const ids: string[] = [];
+      for (const titulo of titulos) {
+        const clave = normalizar(titulo);
+        let id = apuntesElegidos.get(clave);
+        if (!id) {
+          // Escrito a mano sin elegir del buscador: se vincula si hay uno con
+          // ese título exacto. Si no, se avisó en pantalla y no se vincula.
+          const res = await fetch(`/api/w/${sysTag}/pages/search?q=${encodeURIComponent(titulo)}`);
+          const lista: Array<{ id: string; title: string }> = res.ok ? await res.json() : [];
+          id = lista.find((p) => normalizar(p.title) === clave)?.id;
+        }
+        if (id) ids.push(id);
+      }
+      return ids;
+    }
+
+    async function crear(abrir: boolean) {
+      if (enviando) return;
+      analizar();
+      const r = ultima!;
+      const titulo = r.titulo.trim();
+      if (!titulo) { window.showToast?.(d.tErrTitle || '', true); linea.focus(); return; }
+      const horaTexto = hora.value.trim();
+      if (horaTexto && !horaValida(horaTexto)) { window.showToast?.(d.tErrCreate || '', true); hora.focus(); return; }
+
+      enviando = true;
+      const boton = $('nt-crear')!;
+      const textoBoton = boton.textContent;
+      boton.textContent = d.tCreating || '';
+      try {
+        const etiquetasElegidas = Array.from(contEtiquetas.querySelectorAll<HTMLButtonElement>('.nt-etiqueta[aria-pressed="true"]')).map((b) => b.dataset.id!);
+        const cuerpo: Record<string, unknown> = {
+          title: titulo,
+          type: tipo.value,
+          description: ($<HTMLTextAreaElement>('nt-desc')?.value || '').trim() || null,
+          due_date: fecha.value || null,
+          due_time: fecha.value && horaTexto ? horaTexto : null,
+          priority: prioridad.value,
+          assignee_id: $<HTMLSelectElement>('nt-responsable')?.value || null,
+          label_ids: etiquetasElegidas,
+          page_ids: await idsDeApuntes(r.apuntes),
+        };
+        const sprint = $<HTMLSelectElement>('nt-sprint');
+        if (sprint) cuerpo.sprint_id = sprint.value || null;
+        const estimado = $<HTMLInputElement>('nt-estimado');
+        if (estimado?.value) cuerpo.estimated_hours = Number(estimado.value);
+
+        const res = await fetch(`/api/w/${sysTag}/issues`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cuerpo),
+        });
+        if (!res.ok) {
+          console.error('crear tarea:', await res.text());
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const { id } = await res.json();
+        try { localStorage.setItem(CLAVE_TIPO, tipo.value); } catch { /* sin almacenamiento */ }
+
+        const enTablero = !!document.querySelector('.kanban-container') && window.location.pathname.endsWith('/board');
+        if (abrir || !enTablero) {
+          if (abrir) { window.location.href = `/w/${sysTag}/board?issue=${encodeURIComponent(id)}`; return; }
+          dlg.close();
+          window.showToast?.(d.tCreated || '', false, {
+            accion: d.tSee || '',
+            alPulsar: () => { window.location.href = `/w/${sysTag}/board?issue=${encodeURIComponent(id)}`; },
+          });
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        console.error('crear tarea:', err);
+        window.showToast?.(d.tErrCreate || '', true);
+      } finally {
+        enviando = false;
+        boton.textContent = textoBoton;
+      }
+    }
+
+    $('nt-crear')?.addEventListener('click', () => crear(false));
+    $('nt-crear-abrir')?.addEventListener('click', () => crear(true));
+    $('nt-cancelar')?.addEventListener('click', () => dlg.close());
+
+    function abrirAlta() {
+      linea.value = '';
+      ($<HTMLTextAreaElement>('nt-desc')!).value = '';
+      descartados.clear();
+      encendidas.clear();
+      apagadas.clear();
+      apuntesElegidos.clear();
+      manual.fecha = manual.hora = manual.prioridad = false;
+      const est = $<HTMLInputElement>('nt-estimado');
+      if (est) est.value = '';
+      // El último tipo usado en este espacio, no siempre el primero de la lista.
+      try {
+        const guardado = localStorage.getItem(CLAVE_TIPO);
+        if (guardado && Array.from(tipo.options).some((o) => o.value === guardado)) tipo.value = guardado;
+      } catch { /* sin almacenamiento */ }
+      // Desde el tablero, el sprint que se está mirando.
+      const sprint = $<HTMLSelectElement>('nt-sprint');
+      const actual = document.querySelector<HTMLElement>('.kanban-container')?.dataset.sprint;
+      if (sprint) sprint.value = actual && actual !== 'backlog' && Array.from(sprint.options).some((o) => o.value === actual) ? actual : '';
+      // Con el tablero filtrado por una etiqueta, la tarea nueva la lleva.
+      const filtro = document.querySelector<HTMLElement>('.kanban-container')?.dataset.label;
+      if (filtro) encendidas.add(filtro);
+      analizar();
+      dlg.showModal();
+      linea.focus();
+    }
+    (window as any).forgeNuevaTarea = abrirAlta;
+    document.getElementById('btn-new-issue')?.addEventListener('click', abrirAlta);
+  }
+</script>

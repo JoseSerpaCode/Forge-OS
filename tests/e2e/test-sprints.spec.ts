@@ -17,10 +17,10 @@ test.describe('Sprint Organizer & Isolation', () => {
     
     const adminId = db.prepare('SELECT id FROM users WHERE username = ?').get('jose') as any;
 
-    db.prepare("INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, 'WS1', ?, ?)").run(ws1Id, sysTagWs1, adminId.id);
+    db.prepare("INSERT INTO workspaces (id, name, sys_tag, created_by, feat_sprints) VALUES (?, 'WS1', ?, ?, 1)").run(ws1Id, sysTagWs1, adminId.id);
     db.prepare("INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, 'owner')").run(ws1Id, adminId.id);
 
-    db.prepare("INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, 'WS2', ?, ?)").run(ws2Id, ws2SysTag, adminId.id);
+    db.prepare("INSERT INTO workspaces (id, name, sys_tag, created_by, feat_sprints) VALUES (?, 'WS2', ?, ?, 1)").run(ws2Id, ws2SysTag, adminId.id);
     db.prepare("INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, 'owner')").run(ws2Id, adminId.id);
     db.prepare("INSERT INTO sprints (id, workspace_id, name, start_date) VALUES (?, ?, 'Sprint WS2', NULL)").run(sprintWs2Id, ws2Id);
     

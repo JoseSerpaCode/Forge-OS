@@ -2,6 +2,9 @@
 import BoardColumn from './BoardColumn.astro';
 import IssueCard from './IssueCard.astro';
 import IssueDetailsModal from './IssueDetailsModal.astro';
+import LabelChip from '../labels/LabelChip.astro';
+import { claveConteo, cursorDe } from '../../lib/tablero';
+import type { Funciones } from '../../lib/funcionesEspacio';
 
 interface Props {
   issues: any[];
@@ -10,45 +13,33 @@ interface Props {
   currentSprintId?: string | null;
   workspaceMembers?: any[];
   userRole?: string;
-  /** Total real por estado, para poder avisar de lo que no se pinta. */
+  /** Total real por columna (o por `carril|columna`), para avisar de lo que no se pinta. */
   statusCounts?: Record<string, number>;
-  /** Catálogo de etiquetas del espacio, para el selector del modal. */
+  /** Catálogo de etiquetas del espacio, para el selector del modal y los carriles. */
   labels?: Array<{ id: string; name: string; color: string }>;
   /** Tipos de ticket del espacio. Ya no son tres fijos. */
   issueTypes?: Array<{ id: string; key: string; name: string; color: string; isBuiltin: boolean }>;
-  /** Orden activo. Con uno que no es el manual, arrastrar no puede funcionar. */
-  sortMode?: string;
   sysTag?: string;
+  funciones?: Funciones;
+  /** Un carril por etiqueta. */
+  agrupar?: boolean;
+  /** La etiqueta por la que se filtra, para que «ver más» respete el filtro. */
+  filtroEtiqueta?: string | null;
 }
 
 import { useTranslations } from '../../i18n/ui';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
-const { issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer', statusCounts = {}, labels = [], issueTypes = [], sortMode = 'manual', sysTag = '' } = Astro.props;
-
-
+const {
+  issues, workspaceId, sprints = [], currentSprintId = null, workspaceMembers = [], userRole = 'viewer',
+  statusCounts = {}, labels = [], issueTypes = [], sysTag = '',
+  funciones = { sprints: false, tiempo: false, puntos: false }, agrupar = false, filtroEtiqueta = null,
+} = Astro.props;
 
 // Por clave, para no recorrer la lista una vez por tarjeta.
 const tiposPorClave = new Map(issueTypes.map((t) => [t.key, t]));
 const canEdit = userRole === 'owner' || userRole === 'editor';
-
-/**
- * Arrastrar solo tiene sentido con el orden manual.
- *
- * Con el tablero ordenado por prioridad, soltar una tarjeta escribiría un
- * `position` que la vista ni mira: la tarjeta volvería sola a su sitio y
- * parecería un fallo. Se apaga el arrastre y se dice por qué, en vez de dejar
- * que la gente lo intente tres veces.
- */
-const ordenManual = sortMode === 'manual';
-// Las tarjetas siguen siendo arrastrables aunque el tablero esté ordenado.
-//
-// Antes se apagaba el arrastre y se ponía una banda de aviso encima del
-// tablero, permanente y en medio. Pero si alguien arrastra una tarjeta ya ha
-// dicho lo que quiere: colocarla a mano. En vez de explicarle por qué no puede,
-// se le ofrece volver al orden manual y seguir.
-const sePuedeArrastrar = canEdit;
 
 const columns = [
   { id: 'todo', title: t('status.todo'), corto: t('status.short.todo') },
@@ -66,18 +57,31 @@ const columns = [
  */
 const ESTADO_INICIAL = 'todo';
 
-// Se cuenta una vez y lo usan las columnas y el conmutador. Antes el `filter`
-// se repetía dos veces por columna dentro del propio `map`.
-const porEstado = new Map(
-  columns.map((col) => [col.id, issues.filter((i) => i.status === col.id)])
-);
-const totalDe = (id: string) => statusCounts[id] ?? (porEstado.get(id)?.length ?? 0);
+/**
+ * Los carriles.
+ *
+ * Sin agrupar hay uno solo, sin cabecera (`null`). Agrupado, uno por etiqueta
+ * con tareas —en el orden del catálogo— y «Sin etiqueta» al final. Un carril
+ * vacío no se pinta: con una etiqueta por asignatura, las de asignaturas ya
+ * terminadas llenarían la pantalla de cajas vacías.
+ */
+const conteoCarril = (carril: string) =>
+  columns.reduce((n, c) => n + (statusCounts[claveConteo(c.id, carril)] ?? 0), 0);
+const carriles: Array<{ id: string | null; nombre?: string; color?: string; total?: number }> = agrupar
+  ? [
+      ...labels.filter((l) => conteoCarril(l.id) > 0).map((l) => ({ id: l.id, nombre: l.name, color: l.color, total: conteoCarril(l.id) })),
+      ...(conteoCarril('') > 0 ? [{ id: '', nombre: t('board.no_label'), total: conteoCarril('') }] : []),
+    ]
+  : [{ id: null }];
 
-// Helper para extraer iniciales
-function getInitials(username: string) {
-  if (!username) return 'UN';
-  return username.substring(0, 2).toUpperCase();
-}
+const enCarril = (carril: string | null, estado: string) =>
+  issues.filter((i) => i.status === estado && (carril === null || (i.carril ?? '') === carril));
+const totalDe = (carril: string | null, estado: string) =>
+  statusCounts[claveConteo(estado, carril)] ?? enCarril(carril, estado).length;
+
+// El conmutador de móvil cuenta por estado. Agrupado, una tarea con dos
+// etiquetas se cuenta dos veces: es lo que se ve en pantalla.
+const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.id, estado), 0);
 ---
 <div class="h-full flex flex-col relative">
   {/*
@@ -87,10 +91,6 @@ function getInitials(username: string) {
     cada una lleva su cuenta. En un teléfono no cabe ninguna de las dos cosas,
     así que la información se traslada aquí: qué estados hay, cuál se está
     mirando y cuánto hay en cada uno, en una fila.
-
-    Es `role="tablist"` y no un `<select>` porque las cuatro opciones son fijas
-    y caben: un desplegable escondería tras un toque lo que aquí se lee sin
-    tocar nada, que es justamente la cuenta.
   */}
   <div class="sm:hidden shrink-0 mb-3 grid grid-cols-4 gap-1 p-1 bg-forge-panel border border-forge-border rounded-xl" role="tablist" aria-label={t('board.status_filter')}>
     {columns.map((col) => (
@@ -104,66 +104,81 @@ function getInitials(username: string) {
         data-estado={col.id}
         aria-selected={col.id === ESTADO_INICIAL ? 'true' : 'false'}
       >
-        {/* La etiqueta corta, no la de la columna. En cuatro huecos de 78 px
-            «en progreso» y «en revisión» se recortaban a «en progr…»; la
-            cabecera de la columna sigue con el nombre entero, que es donde hay
-            sitio para él. */}
         <span class="truncate">{col.corto}</span>
-        <span class="font-mono opacity-70 shrink-0">{totalDe(col.id)}</span>
+        <span class="font-mono shrink-0">{totalEstado(col.id)}</span>
       </button>
     ))}
   </div>
 
-  <div class="flex gap-4 h-full overflow-x-auto pb-4 kanban-container" data-workspace={workspaceId} data-can-edit={sePuedeArrastrar.toString()} data-sort-mode={sortMode} data-t-no-drag={t('board.sort_no_drag')}>
-    {columns.map(col => (
-      <BoardColumn
-        title={col.title}
-        status={col.id}
-        total={totalDe(col.id)}
-        shown={porEstado.get(col.id)!.length}
-        activaEnMovil={col.id === ESTADO_INICIAL}
-      >
-        {porEstado.get(col.id)!.map(issue => (
-          <IssueCard issue={{
-            id: issue.id,
-            title: issue.title,
-            description: issue.description,
-            type: issue.type,
-            story_points: issue.story_points || 0,
-            assignee_avatar: issue.assignee_avatar,
-            assignee_username: issue.assignee_username,
-            reporter_username: issue.reporter_username,
-            assignee_id: issue.assignee_id,
-            reporter_id: issue.reporter_id,
-            position: issue.position || 0,
-            sprint_id: issue.sprint_id || 'backlog',
-            active_session_start: issue.active_session_start,
-            due_date: issue.due_date,
-            status: issue.status,
-            logged_hours: issue.logged_hours,
-            labels: issue.labels || []
-          }} canEdit={canEdit} arrastrable={sePuedeArrastrar} tipo={tiposPorClave.get(issue.type) ?? null} />
-        ))}
-      </BoardColumn>
-    ))}
+  <div
+    class:list={['kanban-container h-full pb-4', agrupar ? 'flex flex-col gap-4 overflow-y-auto' : 'flex gap-4 overflow-x-auto']}
+    data-workspace={workspaceId}
+    data-sys-tag={sysTag}
+    data-can-edit={canEdit.toString()}
+    data-tiempo={funciones.tiempo ? 'true' : 'false'}
+    data-agrupar={agrupar ? 'true' : 'false'}
+    data-label={filtroEtiqueta ?? ''}
+    data-sprint={funciones.sprints ? (currentSprintId ?? 'backlog') : ''}
+    data-t-timer-start={t('card.timer_start')}
+    data-t-timer-starting={t('card.timer_starting')}
+    data-t-timer-stopping={t('card.timer_stopping')}
+    data-t-timer-autostopped={t('card.timer_autostopped')}
+    data-t-completed={t('card.completed_toast')}
+    data-t-completed-timer={t('card.completed_timer_toast')}
+    data-t-complete-error={t('card.complete_error')}
+    data-t-undo={t('board.undo')}
+    data-t-lane-only={t('board.lane_drop_only')}
+  >
+    {carriles.map((carril) => {
+      const columnas = (
+        <div class:list={['flex gap-4', agrupar ? 'overflow-x-auto pb-1 carril-columnas' : 'h-full w-full']}>
+          {columns.map((col) => {
+            const tarjetas = enCarril(carril.id, col.id);
+            const total = totalDe(carril.id, col.id);
+            const ultima = tarjetas[tarjetas.length - 1];
+            return (
+              <BoardColumn
+                title={col.title}
+                status={col.id}
+                total={total}
+                shown={tarjetas.length}
+                carril={carril.id}
+                activaEnMovil={col.id === ESTADO_INICIAL}
+                verMas={col.id === 'done' && total > tarjetas.length && ultima ? { cursor: cursorDe(ultima) } : null}
+              >
+                {tarjetas.map((issue) => (
+                  <IssueCard issue={issue} canEdit={canEdit} tipo={tiposPorClave.get(issue.type) ?? null} funciones={funciones} carril={carril.id} />
+                ))}
+              </BoardColumn>
+            );
+          })}
+        </div>
+      );
+      return carril.id === null ? columnas : (
+        /* `<details>` y no un acordeón hecho a mano: se pliega con teclado y
+           lector de pantalla sin escribir nada, y abierto por defecto. */
+        <details open class="carril shrink-0 bg-forge-panel/30 border border-forge-border/40 rounded-xl p-3" data-carril={carril.id}>
+          <summary class="flex items-center gap-2 cursor-pointer select-none mb-3 font-semibold text-sm text-forge-text">
+            {carril.color ? <LabelChip name={carril.nombre!} color={carril.color} /> : <span class="text-forge-muted">{carril.nombre}</span>}
+            <span class="font-mono text-xs text-forge-muted">{carril.total}</span>
+          </summary>
+          {columnas}
+        </details>
+      );
+    })}
   </div>
-  
+
   {issues.length === 0 && (
     <div class="tablero-vacio absolute inset-0 z-10 flex flex-col items-center justify-center p-8 text-center bg-forge-bg/60 backdrop-blur-sm max-md:backdrop-blur-none rounded-xl border border-forge-border/30 m-4 shadow-xl">
       <div class="w-20 h-20 bg-forge-panel rounded-full border border-forge-border shadow-lg flex items-center justify-center mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 8h4"></path><path d="M13 12h2"></path></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 8h4"></path><path d="M13 12h2"></path></svg>
       </div>
       <h3 class="text-xl font-black text-forge-text mb-2">{t('about.kanban.empty_title')}</h3>
       <p class="text-forge-muted max-w-md mx-auto mb-8 text-sm">{t('about.kanban.empty_desc')}</p>
       {canEdit && (
         <>
-          {/* El atajo de teclado solo donde hay teclado.
-
-              «Presiona [C] para crear una nueva tarea» es la primera —y única—
-              indicación que ve quien abre un tablero vacío. En un teléfono
-              señala una tecla que no existe, y encima se partía en tres líneas
-              alrededor del recuadro de la C. Ahí se señala el botón, que sí
-              está a un dedo de distancia. */}
+          {/* El atajo de teclado solo donde hay teclado: en un teléfono
+              señala una tecla que no existe. */}
           <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-forge-panel border border-forge-border rounded-lg shadow-sm text-sm text-forge-muted font-medium">
             {t('about.kanban.empty_cta_1')} <kbd class="px-2 py-1 bg-forge-bg border border-forge-border shadow-sm rounded text-[10px] text-forge-text font-mono font-bold mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
           </div>
@@ -176,28 +191,51 @@ function getInitials(username: string) {
   )}
 </div>
 
-<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} labels={labels} issueTypes={issueTypes} sysTag={sysTag} />
+{/* Un solo menú de «mover a sprint» para todas las tarjetas: pintar uno por
+    tarjeta serían cien menús iguales en el HTML. */}
+{funciones.sprints && canEdit && (
+  <div id="menu-sprint-tarjeta" role="menu" aria-label={t('card.move_sprint')}
+    data-t-moved={t('card.moved_to')} data-t-error={t('card.move_sprint_error')} data-t-see={t('quick.see')}
+    class="hidden fixed z-[60] min-w-[12rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl py-1">
+    {[{ name: t('board.backlog'), id: 'backlog' }, ...sprints.filter((s: any) => s.status !== 'completed')].map((s: any) => (
+      <button type="button" role="menuitem" class="sprint-destino block w-full text-left px-3.5 py-2 text-sm text-forge-text hover:bg-forge-bg hover:text-forge-accent-text" data-sprint={s.id} data-nombre={s.name}>{s.name}</button>
+    ))}
+  </div>
+)}
+
+<IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} labels={labels} issueTypes={issueTypes} sysTag={sysTag} canManageTypes={userRole === 'owner'} funciones={funciones} />
 
 <script>
-  const columns = document.querySelectorAll('.board-column');
-  const cards = document.querySelectorAll('.issue-card');
-  const container = document.querySelector('.kanban-container');
+  /**
+   * El tablero, con los eventos **delegados** en el contenedor.
+   *
+   * Antes cada tarjeta recibía sus oyentes al cargar (`cards.forEach`). Las
+   * que llegan después —«ver más» en Hecho— no los tenían: se veían, pero no
+   * se abrían al pulsarlas ni se podían arrastrar. Con un oyente en el
+   * contenedor, cualquier tarjeta que esté dentro funciona, llegue cuando llegue.
+   */
+  const container = document.querySelector<HTMLElement>('.kanban-container');
+  const canEdit = container?.dataset.canEdit === 'true';
+  const workspaceId = container?.dataset.workspace;
+  const sysTag = container?.dataset.sysTag || window.location.pathname.split('/')[2];
+  const texto = (clave: string) => container?.getAttribute(`data-t-${clave}`) || '';
+
+  const tarjetaDe = (el: EventTarget | null) => (el as HTMLElement | null)?.closest?.<HTMLElement>('.issue-card') ?? null;
+  const columnaDe = (el: Element | null) => el?.closest<HTMLElement>('.board-column') ?? null;
+  const columnas = () => Array.from(document.querySelectorAll<HTMLElement>('.board-column'));
 
   /**
    * El conmutador de estado, en móvil.
    *
-   * Enseña una columna y esconde las otras tres con `max-sm:hidden`, la misma
-   * clase con la que el servidor pinta el estado inicial. Así lo que hace el
-   * JavaScript es exactamente lo que ya venía en el HTML, y no hay un momento
-   * —entre la carga y el primer clic— en el que el tablero se comporte de otra
-   * forma.
+   * Enseña una columna —en todos los carriles— y esconde las otras con
+   * `max-sm:hidden`, la misma clase con la que el servidor pinta el estado
+   * inicial: lo que hace el JavaScript es exactamente lo que ya venía en el HTML.
    */
-  const filtros = Array.from(document.querySelectorAll('.filtro-estado')) as HTMLButtonElement[];
+  const filtros = Array.from(document.querySelectorAll<HTMLButtonElement>('.filtro-estado'));
   filtros.forEach((boton) => {
     boton.addEventListener('click', () => {
       const estado = boton.dataset.estado;
       if (!estado) return;
-
       filtros.forEach((otro) => {
         const activo = otro === boton;
         otro.classList.toggle('bg-forge-primary', activo);
@@ -205,429 +243,483 @@ function getInitials(username: string) {
         otro.classList.toggle('text-forge-muted', !activo);
         otro.setAttribute('aria-selected', String(activo));
       });
-
-      columns.forEach((columna) => {
-        const suyo = (columna as HTMLElement).dataset.status === estado;
-        columna.classList.toggle('max-sm:hidden', !suyo);
-      });
+      columnas().forEach((columna) => columna.classList.toggle('max-sm:hidden', columna.dataset.status !== estado));
     });
   });
 
   /**
-   * Mover un ticket desde el desplegable de su tarjeta.
+   * Los contadores de columna.
    *
-   * Es la única forma de moverlo en un teléfono: el arrastre del tablero es
-   * HTML5 y no dispara en táctil.
-   *
-   * La posición que se manda es la del final de la columna destino. Colocarlo
-   * en un punto exacto es lo que hace el arrastre, y en móvil no hay forma de
-   * expresar «entre estas dos»; llegar al final es lo que espera quien mueve
-   * algo a «En progreso».
+   * El tablero no pinta todas las tarjetas, así que recontar el DOM escribiría
+   * «10» sobre una columna de 214. Se parte del total del servidor y se le suma
+   * la diferencia entre lo que hay ahora y lo que había al cargar.
    */
-  document.addEventListener('change', async (e) => {
-    const select = (e.target as HTMLElement)?.closest?.('.mover-issue') as HTMLSelectElement | null;
-    if (!select) return;
-
-    const issueId = select.dataset.issueId;
-    const nuevo = select.value;
-    if (!issueId || !nuevo) return;
-
-    const destino = document.querySelector(`.board-column[data-status="${nuevo}"]`);
-    const ultimas = destino?.querySelectorAll('.issue-card');
-    const ultima = ultimas?.[ultimas.length - 1] as HTMLElement | undefined;
-    const posicion = ultima ? Number(ultima.dataset.position || 0) + 100000 : 100000;
-
-    select.disabled = true;
-    try {
-      const res = await fetch(`/api/issues/${issueId}/move`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nuevo, position: posicion }),
-      });
-      if (!res.ok) {
-        console.error('mover issue:', await res.text());
-        (window as any).showToast?.(window.forgeMsg?.errGenerico || '', true);
-        select.disabled = false;
-        return;
-      }
-      // Recargar y no mover la tarjeta a mano: las cuentas de cada columna, el
-      // total del sprint y la barra de tiempo cambian con ella, y actualizar
-      // cuatro sitios por separado es como se quedan desfasados.
-      window.location.reload();
-    } catch (err) {
-      console.error('mover issue:', err);
-      (window as any).showToast?.(window.forgeMsg?.errGenerico || '', true);
-      select.disabled = false;
-    }
-  });
-  const workspaceId = container?.getAttribute('data-workspace');
-  const canEdit = container?.getAttribute('data-can-edit') === 'true';
-
-  // Inicializar conteos
-  //
-  // El contador cuenta las tarjetas del DOM, pero el tablero solo pinta las
-  // primeras 100 de cada columna. Recontar a secas escribía «100» sobre una
-  // columna de 1.995 y contradecía al aviso de justo debajo.
-  //
-  // Se parte del total que ha calculado el servidor y se le suma la diferencia
-  // entre lo que hay ahora y lo que había al cargar: así arrastrar una tarjeta
-  // mueve los dos contadores en uno, como debe, sin fingir que se conoce lo que
-  // no se ha traído.
   const updateCounts = () => {
-    columns.forEach(col => {
+    columnas().forEach((col) => {
       const shownNow = col.querySelectorAll('.issue-card').length;
-      const total = Number(col.getAttribute('data-total') ?? shownNow);
-      const shownAtLoad = Number(col.getAttribute('data-shown') ?? shownNow);
-      const count = total - shownAtLoad + shownNow;
-      const countBadge = col.querySelector('.issue-count');
-      if (countBadge) countBadge.textContent = count.toString();
+      const total = Number(col.dataset.total ?? shownNow);
+      const shownAtLoad = Number(col.dataset.shown ?? shownNow);
+      const badge = col.querySelector('.issue-count');
+      if (badge) badge.textContent = String(total - shownAtLoad + shownNow);
     });
   };
   updateCounts();
 
-  cards.forEach(card => {
-    if (canEdit) {
-      card.addEventListener('dragstart', (e: any) => {
-        /**
-         * Con un orden activo, arrastrar no puede funcionar: la posición que se
-         * guardaría es la que la vista no mira, así que la tarjeta volvería
-         * sola a su sitio y parecería que la aplicación está rota.
-         *
-         * Se corta el arrastre y se pregunta, en vez de dejar una banda de
-         * aviso permanente ocupando sitio para algo que solo importa en este
-         * instante.
-         */
-        if (container?.getAttribute('data-sort-mode') !== 'manual') {
-          e.preventDefault();
-          const volver = () => {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('sort');
-            window.location.href = url.toString();
-          };
-          (window as any).forgeConfirm?.(container?.getAttribute('data-t-no-drag') || '', volver);
-          return;
-        }
-
-        e.dataTransfer.setData('text/plain', card.id);
-        card.classList.add('opacity-50');
-        e.dataTransfer.effectAllowed = 'move';
-        
-        // Store current status in card BEFORE it is moved by dragover appendChild
-        card.setAttribute('data-status-val', card.closest('.board-column')?.getAttribute('data-status') || '');
-      });
-
-      card.addEventListener('dragend', () => {
-        card.classList.remove('opacity-50');
-        columns.forEach(c => {
-          const content = c.querySelector('.column-content');
-          if (content) content.classList.remove('bg-forge-secondary/10');
-        });
-      });
-    }
-    
-    // Modal logic
-    card.addEventListener('click', (e) => {
-      /**
-       * Pulsar el desplegable de mover no abre el ticket.
-       *
-       * La tarjeta entera abre el modal, así que tocar el `<select>` que hay
-       * dentro lo abría encima y el desplegable no llegaba a desplegarse: en
-       * móvil, mover un ticket era imposible **incluso con el control puesto**.
-       */
-      if ((e.target as HTMLElement)?.closest?.('.mover-issue')) return;
-
-      try {
-        const modal = document.getElementById('issue-details-modal');
-        const titleEl = document.getElementById('modal-issue-title');
-        const idEl = document.getElementById('modal-issue-id');
-        const descEl = document.getElementById('modal-issue-desc') as HTMLTextAreaElement;
-        const pointsEl = document.getElementById('modal-issue-points') as HTMLInputElement;
-        
-        if (!modal || !titleEl || !idEl || !descEl || !pointsEl) {
-          if (window.showToast) window.showToast('Missing modal elements', true);
-          return;
-        }
-
-        if (modal && titleEl && idEl && descEl && pointsEl) {
-          idEl.textContent = card.id.substring(0, 8).toUpperCase();
-          idEl.setAttribute('data-full-id', card.id);
-          (titleEl as HTMLInputElement).value = card.querySelector('h4')?.textContent || '';
-          descEl.value = card.getAttribute('data-description') || '';
-          pointsEl.value = card.getAttribute('data-points') || '0';
-          
-          const sprintEl = document.getElementById('modal-issue-sprint') as HTMLSelectElement;
-          if (sprintEl) {
-            sprintEl.value = card.getAttribute('data-sprint-id') || 'backlog';
-          }
-
-          // Las etiquetas las pinta el propio modal: toda su lógica vive allí
-          // y aquí solo se le dice de qué ticket se trata.
-          (window as any).forgeLabelsOpen?.(card.id);
-          (window as any).forgeDriveFilesOpen?.(card.id);
-
-          // La clave viaja en un `data-*` de la insignia.
-          //
-          // Antes se sacaba de su **texto** en minúsculas y se comparaba con
-          // 'task', 'bug' y 'story'. Eso ya fallaba con la interfaz en español
-          // —«Tarea» no es 'task'— y con tipos propios falla siempre: el
-          // desplegable del modal se quedaba en la primera opción y guardar
-          // cualquier otro cambio le cambiaba el tipo al ticket sin tocarlo.
-          const typeBadge = card.querySelector('.issue-type-badge');
-          const typeEl = document.getElementById('modal-issue-type') as HTMLSelectElement;
-          const clave = typeBadge?.getAttribute('data-type-key');
-          if (typeEl && clave) {
-            const existe = Array.from(typeEl.options).some((o) => o.value === clave);
-            // Un tipo borrado ya no está en la lista. Se añade como opción
-            // suelta para no cambiárselo por accidente al guardar otra cosa.
-            if (!existe) {
-              const suelta = document.createElement('option');
-              suelta.value = clave;
-              suelta.textContent = clave;
-              typeEl.appendChild(suelta);
-            }
-            typeEl.value = clave;
-          }
-          
-          // Update Assignee and Reporter
-          const assigneeId = card.getAttribute('data-assignee-id');
-          const reporterId = card.getAttribute('data-reporter-id');
-          
-          const assigneeSelect = document.getElementById('modal-issue-assignee') as HTMLSelectElement;
-          const reporterSelect = document.getElementById('modal-issue-reporter') as HTMLSelectElement;
-          
-          if (assigneeSelect) assigneeSelect.value = assigneeId || '';
-          if (reporterSelect) reporterSelect.value = reporterId || 'system';
-          
-          // @ts-ignore
-          if (window.loadIssueAttachments) window.loadIssueAttachments(card.id);
-          // @ts-ignore
-          if (window.loadWorkLogs) window.loadWorkLogs(card.id);
-          // @ts-ignore
-          if (window.refreshTimeTrackingUI) window.refreshTimeTrackingUI(card.id);
-
-          modal.classList.remove('translate-x-full');
-          document.getElementById('issue-details-backdrop')?.classList.remove('hidden');
-        }
-      } catch (err: any) {
-        if (window.showToast) window.showToast('Error opening modal: ' + err.message, true);
-      }
+  async function mover(issueId: string, status: string, position: number) {
+    const res = await fetch(`/api/issues/${issueId}/move`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, position, workspaceId }),
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  }
+
+  /**
+   * Mover una tarea desde el desplegable de su tarjeta (móvil).
+   *
+   * La posición es la del final de la columna destino: colocarla en un punto
+   * exacto es lo que hace el arrastre, y en móvil no hay forma de expresar
+   * «entre estas dos».
+   */
+  document.addEventListener('change', async (e) => {
+    const select = (e.target as HTMLElement)?.closest?.<HTMLSelectElement>('.mover-issue');
+    if (!select) return;
+    const issueId = select.dataset.issueId;
+    const nuevo = select.value;
+    if (!issueId || !nuevo) return;
+
+    const carril = columnaDe(select)?.dataset.carril;
+    const destino = columnas().find((c) => c.dataset.status === nuevo && c.dataset.carril === carril);
+    const ultimas = destino?.querySelectorAll<HTMLElement>('.issue-card');
+    const ultima = ultimas?.[ultimas.length - 1];
+    const posicion = ultima ? Number(ultima.dataset.position || 0) + 100000 : 100000;
+
+    select.disabled = true;
+    try {
+      await mover(issueId, nuevo, posicion);
+      // Recargar: las cuentas, el total y la barra de tiempo cambian con ella.
+      window.location.reload();
+    } catch (err) {
+      console.error('mover issue:', err);
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      select.disabled = false;
+    }
   });
 
-  // Helper to determine insert position
-  function getDragAfterElement(container: Element, y: number) {
-    const draggableElements = [...container.querySelectorAll('.issue-card:not(.opacity-50)')];
-    
-    return draggableElements.reduce((closest, child) => {
+  /**
+   * Completar con un clic.
+   *
+   * La tarjeta salta arriba de Hecho sin recargar —completar tiene que sentirse
+   * instantáneo— y el aviso ofrece deshacer, que la devuelve a su columna y su
+   * posición. Si tenía el cronómetro en marcha, completar lo para y registra las
+   * horas (lo hace `move`); deshacer **no** las borra, porque es trabajo hecho,
+   * y el aviso lo dice.
+   */
+  async function completar(card: HTMLElement) {
+    const issueId = card.dataset.issueId!;
+    const estadoAntes = columnaDe(card)?.dataset.status || card.dataset.status || 'todo';
+    const posicionAntes = Number(card.dataset.position || 0);
+    const habiaCronometro = !!card.querySelector('.active-timer-display');
+
+    try {
+      await mover(issueId, 'done', posicionAntes);
+    } catch (err) {
+      console.error('completar:', err);
+      window.showToast?.(texto('complete-error'), true);
+      return;
+    }
+
+    // Todas las copias de la tarjeta: con carriles puede haber más de una.
+    document.querySelectorAll<HTMLElement>(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`).forEach((copia) => {
+      copia.dataset.status = 'done';
+      copia.querySelector('.btn-completar')?.remove();
+      copia.querySelector('.card-timer')?.remove();
+      const sel = copia.querySelector<HTMLSelectElement>('.mover-issue');
+      if (sel) sel.value = 'done';
+      const carril = columnaDe(copia)?.dataset.carril;
+      const hecho = columnas().find((c) => c.dataset.status === 'done' && c.dataset.carril === carril);
+      const contenido = hecho?.querySelector('.column-content');
+      if (contenido) {
+        const primera = contenido.querySelector('.issue-card');
+        if (primera) contenido.insertBefore(copia, primera);
+        else contenido.appendChild(copia);
+      } else {
+        copia.remove();
+      }
+    });
+    updateCounts();
+
+    window.showToast?.(habiaCronometro ? texto('completed-timer') : texto('completed'), false, {
+      accion: texto('undo'),
+      alPulsar: async () => {
+        try {
+          await mover(issueId, estadoAntes, posicionAntes);
+          window.location.reload();
+        } catch (err) {
+          console.error('deshacer completar:', err);
+          window.showToast?.(texto('complete-error'), true);
+        }
+      },
+    });
+  }
+
+  /**
+   * «Ver más» en Hecho: las siguientes, desde un parcial que pinta las mismas
+   * tarjetas que el servidor. Con los eventos delegados, funcionan sin más.
+   */
+  async function verMas(boton: HTMLButtonElement) {
+    const columna = columnaDe(boton);
+    if (!columna) return;
+    const params = new URLSearchParams({ despues: boton.dataset.cursor || '' });
+    if (container?.dataset.label) params.set('label', container.dataset.label);
+    if (container?.dataset.sprint) params.set('sprint', container.dataset.sprint);
+    if (container?.dataset.agrupar === 'true') {
+      params.set('group', 'label');
+      params.set('carril', columna.dataset.carril ?? '');
+    }
+    const textoAntes = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = boton.dataset.tCargando || '';
+    try {
+      const res = await fetch(`/w/${sysTag}/board/hechas?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const plantilla = document.createElement('template');
+      plantilla.innerHTML = await res.text();
+      const meta = plantilla.content.querySelector<HTMLElement>('[data-hechas-meta]');
+      const nuevas = Array.from(plantilla.content.querySelectorAll<HTMLElement>('.issue-card'));
+      nuevas.forEach((nueva) => boton.before(nueva));
+      // Las que llegan cuentan como pintadas: el contador sigue diciendo el total.
+      columna.dataset.shown = String(Number(columna.dataset.shown || 0) + nuevas.length);
+      updateCounts();
+      const total = Number(columna.dataset.total || 0);
+      const pintadas = columna.querySelectorAll('.issue-card').length;
+      if (meta?.dataset.hayMas === 'true' && meta.dataset.cursor) {
+        boton.dataset.cursor = meta.dataset.cursor;
+        boton.textContent = (boton.dataset.tPlantilla || '').replace('{n}', String(Math.max(0, total - pintadas)));
+        boton.disabled = false;
+      } else {
+        boton.remove();
+      }
+    } catch (err) {
+      console.error('ver más:', err);
+      boton.textContent = textoAntes;
+      boton.disabled = false;
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+    }
+  }
+
+  /** Abrir el panel de una tarea con lo que lleva su tarjeta. */
+  function abrirTarea(card: HTMLElement) {
+    const issueId = card.dataset.issueId!;
+    const modal = document.getElementById('issue-details-modal');
+    const titleEl = document.getElementById('modal-issue-title') as HTMLInputElement | null;
+    const idEl = document.getElementById('modal-issue-id');
+    const descEl = document.getElementById('modal-issue-desc') as HTMLTextAreaElement | null;
+    if (!modal || !titleEl || !idEl || !descEl) {
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      return;
+    }
+
+    idEl.textContent = issueId.substring(0, 8).toUpperCase();
+    idEl.setAttribute('data-full-id', issueId);
+    titleEl.value = card.querySelector('h4')?.textContent || '';
+    descEl.value = card.dataset.description || '';
+
+    const pointsEl = document.getElementById('modal-issue-points') as HTMLInputElement | null;
+    if (pointsEl) pointsEl.value = card.dataset.points || '0';
+    const sprintEl = document.getElementById('modal-issue-sprint') as HTMLSelectElement | null;
+    if (sprintEl) sprintEl.value = card.dataset.sprintId || 'backlog';
+    const prioridadEl = document.getElementById('modal-issue-priority') as HTMLSelectElement | null;
+    if (prioridadEl) {
+      // `lowest` no está entre las cuatro opciones: se enseña como baja.
+      prioridadEl.value = card.dataset.priority === 'lowest' ? 'low' : (card.dataset.priority || 'medium');
+      prioridadEl.dispatchEvent(new Event('prioridad-sincronizar'));
+    }
+    const horaEl = document.getElementById('modal-issue-due-time') as HTMLInputElement | null;
+    if (horaEl) horaEl.value = card.dataset.dueTime || '';
+
+    // Las etiquetas, los archivos y los apuntes los pinta el propio modal.
+    const w = window as any;
+    w.forgeLabelsOpen?.(issueId);
+    w.forgeDriveFilesOpen?.(issueId);
+    w.forgeApuntesOpen?.(issueId);
+
+    // La clave viaja en un `data-*` de la insignia: sacarla de su texto fallaba
+    // con la interfaz en español y con tipos propios.
+    const clave = card.querySelector('.issue-type-badge')?.getAttribute('data-type-key');
+    const typeEl = document.getElementById('modal-issue-type') as HTMLSelectElement | null;
+    if (typeEl && clave) {
+      // Un tipo borrado ya no está en la lista. Se añade como opción suelta
+      // para no cambiárselo por accidente al guardar otra cosa.
+      if (!Array.from(typeEl.options).some((o) => o.value === clave)) {
+        const suelta = document.createElement('option');
+        suelta.value = clave;
+        suelta.textContent = clave;
+        typeEl.appendChild(suelta);
+      }
+      typeEl.value = clave;
+      typeEl.dispatchEvent(new Event('tipo-sincronizar'));
+    }
+
+    const assigneeSelect = document.getElementById('modal-issue-assignee') as HTMLSelectElement | null;
+    const reporterSelect = document.getElementById('modal-issue-reporter') as HTMLSelectElement | null;
+    if (assigneeSelect) assigneeSelect.value = card.dataset.assigneeId || '';
+    if (reporterSelect) reporterSelect.value = card.dataset.reporterId || 'system';
+
+    w.loadIssueAttachments?.(issueId);
+    // `refreshTimeTrackingUI` además rellena la fecha de entrega: se llama
+    // siempre. Los registros de horas, solo si el espacio mide el tiempo.
+    if (container?.dataset.tiempo === 'true') w.loadWorkLogs?.(issueId);
+    w.refreshTimeTrackingUI?.(issueId);
+
+    modal.classList.remove('translate-x-full');
+    document.getElementById('issue-details-backdrop')?.classList.remove('hidden');
+  }
+
+  container?.addEventListener('click', (e) => {
+    const objetivo = e.target as HTMLElement;
+    const boton = objetivo.closest<HTMLButtonElement>('.ver-mas');
+    if (boton) { verMas(boton); return; }
+
+    const card = tarjetaDe(objetivo);
+    if (!card) return;
+    if (objetivo.closest('.btn-completar')) { completar(card); return; }
+    // El desplegable de mover y los botones del cronómetro tienen su propio
+    // trabajo: pulsarlos no abre la tarea (en móvil, el desplegable no llegaba
+    // a desplegarse porque el panel se abría encima).
+    if (objetivo.closest('.btn-mover-sprint')) { abrirMenuSprint(card, objetivo.closest<HTMLElement>('.btn-mover-sprint')!); return; }
+    if (objetivo.closest('.mover-issue, .btn-start-timer, .btn-stop-timer')) return;
+    try { abrirTarea(card); }
+    catch (err) {
+      console.error('abrir tarea:', err);
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+    }
+  });
+
+  // ── Mover a otro sprint ────────────────────────────────────────────────────
+  const menuSprint = document.getElementById('menu-sprint-tarjeta');
+  let tarjetaMenu: HTMLElement | null = null;
+  let botonMenu: HTMLElement | null = null;
+  const cerrarMenuSprint = (devolverFoco = false) => {
+    menuSprint?.classList.add('hidden');
+    botonMenu?.setAttribute('aria-expanded', 'false');
+    if (devolverFoco) botonMenu?.focus();
+    tarjetaMenu = null;
+  };
+  function abrirMenuSprint(card: HTMLElement, boton: HTMLElement) {
+    if (!menuSprint) return;
+    tarjetaMenu = card;
+    botonMenu = boton;
+    const actual = card.dataset.sprintId || 'backlog';
+    menuSprint.querySelectorAll<HTMLElement>('.sprint-destino').forEach((b) => b.classList.toggle('hidden', b.dataset.sprint === actual));
+    const caja = boton.getBoundingClientRect();
+    menuSprint.classList.remove('hidden');
+    const ancho = menuSprint.offsetWidth;
+    menuSprint.style.top = `${Math.min(caja.bottom + 4, window.innerHeight - menuSprint.offsetHeight - 8)}px`;
+    menuSprint.style.left = `${Math.max(8, Math.min(caja.right - ancho, window.innerWidth - ancho - 8))}px`;
+    boton.setAttribute('aria-expanded', 'true');
+    menuSprint.querySelector<HTMLElement>('.sprint-destino:not(.hidden)')?.focus();
+  }
+  menuSprint?.addEventListener('click', async (e) => {
+    const destino = (e.target as HTMLElement).closest<HTMLElement>('.sprint-destino');
+    const card = tarjetaMenu;
+    if (!destino || !card) return;
+    cerrarMenuSprint();
+    const sprint = destino.dataset.sprint!;
+    const issueId = card.dataset.issueId!;
+    try {
+      const res = await fetch(`/api/issues/${issueId}/move`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sprint_id: sprint === 'backlog' ? null : sprint,
+          status: columnaDe(card)?.dataset.status || card.dataset.status || 'todo',
+          position: Number(card.dataset.position || 0),
+          workspaceId,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Sale de la vista —el tablero enseña un sprint—, con aviso y enlace.
+      document.querySelectorAll(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`).forEach((c) => c.remove());
+      updateCounts();
+      const m = menuSprint.dataset;
+      window.showToast?.((m.tMoved || '').replace('{destino}', destino.dataset.nombre || ''), false, {
+        accion: m.tSee || '',
+        alPulsar: () => { window.location.href = `${window.location.pathname}?sprint=${encodeURIComponent(sprint)}&issue=${encodeURIComponent(issueId)}`; },
+      });
+    } catch (err) {
+      console.error('mover de sprint:', err);
+      window.showToast?.(menuSprint.dataset.tError || '', true);
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!menuSprint || menuSprint.classList.contains('hidden')) return;
+    if (!menuSprint.contains(e.target as Node) && !(e.target as HTMLElement).closest('.btn-mover-sprint')) cerrarMenuSprint();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!menuSprint || menuSprint.classList.contains('hidden')) return;
+    if (e.key === 'Escape') { e.preventDefault(); cerrarMenuSprint(true); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const items = Array.from(menuSprint.querySelectorAll<HTMLElement>('.sprint-destino:not(.hidden)'));
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+    }
+  });
+
+  // ── Arrastrar ──────────────────────────────────────────────────────────────
+  let arrastrada: HTMLElement | null = null;
+
+  function getDragAfterElement(content: Element, y: number) {
+    const candidatas = [...content.querySelectorAll<HTMLElement>('.issue-card:not(.opacity-50)')];
+    return candidatas.reduce((closest, child) => {
       const box = child.getBoundingClientRect();
       const offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child };
-      } else {
-        return closest;
-      }
+      return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
     }, { offset: Number.NEGATIVE_INFINITY, element: null as Element | null }).element;
   }
 
-  if (canEdit) {
-    columns.forEach(column => {
-    const content = column.querySelector('.column-content');
-    column.addEventListener('dragover', (e: any) => {
+  /**
+   * Con carriles, solo se suelta en el propio carril.
+   *
+   * Soltar en el carril de otra etiqueta podría querer decir «cámbiale la
+   * etiqueta», pero también puede ser un arrastre que se pasó de largo; cambiar
+   * etiquetas por accidente no se ve hasta mucho después. Se cambia editándola.
+   */
+  const mismoCarril = (col: HTMLElement) => !arrastrada || arrastrada.dataset.origenCarril === (col.dataset.carril ?? '');
+
+  if (canEdit && container) {
+    container.addEventListener('dragstart', (e: DragEvent) => {
+      const card = tarjetaDe(e.target);
+      if (!card || !e.dataTransfer) return;
+      arrastrada = card;
+      card.dataset.origenCarril = columnaDe(card)?.dataset.carril ?? '';
+      card.dataset.statusVal = columnaDe(card)?.dataset.status || '';
+      e.dataTransfer.setData('text/plain', card.id);
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('opacity-50');
+    });
+
+    container.addEventListener('dragend', () => {
+      arrastrada?.classList.remove('opacity-50');
+      arrastrada = null;
+      columnas().forEach((c) => c.querySelector('.column-content')?.classList.remove('bg-forge-secondary/10'));
+    });
+
+    container.addEventListener('dragover', (e: DragEvent) => {
+      const col = columnaDe(e.target as Element);
+      if (!col || !arrastrada || !mismoCarril(col)) return;
       e.preventDefault();
-      if (content) {
-        content.classList.add('bg-forge-secondary/10');
-        const afterElement = getDragAfterElement(content, e.clientY);
-        const draggable = document.querySelector('.opacity-50');
-        if (draggable) {
-          if (afterElement == null) {
-            content.appendChild(draggable);
-          } else {
-            content.insertBefore(draggable, afterElement);
-          }
-        }
-      }
+      const content = col.querySelector('.column-content');
+      if (!content) return;
+      content.classList.add('bg-forge-secondary/10');
+      const despues = getDragAfterElement(content, e.clientY);
+      // Por encima del «ver más», nunca debajo.
+      const pie = content.querySelector(':scope > .ver-mas, :scope > p');
+      if (despues) content.insertBefore(arrastrada, despues);
+      else if (pie) content.insertBefore(arrastrada, pie);
+      else content.appendChild(arrastrada);
     });
 
-    column.addEventListener('dragleave', () => {
-      if (content) content.classList.remove('bg-forge-secondary/10');
+    container.addEventListener('dragleave', (e: DragEvent) => {
+      columnaDe(e.target as Element)?.querySelector('.column-content')?.classList.remove('bg-forge-secondary/10');
     });
 
-    column.addEventListener('drop', async (e: any) => {
+    container.addEventListener('drop', async (e: DragEvent) => {
+      const col = columnaDe(e.target as Element);
+      const card = arrastrada;
+      if (!col || !card) return;
       e.preventDefault();
-      if (content) content.classList.remove('bg-forge-secondary/10');
-      
-      const issueId = e.dataTransfer.getData('text/plain');
-      const card = document.getElementById(issueId);
-      const newStatus = column.getAttribute('data-status');
+      if (!mismoCarril(col)) {
+        window.showToast?.(texto('lane-only'), true);
+        return;
+      }
+      const content = col.querySelector('.column-content');
+      const newStatus = col.dataset.status;
+      if (!content || !newStatus) return;
+      content.classList.remove('bg-forge-secondary/10');
+      updateCounts();
 
-      if (card && content && newStatus) {
-        updateCounts();
-        
-        // Calculate new position based on siblings
-        const siblings = [...content.querySelectorAll('.issue-card')];
-        const cardIndex = siblings.indexOf(card);
-        
-        let newPosition = 0;
-        if (siblings.length === 1) {
-          newPosition = 100000;
-        } else if (cardIndex === 0) {
-          const nextPos = parseFloat(siblings[1].getAttribute('data-position') || '100000');
-          newPosition = nextPos / 2;
-        } else if (cardIndex === siblings.length - 1) {
-          const prevPos = parseFloat(siblings[cardIndex - 1].getAttribute('data-position') || '0');
-          newPosition = prevPos + 100000;
-        } else {
-          const prevPos = parseFloat(siblings[cardIndex - 1].getAttribute('data-position') || '0');
-          const nextPos = parseFloat(siblings[cardIndex + 1].getAttribute('data-position') || '0');
-          newPosition = (prevPos + nextPos) / 2;
-        }
-        
-        card.setAttribute('data-position', newPosition.toString());
+      const siblings = [...content.querySelectorAll<HTMLElement>('.issue-card')];
+      const i = siblings.indexOf(card);
+      const pos = (el?: HTMLElement) => parseFloat(el?.dataset.position || '0');
+      let newPosition: number;
+      if (siblings.length === 1) newPosition = 100000;
+      else if (i === 0) newPosition = (pos(siblings[1]) || 100000) / 2;
+      else if (i === siblings.length - 1) newPosition = pos(siblings[i - 1]) + 100000;
+      else newPosition = (pos(siblings[i - 1]) + pos(siblings[i + 1])) / 2;
+      card.dataset.position = String(newPosition);
 
-        try {
-          const response = await fetch(`/api/issues/${issueId}/move`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              status: newStatus,
-              position: newPosition,
-              workspaceId 
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to update status and position');
-          }
-          
-          // If we move to review or done, the backend auto-stops the timer.
-          // Or if we move from done to another column, we need the server to render the Start button.
-          // To ensure UI consistency without complex DOM manipulation, reload if changing columns.
-          const oldStatus = card.getAttribute('data-status-val');
-          if (oldStatus !== newStatus) {
-             window.location.reload();
-          }
-        } catch (error) {
-          console.error('[SYS.NET] Update failed', error);
-          // Omitimos rollback visual para no complicar el script en el entorno actual
-        }
+      try {
+        await mover(card.dataset.issueId!, newStatus, newPosition);
+        // Cambiar de columna recarga: entrar o salir de Hecho para el
+        // cronómetro y cambia los botones que pinta el servidor.
+        if (card.dataset.statusVal !== newStatus) window.location.reload();
+      } catch (error) {
+        console.error('[SYS.NET] Update failed', error);
+        window.showToast?.(window.forgeMsg?.errGenerico || '', true);
       }
     });
-  });
-  } // end if canEdit
+  }
 
-  // Check URL for issue parameter to auto-open
-  window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const issueId = urlParams.get('issue');
-    if (issueId) {
-      const card = document.getElementById(issueId);
-      if (card) {
-        // Find the specific card and simulate a click on its outer div
-        (card as HTMLElement).click();
-        
-        // Remove from URL so reloads don't reopen it
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('issue');
-        window.history.replaceState({}, '', newUrl.toString());
-      }
-    }
-  });
+  // ?issue=<id> abre esa tarea al cargar (enlaces desde «Mis tareas»).
+  (() => {
+    const issueId = new URLSearchParams(window.location.search).get('issue');
+    if (!issueId) return;
+    const card = document.querySelector<HTMLElement>(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`);
+    if (!card) return;
+    abrirTarea(card);
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('issue');
+    window.history.replaceState({}, '', newUrl.toString());
+  })();
 
-  // Live Timer Update
+  // ── Cronómetro ─────────────────────────────────────────────────────────────
   const updateTimers = () => {
-    document.querySelectorAll('.active-timer-display').forEach(display => {
-      const startStr = display.getAttribute('data-start-time');
+    document.querySelectorAll<HTMLElement>('.active-timer-display').forEach((display) => {
+      const startStr = display.dataset.startTime;
       if (!startStr) return;
-      
-      let dateStr = startStr;
-      if (!dateStr.endsWith('Z')) dateStr += 'Z';
-      
-      const started = new Date(dateStr).getTime();
-      const now = Date.now();
-      const sessionElapsed = Math.floor((now - started) / 1000);
-      
+      const started = new Date(startStr.endsWith('Z') ? startStr : `${startStr.replace(' ', 'T')}Z`).getTime();
+      const sessionElapsed = Math.floor((Date.now() - started) / 1000);
       if (sessionElapsed < 0) return;
-      
-      const loggedHours = parseFloat(display.getAttribute('data-logged-hours') || '0');
-      const totalElapsedSeconds = sessionElapsed + Math.floor(loggedHours * 3600);
-      
-      const h = Math.floor(totalElapsedSeconds / 3600);
-      const m = Math.floor((totalElapsedSeconds % 3600) / 60);
-      const s = totalElapsedSeconds % 60;
-      
+      const total = sessionElapsed + Math.floor(parseFloat(display.dataset.loggedHours || '0') * 3600);
+      const h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), s = total % 60;
       const textEl = display.querySelector('.timer-text');
-      if (textEl) {
-        textEl.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-      }
+      if (textEl) textEl.textContent = [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
     });
   };
-  setInterval(updateTimers, 1000);
-  updateTimers();
+  if (document.querySelector('.active-timer-display')) {
+    setInterval(updateTimers, 1000);
+    updateTimers();
+  }
 
-  // Start Timer Logic
-  document.querySelectorAll('.btn-start-timer').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const issueId = btn.getAttribute('data-issue-id');
-      if (!issueId) return;
-      
-      btn.innerHTML = '<span class="animate-pulse">Starting...</span>';
-      
-      try {
-        const response = await fetch(`/api/issues/${issueId}/timer`, { method: 'POST' });
-        const data = await response.json();
-        
-        if (data.success) {
-          if (data.stopped_previous) {
-            if (window.showToast) window.showToast(`Auto-stopped previous timer on ${data.stopped_details.issueId.substring(0,8).toUpperCase()} and logged ${data.stopped_details.hours}h.`, false);
-          }
-          
-          const card = btn.closest('.issue-card');
-          const currentStatus = card?.closest('.board-column')?.getAttribute('data-status');
-          
-          if (currentStatus !== 'in_progress') {
-             await fetch(`/api/issues/${issueId}/move`, {
-               method: 'PATCH',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ status: 'in_progress', position: 0, workspaceId })
-             });
-          }
-          window.location.reload();
-        } else {
-          if (window.showToast) window.showToast('Error: ' + data.message, true);
-          btn.innerHTML = 'Start';
-        }
-      } catch (err) {
-        console.error(err);
-        btn.innerHTML = 'Start';
+  container?.addEventListener('click', async (e) => {
+    const start = (e.target as HTMLElement).closest<HTMLButtonElement>('.btn-start-timer');
+    const stop = (e.target as HTMLElement).closest<HTMLButtonElement>('.btn-stop-timer');
+    const btn = start || stop;
+    if (!btn) return;
+    const issueId = btn.dataset.issueId;
+    if (!issueId) return;
+    const original = btn.innerHTML;
+    btn.textContent = start ? texto('timer-starting') : texto('timer-stopping');
+    try {
+      const response = await fetch(`/api/issues/${issueId}/timer`, { method: start ? 'POST' : 'DELETE' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || `HTTP ${response.status}`);
+      if (start && data.stopped_previous) {
+        window.showToast?.(texto('timer-autostopped')
+          .replace('{id}', data.stopped_details.issueId.substring(0, 8).toUpperCase())
+          .replace('{h}', String(data.stopped_details.hours)), false);
       }
-    });
-  });
-
-  // Stop Timer Logic
-  document.querySelectorAll('.btn-stop-timer').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const issueId = btn.getAttribute('data-issue-id');
-      if (!issueId) return;
-      
-      const originalHtml = btn.innerHTML;
-      btn.innerHTML = '<span>Stopping...</span>';
-      
-      try {
-        const response = await fetch(`/api/issues/${issueId}/timer`, { method: 'DELETE' });
-        const data = await response.json();
-        
-        if (data.success) {
-          window.location.reload();
-        } else {
-          if (window.showToast) window.showToast('Error: ' + data.message, true);
-          btn.innerHTML = originalHtml;
-        }
-      } catch (err) {
-        console.error(err);
-        btn.innerHTML = originalHtml;
+      // Arrancar el cronómetro pasa la tarea a «En progreso».
+      if (start && columnaDe(btn)?.dataset.status !== 'in_progress') {
+        await mover(issueId, 'in_progress', 0);
       }
-    });
+      window.location.reload();
+    } catch (err) {
+      console.error('cronómetro:', err);
+      btn.innerHTML = original;
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+    }
   });
 </script>

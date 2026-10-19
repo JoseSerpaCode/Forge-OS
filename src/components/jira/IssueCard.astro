@@ -1,79 +1,124 @@
 ---
-interface Props {
-  issue: {
-    id: string;
-    title: string;
-    description: string;
-    type: string;
-    story_points: number;
-    assignee_avatar?: string;
-    assignee_username?: string;
-    reporter_username?: string;
-    assignee_id?: string;
-    reporter_id?: string;
-    position: number;
-    sprint_id?: string;
-    active_session_start?: string;
-    due_date?: string;
-    status?: string;
-    logged_hours?: number;
-    labels?: Array<{ id: string; name: string; color: string }>;
-  };
-  canEdit?: boolean;
-  /** Falso cuando el tablero está ordenado por algo que no es el orden manual. */
-  arrastrable?: boolean;
-  /** El tipo resuelto del espacio: nombre y color tal como los dejó el equipo. */
-  tipo?: { key: string; name: string; color: string; isBuiltin: boolean } | null;
-}
-
-const { issue, canEdit = false, arrastrable = canEdit, tipo = null } = Astro.props;
-
+/**
+ * Una tarjeta del tablero.
+ *
+ * Recibe la fila tal como sale de `lib/tablero.ts`: lo pintan el tablero y el
+ * parcial de «ver más», y si cada uno adaptara la fila a su manera las tarjetas
+ * cargadas después saldrían distintas de las primeras.
+ */
 import { useTranslations } from '../../i18n/ui';
 import { nombreVisible } from '../../lib/issueTypes';
 import LabelChip from '../labels/LabelChip.astro';
 import { fecha, vencida } from '../../lib/fechas';
+import { prioridadVisible } from '../../lib/prioridad';
+import type { Funciones } from '../../lib/funcionesEspacio';
+
+interface Props {
+  issue: any;
+  canEdit?: boolean;
+  /** El tipo resuelto del espacio: nombre y color tal como los dejó el equipo. */
+  tipo?: { key: string; name: string; color: string; isBuiltin: boolean } | null;
+  funciones?: Funciones;
+  /**
+   * El carril en que se pinta, si el tablero va agrupado por etiqueta.
+   *
+   * Una tarea con dos etiquetas sale en dos carriles, y dos elementos no
+   * pueden tener el mismo `id`: con carriles, el `id` del DOM lleva el carril
+   * y el de la tarea va en `data-issue-id`. El código que busca una tarjeta lo
+   * hace siempre por `data-issue-id`.
+   */
+  carril?: string | null;
+}
+
+const { issue, canEdit = false, tipo = null, funciones = { sprints: false, tiempo: false, puntos: false }, carril = null } = Astro.props;
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+
+const idDom = carril === null || carril === undefined ? issue.id : `${issue.id}~${carril || 'sin'}`;
+const hecha = issue.status === 'done';
+const prioridad = prioridadVisible(issue.priority);
+const apuntes = Number(issue.apuntes || 0);
+const horas = Math.round((issue.logged_hours || 0) * 10) / 10;
+const vence = issue.due_date && !hecha && vencida(issue.due_date, new Date(), issue.due_time);
 ---
-<!-- Componente IssueCard.astro -->
 {/*
   Tres `data-*` que estaban aquí ya no están: `data-assignee`, `data-reporter` y
   `data-active-session` no los leía nadie, y `data-t-due` y `data-t-no-desc`
   repetían la **misma cadena** en cada tarjeta —hasta cuatrocientas por
   tablero—. Los dos textos los pone ahora el modal, que es quien los usa.
 */}
-<div id={issue.id} draggable={arrastrable ? "true" : "false"} data-points={issue.story_points} data-position={issue.position} data-sprint-id={issue.sprint_id || 'backlog'} data-assignee-id={issue.assignee_id || ''} data-reporter-id={issue.reporter_id || ''} data-description={issue.description || ''} data-due-date={issue.due_date || ''} data-status={issue.status} data-labels={JSON.stringify(issue.labels || [])}
+<div id={idDom}
+  data-issue-id={issue.id}
+  draggable={canEdit ? 'true' : 'false'}
+  data-points={issue.story_points || 0}
+  data-position={issue.position || 0}
+  data-sprint-id={issue.sprint_id || 'backlog'}
+  data-assignee-id={issue.assignee_id || ''}
+  data-reporter-id={issue.reporter_id || ''}
+  data-description={issue.description || ''}
+  data-due-date={issue.due_date ? String(issue.due_date).slice(0, 10) : ''}
+  data-due-time={issue.due_time || ''}
+  data-priority={issue.priority || 'medium'}
+  data-status={issue.status}
+  data-cursor={hecha ? `${issue.cierre ?? issue.done_at ?? issue.updated_at}|${issue.id}` : undefined}
+  data-labels={JSON.stringify(issue.labels || [])}
   class={`issue-card group bg-forge-panel border border-forge-border/40 p-4 rounded-xl shadow-sm hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.15)] hover:border-forge-secondary/50 transition-all duration-300 ease-out ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} mb-4 relative overflow-hidden before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:transition-all group-hover:before:w-2`}
   style={`--franja: ${tipo?.color ?? '#0091FF'}`}>
   <div class="flex justify-between items-start mb-3 pl-1">
     <span class="font-mono text-[10px] text-forge-accent-text uppercase tracking-wider">{issue.id.substring(0,8)}</span>
-    <div class="w-6 h-6 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center overflow-hidden shrink-0" title={issue.assignee_username || 'Unassigned'}>
+    <div class="flex items-center gap-1.5">
+    {/* Mover a otro sprint, desde la propia tarjeta: escondido en el panel,
+        corregir una tarea creada en el sprint equivocado no se encontraba. */}
+    {funciones.sprints && canEdit && (
+      <button type="button" class="btn-mover-sprint w-6 h-6 rounded-md text-forge-muted hover:text-forge-text hover:bg-forge-bg flex items-center justify-center"
+        aria-haspopup="menu" aria-label={t('card.move_sprint')} title={t('card.move_sprint')}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button>
+    )}
+    <div class="w-6 h-6 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center overflow-hidden shrink-0" title={issue.assignee_username || t('modal.unassigned')}>
       {issue.assignee_avatar ? (
         <img src={issue.assignee_avatar} alt={issue.assignee_username} class="w-full h-full object-cover" loading="lazy" decoding="async" />
       ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       )}
     </div>
+    </div>
   </div>
-  <h4 class="text-forge-text font-semibold text-sm mb-1.5 pl-1 group-hover:text-forge-accent-text transition-colors leading-snug">{issue.title}</h4>
-  
+
+  <div class="flex items-start gap-2 mb-1.5 pl-1">
+    {/*
+      Completar con un clic.
+
+      Era imprescindible arrastrar la tarjeta hasta «Hecho» —o abrirla y
+      cambiarle el estado— para la acción más frecuente de todas. Es un botón
+      de verdad, con nombre que dice qué tarea completa, y su clic no abre el
+      panel (lo corta el tablero).
+    */}
+    {canEdit && !hecha && (
+      <button type="button" class="btn-completar mt-0.5 shrink-0 w-4 h-4 rounded-full border-2 border-forge-muted hover:border-forge-success hover:bg-forge-success/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-forge-secondary transition-colors"
+        aria-label={t('card.complete').replace('{titulo}', issue.title)}
+        title={t('card.complete').replace('{titulo}', issue.title)}></button>
+    )}
+    <h4 class="text-forge-text font-semibold text-sm group-hover:text-forge-accent-text transition-colors leading-snug min-w-0">{issue.title}</h4>
+  </div>
+
   {issue.due_date && (
-    <div class={`card-due text-[10px] font-mono mb-2 ${issue.status !== 'done' && vencida(issue.due_date) ? 'text-forge-error font-bold' : 'text-forge-muted'}`}>
+    <div class={`card-due text-[10px] font-mono mb-2 ${vence ? 'text-forge-error font-bold' : 'text-forge-muted'}`}>
       {/* `toLocaleDateString()` sin argumentos usa el idioma del navegador,
           que no tiene por qué ser el elegido en la aplicación: salía
           «8/24/2026» con la interfaz en español. */}
-      {t('card.due')} {fecha(issue.due_date, lang)}
+      {t('card.due')} {fecha(String(issue.due_date).slice(0, 10), lang)}{issue.due_time ? ` · ${issue.due_time}` : ''}
     </div>
   )}
 
-  <p class="text-forge-muted text-xs line-clamp-2 mb-4 pl-1 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">{issue.description || t('modal.no_description')}</p>
+  <p class="text-forge-muted text-xs line-clamp-2 mb-4 pl-1 leading-relaxed">{issue.description || t('modal.no_description')}</p>
   {issue.labels && issue.labels.length > 0 && (
     <div class="flex flex-wrap gap-1 mb-3 pl-1 card-labels">
-      {issue.labels.map(l => <LabelChip name={l.name} color={l.color} size="sm" />)}
+      {issue.labels.map((l: any) => <LabelChip name={l.name} color={l.color} size="sm" />)}
     </div>
   )}
 
-  <div class="flex items-center gap-2 pl-1">
+  <div class="flex items-center gap-2 pl-1 flex-wrap">
     {/*
       El nombre de un tipo de fábrica se traduce; el de uno propio no, porque
       lo escribió alguien y traducir lo que escribió una persona es
@@ -81,7 +126,7 @@ const t = useTranslations(lang);
       de uno que se borró— se enseña la clave cruda: es fea, pero es
       información, y una insignia en blanco no dice nada.
     */}
-    <span class="issue-type-badge px-2 py-0.5 rounded-md text-[10px] font-bold tracking-widest bg-forge-bg border uppercase shadow-sm flex items-center gap-1.5"
+    <span class="issue-type-badge px-2 py-0.5 rounded-md text-[10px] font-bold bg-forge-bg border shadow-sm flex items-center gap-1.5"
       data-type-key={issue.type}
       style={tipo ? `border-color: ${tipo.color}55` : undefined}>
       {tipo && <span class="w-1.5 h-1.5 rounded-full shrink-0" style={`background:${tipo.color}`} aria-hidden="true"></span>}
@@ -89,25 +134,38 @@ const t = useTranslations(lang);
         {tipo ? nombreVisible(tipo, t) : issue.type}
       </span>
     </span>
+
+    {/* La prioridad solo se pinta si no es la normal: si todas llevaran
+        bandera, ninguna destacaría. Con texto, no solo color. */}
+    {prioridad.nivel !== 'normal' && (
+      <span class:list={['card-priority flex items-center gap-1 text-[10px] font-bold', prioridad.clase]} title={t('priority.label')}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg>
+        <span class="sr-only">{t('priority.label')}:</span>
+        {t(`priority.${prioridad.nivel}`)}
+      </span>
+    )}
+
+    {apuntes > 0 && (
+      <span class="card-notes flex items-center gap-1 text-[10px] text-forge-muted" title={t('card.linked_notes').replace('{n}', String(apuntes))}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="sr-only">{t('card.linked_notes').replace('{n}', String(apuntes))}</span>
+        <span aria-hidden="true">{apuntes}</span>
+      </span>
+    )}
   </div>
-  
+
   {/*
-    Mover un ticket, en móvil.
+    Mover una tarea, en móvil.
 
-    El arrastrar y soltar del tablero es HTML5 —`dragstart`, `dragover`,
-    `drop`— y **no dispara con eventos táctiles**. En un teléfono no había forma
-    de mover una tarjeta de columna: ni arrastrando, ni desde el modal, que ni
-    siquiera tiene selector de estado. La función simplemente no existía, y nada
-    lo decía.
-
-    Un desplegable en la tarjeta y no un arrastre táctil imitado: reproducir el
-    arrastre con `touchmove` sobre un carril que además se desplaza en
-    horizontal es pelearse con el gesto de desplazamiento del sistema, y se
-    pierden las dos cosas.
+    El arrastrar y soltar del tablero es HTML5 y **no dispara con eventos
+    táctiles**. Un desplegable en la tarjeta y no un arrastre táctil imitado:
+    reproducir el arrastre con `touchmove` sobre un carril que además se
+    desplaza en horizontal es pelearse con el gesto de desplazamiento del
+    sistema, y se pierden las dos cosas.
   */}
   {canEdit && (
     <select
-      class="mover-issue sm:hidden w-full mt-1 mb-3 bg-forge-bg border border-forge-border rounded-md px-2 py-1.5 text-xs text-forge-text focus:outline-none focus:border-forge-secondary"
+      class="mover-issue sm:hidden w-full mt-3 mb-1 bg-forge-bg border border-forge-border rounded-md px-2 py-1.5 text-xs text-forge-text focus:outline-none focus:border-forge-secondary"
       data-issue-id={issue.id}
       aria-label={t('card.move_to')}
     >
@@ -122,8 +180,9 @@ const t = useTranslations(lang);
     </select>
   )}
 
-  {canEdit && issue.status !== 'done' && (
-    <div class="mt-3 flex justify-end">
+  {/* El cronómetro, solo si el espacio mide el tiempo. */}
+  {funciones.tiempo && canEdit && !hecha && (
+    <div class="card-timer mt-3 flex justify-end">
       {issue.active_session_start ? (
         <div class="flex items-center gap-2">
           <div class="active-timer-display flex items-center gap-1.5 text-forge-accent-text bg-forge-secondary/10 border border-forge-secondary/20 px-2 py-1 rounded text-xs font-mono font-bold" data-start-time={issue.active_session_start} data-logged-hours={issue.logged_hours || 0}>
@@ -133,24 +192,24 @@ const t = useTranslations(lang);
             </span>
             <span class="timer-text">00:00:00</span>
           </div>
-          <button class="btn-stop-timer flex items-center gap-1 text-forge-bg bg-forge-secondary hover:bg-forge-secondary/80 px-2 py-1 rounded transition-colors text-[10px] font-bold shadow-sm" data-issue-id={issue.id} title={t('card.stop_timer')}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
-            Stop
+          <button class="btn-stop-timer flex items-center gap-1 text-forge-on-accent bg-forge-secondary hover:bg-forge-secondary/80 px-2 py-1 rounded transition-colors text-[10px] font-bold shadow-sm" data-issue-id={issue.id} title={t('card.stop_timer')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+            {t('card.timer_stop')}
           </button>
         </div>
       ) : (
         <button class="btn-start-timer flex items-center gap-1 text-forge-muted hover:text-forge-accent-text transition-colors text-xs font-bold" data-issue-id={issue.id} title={t('card.start_timer')}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          Start
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          {t('card.timer_start')}
         </button>
       )}
     </div>
   )}
-  {issue.status === 'done' && issue.logged_hours !== undefined && issue.logged_hours > 0 && (
+  {funciones.tiempo && hecha && horas > 0 && (
     <div class="mt-3 flex justify-end">
       <div class="flex items-center gap-1 text-forge-success bg-forge-success/10 px-2 py-1 rounded text-xs font-bold cursor-help" title={t('card.total_time')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        {Math.round(issue.logged_hours * 10) / 10}h registradas
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        {t('card.logged_hours').replace('{h}', String(horas))}
       </div>
     </div>
   )}
@@ -159,11 +218,6 @@ const t = useTranslations(lang);
 <style>
   /*
     La franja toma el color del tipo del ticket.
-
-    Antes era un mapa fijo —`bug` rojo, `story` verde, cualquier otra cosa
-    azul— escrito en las clases. Con tipos propios eso deja de tener sentido:
-    un tipo que el equipo pintó de morado salía con la franja azul, mientras el
-    punto de su insignia, cuarenta líneas más abajo, sí usaba el color bueno.
 
     Va por variable CSS y no por clase de Tailwind porque Tailwind genera sus
     clases leyendo el código: un color que solo se conoce en tiempo de

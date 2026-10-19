@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
  * lo hace con `{val}`, pero eso hay que **comprobarlo**, no suponerlo: es la
  * diferencia entre quitar un doble escapado y abrir un XSS.
  */
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 const ESPACIO = 'ws-celda-xss';
 
 async function entrar(page: any) {

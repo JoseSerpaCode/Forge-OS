@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
+import { esPaginaDelEspacio, vincular } from '../../../../lib/apuntes';
 
 // GET /api/issues/[issue_id]/linked-pages → list linked KB pages
 export const GET: APIRoute = async ({ params, locals }) => {
@@ -45,14 +46,10 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     if (!page_id) return new Response(JSON.stringify({ error: 'page_id is required' }), { status: 400 });
 
     // Verify the page belongs to the same workspace
-    const page = db.prepare('SELECT id FROM pages WHERE id = ? AND workspace_id = ?').get(page_id, issue.workspace_id) as any;
-    if (!page) return new Response(JSON.stringify({ error: 'Page not found in this workspace' }), { status: 404 });
+    if (!esPaginaDelEspacio(page_id, issue.workspace_id)) return new Response(JSON.stringify({ error: 'Page not found in this workspace' }), { status: 404 });
 
-    // Insert or ignore if already linked
-    db.prepare(`
-      INSERT OR IGNORE INTO issue_page_links (issue_id, page_id, linked_by)
-      VALUES (?, ?, ?)
-    `).run(issue_id, page_id, user.id);
+    // Vincular dos veces no es un error: no hace nada.
+    vincular(issue_id, page_id, user.id);
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {

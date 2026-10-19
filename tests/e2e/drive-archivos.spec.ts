@@ -22,7 +22,7 @@ import { getTestDb } from './test-utils';
 test.describe.configure({ mode: 'serial' });
 
 const PW = process.env.TEST_PASSWORD || 'LocalDevPass123!';
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 const API = '/api/w/archivos-ws/files';
 const WS = 'ws-archivos';
 

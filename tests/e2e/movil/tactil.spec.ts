@@ -14,7 +14,7 @@ import { getTestDb } from '../test-utils';
  * que no aparece es una molestia; un botón de borrar que no aparece es una
  * función que no existe.
  */
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 
 async function entrar(page: any) {
   await page.goto('/login');

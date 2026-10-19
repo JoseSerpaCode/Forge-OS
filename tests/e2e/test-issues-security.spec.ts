@@ -32,7 +32,7 @@ test('Issues: Cross-workspace IDOR isolation', async ({ request, page }) => {
     data: { description: 'Hacked Description' },
     headers: { 
       'Cookie': `forge_session=${sessionCookie?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   console.log('PATCH /api/issues/[id] status:', resPatch.status());
@@ -53,7 +53,7 @@ test('Issues: Cross-workspace IDOR isolation', async ({ request, page }) => {
     },
     headers: { 
       'Cookie': `forge_session=${sessionCookie?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   console.log('User D POST /api/w/notion-ws-c/issues status:', resPost.status());
@@ -79,7 +79,7 @@ test('Issues: Cross-workspace IDOR isolation', async ({ request, page }) => {
     data: { description: 'Hacked Description E' },
     headers: { 
       'Cookie': `forge_session=${sessionCookieE?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   console.log('User E PATCH /api/issues/[id] status:', resPatchE.status());

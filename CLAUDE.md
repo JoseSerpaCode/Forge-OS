@@ -264,6 +264,39 @@ Cuando se pierde el acceso —permiso revocado, cuenta borrada— **los metadato
 se borran**: se marcan. Una lista que encoge sola parece pérdida de datos, y no
 lo es: los archivos siguen en su Drive.
 
+## Tablero: lo que no se ve en el código
+
+- **Sprints, tiempo y puntos son funciones del espacio** (`workspaces.feat_sprints`,
+  `feat_time`, `feat_points`). Se leen **solo** con `src/lib/funcionesEspacio.ts`;
+  no escribas `if (ws.feat_time)` en un endpoint. Apagar no borra datos. Los
+  endpoints de una función apagada responden **403 `feature_disabled`** al
+  escribir (arrancar el cronómetro, registrar horas, crear o cambiar sprints);
+  parar un cronómetro o borrar un sprint sí se deja, porque es limpiar. Los tests
+  que usan una de esas funciones tienen que encenderla al crear el espacio.
+- **La consulta del tablero está en `src/lib/tablero.ts`**, no en `board.astro`:
+  la usan la página y el parcial de «ver más» (`w/[sys_tag]/board/hechas.astro`).
+  Hecho va por `done_at` y se recorta a diez; las demás columnas, por `position`.
+- **`done_at` se mantiene con `SET_DONE_AT`** (`src/lib/IssueService.ts`) en los
+  dos caminos que cambian el estado: `IssueService.update` y `move.ts`. Un tercer
+  camino tiene que usarlo, o una tarea reabierta conservaría su fecha de cierre.
+- **Ordenar reescribe `position`** (`api/w/[sys_tag]/board/reorder.ts`) y devuelve
+  las posiciones de antes para deshacer. Ya no hay `?sort=`.
+- **El alta rápida se interpreta solo en el navegador** (`src/lib/altaRapida.ts`,
+  función pura con tests). El servidor recibe campos (`due_date`, `label_ids`…) y
+  no vuelve a leer la frase.
+- **`due_time` es hora de pared, sin zona**, en su propia columna. No la metas en
+  `due_date`: `fechas.ts` lee las cadenas de SQLite como UTC y la hora saldría
+  corrida.
+- **Con carriles, una tarjeta puede salir dos veces**, así que el `id` del DOM
+  lleva el carril. Busca tarjetas por `data-issue-id`, nunca por
+  `getElementById(issueId)`.
+- **Los eventos del tablero van delegados** en `.kanban-container`: las tarjetas
+  que llegan con «ver más» no tienen oyentes propios.
+- **Borrar tareas pasa por `IssueService.borrarSinComprobar`**: `attachments`,
+  `drive_file_links` y `resource_links` no tienen clave foránea hacia `issues`.
+- **Los contactos sin cuenta** (responsables que no son usuarios) entrarán como
+  otra opción del mismo desplegable de responsable, no como otro campo.
+
 ## Despliegue
 
 Guía completa en `deploy/README.md`. Tres cosas que conviene saber sin abrirla:

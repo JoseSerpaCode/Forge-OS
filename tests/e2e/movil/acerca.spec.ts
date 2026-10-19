@@ -51,7 +51,7 @@ test('sus textos están en el idioma de la interfaz', async ({ page }) => {
   // usuario: tres cadenas escritas a mano que no pasaban por el diccionario.
   await page.request.post('/api/lang', {
     form: { lang: 'es', current_path: '/' },
-    headers: { Origin: 'http://localhost:4322' },
+    headers: { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` },
   });
   // La cookie solo surte efecto en la siguiente carga.
   await page.goto('/');

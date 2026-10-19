@@ -6,6 +6,41 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.30.0] - 2026-10-19
+
+Un tablero que también sirve para usarlo a solas.
+
+### Added
+
+- **Sprints, medición de tiempo y puntos son funciones que se encienden por espacio** (Ajustes del espacio → Tablero). Forge se pensó para equipos que planifican por sprints; usado a solas —para la universidad, por ejemplo— el selector de sprint, el cronómetro de cada tarjeta y el campo de puntos solo estorbaban. Apagar no borra nada: `sprint_id`, los registros de horas y los puntos se quedan en la base y vuelven al encender. Los espacios nuevos nacen con todo apagado; los que ya existían encienden solo lo que ya usaban. Con los sprints apagados, el tablero enseña todas las tareas a la vez. Migración 40.
+- **Alta rápida.** «Entregar taller viernes 18:00 #Cálculo !1 [[Tema 3]]» crea la tarea con su fecha, hora, etiqueta, prioridad y apunte vinculado. Lo reconocido sale como chips que se pueden quitar, y quitar uno devuelve sus palabras al título. La prioridad se escribe con `!1`–`!4` o por su nombre (`!urgente`, `!alta`, `!normal`, `!baja`, y en inglés). Una etiqueta que no existe no se crea sola: se ofrece. Se abre con `C` desde cualquier página del espacio, no solo desde el tablero.
+- **El formulario de alta deja poner etiquetas, apuntes, prioridad y hora** al crear la tarea, en la misma transacción. «Crear y abrir» abre el panel de la tarea nueva para adjuntarle archivos.
+- **Prioridad visible.** La columna existía desde el principio y solo servía para ordenar. Ahora se pone en el panel y en el alta, y la tarjeta lleva una bandera con texto cuando no es la normal.
+- **Hora de entrega**, aparte de la fecha y como hora de pared (sin zona): una entrega «a las 18:00» vence a las 18:01 de ese día, no al siguiente. Migración 42.
+- **Completar con un clic**, con un círculo en cada tarjeta y «Deshacer» en el aviso.
+- **Agrupar el tablero por etiqueta**: un carril por etiqueta con sus cuatro columnas. Una tarea con dos etiquetas sale en los dos carriles; arrastrar entre carriles no cambia etiquetas.
+- **Apuntes vinculados en el panel de la tarea**, con buscador. La tarjeta enseña cuántos tiene.
+- **Mover una tarea a otro sprint desde la propia tarjeta**, y **borrar un sprint decidiendo qué pasa con cada tarea**: al backlog, a otro sprint o borrarla. Antes solo se podía mandarlas todas al mismo sitio. «Gestionar sprints…» lista los sprints para borrarlos también desde el backlog.
+
+### Changed
+
+- **«Hecho» enseña las diez últimas terminadas**, con «Ver más». Crecía sin límite y cargaba cien tarjetas que casi nunca se miran. Para saber cuándo terminó cada una hay una columna nueva, `done_at` (migración 41).
+- **Ordenar es una acción, no una vista.** Elegir «por prioridad» reescribe el orden de las columnas una vez, con «Deshacer», y se puede seguir arrastrando. Antes cambiaba solo la consulta y el arrastre quedaba bloqueado hasta volver al orden manual. Con un filtro de etiqueta se ordenan solo las filtradas, en los huecos que ya ocupaban: las demás no se mueven y, al quitar el filtro, la columna no sale entremezclada.
+- En español, la tarea se llama «tarea» en todo el tablero: el modal decía «Crear Issue» y el botón «Nuevo ticket».
+- El aviso flotante admite un botón de acción («Deshacer», «Ver») y ya no se esconde antes de tiempo cuando llegan dos seguidos.
+- El puerto del servidor de pruebas e2e se puede cambiar con `E2E_PORT`, para que dos ejecuciones a la vez no choquen.
+
+### Fixed
+
+- **El backlog no se podía dejar como vista por defecto.** La cookie `backlog` no redirigía, pero el tablero abría igualmente el sprint activo porque la URL seguía sin `sprint=`.
+- **Las fechas salían en mm/dd/yyyy con la aplicación en español.** El `<input type="date">` nativo usa el idioma del navegador, no el de la página, y ningún atributo lo cambia. Ahora es un campo de texto en el formato del idioma de la app (`dd/mm/aaaa`) con el calendario nativo detrás de un botón.
+- **Cambiar el tipo de una tarea en el panel la dejaba mal pintada hasta recargar**: la insignia enseñaba la clave cruda («task», «incidencia-critica»), la franja no cambiaba de color y salía «Type saved» en inglés aunque el servidor lo hubiera rechazado.
+- **La insignia del tipo salía en mayúsculas** («HISTORIA»). Enseña el nombre visible del tipo tal como lo dice el panel.
+- **«Borrar» y «Duplicar» salían en el panel a quien solo puede mirar.** Se comprobaba `body[data-user-role]`, que nunca vale «viewer»; el servidor sí lo denegaba.
+- **El nombre del espacio se recortaba en la cabecera del tablero** («Atlas Platform Boa…»). Ahora se parte en líneas y se lee entero en cualquier ancho.
+- **Borrar una tarea dejaba huérfanos** sus adjuntos (filas y ficheros en disco) y sus vínculos a archivos de Drive y a recursos.
+- Textos que estaban en inglés a mano en el tablero: los botones del cronómetro, «(Active)», «(Completed)», «Name required», la ayuda de los puntos y el aviso al cambiar de sprint.
+
 ## [1.29.0] - 2026-10-18
 
 ### Added

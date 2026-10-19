@@ -24,6 +24,10 @@ CREATE TABLE sessions (
   is_public BOOLEAN DEFAULT 0 CHECK(is_public IN (0, 1)),
   join_policy TEXT DEFAULT 'disabled' CHECK(join_policy IN ('open', 'friends_only', 'disabled')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  -- Funciones del tablero que se encienden por espacio (migración 40).
+  feat_sprints INTEGER NOT NULL DEFAULT 0 CHECK (feat_sprints IN (0, 1)),
+  feat_time INTEGER NOT NULL DEFAULT 0 CHECK (feat_time IN (0, 1)),
+  feat_points INTEGER NOT NULL DEFAULT 0 CHECK (feat_points IN (0, 1)),
   FOREIGN KEY (created_by) REFERENCES users(id)
  );
 CREATE TABLE workspace_members (
@@ -63,6 +67,8 @@ CREATE TABLE issues (
  assignee_id TEXT,
  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP, due_date DATETIME,
+ done_at DATETIME, -- cuándo pasó a Hecho (migración 41)
+ due_time TEXT CHECK (due_time IS NULL OR due_time GLOB '[0-2][0-9]:[0-5][0-9]'), -- hora de pared, sin zona (migración 42)
  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
  FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL,
  FOREIGN KEY (parent_issue_id) REFERENCES issues(id) ON DELETE CASCADE,

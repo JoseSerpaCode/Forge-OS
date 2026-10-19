@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { encenderFunciones } from './helpers/funciones';
 
 /**
  * Borrar un sprint.
@@ -19,7 +20,7 @@ const ESPACIO = 'ws-borrar-sprint';
  * («Cross-site DELETE form submissions are forbidden»). El navegador la manda
  * sola; `page.request` no, así que hay que ponerla a mano en las pruebas.
  */
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 
 test.describe.configure({ mode: 'serial' });
 
@@ -36,6 +37,7 @@ test.beforeAll(async ({ browser }) => {
   await entrar(page);
   const r = await page.request.post('/api/workspaces', { data: { name: 'Borrar', sys_tag: ESPACIO } });
   expect([200, 201, 409]).toContain(r.status());
+  encenderFunciones(ESPACIO);
   await page.close();
 });
 

@@ -25,7 +25,9 @@ declare namespace App {
 }
 
 interface Window {
-  showToast?: (message: string, type?: boolean | 'success' | 'error') => void;
+  /** Abre el alta de tareas (`NuevaTarea.astro`). Solo existe en páginas de un espacio y para quien puede crear. */
+  forgeNuevaTarea?: () => void;
+  showToast?: (message: string, type?: boolean | 'success' | 'error', opciones?: { accion?: string; alPulsar?: () => void; ms?: number } | null) => void;
 
   /**
    * Los textos que necesitan los scripts del cliente.

@@ -1,0 +1,66 @@
+---
+/**
+ * Las siguientes tareas de «Hecho», para el botón «ver más» del tablero.
+ *
+ * Un parcial y no JSON: así las tarjetas las pinta el mismo `IssueCard` que el
+ * tablero y no una segunda copia en JavaScript que se quedaría atrás en cuanto
+ * la tarjeta cambie.
+ *
+ * Mismo control de acceso que el tablero, y los filtros pasan por las mismas
+ * comprobaciones: etiqueta y sprint tienen que ser **de este espacio**. Sin eso,
+ * un id ajeno en la URL serviría para mirar dentro de otro espacio.
+ */
+import IssueCard from '../../../../components/jira/IssueCard.astro';
+import db from '../../../../lib/db';
+import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
+import { masHechas, cursorDe } from '../../../../lib/tablero';
+import { funciones } from '../../../../lib/funcionesEspacio';
+import { listar as listarTipos } from '../../../../lib/issueTypes';
+
+export const partial = true;
+
+const user = Astro.locals.user;
+if (!user) return new Response('Unauthorized', { status: 401 });
+
+const acceso = abrirEspacioDePagina(Astro.params.sys_tag, user, 'viewer');
+if (!acceso.ok) return new Response('Not Found', { status: 404 });
+const ws = acceso.ws;
+const funcs = funciones(ws.id);
+const q = Astro.url.searchParams;
+
+const etiqueta = q.get('label');
+const labelId = etiqueta && db.prepare('SELECT 1 FROM labels WHERE id = ? AND workspace_id = ?').get(etiqueta, ws.id) ? etiqueta : null;
+
+let sprintId: string | null | undefined = undefined;
+if (funcs.sprints && q.has('sprint')) {
+  const s = q.get('sprint');
+  if (s === 'backlog') sprintId = null;
+  else if (s && db.prepare('SELECT 1 FROM sprints WHERE id = ? AND workspace_id = ?').get(s, ws.id)) sprintId = s;
+  else return new Response('Not Found', { status: 404 });
+}
+
+const agrupar = q.get('group') === 'label';
+const carrilPedido = q.get('carril') ?? '';
+const carril = agrupar && carrilPedido
+  ? (db.prepare('SELECT 1 FROM labels WHERE id = ? AND workspace_id = ?').get(carrilPedido, ws.id) ? carrilPedido : null)
+  : '';
+if (agrupar && carril === null) return new Response('Not Found', { status: 404 });
+
+const { tarjetas, hayMas } = masHechas({
+  workspaceId: ws.id,
+  userId: user.id,
+  sprintId,
+  labelId,
+  agruparPorEtiqueta: agrupar,
+  carril: agrupar ? carril : null,
+  despues: q.get('despues'),
+});
+
+const tipos = new Map(listarTipos(ws.id).map((t) => [t.key, t]));
+const canEdit = acceso.rol === 'owner' || acceso.rol === 'editor';
+const ultima = tarjetas[tarjetas.length - 1];
+---
+{tarjetas.map((issue) => (
+  <IssueCard issue={issue} canEdit={canEdit} tipo={tipos.get(issue.type) ?? null} funciones={funcs} carril={agrupar ? carril : null} />
+))}
+<template data-hechas-meta data-hay-mas={hayMas ? 'true' : 'false'} data-cursor={ultima ? cursorDe(ultima) : ''}></template>

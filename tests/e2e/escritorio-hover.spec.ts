@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  * comprueba en vez de suponerlo: una regla con `!important` mal acotada
  * llenaría cada fila de botones que solo estorban.
  */
-const ORIGIN = { Origin: 'http://localhost:4322' };
+const ORIGIN = { Origin: `http://localhost:${process.env.E2E_PORT || 4322}` };
 
 test('el botón de borrar fila sigue oculto hasta acercarse', async ({ page }) => {
   await page.goto('/login');

@@ -58,7 +58,7 @@ test('Knowledge Base: Cross-workspace IDOR isolation', async ({ request, page })
   const resDelete = await request.delete(`/api/pages/${pageIdC}`, {
     headers: { 
       'Cookie': `forge_session=${sessionCookie?.value}`,
-      'Origin': 'http://localhost:4322'
+      'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
     }
   });
   console.log('DELETE status:', resDelete.status());

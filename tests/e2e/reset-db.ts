@@ -164,6 +164,9 @@ export default function resetDb() {
     INSERT INTO workspaces (id, name, sys_tag, created_by)
     VALUES (?, ?, ?, ?)
   `).run('ws-jose-test', 'Test Workspace', 'test-workspace', 'test-user-jose');
+  // El espacio «de equipo» de las pruebas usa sprints, tiempo y puntos. Los
+  // espacios nuevos nacen con las tres apagadas (migración 40).
+  db.prepare("UPDATE workspaces SET feat_sprints = 1, feat_time = 1, feat_points = 1 WHERE id = 'ws-jose-test'").run();
 
   db.prepare(`
     INSERT INTO workspace_members (workspace_id, user_id, ws_role)

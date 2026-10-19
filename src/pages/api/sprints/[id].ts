@@ -1,7 +1,9 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
+import { funciones, funcionApagada } from '../../../lib/funcionesEspacio';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { NotificationService } from '../../../lib/NotificationService';
+import { IssueService } from '../../../lib/IssueService';
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   const { id } = params;
@@ -29,6 +31,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       if (access.reason === 'not_member') return new Response('Not Found', { status: 404 });
       return new Response(access.error, { status: 403 });
     }
+    // Borrar un sprint (`DELETE`) sí se deja con la función apagada: es limpiar.
+    if (!funciones(sprint.workspace_id).sprints) return funcionApagada('sprints');
 
     // ── Cerrar un sprint: qué pasa con lo que no se terminó ─────────────────
     //
@@ -159,33 +163,79 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
     try { datos = await request.json(); } catch { /* sin cuerpo: se pregunta */ }
     const estrategia = datos?.strategy;
 
-    const dentro = db.prepare('SELECT COUNT(*) AS n FROM issues WHERE sprint_id = ?').get(id) as any;
+    const dentro = db.prepare('SELECT id, title, status FROM issues WHERE sprint_id = ? ORDER BY position ASC').all(id) as Array<{ id: string; title: string; status: string }>;
+    let borradas = 0;
 
-    if (dentro.n > 0) {
-      const ESTRATEGIAS = ['backlog', 'next'];
-      if (!ESTRATEGIAS.includes(estrategia)) {
-        return new Response(JSON.stringify({
-          error_code: 'sprint_not_empty',
-          pending: dentro.n,
-          strategies: ESTRATEGIAS,
-          candidates: db.prepare(
-            "SELECT id, name FROM sprints WHERE workspace_id = ? AND id != ? AND status != 'completed' ORDER BY rowid DESC"
-          ).all(sprint.workspace_id, id),
-        }), { status: 409, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      if (estrategia === 'next') {
-        const destino = db.prepare(
-          "SELECT id FROM sprints WHERE id = ? AND workspace_id = ? AND id != ?"
-        ).get(datos?.target_sprint_id, sprint.workspace_id, id) as any;
-        if (!destino) {
-          return new Response(JSON.stringify({ error_code: 'bad_target_sprint' }), {
+    if (dentro.length > 0) {
+      /**
+       * Un destino por tarea.
+       *
+       * Con «todas al backlog» o «todas a otro sprint» no se podía borrar un
+       * sprint quedándose solo con algunas de sus tareas: o se conservaba todo
+       * o había que ir tarea por tarea antes. Ahora cada una dice a dónde va
+       * —backlog, otro sprint, o borrarse—.
+       *
+       * **Todas** tienen que traer destino. Si falta alguna —una tarea creada
+       * mientras el diálogo estaba abierto— no se toca nada: borrar el sprint
+       * con ella dentro la mandaría al backlog sin que nadie lo haya decidido.
+       */
+      if (datos?.destinos && typeof datos.destinos === 'object') {
+        const destinos = datos.destinos as Record<string, unknown>;
+        const faltan = dentro.filter((t) => !(t.id in destinos));
+        const ajenas = Object.keys(destinos).filter((k) => !dentro.some((t) => t.id === k));
+        if (faltan.length > 0 || ajenas.length > 0) {
+          return new Response(JSON.stringify({ error_code: 'destinos_incompletos', faltan: faltan.map((t) => t.id) }), {
             status: 400, headers: { 'Content-Type': 'application/json' },
           });
         }
-        db.prepare('UPDATE issues SET sprint_id = ? WHERE sprint_id = ?').run(destino.id, id);
+        const sprintsValidos = new Set(
+          (db.prepare('SELECT id FROM sprints WHERE workspace_id = ? AND id != ?').all(sprint.workspace_id, id) as Array<{ id: string }>).map((r) => r.id)
+        );
+        for (const valor of Object.values(destinos)) {
+          if (valor !== 'backlog' && valor !== 'borrar' && !(typeof valor === 'string' && sprintsValidos.has(valor))) {
+            return new Response(JSON.stringify({ error_code: 'bad_target_sprint' }), {
+              status: 400, headers: { 'Content-Type': 'application/json' },
+            });
+          }
+        }
+        const aBorrar = dentro.filter((t) => destinos[t.id] === 'borrar').map((t) => t.id);
+        db.transaction(() => {
+          const mover = db.prepare('UPDATE issues SET sprint_id = ? WHERE id = ?');
+          for (const t of dentro) {
+            const v = destinos[t.id];
+            if (v === 'backlog') mover.run(null, t.id);
+            else if (v !== 'borrar') mover.run(v, t.id);
+          }
+          IssueService.borrarSinComprobar(aBorrar);
+        })();
+        borradas = aBorrar.length;
       } else {
-        db.prepare('UPDATE issues SET sprint_id = NULL WHERE sprint_id = ?').run(id);
+        const ESTRATEGIAS = ['backlog', 'next'];
+        if (!ESTRATEGIAS.includes(estrategia)) {
+          return new Response(JSON.stringify({
+            error_code: 'sprint_not_empty',
+            pending: dentro.length,
+            strategies: ESTRATEGIAS,
+            issues: dentro,
+            candidates: db.prepare(
+              "SELECT id, name FROM sprints WHERE workspace_id = ? AND id != ? AND status != 'completed' ORDER BY rowid DESC"
+            ).all(sprint.workspace_id, id),
+          }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (estrategia === 'next') {
+          const destino = db.prepare(
+            "SELECT id FROM sprints WHERE id = ? AND workspace_id = ? AND id != ?"
+          ).get(datos?.target_sprint_id, sprint.workspace_id, id) as any;
+          if (!destino) {
+            return new Response(JSON.stringify({ error_code: 'bad_target_sprint' }), {
+              status: 400, headers: { 'Content-Type': 'application/json' },
+            });
+          }
+          db.prepare('UPDATE issues SET sprint_id = ? WHERE sprint_id = ?').run(destino.id, id);
+        } else {
+          db.prepare('UPDATE issues SET sprint_id = NULL WHERE sprint_id = ?').run(id);
+        }
       }
     }
 
@@ -195,7 +245,7 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
       db.prepare('DELETE FROM sprints WHERE id = ?').run(id);
     })();
 
-    return new Response(JSON.stringify({ success: true, moved: dentro.n }), {
+    return new Response(JSON.stringify({ success: true, moved: dentro.length - borradas, deleted: borradas }), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: any) {

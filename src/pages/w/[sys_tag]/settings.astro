@@ -8,6 +8,7 @@ import WorkspaceIcon from '../../../components/brand/WorkspaceIcon.astro';
 import { COLORES, listar as listarEtiquetas } from '../../../lib/labels';
 import { listar as listarTipos, nombreVisible } from '../../../lib/issueTypes';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
+import { funciones as funcionesDe } from '../../../lib/funcionesEspacio';
 
 const user = Astro.locals.user!;
 const t = useTranslations(Astro.locals.lang || 'en');
@@ -20,6 +21,7 @@ if (!acceso.ok) return Astro.redirect(acceso.redirigir);
 const ws = acceso.ws;
 
 const etiquetas = listarEtiquetas(ws.id);
+const funcionesEspacio = funcionesDe(ws.id);
 
 // Cuántos tickets usa cada tipo: es el dato que decide si borrarlo es una
 // limpieza o una reorganización.
@@ -400,6 +402,37 @@ const wsPendingInvites = (db.prepare(`
         <button type="button" id="tipo-borrar-confirmar" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">{t('types.delete_move')}</button>
       </div>
     </dialog>
+
+    {/* Funciones del tablero.
+        Un `<label>` que **envuelve** cada casilla y sin `for`: envolver ya la
+        asocia, y un `for` que apuntara a otro sitio haría que el navegador
+        ignorara la que envuelve (CLAUDE.md, «Accesibilidad»). */}
+    <div id="funciones-tablero" class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6"
+      data-sys-tag={sys_tag}
+      data-t-saved={t('ws.settings.feat_saved')}
+      data-t-error={t('ws.settings.feat_error')}>
+      <h2 class="text-xl font-bold text-forge-text mb-1">{t('ws.settings.board')}</h2>
+      <p class="text-sm text-forge-muted mb-5">{t('ws.settings.board_desc')}</p>
+      <div class="space-y-4">
+        {([
+          ['sprints', 'feat_sprints'],
+          ['tiempo', 'feat_time'],
+          ['puntos', 'feat_points'],
+        ] as const).map(([clave, texto]) => (
+          <label class="flex items-center justify-between gap-6 cursor-pointer group">
+            <span>
+              <span id={`funcion-${clave}-nombre`} class="text-sm font-medium text-forge-text block mb-0.5">{t(`ws.settings.${texto}`)}</span>
+              <span id={`funcion-${clave}-desc`} class="text-xs text-forge-muted block">{t(`ws.settings.${texto}_desc`)}</span>
+            </span>
+            <span class="relative inline-flex items-center shrink-0">
+              <input type="checkbox" class="sr-only peer funcion-tablero" data-funcion={clave} checked={funcionesEspacio[clave]}
+                aria-labelledby={`funcion-${clave}-nombre`} aria-describedby={`funcion-${clave}-desc`} />
+              <span class="w-9 h-5 bg-forge-bg rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-forge-muted after:border-forge-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-forge-primary peer-checked:after:bg-white border border-forge-border/60 group-hover:border-forge-border peer-focus-visible:ring-2 peer-focus-visible:ring-forge-secondary transition-colors"></span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
 
     <!-- Automations Engine -->
     <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
@@ -1353,6 +1386,42 @@ const wsPendingInvites = (db.prepare(`
           return;
         }
         fallo();
+      });
+    });
+  })();
+</script>
+
+<script>
+  /**
+   * Funciones del tablero: cada interruptor guarda al momento.
+   *
+   * Si el servidor dice que no, el interruptor vuelve a donde estaba: dejarlo
+   * cambiado haría creer que la función está apagada cuando sigue encendida.
+   */
+  (() => {
+    const raiz = document.getElementById('funciones-tablero');
+    if (!raiz) return;
+    const sysTag = raiz.dataset.sysTag;
+    raiz.querySelectorAll<HTMLInputElement>('.funcion-tablero').forEach((casilla) => {
+      casilla.addEventListener('change', async () => {
+        const funcion = casilla.dataset.funcion!;
+        const valor = casilla.checked;
+        casilla.disabled = true;
+        try {
+          const res = await fetch(`/api/w/${sysTag}/features`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [funcion]: valor }),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          window.showToast?.(raiz.dataset.tSaved || '');
+        } catch (e) {
+          console.error('funciones del tablero:', e);
+          casilla.checked = !valor;
+          window.showToast?.(raiz.dataset.tError || '', true);
+        } finally {
+          casilla.disabled = false;
+        }
       });
     });
   })();

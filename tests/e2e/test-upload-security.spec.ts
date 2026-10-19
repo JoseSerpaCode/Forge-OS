@@ -18,7 +18,7 @@ test.describe('Upload API Security', () => {
     // Create a page
     const newPageRes = await page.request.post('/api/pages', {
       data: { title: 'Security Test Page', workspace_id: 'ws-jose-test' },
-      headers: { 'Origin': 'http://localhost:4322' }
+      headers: { 'Origin': `http://localhost:${process.env.E2E_PORT || 4322}` }
     });
     
     expect(newPageRes.status()).toBe(200);
@@ -33,7 +33,7 @@ test.describe('Upload API Security', () => {
     const res = await page.request.post('/api/upload', {
       headers: {
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Origin': 'http://localhost:4322'
+        'Origin': `http://localhost:${process.env.E2E_PORT || 4322}`
       },
       data: payload
     });

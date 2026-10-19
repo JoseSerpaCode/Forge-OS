@@ -17,7 +17,7 @@ test.describe('Timer UI and Auto-stop flow', () => {
     const sysTag = `timer-ws-${crypto.randomUUID().substring(0,8)}`;
 
     // Create workspace
-    db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES (?, ?, ?, ?)').run(wsId, 'Timer Test WS', sysTag, userId);
+    db.prepare('INSERT INTO workspaces (id, name, sys_tag, created_by, feat_time) VALUES (?, ?, ?, ?, 1)').run(wsId, 'Timer Test WS', sysTag, userId);
     db.prepare('INSERT INTO workspace_members (workspace_id, user_id, ws_role) VALUES (?, ?, ?)').run(wsId, userId, 'owner');
     
     // Create an issue in TODO
@@ -93,7 +93,8 @@ test.describe('Timer UI and Auto-stop flow', () => {
     await expect(card.locator('.btn-start-timer')).not.toBeVisible();
     await expect(card.locator('.btn-stop-timer')).not.toBeVisible();
     
-    await expect(card.getByText('registradas')).toBeVisible();
-    await expect(card.getByText('5h registradas')).toBeVisible(); // 3 hours + 2 hours = 5 hours
+    // El texto pasa por el diccionario: «h registradas» o «h logged» según el idioma.
+    await expect(card.getByText(/registradas|logged/)).toBeVisible();
+    await expect(card.getByText(/^\s*5 h (registradas|logged)\s*$/)).toBeVisible(); // 3 hours + 2 hours = 5 hours
   });
 });
