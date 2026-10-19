@@ -85,6 +85,8 @@ export interface Page {
   created_by: string;
   created_at: string;
   updated_at: string;
+  /** Orden dentro de su nivel del árbol (migración 39). */
+  position: number;
 }
 
 export interface DocumentChunk {

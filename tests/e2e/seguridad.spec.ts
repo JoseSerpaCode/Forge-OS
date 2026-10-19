@@ -93,6 +93,47 @@ test.describe('permisos por rol', () => {
   });
 });
 
+test.describe('mover notas en el árbol', () => {
+  const mover = (s: APIRequestContext, pagina: string, padre: string | null) =>
+    s.fetch(`/api/pages/${pagina}/move`, {
+      method: 'PATCH',
+      headers: ORIGIN_HEADER,
+      data: { parent_id: padre, index: 0 },
+    });
+
+  test('solo quien edita mueve, y nadie de fuera se entera de que la nota existe', async ({ browser }) => {
+    const dueno = await sesionDe(browser, 'aud_owner');
+    const lector = await sesionDe(browser, 'aud_viewer');
+    const fuera = await sesionDe(browser, 'aud_fuera');
+
+    // Control: la misma petición desde quien sí puede.
+    expect((await mover(dueno, 'p-auditoria', null)).status()).toBe(200);
+    expect((await mover(lector, 'p-auditoria', null)).status()).not.toBe(200);
+    expect((await mover(fuera, 'p-auditoria', null)).status()).toBe(404);
+  });
+
+  test('una nota no se cuelga de otra de un espacio ajeno', async ({ browser }) => {
+    const dueno = await sesionDe(browser, 'aud_owner');
+    // Una nota en otro espacio del que el dueño también es miembro: aunque
+    // pueda verla, mezclar árboles de dos espacios la sacaría del suyo.
+    const db = getTestDb();
+    db.prepare(`INSERT OR IGNORE INTO pages (id, workspace_id, title, created_by)
+                VALUES ('p-otro-espacio', 'ws-tablas', 'Otra', 'aud-owner')`).run();
+    db.close();
+
+    expect((await mover(dueno, 'p-inyeccion', 'p-otro-espacio')).status()).toBe(400);
+    // Control: dentro de su propio espacio sí se puede.
+    expect((await mover(dueno, 'p-inyeccion', 'p-auditoria')).status()).toBe(200);
+    // Y se deja como estaba, para no afectar a la prueba de inyección.
+    expect((await mover(dueno, 'p-inyeccion', null)).status()).toBe(200);
+  });
+
+  test('una nota no va dentro de sí misma ni de su hija', async ({ browser }) => {
+    const dueno = await sesionDe(browser, 'aud_owner');
+    expect((await mover(dueno, 'p-auditoria', 'p-auditoria')).status()).toBe(409);
+  });
+});
+
 test.describe('escalada de privilegios', () => {
   test('no puedo hacerme sysadmin escribiéndolo en mis ajustes', async ({ browser }) => {
     const editor = await sesionDe(browser, 'aud_editor');

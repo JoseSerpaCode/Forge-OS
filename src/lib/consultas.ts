@@ -52,15 +52,16 @@ export interface PaginaDelArbol {
 }
 
 /**
- * Las páginas de un espacio, en el orden en que se crearon.
+ * Las páginas de un espacio, en el orden que les dio su dueño.
  *
- * El árbol lo arma quien las pinta: aquí solo se traen. Ordenar por creación y
- * no por título es deliberado —el árbol de una base de conocimiento es un
- * orden que la gente construye, no un listado alfabético.
+ * El árbol lo arma quien las pinta: aquí solo se traen. Se ordena por
+ * `position` (migración 39, que se cambia arrastrando o con «Mover a…») y no
+ * por título: el árbol de una base de conocimiento es un orden que la gente
+ * construye, no un listado alfabético. La fecha de creación desempata.
  */
 export function paginasDeEspacio(workspaceId: string): PaginaDelArbol[] {
   return db
-    .prepare('SELECT id, parent_page_id, title, icon FROM pages WHERE workspace_id = ? ORDER BY created_at ASC')
+    .prepare('SELECT id, parent_page_id, title, icon FROM pages WHERE workspace_id = ? ORDER BY position ASC, created_at ASC')
     .all(workspaceId) as PaginaDelArbol[];
 }
 

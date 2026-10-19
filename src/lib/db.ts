@@ -1137,6 +1137,33 @@ const MIGRATIONS: Migration[] = [
         db.exec('CREATE INDEX IF NOT EXISTS idx_issues_workspace_status ON issues(workspace_id, status)');
       }
     }
+  },  {
+    version: 39,
+    description: 'pages: add position, para ordenar el árbol a mano',
+    run: () => {
+      // Las notas salían por fecha de creación y no había forma de cambiar el
+      // orden ni de meter una dentro de otra sin copiarla entera.
+      //
+      // REAL y no INTEGER, como `issues.position`: deja hueco para colocar una
+      // entre dos sin renumerar a sus hermanas. Aun así, al mover se renumera
+      // el nivel entero (ver `lib/arbolPaginas.ts`), que con unas decenas de
+      // notas por nivel es barato y no acumula decimales.
+      if (!hasColumn('pages', 'position')) {
+        db.exec('ALTER TABLE pages ADD COLUMN position REAL NOT NULL DEFAULT 0');
+      }
+      // Se conserva el orden que se veía: por fecha de creación dentro de
+      // cada nivel. `IS` y no `=` para que las notas raíz (parent NULL) se
+      // comparen entre sí.
+      db.exec(`
+        UPDATE pages SET position = 1000 + 1000 * (
+          SELECT COUNT(*) FROM pages AS p2
+          WHERE p2.workspace_id = pages.workspace_id
+            AND p2.parent_page_id IS pages.parent_page_id
+            AND (p2.created_at < pages.created_at OR (p2.created_at = pages.created_at AND p2.id < pages.id))
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_pages_orden ON pages(workspace_id, parent_page_id, position)');
+    }
   },
 ];
 

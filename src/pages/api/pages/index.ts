@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import db from '../../../lib/db';
 import { EMPTY_NOTE_JSON } from '../../../lib/notes/content';
+import { posicionAlFinal } from '../../../lib/arbolPaginas';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import crypto from 'crypto';
 
@@ -35,15 +36,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
     
     // 4. Insert page explicitly binding to workspaceId
     db.prepare(`
-      INSERT INTO pages (id, workspace_id, parent_page_id, title, content_json, created_by)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO pages (id, workspace_id, parent_page_id, title, content_json, created_by, position)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(
       newId,
       workspaceId,
       data.parent_page_id || null,
       data.title || 'Untitled',
       EMPTY_NOTE_JSON,
-      user.id
+      user.id,
+      // Al final de su nivel: con el orden manual, una nota nueva no puede
+      // aparecer en medio de las que ya se colocaron a mano.
+      posicionAlFinal(workspaceId, data.parent_page_id || null)
     );
 
     return new Response(JSON.stringify({ id: newId, title: data.title || 'Untitled' }), { 

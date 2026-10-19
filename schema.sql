@@ -87,10 +87,11 @@ CREATE TABLE pages (
  title TEXT NOT NULL DEFAULT 'Untitled',
  icon TEXT,
  cover_image TEXT,
- content_json TEXT, -- Payload de Editor.js o Excalidraw
+ content_json TEXT, -- {"format":"tiptap","doc":…}; ver src/lib/notes/content.ts
  created_by TEXT NOT NULL,
  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+ position REAL NOT NULL DEFAULT 0, -- orden dentro de su nivel (migración 39)
  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
  FOREIGN KEY (parent_page_id) REFERENCES pages(id) ON DELETE CASCADE,
  FOREIGN KEY (created_by) REFERENCES users(id)

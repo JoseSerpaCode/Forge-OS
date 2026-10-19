@@ -241,12 +241,14 @@ function seed() {
     });
 
     const insertPage = db.prepare(
-      `INSERT INTO pages (id, workspace_id, parent_page_id, title, icon, content_json, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO pages (id, workspace_id, parent_page_id, title, icon, content_json, created_by, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     );
-    for (const p of pages) {
-      insertPage.run(p.id, WS.id, p.parent, p.title, p.icon, p.content, users[0].id);
-    }
+    // In list order: all pages share the same created_at, so without an
+    // explicit position the tree would fall back to ordering by id.
+    pages.forEach((p, i) => {
+      insertPage.run(p.id, WS.id, p.parent, p.title, p.icon, p.content, users[0].id, (i + 1) * 1000);
+    });
 
     const insertLink = db.prepare(
       'INSERT INTO issue_page_links (issue_id, page_id, linked_by) VALUES (?, ?, ?)'

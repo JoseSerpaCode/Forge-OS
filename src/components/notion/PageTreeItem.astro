@@ -1,21 +1,30 @@
 ---
+import type { useTranslations } from '../../i18n/ui';
+
 interface Props {
   page: { id: string; parent_page_id: string | null; title: string; icon: string | null };
   childrenMap: Map<string, any[]>;
   currentPageId?: string;
   sys_tag: string;
+  canEdit: boolean;
+  t: ReturnType<typeof useTranslations>;
 }
-const { page, childrenMap, currentPageId, sys_tag } = Astro.props;
+const { page, childrenMap, currentPageId, sys_tag, canEdit, t } = Astro.props;
 const children = childrenMap.get(page.id) || [];
 const hasChildren = children.length > 0;
 const isActive = page.id === currentPageId;
 ---
 
-<li class="pl-4 relative group/tree">
-  <div class={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors group/item ${isActive ? 'bg-forge-panel border border-forge-border shadow-inner' : 'hover:bg-forge-bg'}`}>
+{/* `data-page-id` y `data-parent-id` los usan arrastrar y «Mover a…» para
+    saber dónde está cada nota sin volver a preguntar al servidor. */}
+<li class="tree-item pl-4 relative group/tree" data-page-id={page.id} data-parent-id={page.parent_page_id ?? ''}>
+  <div
+    class={`tree-row flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors group/item ${isActive ? 'bg-forge-panel border border-forge-border shadow-inner' : 'hover:bg-forge-bg'}`}
+    draggable={canEdit ? 'true' : undefined}
+  >
     {hasChildren ? (
-      <button class="w-4 h-4 text-forge-muted hover:text-forge-accent-text transition-colors" aria-label="Toggle">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right transform transition-transform group-[.expanded]/tree:rotate-90"><path d="m9 18 6-6-6-6"/></svg>
+      <button class="tree-toggle w-4 h-4 text-forge-muted hover:text-forge-accent-text transition-colors" aria-label={t('kb.tree.toggle')} aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right transform transition-transform group-[.expanded]/tree:rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
       </button>
     ) : (
       <span class="w-4 h-4"></span>
@@ -28,24 +37,33 @@ const isActive = page.id === currentPageId;
     ) : (
       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-forge-muted" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>
     )}
-    <a href={`/w/${sys_tag}/p/${page.id}`} class={`flex-1 text-sm truncate select-none ${isActive ? 'text-forge-text font-bold' : 'text-forge-text hover:text-forge-muted transition-colors'}`}>
+    {/* `draggable="false"` en el enlace: si no, el navegador arrastra la URL
+        en vez de la fila, y soltarla no mueve nada. */}
+    <a href={`/w/${sys_tag}/p/${page.id}`} draggable="false" class={`tree-title flex-1 text-sm truncate select-none ${isActive ? 'text-forge-text font-bold' : 'text-forge-text hover:text-forge-muted transition-colors'}`} aria-current={isActive ? 'page' : undefined}>
       {page.title}
     </a>
-    
-    <div class="flex items-center opacity-0 group-hover/item:opacity-100 transition-opacity">
-      <button class="add-child-btn w-5 h-5 flex items-center justify-center rounded hover:bg-forge-border text-forge-muted hover:text-forge-text transition-all" data-parent-id={page.id} aria-label="Add subpage" title="Add subpage">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-      </button>
-      <button class="delete-tree-page-btn w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-forge-muted hover:text-forge-error transition-all" data-id={page.id} aria-label="Delete page" title="Delete page">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-      </button>
-    </div>
+
+    {/* Las acciones aparecen al pasar el ratón, pero también con el foco de
+        teclado y siempre en pantallas táctiles, donde no hay ratón que pase. */}
+    {canEdit && (
+      <div class="flex items-center opacity-0 group-hover/item:opacity-100 group-focus-within/item:opacity-100 pointer-coarse:opacity-100 transition-opacity">
+        <button class="move-tree-page-btn w-5 h-5 flex items-center justify-center rounded hover:bg-forge-border text-forge-muted hover:text-forge-text transition-all" data-id={page.id} aria-label={t('kb.tree.move')} title={t('kb.tree.move')}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>
+        </button>
+        <button class="add-child-btn w-5 h-5 flex items-center justify-center rounded hover:bg-forge-border text-forge-muted hover:text-forge-text transition-all" data-parent-id={page.id} aria-label={t('kb.tree.add_child')} title={t('kb.tree.add_child')}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        </button>
+        <button class="delete-tree-page-btn w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-forge-muted hover:text-forge-error transition-all" data-id={page.id} aria-label={t('kb.delete_page')} title={t('kb.delete_page')}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
+      </div>
+    )}
   </div>
-  
+
   {hasChildren && (
-    <ul class="border-l border-forge-border/50 transition-colors ml-2 mt-1 hidden group-[.expanded]/tree:block" data-parent-id={page.id}>
+    <ul class="tree-children border-l border-forge-border/50 transition-colors ml-2 mt-1 hidden group-[.expanded]/tree:block" data-parent-id={page.id}>
       {children.map(child => (
-        <Astro.self page={child} childrenMap={childrenMap} currentPageId={currentPageId} sys_tag={sys_tag} />
+        <Astro.self page={child} childrenMap={childrenMap} currentPageId={currentPageId} sys_tag={sys_tag} canEdit={canEdit} t={t} />
       ))}
     </ul>
   )}
