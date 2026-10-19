@@ -883,75 +883,57 @@ VIOLET, TEAL, OCHRE, CREAM, ROSE = '#A98BF0', '#3FB6C9', '#E0A23A', '#F1E9DC', '
 FLOOR, SHADOW, STREAK = '#211F1C', '#0E0D0C', '#5C574F'
 
 
-def limb(points, color, width=12):
-    """Brazo o pierna con articulación: hombro/cadera → codo/rodilla → mano/pie."""
-    d = 'M' + 'L'.join(f'{x} {y}' for x, y in points)
-    return f'<path d="{d}" stroke="{color}" stroke-width="{width}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
-
-
-def figure(x, y, color, rot=0, limbs=(), w=44, h=56, hr=17, extra='', front=''):
-    """Figura con la base del cuerpo en (x, y): cuerpo en arco, cabeza pegada
-    encima, extremidades articuladas. `extra` va detrás del cuerpo (lo que se
-    sostiene en alto) y `front` delante (manos apoyadas)."""
+def figure(x, y, color, rot=0, arms=(), legs=(), w=44, h=58, extra=''):
+    """Figura con la base del cuerpo en (x, y). Cuerpo en arco, cabeza encima,
+    extremidades como trazos de 12 que salen de hombros y cadera; `extra` va en
+    las mismas coordenadas locales (lo que la figura sostiene)."""
     r = w / 2
     body = f'M{-r} 0V{-h + r}A{r} {r} 0 0 1 {r} {-h + r}V0Z'
-    return (f'<g transform="translate({x} {y}) rotate({rot})">{extra}'
-            + ''.join(limb(p, color) for p in limbs)
-            + f'<path d="{body}" fill="{color}"/><circle cx="0" cy="{-h - hr + 3}" r="{hr}" fill="{color}"/>{front}</g>')
+    limbs = ''.join(f'<path d="{d}" stroke="{color}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+                    for d in (*legs, *arms))
+    head = f'<circle cx="0" cy="{-h - 22}" r="18" fill="{color}"/>'
+    return f'<g transform="translate({x} {y}) rotate({rot})">{limbs}<path d="{body}" fill="{color}"/>{head}{extra}</g>'
 
 
-def ticket(cx, cy, rot):
-    return (f'<g transform="translate({cx} {cy}) rotate({rot})"><rect x="-46" y="-18" width="92" height="36" rx="9" fill="#F8F7F4"/>'
-            '<circle cx="-30" cy="0" r="6" fill="#E8590C"/><rect x="-18" y="-7" width="50" height="6" rx="3" fill="#CFCAC0"/>'
-            '<rect x="-18" y="3" width="32" height="6" rx="3" fill="#CFCAC0"/></g>')
+TICKET = ('<g transform="translate(0 -116) rotate(-5)">'
+          '<rect x="-46" y="-18" width="92" height="36" rx="9" fill="#F8F7F4"/>'
+          '<circle cx="-30" cy="0" r="6" fill="#E8590C"/>'
+          '<rect x="-18" y="-7" width="50" height="6" rx="3" fill="#CFCAC0"/>'
+          '<rect x="-18" y="3" width="32" height="6" rx="3" fill="#CFCAC0"/></g>')
+FILE = ('<g transform="translate(0 -118) rotate(4)">'
+        '<rect x="-38" y="-24" width="76" height="46" rx="8" fill="#F8F7F4"/>'
+        '<rect x="-28" y="-14" width="26" height="15" rx="4" fill="none" stroke="#7D776C" stroke-width="2.5"/>'
+        '<rect x="-28" y="7" width="48" height="5" rx="2.5" fill="#CFCAC0"/></g>')
 
+UP = ('M-15 -46L-28 -96', 'M15 -46L28 -96')
 
-def file_card(cx, cy, rot):
-    return (f'<g transform="translate({cx} {cy}) rotate({rot})"><rect x="-40" y="-24" width="80" height="46" rx="8" fill="#F8F7F4"/>'
-            '<rect x="-30" y="-14" width="26" height="15" rx="4" fill="none" stroke="#7D776C" stroke-width="2.5"/>'
-            '<rect x="-30" y="7" width="50" height="5" rx="2.5" fill="#CFCAC0"/></g>')
+# Composición: un recorrido alrededor de la fragua que la mirada sigue de
+# izquierda a derecha (salta y lanza → arriba con el ticket → baja por la
+# curva → llega con el archivo), sobre un suelo con sombras que la asienta.
+PLAYGROUND = f"""<svg viewBox="0 104 640 456" preserveAspectRatio="xMidYMax meet" overflow="visible">
+  <rect x="-400" y="520" width="1440" height="120" fill="{FLOOR}"/>
+  <ellipse cx="320" cy="521" rx="168" ry="9" fill="{SHADOW}"/>
+  <ellipse cx="112" cy="523" rx="20" ry="4" fill="{SHADOW}"/>
+  <ellipse cx="568" cy="522" rx="38" ry="7" fill="{SHADOW}"/>
 
+  <rect x="170" y="506" width="300" height="14" rx="3" fill="#E8590C"/>
+  <path d="M190 506V376A130 130 0 0 1 450 376V506Z" fill="#E8590C"/>
+  <path d="M256 506V438A64 64 0 0 1 384 438V506Z" fill="#171614"/>
+  {figure(320, 494, CREAM, w=34, h=44)}
+  <path d="M256 506V484A64 24 0 0 1 384 484V506Z" fill="#E8590C"/>
 
-PLAYGROUND = f"""<svg viewBox="0 0 640 540" preserveAspectRatio="xMidYMax meet" overflow="visible">
-  <rect x="-400" y="500" width="1440" height="120" fill="{FLOOR}"/>
-  <!-- Sombras: más pequeñas y lejanas cuanto más alto está quien la proyecta -->
-  <ellipse cx="320" cy="501" rx="160" ry="9" fill="{SHADOW}"/>
-  <ellipse cx="126" cy="503" rx="26" ry="5" fill="{SHADOW}"/>
-  <ellipse cx="548" cy="502" rx="40" ry="7" fill="{SHADOW}"/>
+  {figure(320, 248, VIOLET, arms=UP, legs=('M-10 -4L-14 26', 'M10 -4L16 26'), extra=TICKET)}
 
-  <!-- La fragua, con la base del logo -->
-  <rect x="175" y="486" width="290" height="14" rx="3" fill="#E8590C"/>
-  <path d="M195 486V361A125 125 0 0 1 445 361V486Z" fill="#E8590C"/>
-  <path d="M258 486V424A62 62 0 0 1 382 424V486Z" fill="#171614"/>
-  <!-- Dentro, alguien trabajando con las manos en las brasas -->
-  {figure(320, 466, CREAM, w=34, h=42, hr=14,
-          limbs=([(-12, -30), (-24, -24), (-32, -18)], [(12, -30), (24, -24), (32, -18)]))}
-  <path d="M258 486V470A62 22 0 0 1 382 470V486Z" fill="#E8590C"/>
+  <g transform="translate(414 292) rotate(48)">
+    <path d="M-66 -12H-42M-74 -28H-48M-62 -44H-44" stroke="{STREAK}" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  {figure(414, 292, TEAL, rot=48, arms=('M-15 -46L-34 -94', 'M15 -46L8 -100'), legs=('M6 -6L54 -6', 'M-6 -2L48 6'))}
 
-  <!-- Arriba del todo: levanta el ticket con una mano y alarga la otra hacia la brasa -->
-  {ticket(372, 118, 9)}
-  {figure(320, 240, VIOLET,
-          limbs=([(-10, -4), (-18, 22), (-8, 44)], [(10, -4), (20, 20), (12, 44)],
-                 [(15, -42), (36, -66), (42, -100)], [(-15, -42), (-38, -52), (-58, -66)]))}
+  <path d="M126 318Q160 196 234 182" stroke="{STREAK}" stroke-width="3" stroke-dasharray="1 10" stroke-linecap="round" fill="none"/>
+  <circle cx="246" cy="180" r="13" fill="#E8590C"/>
+  {figure(104, 420, OCHRE, rot=-12, arms=('M15 -46L40 -90', 'M-15 -44L-36 -18'), legs=('M-10 -2L-30 22', 'M10 -2L32 14'))}
 
-  <!-- Sentada en el hombro del arco, saluda a quien llega con el archivo -->
-  {figure(424, 292, TEAL,
-          limbs=([(8, -2), (26, 14), (22, 40)], [(-6, -2), (10, 18), (4, 42)],
-                 [(-14, -36), (-26, -18), (-30, -2)], [(14, -40), (34, -58), (46, -84)]))}
-  <path d="M484 196Q496 204 494 218M494 186Q512 198 508 222" stroke="{STREAK}" stroke-width="4" stroke-linecap="round" fill="none"/>
-
-  <!-- Saltando: acaba de lanzar la brasa -->
-  <path d="M138 296Q176 150 238 150" stroke="{STREAK}" stroke-width="3" stroke-dasharray="1 10" stroke-linecap="round" fill="none"/>
-  <circle cx="248" cy="154" r="13" fill="#E8590C"/>
-  {figure(112, 398, OCHRE, rot=-14,
-          limbs=([(-8, -2), (-28, 14), (-16, 36)], [(8, -2), (28, 12), (44, 2)],
-                 [(-15, -42), (-34, -32), (-50, -44)], [(15, -44), (36, -62), (44, -92)]))}
-
-  <!-- Llega con un archivo sobre la cabeza -->
-  {figure(552, 464, ROSE, rot=-5,
-          limbs=([(-8, -2), (-20, 18), (-34, 36)], [(8, -2), (14, 20), (26, 36)],
-                 [(-15, -44), (-26, -70), (-18, -98)], [(15, -44), (26, -70), (20, -98)]),
-          extra=file_card(0, -116, -4))}
+  {figure(568, 488, ROSE, rot=6, arms=UP, legs=('M-8 -2L-26 30', 'M10 -2L22 32'), extra=FILE)}
 </svg>"""
 
 # ── Acceso ──────────────────────────────────────────────────────────────────
