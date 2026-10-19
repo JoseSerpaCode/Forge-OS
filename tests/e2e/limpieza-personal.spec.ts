@@ -73,8 +73,12 @@ test('encender lo social en Ajustes trae de vuelta Personas', async ({ page }) =
   await entrar(page, yo);
   await page.goto('/settings');
   await page.locator('label:has(#profile-social)').click();
+  // Al cambiar lo social, Ajustes recarga la página para enseñar o quitar
+  // «Personas». Hay que esperar a esa recarga: si no, el `goto('/')` de abajo
+  // choca con ella y sale `net::ERR_ABORTED` cuando la máquina va cargada.
+  const recarga = page.waitForEvent('load');
   await page.locator('#btn-save-profile').click();
-  await page.waitForLoadState('load');
+  await recarga;
   await expect.poll(() => {
     const db = getTestDb();
     const v = (db.prepare('SELECT social_enabled FROM users WHERE username = ?').get(yo) as any).social_enabled;
