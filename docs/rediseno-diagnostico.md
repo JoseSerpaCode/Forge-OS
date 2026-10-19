@@ -429,25 +429,37 @@ esta identidad, en claro y oscuro.
 - Al arrastrar, la tarjeta se inclina 1° y proyecta sombra. Es el único
   movimiento de la pantalla.
 
-**Logo — el contraste de herrero.** *(Sustituido: las propuestas de logo nuevo, con «Fragua» como recomendada, están en `docs/rediseno/logo.html`.)*
+**Logo — «Fragua» (elegido).** La boca de una fragua sobre su hogar, con las
+brasas encendidas dentro. Sustituye al primer boceto de esta identidad, un
+cartucho de punzón con «FO» en hueco. Las cuatro propuestas que se
+compararon, y por qué se descartaron las otras tres, están en
+`docs/rediseno/logo.html`.
 
-- **Emblema:** un cartucho rectangular de proporción 5:3 con las cuatro
-  esquinas **achaflanadas** (corte a 45°, de 1/6 de la altura). Es la silueta
-  de un punzón.
-- **Dentro, las letras «FO»** en Archivo condensado extra negrita, caladas
-  (en hueco). El grosor del contorno del cartucho es igual al trazo de las
-  letras, de modo que parezca estampado.
-- **Color:** una sola tinta, sin gradiente ni halo.
-  - Tinta sobre papel en la interfaz.
-  - Naranja de seguridad con letras en tinta en el icono de aplicación y en
-    la imagen de OpenGraph.
-- **Favicon:** el cartucho solo con la «F». El chaflán sigue legible a 16 px
-  porque son cortes rectos, no curvas.
-- **Logotipo:** «Forge OS» en Archivo SemiCondensed bold, alineado a la
-  altura del cartucho.
-- **Por qué funciona:** se puede estampar, grabar, bordar o poner en una
-  pegatina de un solo color. Esa prueba la suspende cualquier logo hecho de
-  gradientes.
+- **Construcción:** dos formas sobre una rejilla de 64 × 64.
+  - Un arco con hueco que se apoya en una base más ancha: la fragua y su
+    hogar.
+  - Un montículo de brasas que repite la curva del arco.
+- **Significado:** es el sitio donde se trabaja, lo mismo que un espacio de
+  Forge. «Hogar» es a la vez el fuego de la fragua y la casa.
+- **Color:**
+  - El arco va en el color del texto: tinta sobre papel, papel sobre
+    grafito.
+  - Las brasas van siempre en el naranja de marca `#E8590C`, que es fijo y no
+    cambia con el tema.
+  - En una sola tinta también funciona: las brasas quedan como forma maciza
+    dentro del hueco.
+- **Icono de aplicación y favicon:** el símbolo al 70 % dentro de un
+  cuadrado redondeado en tinta (`rx` 14 sobre 64). El cuadrado es la forma
+  que piden iOS y Android para los iconos; aquí lo lleva solo el icono, no el
+  logo. Hay una variante sobre naranja.
+- **Logotipo:** «Forge OS» en Archivo bold, ancho normal, interletra −0,02 em,
+  a la derecha del símbolo.
+- **Variantes descartadas para el interior:**
+  - Una gota de fuego simétrica: se leía como agua o como un marcador de mapa.
+  - Una llama con lengua lateral: se parece a la de Tinder.
+  - Una barra horizontal: parecía una señal de prohibido.
+- **Pendiente:** buscar en el registro de marcas (clases 9 y 42) si hay
+  algo parecido con «Forge» y un arco o una llama. No está hecho.
 
 **Riesgos:**
 
@@ -668,9 +680,11 @@ de verdad es mucho más fiable que elegir sobre una paleta.
    - El cian de la barra lateral, del hub y del avatar por defecto.
    - `hover:bg-opacity-90`, `border-forge-accent-primary` y el `</style>`
      sobrante.
-3. **Marca nueva:**
-   - `public/forge-icon.svg` y `Logo.astro` con el emblema elegido (mismo
-     trazado en los dos; la nota de `CLAUDE.md` sigue valiendo).
+3. **Marca nueva («Fragua»):**
+   - `public/forge-icon.svg` y `Logo.astro` con el mismo trazado de
+     `docs/rediseno/logo.html`: rejilla de 64, arco con hueco y montículo de
+     brasas. La nota de `CLAUDE.md` sigue valiendo: si cambias uno, cambia el
+     otro.
    - Imagen de OpenGraph.
    - Color de la marca **fijo**, desacoplado de los tokens de tema.
 4. **Tokens nuevos** en `themes.css`, con la estructura de la sección 3, más

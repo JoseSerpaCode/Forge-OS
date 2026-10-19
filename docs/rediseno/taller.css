@@ -130,9 +130,8 @@ button { cursor: pointer; }
 .brand svg { display: block; fill: currentColor; }
 .brand-word {
   font-weight: 700;
-  font-stretch: 87.5%;
   font-size: var(--t-16);
-  letter-spacing: -0.005em;
+  letter-spacing: -0.02em;
 }
 
 /* ── Armazón ────────────────────────────────────────────────────────────── */
