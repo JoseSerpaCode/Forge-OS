@@ -1393,6 +1393,27 @@ const MIGRATIONS: Migration[] = [
               OR EXISTS (SELECT 1 FROM user_blocks b WHERE b.blocker_id = users.id)`);
     }
   },
+  {
+    version: 53,
+    description: 'push_subscriptions: avisos Web Push por dispositivo',
+    run: () => {
+      // Una fila por navegador en el que la persona activó los avisos. `CASCADE`
+      // en `user_id`: son de la persona y se van con ella. El `endpoint` es
+      // único: el mismo navegador que vuelve a suscribirse reemplaza la fila.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          endpoint TEXT NOT NULL UNIQUE,
+          p256dh TEXT NOT NULL,
+          auth TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      db.exec('CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)');
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

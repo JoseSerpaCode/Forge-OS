@@ -1,7 +1,7 @@
 {
   "name": "forge-js",
   "type": "module",
-  "version": "1.33.0",
+  "version": "1.34.0",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -42,7 +42,8 @@
     "socket.io": "^4.8.4",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "undici": "^8.12.2"
+    "undici": "^8.12.2",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
@@ -51,6 +52,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.10",
     "socket.io-client": "^4.8.4",
     "tsx": "^4.23.12",

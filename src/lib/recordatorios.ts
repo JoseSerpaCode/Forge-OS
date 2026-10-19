@@ -2,6 +2,7 @@ import db from './db';
 import { NotificationService } from './NotificationService';
 import { instanteDePared } from './calendario';
 import { esZona } from './fechas';
+import { enviarPush } from './push';
 
 /**
  * Recordatorios antes de una entrega.
@@ -50,6 +51,9 @@ export function procesarRecordatorios(ahora: Date = new Date()): { enviados: num
 
   let enviados = 0;
   let descartados = 0;
+  // Los Web Push salen **después** de las transacciones: es una petición de
+  // red, y una transacción de SQLite no puede quedarse abierta esperándola.
+  const pushes: Array<{ userId: string; aviso: { title: string; body: string; url: string } }> = [];
   const marcar = db.prepare('UPDATE issues SET reminded_at = CURRENT_TIMESTAMP WHERE id = ? AND reminded_at IS NULL');
   for (const c of candidatas) {
     const zona = esZona(c.timezone) ? c.timezone! : 'UTC';
@@ -61,11 +65,16 @@ export function procesarRecordatorios(ahora: Date = new Date()): { enviados: num
       if (marcar.run(c.id).changes === 0) return;
       if (tarde) { descartados++; return; }
       const hora = c.due_time ? ` · ${c.due_time}` : '';
-      NotificationService.notify(c.destinatario, 'info', 'Recordatorio', `${c.title} · entrega ${String(c.due_date).slice(0, 10)}${hora}`,
-        `/w/${c.sys_tag}/board?issue=${c.id}`);
+      const cuerpo = `${c.title} · entrega ${String(c.due_date).slice(0, 10)}${hora}`;
+      const url = `/w/${c.sys_tag}/board?issue=${c.id}`;
+      // El silencio de notificaciones vale también para el aviso fuera de la app.
+      if (NotificationService.notify(c.destinatario, 'info', 'Recordatorio', cuerpo, url)) {
+        pushes.push({ userId: c.destinatario, aviso: { title: 'Recordatorio', body: cuerpo, url } });
+      }
       enviados++;
     })();
   }
+  for (const p of pushes) enviarPush(p.userId, p.aviso).catch((err) => console.error('[recordatorios] push:', err));
   return { enviados, descartados };
 }
 

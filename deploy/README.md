@@ -264,6 +264,30 @@ sudo systemctl restart forge-os
 se genera una clave nueva en cada arranque, y eso invalida los inicios de sesión
 a medias y los formularios abiertos cada vez que reinicias el servicio.
 
+## 8b. Avisos Web Push de los recordatorios (opcional)
+
+Sin claves, los recordatorios llegan como notificación dentro de la app y la
+opción «Activar avisos» de Ajustes no aparece. Con claves, llegan también con
+Forge cerrado. Se generan una vez:
+
+```sh
+cd /opt/forge-os && sudo -u forge npx web-push generate-vapid-keys
+```
+
+y se añaden a `/etc/forge-os.env`:
+
+```sh
+VAPID_PUBLIC_KEY=<la pública>
+VAPID_PRIVATE_KEY=<la privada>
+VAPID_SUBJECT=mailto:<un correo de contacto>
+```
+
+**No las cambies después.** Cada navegador suscrito queda atado a la clave
+pública: con otra, todas las suscripciones dejan de funcionar y cada persona
+tiene que volver a activar los avisos en cada dispositivo. La privada es un
+secreto como `DRIVE_TOKEN_KEY`. En iPhone, los avisos solo llegan si Forge está
+añadido a la pantalla de inicio.
+
 ## 9. Backups
 
 ```sh

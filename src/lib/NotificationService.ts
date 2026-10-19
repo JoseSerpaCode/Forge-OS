@@ -6,24 +6,28 @@ export type NotificationType = 'assign' | 'mention' | 'sprint' | 'system' | 'inf
 export const NotificationService = {
   /**
    * Create a notification for a user, respecting their mute settings.
+   *
+   * Devuelve si se creó. Quien quiera mandar además un aviso fuera de la app
+   * (Web Push) lo hace solo si esto dice que sí: así un silencio vale para las
+   * dos cosas.
    */
-  notify(userId: string, type: NotificationType, title: string, message: string, linkUrl?: string) {
+  notify(userId: string, type: NotificationType, title: string, message: string, linkUrl?: string): boolean {
     // 1. Fetch user mute settings
     const user = db.prepare(`
       SELECT notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system 
       FROM users WHERE id = ?
     `).get(userId) as any;
 
-    if (!user) return; // User doesn't exist
+    if (!user) return false; // User doesn't exist
 
     // 2. Check global mute
-    if (user.notif_mute_all) return;
+    if (user.notif_mute_all) return false;
 
     // 3. Check category mute
-    if (type === 'assign' && user.notif_mute_assign) return;
-    if (type === 'mention' && user.notif_mute_mention) return;
-    if (type === 'sprint' && user.notif_mute_sprint) return;
-    if (type === 'system' && user.notif_mute_system) return;
+    if (type === 'assign' && user.notif_mute_assign) return false;
+    if (type === 'mention' && user.notif_mute_mention) return false;
+    if (type === 'sprint' && user.notif_mute_sprint) return false;
+    if (type === 'system' && user.notif_mute_system) return false;
 
     // 4. Insert notification
     const notifId = crypto.randomUUID();
@@ -44,6 +48,7 @@ export const NotificationService = {
       link_url: linkUrl || null,
       created_at: createdAt
     });
+    return true;
   },
 
   getUnreadCount(userId: string) {

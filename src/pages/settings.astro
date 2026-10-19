@@ -25,10 +25,13 @@ const hasPassword = typeof pwRow?.password_hash === 'string' && pwRow.password_h
 import { useTranslations } from '../i18n/ui';
 import { credentialsFor } from '../lib/oauth';
 import { listarFeeds } from '../lib/calendario';
+import { clavePublica } from '../lib/push';
 import { relativo } from '../lib/fechas';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 const feeds = listarFeeds(user.id);
+// Sin claves VAPID en el servidor, los avisos fuera de la app no existen y no se ofrecen.
+const clavePush = clavePublica();
 
 // Un botón «Conectar» que lleva a un 404 es peor que no ofrecerlo: quien lo
 // pulsa cree que la aplicación está rota. Si el proveedor no tiene
@@ -444,6 +447,27 @@ const oauthNotice =
       
       <div class="h-px w-full bg-forge-border/40 my-10"></div>
       
+      {clavePush && (
+        <section id="avisos-push" class="grid grid-cols-1 md:grid-cols-3 gap-8"
+          data-clave={clavePush}
+          data-t-on={t('push.on')} data-t-off={t('push.off')} data-t-denied={t('push.denied')}
+          data-t-unsupported={t('push.unsupported')} data-t-error={t('push.error')}>
+          <div class="md:col-span-1">
+            <h2 class="text-base font-semibold text-forge-text">{t('push.title')}</h2>
+            <p class="text-sm text-forge-muted mt-1">{t('push.desc')}</p>
+          </div>
+          <div class="md:col-span-2 space-y-3">
+            <p id="push-estado" class="text-sm text-forge-muted" aria-live="polite"></p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" id="push-activar" class="bg-forge-primary text-forge-on-accent font-bold px-4 py-2 rounded-md text-sm">{t('push.enable')}</button>
+              <button type="button" id="push-desactivar" class="hidden border border-forge-border rounded-md px-4 py-2 text-sm text-forge-text hover:border-forge-secondary">{t('push.disable')}</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="h-px w-full bg-forge-border/40 my-10"></div>
+      )}
+
       {/* Calendario .ics: suscribirse desde Google Calendar. */}
       <section id="calendario" class="grid grid-cols-1 md:grid-cols-3 gap-8"
         data-t-copied={t('cal.copied')} data-t-error={t('cal.error')}>
@@ -1178,6 +1202,74 @@ const oauthNotice =
       }).catch(() => null);
       if (res?.ok) boton.closest('li')?.remove();
       else window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+    });
+  })();
+</script>
+
+<script>
+  /**
+   * Avisos Web Push en este dispositivo.
+   *
+   * El permiso del navegador se pide **solo al pulsar «Activar avisos»**, nunca
+   * al cargar: un cuadro de permiso que aparece solo se rechaza por reflejo, y
+   * una vez rechazado ya no se puede volver a preguntar.
+   */
+  (() => {
+    const raiz = document.getElementById('avisos-push');
+    if (!raiz) return;
+    const estado = document.getElementById('push-estado')!;
+    const activar = document.getElementById('push-activar') as HTMLButtonElement;
+    const desactivar = document.getElementById('push-desactivar') as HTMLButtonElement;
+    const t = raiz.dataset;
+    const soportado = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+
+    const pintar = (activo: boolean) => {
+      activar.classList.toggle('hidden', activo);
+      desactivar.classList.toggle('hidden', !activo);
+      estado.textContent = activo ? (t.tOn || '') : Notification.permission === 'denied' ? (t.tDenied || '') : (t.tOff || '');
+    };
+    if (!soportado) { estado.textContent = t.tUnsupported || ''; activar.disabled = true; return; }
+
+    // Solo mirar el estado: `getRegistration` no registra nada ni pide permisos.
+    navigator.serviceWorker.getRegistration('/sw.js').then(async (reg) => {
+      const sub = await reg?.pushManager.getSubscription();
+      pintar(!!sub && Notification.permission === 'granted');
+    });
+
+    const aBytes = (b64: string) => {
+      const relleno = '='.repeat((4 - (b64.length % 4)) % 4);
+      const bin = atob((b64 + relleno).replace(/-/g, '+').replace(/_/g, '/'));
+      return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    };
+
+    activar.addEventListener('click', async () => {
+      try {
+        const permiso = await Notification.requestPermission();
+        if (permiso !== 'granted') { pintar(false); return; }
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: aBytes(t.clave || '') });
+        const res = await fetch('/api/user/push', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        pintar(true);
+      } catch (err) {
+        console.error('activar avisos:', err);
+        window.showToast?.(t.tError || '', true);
+      }
+    });
+
+    desactivar.addEventListener('click', async () => {
+      const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+      const sub = await reg?.pushManager.getSubscription();
+      if (sub) {
+        await fetch('/api/user/push', {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }),
+        }).catch(() => null);
+        await sub.unsubscribe().catch(() => false);
+      }
+      pintar(false);
     });
   })();
 </script>

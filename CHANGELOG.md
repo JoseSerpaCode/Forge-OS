@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.34.0] - 2026-10-19
+
+### Added
+
+- **Avisos Web Push**: los recordatorios llegan aunque Forge esté cerrado. Se activan en Ajustes → «Activar avisos», y el navegador pide el permiso solo al pulsarlo. Hace falta configurar unas claves VAPID en el servidor (ver `deploy/README.md`); sin ellas, la opción no aparece. Los silencios de notificaciones valen también para estos avisos. El *service worker* no guarda nada en caché.
+
+### Security
+
+- El servidor solo manda avisos a los servicios de push de los navegadores: Google, Mozilla, Apple y Microsoft. La dirección de cada suscripción la manda el navegador, y sin esa lista el servidor haría peticiones a donde le dijeran, incluida su propia red interna.
+- Como mucho 10 dispositivos por cuenta, para que una cuenta no pueda multiplicar las peticiones que el servidor hace por cada recordatorio.
+- Al pulsar un aviso solo se abren direcciones del propio sitio: `//otro-sitio` también empieza por «/» y antes se colaba.
+
 ## [1.33.0] - 2026-10-19
 
 ### Changed

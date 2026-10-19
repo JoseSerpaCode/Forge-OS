@@ -166,4 +166,13 @@ export const en = {
   'friends.off_cta': 'Go to Settings',
   'user.settings.social': 'Friends and requests',
   'user.settings.social_note': 'While off, People and the Hub banner are hidden and nobody can send you requests. Your profile can still be viewed.',
+  'push.title': 'Notifications on this device',
+  'push.desc': 'Reminders arrive even with Forge closed. On iPhone, add Forge to the home screen first.',
+  'push.enable': 'Turn on notifications',
+  'push.disable': 'Turn off on this device',
+  'push.on': 'On for this device.',
+  'push.off': 'Off for this device.',
+  'push.denied': 'The browser is blocking notifications for this site. Change it in the browser permissions.',
+  'push.unsupported': 'This browser does not support Web Push.',
+  'push.error': 'Notifications could not be turned on.',
 } as const;

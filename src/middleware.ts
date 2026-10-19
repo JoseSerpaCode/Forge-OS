@@ -208,6 +208,11 @@ function applySecurityHeaders(response: Response): Response {
     // redirigir ahí a mitad de la subida, y perderlo rompería justo los
     // archivos grandes, que son los que más duele volver a subir.
     "connect-src 'self' ws: wss: https://www.googleapis.com https://storage.googleapis.com",
+    // El service worker de los avisos Web Push y el manifest. `default-src`
+    // ya los cubre, pero dicho aquí no depende de cómo cada navegador aplique
+    // la cadena de respaldo, y deja claro que solo valen los del propio origen.
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "frame-ancestors 'none'"
   ].join('; ');
   

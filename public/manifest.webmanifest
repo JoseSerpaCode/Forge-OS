@@ -1,0 +1,11 @@
+{
+  "name": "Forge OS",
+  "short_name": "Forge OS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0C",
+  "theme_color": "#FF5D00",
+  "icons": [
+    { "src": "/forge-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
