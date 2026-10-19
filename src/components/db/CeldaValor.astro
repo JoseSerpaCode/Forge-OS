@@ -18,6 +18,7 @@ interface Props {
 const { tipo, valor, archivos } = Astro.props;
 
 import { useTranslations } from '../../i18n/ui';
+import { tonoDe } from '../../lib/tonos';
 const t = useTranslations(Astro.locals.lang || 'en');
 
 const archivo = tipo === 'file' && valor ? archivos.get(valor) : null;
@@ -25,14 +26,16 @@ const vacio = valor === null || valor === undefined || valor === '';
 ---
 {tipo === 'file' ? (
   !archivo ? (
-    <span class="text-forge-muted italic">{t('db.no_file')}</span>
+    <span class="text-forge-muted">{t('db.no_file')}</span>
   ) : archivo.webViewLink ? (
     <a href={archivo.webViewLink} target="_blank" rel="noopener noreferrer" class="text-forge-accent-text hover:underline">{archivo.name}</a>
   ) : (
     <span>{archivo.name}</span>
   )
 ) : tipo === 'select' && !vacio ? (
-  <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-forge-secondary/10 text-forge-accent-text border border-forge-secondary/20">{valor}</span>
+  /* Una opción, en píldora con un tono estable por valor (el mismo texto,
+     el mismo tono en todas las filas) y el texto en tinta. */
+  <span class="chip chip-sm" style={`--c:${tonoDe(String(valor))}`}><span class="sw" aria-hidden="true"></span>{valor}</span>
 ) : (
-  <span class={vacio ? 'text-forge-muted italic' : ''}>{vacio ? t('db.empty_cell') : valor}</span>
+  <span class={vacio ? 'text-forge-muted' : ''}>{vacio ? t('db.empty_cell') : valor}</span>
 )}

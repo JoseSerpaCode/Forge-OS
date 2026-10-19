@@ -6,6 +6,18 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.41.0] - 2026-10-19
+
+Fase 5 del rediseño «Taller»: tablas y archivos.
+
+### Changed
+
+- **Tablas**: lista en una tabla con las columnas y las filas de cada una, en lugar de tarjetas que se levantaban al pasar el ratón. La descripción dice para qué sirven, sin compararse con otro producto.
+- **Una tabla abierta** enseña el tipo de cada columna debajo de su nombre. Cada opción de una columna de selección va en una píldora con un tono que no cambia de fila a fila.
+- **Archivos**: dónde viven de verdad (el Drive de quien conectó el espacio) dicho arriba, y en la lista una etiqueta con el formato de cada archivo (PDF, PNG…) en vez del mismo icono para todos.
+- Ventanas, campos y botones de estas pantallas, con las piezas del sistema.
+- Textos en tipo oración: «Nueva tabla», «Tablas» (antes «Bases de Datos & Tablas»), y los tipos de columna sin mayúsculas.
+
 ## [1.40.0] - 2026-10-19
 
 Fase 4 del rediseño «Taller»: las notas.

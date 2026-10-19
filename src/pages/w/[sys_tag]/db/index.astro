@@ -59,76 +59,65 @@ const TXT = {
   typeFile: t('db.type_file'),
   nameDefault: t('db.col_name_default'),
 };
+
+// Filas de cada tabla, en una consulta, para la columna «Filas».
+const filasPorTabla = new Map(
+  (db.prepare(`SELECT database_id AS id, COUNT(*) AS n FROM dynamic_entries WHERE database_id IN (SELECT id FROM dynamic_databases WHERE workspace_id = ?) GROUP BY database_id`).all(workspace.id) as Array<{ id: string; n: number }>).map((r) => [r.id, r.n])
+);
 ---
 
-<MainLayout hideFooter={true} title={`Databases — ${workspace.name}`} workspaceId={workspace.id}>
-  <div class="max-w-[1200px] mx-auto space-y-6">
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-forge-panel to-forge-panel/50 p-6 rounded-2xl border border-forge-border/40 shadow-sm relative overflow-hidden">
-      <!-- Decorative background blur -->
-      <div class="absolute -right-20 -top-20 w-64 h-64 bg-forge-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
-      
-      <div class="relative z-10">
-        <h1 class="text-2xl font-bold text-forge-text flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl bg-forge-bg flex items-center justify-center border border-forge-border/60 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-          </div>
-          {t('db.title')}
-        </h1>
-        <p class="text-sm text-forge-muted mt-2 max-w-xl leading-relaxed">
-          {t('db.subtitle')}
-        </p>
+<MainLayout hideFooter={true} title={`${t('sidebar.databases')} — ${workspace.name}`} workspaceId={workspace.id}>
+  {/* Tablas (docs/rediseno/tablas.html): título, una frase que dice para qué
+      sirven —sin compararse con otro producto— y la lista, sin tarjetas que
+      se levantan ni gradientes. */}
+  <div class="max-w-[70rem] pb-12">
+    <header class="page-head">
+      <div class="min-w-0">
+        <h1 class="page-title">{t('db.title')}</h1>
+        <p class="page-sub max-w-2xl">{t('db.subtitle')}</p>
       </div>
       {canEdit && (
-        <button id="btn-new-db" class="bg-forge-text text-forge-bg text-sm font-bold px-5 py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <button id="btn-new-db" class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
           {t('db.create')}
         </button>
       )}
     </header>
 
     {databases.length === 0 ? (
-      <div class="text-center py-24 bg-forge-panel border border-forge-border rounded-2xl border-dashed">
-        <div class="w-16 h-16 rounded-2xl bg-forge-bg border border-forge-border flex items-center justify-center mx-auto mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-forge-muted"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-        </div>
-        <h3 class="text-lg font-bold text-forge-text mb-1">{t('db.empty_title')}</h3>
-        <p class="text-sm text-forge-muted max-w-sm mx-auto leading-relaxed">
-          {t('db.empty_desc')}
-        </p>
+      <div class="panel px-5 py-8 max-w-xl">
+        <h3 class="font-semibold text-forge-text mb-1">{t('db.empty_title')}</h3>
+        <p class="text-sm text-forge-muted">{t('db.empty_desc')}</p>
       </div>
     ) : (
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {databases.map(database => (
-          <a href={`/w/${sys_tag}/db/${database.id}`} class="group relative bg-forge-panel border border-forge-border/60 rounded-2xl p-5 hover:border-forge-secondary/40 transition-all hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1 overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-br from-forge-secondary/0 to-forge-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="relative z-10">
-              <div class="flex items-start gap-4 mb-4">
-                <div class="w-12 h-12 rounded-xl bg-forge-bg border border-forge-border/50 flex items-center justify-center shrink-0 text-forge-accent-text group-hover:scale-110 group-hover:border-forge-secondary/30 transition-all shadow-sm">
-                  <DbIcon value={database.icon} size={22} />
-                </div>
-                <div class="flex-1 min-w-0 pt-1">
-                  <h3 class="text-base font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{database.name}</h3>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="inline-flex items-center gap-1 text-[10px] uppercase font-bold text-forge-muted tracking-wider bg-forge-bg px-2 py-0.5 rounded-md border border-forge-border/50">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                      {/* `schemaJson` por lo mismo: en snake_case daba undefined y el contador
-                          marcaba 0 columnas en todas las tablas, siempre. */}
-                      {(() => { try { return JSON.parse(database.schemaJson || '{}').columns?.length || 0; } catch(e) { return 0; } })()} {t('db.columns')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p class="text-sm text-forge-muted line-clamp-2 leading-relaxed h-10">{database.description || <span class="italic">{t('db.no_desc')}</span>}</p>
-            </div>
-          </a>
-        ))}
+      <div class="panel overflow-x-auto">
+        <table class="tabla">
+          <thead><tr><th>{t('db.col_table')}</th><th>{t('db.col_desc')}</th><th class="num">{t('db.col_columns')}</th><th class="num">{t('db.col_rows')}</th></tr></thead>
+          <tbody>
+            {databases.map((database) => (
+              <tr>
+                <td class="titulo">
+                  <a href={`/w/${sys_tag}/db/${database.id}`} class="flex items-center gap-2.5 hover:underline underline-offset-2">
+                    <span class="text-forge-muted shrink-0" aria-hidden="true"><DbIcon value={database.icon} size={18} /></span>
+                    <span class="truncate max-w-[20rem]">{database.name}</span>
+                  </a>
+                </td>
+                <td class="text-forge-muted max-w-[28rem] truncate">{database.description || '—'}</td>
+                {/* `schemaJson` en camelCase: en snake_case daba undefined y el
+                    contador marcaba 0 columnas en todas las tablas. */}
+                <td class="num">{(() => { try { return JSON.parse(database.schemaJson || '{}').columns?.length || 0; } catch { return 0; } })()}</td>
+                <td class="num">{filasPorTabla.get(database.id) ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     )}
   </div>
 
   <!-- New DB Modal -->
   {canEdit && (
-    <dialog id="new-db-modal" class="bg-forge-panel border border-forge-border/60 rounded-3xl p-0 w-full max-w-[700px] text-forge-text shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop:bg-black/70 backdrop:backdrop-blur-md max-md:backdrop-blur-none">
+    <dialog id="new-db-modal" class="ventana !max-w-[44rem] !p-0">
       <div class="px-8 py-6 border-b border-forge-border/40 flex justify-between items-start sticky top-0 bg-forge-panel/95 backdrop-blur z-20 rounded-t-3xl">
         <div>
           <h2 class="text-2xl font-bold text-forge-text flex items-center gap-3">
@@ -195,12 +184,12 @@ const TXT = {
         <div class="flex flex-col gap-6">
           <div class="flex-1 space-y-5">
             <div>
-              <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2" for="db-name">{t('db.table_name')} <span class="text-forge-error">*</span></label>
-              <input type="text" id="db-name" class="w-full bg-forge-panel border border-forge-border rounded-xl px-4 py-3 text-base text-forge-text focus:border-forge-secondary focus:ring-2 focus:ring-forge-secondary/20 outline-none transition-all shadow-sm placeholder:text-forge-muted" placeholder={t('db.table_name_ph')}>
+              <label class="block field-label mb-2" for="db-name">{t('db.table_name')} <span class="text-forge-error">*</span></label>
+              <input type="text" id="db-name" class="campo text-base" placeholder={t('db.table_name_ph')}>
             </div>
             <div>
-              <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2" for="db-desc">{t('db.desc')} <span class="normal-case font-normal text-forge-muted">({t('db.optional')})</span></label>
-              <textarea id="db-desc" rows="2" class="w-full bg-forge-panel border border-forge-border rounded-xl px-4 py-3 text-sm text-forge-text focus:border-forge-secondary focus:ring-2 focus:ring-forge-secondary/20 outline-none transition-all shadow-sm placeholder:text-forge-muted custom-scrollbar" placeholder={t('db.desc_ph')}></textarea>
+              <label class="block field-label mb-2" for="db-desc">{t('db.desc')} <span class="normal-case font-normal text-forge-muted">({t('db.optional')})</span></label>
+              <textarea id="db-desc" rows="2" class="campo custom-scrollbar" placeholder={t('db.desc_ph')}></textarea>
             </div>
 
             {/* El icono se elige de una lista, no se escribe. Antes era una caja
@@ -208,7 +197,7 @@ const TXT = {
                 dibuja distinto en cada sistema y no pega con los iconos de línea
                 del resto de la aplicación. */}
             <fieldset>
-              <legend class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2">{t('db.icon')}</legend>
+              <legend class="block field-label mb-2">{t('db.icon')}</legend>
               <input type="hidden" id="db-icon" value={ICONO_POR_DEFECTO}>
               {/* Rejilla fija de siete, no `flex-wrap`: al ajustarse al ancho
                   quedaban trece en una fila y uno solo colgando debajo. */}
@@ -259,7 +248,7 @@ const TXT = {
         <button type="button" id="btn-cancel-db" class="px-6 py-2.5 text-sm font-bold text-forge-muted hover:text-forge-text transition-colors">
           {t('ws.settings.modal_cancel')}
         </button>
-        <button type="button" id="btn-save-db" class="bg-forge-primary text-forge-on-accent px-8 py-2.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm shadow-forge-primary/20">
+        <button type="button" id="btn-save-db" class="btn btn-primary">
           {t('db.create')}
         </button>
       </div>
@@ -383,12 +372,12 @@ const TXT = {
         div.innerHTML = `
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-forge-border/40 group-hover:bg-forge-secondary/50 transition-colors"></div>
           <div class="flex-1 min-w-[200px]">
-            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1"></span>
-            <input type="text" class="col-name w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all">
+            <span class="block field-label mb-1.5 ml-1"></span>
+            <input type="text" class="col-name campo">
           </div>
           <div class="w-36 shrink-0">
-            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-muted mb-1.5 ml-1"></span>
-            <select class="col-type w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all cursor-pointer">
+            <span class="block field-label mb-1.5 ml-1"></span>
+            <select class="col-type campo">
               <option value="text"></option>
               <option value="number"></option>
               <option value="select"></option>
@@ -402,7 +391,7 @@ const TXT = {
           </div>
           <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
             <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-accent-text mb-1.5 ml-1"></span>
-            <input type="text" class="col-options w-full bg-forge-panel border border-forge-border border-dashed rounded-lg px-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:border-solid outline-none transition-all placeholder:text-forge-muted">
+            <input type="text" class="col-options campo">
           </div>
         `;
 

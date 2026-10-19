@@ -7,26 +7,13 @@
     "src/pages/w/[sys_tag]/board.astro": 1,
     "src/pages/w/[sys_tag]/settings.astro": 3
   },
-  "texto_minusculo": {
-    "src/components/db/CeldaValor.astro": 1,
-    "src/layouts/MainLayout.astro": 3,
-    "src/pages/activity.astro": 6,
-    "src/pages/people.astro": 4,
-    "src/pages/settings.astro": 4,
-    "src/pages/u/[username].astro": 1,
-    "src/pages/w/[sys_tag]/db/[id].astro": 4,
-    "src/pages/w/[sys_tag]/db/index.astro": 8,
-    "src/pages/w/[sys_tag]/files.astro": 6,
-    "src/pages/w/[sys_tag]/settings.astro": 11
-  },
   "gradiente_radial": {
     "src/components/landing/Landing.astro": 1,
     "src/pages/u/[username].astro": 1
   },
   "halo": {
     "src/components/landing/Landing.astro": 1,
-    "src/pages/404.astro": 2,
-    "src/pages/w/[sys_tag]/db/[id].astro": 1
+    "src/pages/404.astro": 2
   },
   "paleta_tailwind": {
     "src/layouts/MainLayout.astro": 2,
@@ -37,18 +24,25 @@
     "src/pages/w/[sys_tag]/files.astro": 1,
     "src/pages/w/[sys_tag]/settings.astro": 26
   },
+  "texto_minusculo": {
+    "src/layouts/MainLayout.astro": 3,
+    "src/pages/activity.astro": 6,
+    "src/pages/people.astro": 4,
+    "src/pages/settings.astro": 4,
+    "src/pages/u/[username].astro": 1,
+    "src/pages/w/[sys_tag]/db/[id].astro": 3,
+    "src/pages/w/[sys_tag]/db/index.astro": 2,
+    "src/pages/w/[sys_tag]/settings.astro": 11
+  },
   "desenfoque": {
     "src/layouts/MainLayout.astro": 12,
-    "src/pages/w/[sys_tag]/db/[id].astro": 1,
-    "src/pages/w/[sys_tag]/db/index.astro": 3
+    "src/pages/w/[sys_tag]/db/index.astro": 1
   },
   "eleva_al_pasar": {
     "src/layouts/MainLayout.astro": 1,
     "src/pages/404.astro": 1,
     "src/pages/activity.astro": 1,
-    "src/pages/u/[username].astro": 2,
-    "src/pages/w/[sys_tag]/db/[id].astro": 1,
-    "src/pages/w/[sys_tag]/db/index.astro": 2
+    "src/pages/u/[username].astro": 2
   },
   "animacion_perpetua": {
     "src/pages/settings.astro": 1
