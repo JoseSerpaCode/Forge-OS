@@ -190,6 +190,15 @@ describe('fecha de trabajo', () => {
   });
 });
 
+describe('recordatorios', () => {
+  it('«recordar 1 h antes», «avísame 2 días antes»', () => {
+    const r = es('Entregar viernes 18:00 recordar 1 h antes');
+    expect(r.recordatorio).toBe(60);
+    expect(r.titulo).toBe('Entregar');
+    expect(es('Parcial 15/11 avísame 2 días antes').recordatorio).toBe(2880);
+  });
+});
+
 describe('prioridad por nombre', () => {
   it('!urgente, !alta, !normal, !baja y en inglés, sin importar mayúsculas', () => {
     expect(es('Algo !urgente').prioridad).toBe('highest');

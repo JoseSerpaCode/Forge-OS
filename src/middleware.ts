@@ -1,5 +1,10 @@
 import { defineMiddleware } from 'astro:middleware';
 import db from './lib/db';
+import { iniciarRecordatorios } from './lib/recordatorios';
+
+// Los recordatorios corren dentro del propio servidor: hay un solo proceso y no
+// hace falta un cron aparte. Se arranca al cargar el middleware, una vez.
+iniciarRecordatorios();
 
 /**
  * Idioma de la petición: cookie primero, y si no, lo que pida el navegador.

@@ -76,6 +76,9 @@ export interface Issue {
   next_issue_id: string | null;
   /** El día en que se piensa hacer. `due_date` es la entrega. */
   planned_date: string | null;
+  /** Antelación del recordatorio, en minutos. */
+  reminder_minutes: number | null;
+  reminded_at: string | null;
 }
 
 export interface WorkLog {

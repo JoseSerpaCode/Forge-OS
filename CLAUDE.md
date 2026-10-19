@@ -305,6 +305,10 @@ lo es: los archivos siguen en su Drive.
   impide crear dos siguientes con un doble clic.
 - **`planned_date` es el día de trabajo; `due_date`, la entrega.** Arrastrar en
   «Próximos» cambia el primero, nunca el segundo.
+- **Recordatorios**: el planificador (`lib/recordatorios.ts`) corre cada minuto
+  dentro del servidor, arrancado desde el middleware; en `NODE_ENV=test` no
+  arranca. `reminded_at` vuelve a NULL si cambian la fecha, la hora o la
+  antelación.
 - **El calendario `.ics` (`/cal/<token>.ics`) es una ruta pública**: la llave es
   el token, del que solo se guarda el hash.
 - **Los contactos sin cuenta** (responsables que no son usuarios) entrarán como

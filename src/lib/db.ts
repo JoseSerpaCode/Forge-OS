@@ -1341,6 +1341,18 @@ const MIGRATIONS: Migration[] = [
       `);
     }
   },
+  {
+    version: 50,
+    description: 'issues: reminder_minutes y reminded_at, recordatorios',
+    run: () => {
+      // `reminder_minutes`: con cuánta antelación avisar respecto a la entrega.
+      // `reminded_at`: cuándo se avisó. Se marca **en la misma transacción** en
+      // que se crea el aviso, así que un reinicio del servidor no lo repite; y
+      // vuelve a NULL si cambia la fecha, la hora o la antelación.
+      if (!hasColumn('issues', 'reminder_minutes')) db.exec('ALTER TABLE issues ADD COLUMN reminder_minutes INTEGER');
+      if (!hasColumn('issues', 'reminded_at')) db.exec('ALTER TABLE issues ADD COLUMN reminded_at DATETIME');
+    }
+  },
 ];
 
 // El bucle entero va dentro de una transacción IMMEDIATE.

@@ -62,6 +62,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     data-t-chip-apunte={t('quick.chip_note')}
     data-t-chip-repeticion={t('quick.chip_repeat')}
     data-t-chip-trabajo={t('quick.chip_work')}
+    data-t-chip-recordatorio={t('quick.chip_remind')}
     data-t-create-label={t('quick.create_label')}
     data-t-note-missing={t('quick.note_missing')}
     data-t-created={t('quick.created')}
@@ -274,7 +275,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       const nombres: Record<string, string> = {
         fecha: d.tChipFecha || '', hora: d.tChipHora || '', etiqueta: d.tChipEtiqueta || '',
         prioridad: d.tChipPrioridad || '', apunte: d.tChipApunte || '', repeticion: d.tChipRepeticion || '',
-        trabajo: d.tChipTrabajo || '',
+        trabajo: d.tChipTrabajo || '', recordatorio: d.tChipRecordatorio || '',
       };
       const faltan: string[] = [];
       for (const t of r.tramos) {
@@ -500,6 +501,8 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
           // Una repetición sin fecha no se manda: el servidor la rechazaría.
           recurrence: r.recurrencia && fecha.value ? r.recurrencia : null,
           planned_date: ($<HTMLInputElement>('nt-trabajo')?.value) || r.fechaTrabajo || null,
+          // Un recordatorio sin entrega no tiene a qué referirse.
+          reminder_minutes: fecha.value && r.recordatorio !== null ? r.recordatorio : null,
         };
         const sprint = $<HTMLSelectElement>('nt-sprint');
         if (sprint) cuerpo.sprint_id = sprint.value || null;
