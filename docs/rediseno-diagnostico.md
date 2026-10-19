@@ -414,10 +414,30 @@ esta identidad, en claro y oscuro.
 
 **Forma:**
 
-- Radio de **2 px** en todo; los modales, 4 px.
-- Bordes de 1 px en `border` y en `border-strong` para los controles.
-- Sombra solo en la tarjeta arrastrada y en las capas flotantes.
+- **El arco de la fragua es la forma de firma**, sacada del logo:
+  - Las columnas del tablero rematan en medio óvalo.
+  - Los avatares tienen forma de arco.
+  - En la portada, el acceso y el índice, una gran boca de fragua naranja
+    enmarca el producto o la frase principal.
+- **Esquinas suaves en lo demás:** 10 px en controles, 14 a 16 px en
+  tarjetas y paneles. Botones, pestañas, etiquetas y estados en píldora.
+- **Color con significado:**
+  - Cada columna va teñida de su estado.
+  - El tipo de ticket, las etiquetas y el estado son píldoras teñidas de su
+    color, con el texto siempre en tinta.
+  - Cada persona tiene un tono, que se ve en su avatar y en la carga de
+    trabajo.
+- **Contraste de anchura tipográfica:**
+  - Títulos en Archivo muy estrecho (68 %) y peso 800.
+  - Las cifras que importan (contadores de columna, horas, avance, puntos)
+    en Archivo extendido (125 %).
+- **Sombra** solo en la tarjeta arrastrada y en las capas flotantes. La
+  tarjeta arrastrada se inclina 2,5°.
 - Densidad alta.
+
+Esta forma sustituye a una primera versión de esquinas de 2 px que resultaba
+demasiado rígida. El atrevimiento sale del logo y de la tipografía, no de
+efectos: siguen sin gradientes, halos ni desenfoques.
 
 **El tablero:**
 

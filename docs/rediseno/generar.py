@@ -185,7 +185,7 @@ def shell(active, crumbs, body, title, overlay=''):
     </button>
     <nav class="nav">{''.join(items)}</nav>
     <div class="sidebar-foot">
-      <span class="avatar avatar-lg">av</span>
+      <span class="avatar avatar-lg p-avery">av</span>
       <a href="ajustes.html"><strong>avery</strong><span>Administración · ajustes</span></a>
     </div>
   </aside>
@@ -237,10 +237,12 @@ LABELS = {'Búsqueda': '#0E7490', 'Facturación': '#9A3412', 'Interfaz': '#4D7C0
           'Incorporación': '#6D28D9', 'API': '#334155', 'Q4': '#A16207'}
 STATUS = [('todo', 'Por hacer'), ('progress', 'En curso'), ('review', 'En revisión'), ('done', 'Hecho')]
 STATUS_NAME = dict(STATUS)
+# En las pestañas del móvil no cabe «En revisión 2» en una línea.
+SHORT = {'todo': 'Por hacer', 'progress': 'En curso', 'review': 'Revisión', 'done': 'Hecho'}
 
 
 def chip(name):
-    return f'<span class="chip"><span class="sw" style="--c:{LABELS[name]}"></span>{name}</span>'
+    return f'<span class="chip" style="--c:{LABELS[name]}"><span class="sw"></span>{name}</span>'
 
 
 def status_badge(key):
@@ -255,15 +257,16 @@ def card(title, type_, labels=(), who=None, pts=None, due=None, late=False, time
     if due:
         right.append(f'<span class="due{" late" if late else ""}">{due}</span>')
     if who:
-        right.append(f'<span class="avatar" title="{who}">{who[:2]}</span>')
-    meta = f'{type_}' + (f' · {pts} pts' if pts else '')
+        right.append(f'<span class="avatar p-{who}" title="{who}">{who[:2]}</span>')
+    meta = (f'<span class="chip type" style="--c:{TYPES[type_]}">{type_}</span>'
+            + (f'<span class="pts">{pts} pts</span>' if pts else ''))
     t = ''
     if timer:
         t = (f'<div class="timer"><span class="live">En marcha <b>{timer}</b></span>'
              f'<button class="btn btn-secondary btn-sm" type="button">Parar</button></div>')
     return (f'<article class="card {cls}" style="--type:{TYPES[type_]}">'
             f'<h3>{title}</h3>'
-            f'<div class="card-foot"><span class="type">{meta}</span>{lab}'
+            f'<div class="card-foot">{meta}{lab}'
             f'<span class="push">{"".join(right)}</span></div>{t}</article>')
 
 
@@ -306,7 +309,7 @@ def board(drag=True):
   <div class="column-body">{''.join(cards)}</div>
 </section>""")
     tabs = ''.join(
-        f'<a href="#"{" aria-current=\"page\"" if k == "todo" else ""}>{n} {COUNTS[k]}</a>' for k, n in STATUS)
+        f'<a href="#"{" aria-current=\"page\"" if k == "todo" else ""}>{SHORT[k]} {COUNTS[k]}</a>' for k, _ in STATUS)
     return f'<nav class="tabs" aria-label="Columnas">{tabs}</nav><div class="board">{"".join(cols)}</div>'
 
 
@@ -355,8 +358,8 @@ drawer = f"""<div class="scrim" aria-hidden="true"></div>
     <h2 class="drawer-title" id="t-titulo">Generar facturas en PDF</h2>
     <dl class="props">
       <dt>Estado</dt><dd><span class="select select-inline">{status_badge('progress')}</span></dd>
-      <dt>Responsable</dt><dd><span class="select select-inline"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar">bl</span>blake</span></span></dd>
-      <dt>Informador</dt><dd><span class="avatar">av</span>avery</dd>
+      <dt>Responsable</dt><dd><span class="select select-inline"><span style="display:inline-flex;gap:8px;align-items:center"><span class="avatar p-blake">bl</span>blake</span></span></dd>
+      <dt>Informador</dt><dd><span class="avatar p-avery">av</span>avery</dd>
       <dt>Sprint</dt><dd><span class="select select-inline">Sprint 14 — Facturación y búsqueda</span></dd>
       <dt>Puntos</dt><dd><span class="input" style="width:72px">5</span></dd>
       <dt>Vence</dt><dd><span class="input" style="width:160px">19/10/2026</span><span class="due late">Vence hoy</span></dd>
@@ -371,9 +374,9 @@ drawer = f"""<div class="scrim" aria-hidden="true"></div>
       <div style="display:flex;justify-content:space-between;font-size:var(--t-13);margin-bottom:6px"><span><b>6 h</b> de 16 h estimadas</span><span class="muted">38 %</span></div>
       <div class="bar" aria-hidden="true"><span style="width:38%;--c:var(--text)"></span></div>
       <ul class="log" style="margin-top:10px">
-        <li><span class="avatar">bl</span>blake<span class="muted">Plantilla y estilos de impresión</span><span class="push">3 h · 18 oct</span></li>
-        <li><span class="avatar">bl</span>blake<span class="muted">Cola de generación</span><span class="push">2 h · 17 oct</span></li>
-        <li><span class="avatar">av</span>avery<span class="muted">Revisión del desglose</span><span class="push">1 h · 16 oct</span></li>
+        <li><span class="avatar p-blake">bl</span>blake<span class="muted">Plantilla y estilos de impresión</span><span class="push">3 h · 18 oct</span></li>
+        <li><span class="avatar p-blake">bl</span>blake<span class="muted">Cola de generación</span><span class="push">2 h · 17 oct</span></li>
+        <li><span class="avatar p-avery">av</span>avery<span class="muted">Revisión del desglose</span><span class="push">1 h · 16 oct</span></li>
       </ul>
     </section>
     <section>
@@ -405,11 +408,11 @@ sprints = ''.join(f'<tr><td class="title">{n}</td><td class="muted">{r}</td><td 
                       ('Sprint 12 — Registro de auditoría', '29 ago – 11 sep', 100, 'text', '12 de 12'),
                       ('Sprint 11 — Adjuntos', '15 – 28 ago', 92, 'text', '11 de 12')])
 load = []
-for who, c in [('avery', [1, 1, 1, 1]), ('blake', [1, 1, 1, 1]), ('noor', [1, 1, 0, 1]), ('Sin asignar', [1, 0, 0, 0])]:
+for who, c in [('avery', [1, 1, 1, 1]), ('blake', [1, 1, 1, 1]), ('noor', [1, 1, 0, 1]), ('sin asignar', [1, 0, 0, 0])]:
     total = sum(c)
     parts = ''.join(f'<span style="flex:{n};--c:var(--st-{k})"></span>' for (k, _), n in zip(STATUS, c) if n)
-    load.append(f'<li style="display:grid;grid-template-columns:96px 1fr 28px;gap:10px;align-items:center;padding:6px 0">'
-                f'<span>{who}</span><span class="bar" style="height:10px;background:none">{parts}</span><span class="muted" style="text-align:right">{total}</span></li>')
+    load.append(f'<li style="display:grid;grid-template-columns:132px 1fr 28px;gap:10px;align-items:center;padding:6px 0">'
+                f'<span style="display:flex;gap:8px;align-items:center"><span class="avatar p-{who}">{who[:2]}</span>{who}</span><span class="bar" style="height:12px;background:none">{parts}</span><span class="muted" style="text-align:right">{total}</span></li>')
 activity = ''.join(f'<li style="padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--t-13)"><b>{w}</b> {a}<span class="hint" style="display:block">{t}</span></li>'
                    for w, a, t in [
                        ('blake', 'movió «Selector de plan en ajustes» a En revisión', 'hace 25 min'),
@@ -426,9 +429,14 @@ panel = f"""<div class="page">
       <section class="panel">
         <div class="panel-head"><h2>Sprint 14 — Facturación y búsqueda</h2><span class="muted" style="font-size:var(--t-13)">termina el 23 oct · quedan 4 días</span></div>
         <div class="panel-body">
+          <div class="figures">
+            <div><b class="wide fig">25 %</b><span class="hint">de los puntos, hechos</span></div>
+            <div><b class="wide fig">4</b><span class="hint">días para el cierre</span></div>
+            <div><b class="wide fig">32 h</b><span class="hint">de 121 h estimadas</span></div>
+          </div>
           <div class="bar" style="height:14px;background:none">{seg}</div>
           <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:12px">{legend_sprint}</div>
-          <p class="hint" style="margin-top:10px">32 h registradas de 121 h estimadas. Al ritmo actual quedan 14 puntos sin cerrar el 23 oct.</p>
+          <p class="hint" style="margin-top:10px">Al ritmo actual quedan 14 puntos sin cerrar el 23 oct.</p>
         </div>
       </section>
       <section class="panel">
@@ -502,7 +510,7 @@ notas = f"""<div class="notes">
   <article class="doc">
     <div class="doc-inner">
       <h1 class="doc-title">Arquitectura general</h1>
-      <div class="doc-meta"><span class="avatar">av</span><span><b style="color:var(--text)">avery</b> · editada hace 5 min</span>{chip('API')}{chip('Q4')}<span style="margin-left:auto">Guardado</span></div>
+      <div class="doc-meta"><span class="avatar p-avery">av</span><span><b style="color:var(--text)">avery</b> · editada hace 5 min</span>{chip('API')}{chip('Q4')}<span style="margin-left:auto">Guardado</span></div>
       <div class="prose">
         <p>Forge OS corre como <b>un solo proceso</b> de Astro en modo servidor, sobre un archivo de SQLite. No hay una capa de API aparte: los manejadores de <code>src/pages/api</code> son la API.</p>
         <h2>Cómo encaja todo</h2>
@@ -628,11 +636,18 @@ def workload():
             if not n:
                 continue
             w = n * scale - 2
-            out.append(f'<rect x="{xx}" y="{yy}" width="{w}" height="26" fill="var(--st-{k})"/>')
+            out.append(f'<rect x="{xx}" y="{yy}" width="{w}" height="26" rx="8" fill="var(--st-{k})"/>')
             xx += n * scale
         out.append(f'<text x="{xx + 6}" y="{yy + 18}">{sum(c)}</text>')
     H = 6 + len(data) * rowh
     return f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="Carga por persona en el sprint 14, por estado.">{"".join(out)}</svg>'
+
+
+def bar_up(x, y, w, h, fill, extra=''):
+    """Barra con remate redondeado arriba y base recta sobre el eje."""
+    r = min(8, w / 2, h)
+    d = f'M{x} {y + h}V{y + r}Q{x} {y} {x + r} {y}H{x + w - r}Q{x + w} {y} {x + w} {y + r}V{y + h}Z'
+    return f'<path d="{d}" fill="{fill}"{extra}/>'
 
 
 def velocity():
@@ -647,7 +662,7 @@ def velocity():
         cx = l + step * i + step / 2
         fill = 'none' if cur else 'var(--text)'
         stroke = ' stroke="var(--text)" stroke-width="1.5" stroke-dasharray="4 3"' if cur else ''
-        out.append(f'<rect x="{cx - bw / 2}" y="{y(v)}" width="{bw}" height="{y(0) - y(v)}" fill="{fill}"{stroke}/>')
+        out.append(bar_up(cx - bw / 2, y(v), bw, y(0) - y(v), fill, stroke))
         out.append(f'<text x="{cx}" y="{y(v) - 6}" text-anchor="middle" class="lbl">{v}{" (en curso)" if cur else ""}</text>')
         out.append(f'<text x="{cx}" y="{H - 6}" text-anchor="middle">{n}</text>')
     return f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="Puntos cerrados por sprint: 21, 26, 24 y 9 en el sprint en curso.">{"".join(out)}</svg>'
@@ -663,8 +678,8 @@ def estimation():
     out += [f'<text x="{l - 8}" y="{y(v) + 4}" text-anchor="end">{v}</text>' for v in (0, 25, 50)]
     for i, (n, e, g) in enumerate(data):
         cx = l + step * i + step / 2
-        out.append(f'<rect x="{cx - bw - 1}" y="{y(e)}" width="{bw}" height="{y(0) - y(e)}" fill="var(--border-strong)"/>')
-        out.append(f'<rect x="{cx + 1}" y="{y(g)}" width="{bw}" height="{y(0) - y(g)}" fill="var(--text)"/>')
+        out.append(bar_up(cx - bw - 1, y(e), bw, y(0) - y(e), 'var(--border-strong)'))
+        out.append(bar_up(cx + 1, y(g), bw, y(0) - y(g), 'var(--text)'))
         out.append(f'<text x="{cx - bw / 2}" y="{y(e) - 6}" text-anchor="middle">{e} h</text>')
         out.append(f'<text x="{cx + bw / 2}" y="{y(g) - 6}" text-anchor="middle" class="lbl">{g} h</text>')
         out.append(f'<text x="{cx}" y="{H - 6}" text-anchor="middle">{n}</text>')
@@ -708,7 +723,7 @@ ajustes = f"""<div class="page">
     <div>
       <section class="form-section" id="perfil">
         <header><h2>Perfil</h2><p>Lo que ve el resto de personas en tu perfil público.</p></header>
-        <div style="display:flex;gap:16px;align-items:center"><span class="avatar avatar-xl">av</span><div><button class="btn btn-secondary" type="button">Cambiar foto</button><p class="hint" style="margin-top:6px">PNG o JPG, hasta 10 MB.</p></div></div>
+        <div style="display:flex;gap:16px;align-items:center"><span class="avatar avatar-xl p-avery">av</span><div><button class="btn btn-secondary" type="button">Cambiar foto</button><p class="hint" style="margin-top:6px">PNG o JPG, hasta 10 MB.</p></div></div>
         <div class="row-2">
           <div class="field"><label>Nombre visible</label><span class="input">Avery Collins</span></div>
           <div class="field"><label>Pronombres</label><span class="select">they/them</span></div>
@@ -814,7 +829,7 @@ acceso = HEAD.format(title='Entrar · Forge OS', favicon=FAVICON) + f"""<body>
 <div class="auth">
   <aside class="auth-brand">
     <a href="portada.html" class="brand" style="color:var(--brand-paper)">{mark(30)}<span class="brand-word">Forge OS</span></a>
-    <div>
+    <div class="auth-arch">
       <p class="claim">Lo que tu equipo escribe, planifica y registra, en un archivo tuyo.</p>
       <ul><li>Un proceso de Node sobre un archivo de SQLite.</li><li>Nadie más lee tu trabajo.</li><li>Licencia MIT. Instálalo donde quieras.</li></ul>
     </div>
@@ -875,8 +890,10 @@ index = HEAD.format(title='Rediseño de Forge OS', favicon=FAVICON) + f"""<body>
 <div class="sheet-page">
   <header class="site-head" style="margin-bottom:40px">{brand(22)}<nav><span class="hint">Maqueta estática · 19 oct 2026</span>{THEME_BTN}</nav></header>
 
-  <h1 class="page-title" style="font-size:clamp(2.4rem,5vw,3.6rem)">Propuesta «Taller»</h1>
-  <p class="page-sub" style="max-width:70ch;font-size:var(--t-16);line-height:1.6;margin-bottom:40px">Rediseño completo de Forge OS, logo incluido, siguiendo <span class="mono">docs/rediseno-diagnostico.md</span>. Las pantallas no tienen funcionalidad: son para ver cómo queda cada sector. Los datos son los de la demostración. El botón de tema alterna claro y oscuro en todas.</p>
+  <div class="index-hero"><div>
+  <h1 class="page-title" style="font-size:clamp(3rem,8vw,6.2rem);font-stretch:64%">Propuesta «Taller»</h1>
+  <p class="page-sub" style="max-width:60ch;font-size:var(--t-16);line-height:1.6;margin-top:18px">Rediseño completo de Forge OS, logo incluido, siguiendo <span class="mono">docs/rediseno-diagnostico.md</span>. Las pantallas no tienen funcionalidad: son para ver cómo queda cada sector. Los datos son los de la demostración. El botón de tema alterna claro y oscuro en todas.</p>
+  </div><div class="index-arch" aria-hidden="true">{svg(m_fragua, 132, INK, PAPER)}</div></div>
 
   <section class="site-section" style="padding-top:0;border-top:0">
     <h2>Pantallas</h2>
@@ -941,7 +958,7 @@ index = HEAD.format(title='Rediseño de Forge OS', favicon=FAVICON) + f"""<body>
       <div class="toolbar-group"><button class="btn btn-primary" type="button">{icon('plus')}Nuevo ticket <kbd>C</kbd></button><button class="btn btn-secondary" type="button">Secundario</button><button class="btn btn-ghost" type="button">Fantasma</button><button class="btn btn-danger" type="button">Borrar</button><button class="btn btn-secondary btn-sm" type="button">Pequeño</button></div>
       <div class="row-2" style="max-width:640px"><div class="field"><label>Título</label><span class="input">Generar facturas en PDF</span><span class="hint">Una frase que se entienda fuera del tablero.</span></div><div class="field"><label>Estado</label><span class="select">{status_badge('progress')}</span></div></div>
       <div class="toolbar-group">{''.join(status_badge(k) for k, _ in STATUS)}</div>
-      <div class="toolbar-group">{chip('Facturación')}{chip('Búsqueda')}{chip('Interfaz')}<span class="avatar">av</span><span class="avatar avatar-lg">bl</span><span class="due late">Vence hoy</span><span class="due">24 oct</span></div>
+      <div class="toolbar-group">{chip('Facturación')}{chip('Búsqueda')}{chip('Interfaz')}<span class="avatar p-avery">av</span><span class="avatar avatar-lg p-blake">bl</span><span class="due late">Vence hoy</span><span class="due">24 oct</span></div>
       <div style="max-width:300px">{COLUMNS['progress'][0]}</div>
     </div>
   </section>
