@@ -5,10 +5,12 @@ import LabelPicker from '../labels/LabelPicker.astro';
 import CampoFecha from '../forms/CampoFecha.astro';
 import { OPCIONES as PRIORIDADES } from '../../lib/prioridad';
 import type { Funciones } from '../../lib/funcionesEspacio';
+import OpcionesResponsable from './OpcionesResponsable.astro';
 interface Props {
   sprints?: any[];
   currentSprintId?: string | null;
   workspaceMembers?: any[];
+  contactos?: Array<{ id: string; name: string }>;
   labels?: Array<{ id: string; name: string; color: string }>;
   issueTypes?: Array<{ id: string; key: string; name: string; color: string; isBuiltin: boolean }>;
   sysTag?: string;
@@ -16,7 +18,7 @@ interface Props {
   canManageTypes?: boolean;
   funciones?: Funciones;
 }
-const { sprints = [], currentSprintId = null, workspaceMembers = [], labels = [], issueTypes = [], sysTag = '', canManageTypes = false, funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false } } = Astro.props;
+const { sprints = [], currentSprintId = null, workspaceMembers = [], contactos = [], labels = [], issueTypes = [], sysTag = '', canManageTypes = false, funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false } } = Astro.props;
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -133,11 +135,8 @@ const t = useTranslations(lang);
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           {t('modal.assignee')}
         </label>
-        <select id="modal-issue-assignee" class="w-full appearance-none bg-forge-panel/30 border border-forge-border/40 hover:border-forge-secondary/30 rounded-lg p-2.5 text-sm font-medium text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-colors cursor-pointer">
-          <option value="">{t('modal.unassigned')}</option>
-          {workspaceMembers.map(m => (
-            <option value={m.id}>{m.username}</option>
-          ))}
+        <select id="modal-issue-assignee" data-t-unassigned={t('modal.unassigned')} data-t-saved={t('contacts.assignee_saved')} data-t-error={t('contacts.assignee_error')} class="select-responsable w-full appearance-none bg-forge-panel/30 border border-forge-border/40 hover:border-forge-secondary/30 rounded-lg p-2.5 text-sm font-medium text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-colors cursor-pointer">
+          <OpcionesResponsable miembros={workspaceMembers} contactos={contactos} vacia={t('modal.unassigned')} />
         </select>
         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 pt-6 text-forge-muted">
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -589,30 +588,34 @@ const t = useTranslations(lang);
   });
 
   const assigneeEl = document.getElementById('modal-issue-assignee') as HTMLSelectElement;
+  // El valor guardado, para volver a él si se cancela «Nuevo contacto…» o falla.
+  let responsableGuardado = '';
+  assigneeEl?.addEventListener('focus', () => { responsableGuardado = assigneeEl.value; });
   assigneeEl?.addEventListener('change', async () => {
     const idEl = document.getElementById('modal-issue-id');
     const issueId = idEl?.getAttribute('data-full-id');
     if (!issueId) return;
-    try {
-      await fetch(`/api/issues/${issueId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignee_id: assigneeEl.value || null })
-      });
-      const card = tarjetaDe(issueId);
-      if (card) {
-        card.setAttribute('data-assignee-id', assigneeEl.value || '');
-        const initialsDiv = card.querySelector('div[title]');
-        if (initialsDiv) {
-          const text = assigneeEl.options[assigneeEl.selectedIndex].text;
-          initialsDiv.textContent = text === 'Unassigned' ? 'U' : text.substring(0,2).toUpperCase();
-          initialsDiv.setAttribute('title', text);
-        }
-      }
-      if (window.showToast) window.showToast('Assignee saved');
-    } catch (e) {
-      console.error(e);
+    const { aPayload, pintarEnTarjeta, nuevoContacto } = await import('./responsableCliente');
+    if (assigneeEl.value === '__nuevo') {
+      const creado = await nuevoContacto();
+      if (!creado) { assigneeEl.value = responsableGuardado; return; }
+      assigneeEl.value = creado.valor;
     }
+    const valor = assigneeEl.value;
+    const res = await fetch(`/api/issues/${issueId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(aPayload(valor)),
+    }).catch(() => null);
+    if (!res?.ok) {
+      assigneeEl.value = responsableGuardado;
+      window.showToast?.(assigneeEl.dataset.tError || '', true);
+      return;
+    }
+    responsableGuardado = valor;
+    const nombre = assigneeEl.options[assigneeEl.selectedIndex]?.text ?? '';
+    tarjetasDe(issueId).forEach((card) => pintarEnTarjeta(card, valor, nombre, assigneeEl.dataset.tUnassigned || ''));
+    window.showToast?.(assigneeEl.dataset.tSaved || '');
   });
 
   const reporterEl = document.getElementById('modal-issue-reporter') as HTMLSelectElement;

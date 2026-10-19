@@ -45,15 +45,18 @@ function filtrar(items: SlashItem[], query: string): SlashItem[] {
   return items.filter((it) => sinTildes(`${it.label} ${it.keywords}`).includes(q));
 }
 
+/** Lo mínimo que pinta la lista: también la usa el menú de menciones. */
+export type ItemMenu = { id: string; label: string; hint?: string };
+
 /** La lista desplegable: un `listbox` navegable con flechas, Enter y Escape. */
-function crearMenu(emptyLabel: string) {
+export function crearMenu<T extends ItemMenu>(emptyLabel: string) {
   const el = document.createElement('div');
   el.className = 'note-slash-menu';
   el.setAttribute('role', 'listbox');
 
-  let items: SlashItem[] = [];
+  let items: T[] = [];
   let activo = 0;
-  let elegir: (item: SlashItem) => void = () => {};
+  let elegir: (item: T) => void = () => {};
 
   const pintar = () => {
     el.replaceChildren();
@@ -92,7 +95,7 @@ function crearMenu(emptyLabel: string) {
 
   return {
     el,
-    update(props: SuggestionProps<SlashItem>) {
+    update(props: SuggestionProps<T, T>) {
       items = props.items;
       activo = Math.min(activo, Math.max(items.length - 1, 0));
       elegir = (it) => props.command(it);
@@ -145,7 +148,7 @@ export const SlashMenu = Extension.create<{ items: SlashItem[]; emptyLabel: stri
         items: ({ query }) => filtrar(items, query),
         command: ({ editor, range, props }) => props.run(editor, range),
         render: () => {
-          const menu = crearMenu(emptyLabel);
+          const menu = crearMenu<SlashItem>(emptyLabel);
           let unmount: (() => void) | undefined;
           return {
             onStart: (props) => {

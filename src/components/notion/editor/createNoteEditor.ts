@@ -5,6 +5,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import { noteExtensions, isSafeHref } from '../../../lib/notes/schema';
 import { SlashMenu, slashItems } from './slashMenu';
 import { DragHandle } from './dragHandle';
+import { MentionMenu, type Persona } from './mentionMenu';
 
 /**
  * Monta el editor de una nota sobre `element`.
@@ -23,10 +24,12 @@ type Options = {
   t: NoteEditorTexts;
   formatMenu: HTMLElement | null;
   tableMenu: HTMLElement | null;
+  /** A quién se puede mencionar con «@». */
+  personas?: Persona[];
   onUpdate: () => void;
 };
 
-export function createNoteEditor({ element, content, editable, t, formatMenu, tableMenu, onUpdate }: Options): Editor {
+export function createNoteEditor({ element, content, editable, t, formatMenu, tableMenu, personas = [], onUpdate }: Options): Editor {
   // El menú de tabla necesita el editor para encontrar la tabla, y el editor
   // necesita el menú entre sus extensiones: se rellena al final.
   let editorRef: Editor | null = null;
@@ -52,6 +55,12 @@ export function createNoteEditor({ element, content, editable, t, formatMenu, ta
         emptyLabel: t['slash.empty'],
       }),
       DragHandle.configure({ label: t['drag'] }),
+      MentionMenu.configure({
+        personas,
+        emptyLabel: t['mention.empty'],
+        hintContacto: t['mention.contact'],
+        hintMiembro: t['mention.member'],
+      }),
     );
 
     if (formatMenu) {

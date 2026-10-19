@@ -1,0 +1,24 @@
+---
+/**
+ * Crear un contacto sin salir del tablero, desde «Nuevo contacto…» en
+ * cualquier desplegable de responsable. Lo abre `responsableCliente.ts`.
+ */
+import { useTranslations } from '../../i18n/ui';
+const t = useTranslations(Astro.locals.lang || 'en');
+---
+<dialog id="contacto-rapido" class="bg-forge-panel border border-forge-border rounded-lg p-0 w-[calc(100vw-2rem)] max-w-sm text-forge-text shadow-xl backdrop:bg-black/50"
+  data-t-error={t('contacts.error')}>
+  <form method="dialog" id="contacto-rapido-form" class="p-5 flex flex-col gap-4">
+    <h2 class="text-lg font-bold">{t('contacts.new')}</h2>
+    <label class="flex flex-col gap-1.5 text-sm">
+      <span class="text-forge-muted">{t('contacts.name')}</span>
+      <input id="contacto-rapido-nombre" type="text" maxlength="80" required autocomplete="off"
+        class="bg-forge-bg border border-forge-border rounded px-2 py-2 text-forge-text" />
+    </label>
+    <p class="text-xs text-forge-muted">{t('contacts.new_hint')}</p>
+    <div class="flex justify-end gap-2">
+      <button type="button" id="contacto-rapido-cancelar" class="px-3 py-1.5 rounded text-sm text-forge-muted hover:text-forge-text">{t('modal.cancel')}</button>
+      <button type="submit" class="px-3 py-1.5 rounded text-sm font-bold bg-forge-primary text-forge-on-accent">{t('contacts.create')}</button>
+    </div>
+  </form>
+</dialog>

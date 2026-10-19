@@ -23,7 +23,7 @@
 import { DE_ATAJO, type Prioridad } from './prioridad';
 import { diaDe, primera, type Dia } from './recurrencia';
 
-export type TipoTramo = 'fecha' | 'hora' | 'etiqueta' | 'prioridad' | 'apunte' | 'repeticion' | 'trabajo' | 'recordatorio';
+export type TipoTramo = 'fecha' | 'hora' | 'etiqueta' | 'prioridad' | 'apunte' | 'repeticion' | 'trabajo' | 'recordatorio' | 'responsable';
 
 export interface Tramo {
   tipo: TipoTramo;
@@ -48,6 +48,8 @@ export interface Interpretacion {
   fechaTrabajo: string | null;
   /** «recordar 1 h antes»: minutos de antelación respecto a la entrega. */
   recordatorio: number | null;
+  /** `@ana`: un miembro o un contacto del desplegable de responsable. */
+  responsable: { valor: string; nombre: string } | null;
   tramos: Tramo[];
 }
 
@@ -55,6 +57,11 @@ export interface Contexto {
   hoy: Date;
   lang?: string;
   etiquetas?: Array<{ id: string; name: string }>;
+  /**
+   * A quién se puede asignar: `valor` es el del desplegable (id de usuario o
+   * `c:<id>` de contacto, ver `responsables.ts`).
+   */
+  personas?: Array<{ valor: string; nombre: string }>;
   /** Tramos que la persona descartó (por su `inicio`): se quedan en el título. */
   ignorar?: Set<number>;
 }
@@ -241,6 +248,23 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
     candidatos.push({ tipo: 'etiqueta', inicio: m.index!, fin: m.index! + m[0].length, valor: m[1] });
   }
   /**
+   * Responsable: `@ana`, `@juancamilo` o `@juan_camilo`. Vale el nombre entero
+   * sin espacios o, si nadie más lo comparte, el primer nombre. Un `@algo` que
+   * no es nadie se queda en el título: puede ser un correo o una arroba de
+   * verdad, y no se asigna a ciegas.
+   */
+  const personas = ctx.personas ?? [];
+  for (const m of texto.matchAll(/(?<![\p{L}\p{N}@.])@([\p{L}\p{N}_.-]+)/gu)) {
+    const buscado = normalizar(m[1]);
+    if (!buscado) continue;
+    let hallada = personas.find((p) => normalizar(p.nombre) === buscado);
+    if (!hallada) {
+      const porNombre = personas.filter((p) => normalizar(p.nombre.trim().split(/\s+/)[0] ?? '') === buscado);
+      if (porNombre.length === 1) hallada = porNombre[0];
+    }
+    if (hallada) candidatos.push({ tipo: 'responsable', inicio: m.index!, fin: m.index! + m[0].length, valor: hallada });
+  }
+  /**
    * Prioridad: `!1`…`!4` y también por su nombre, en los dos idiomas
    * (`!urgente`, `!alta`, `!normal`, `!baja`; `!urgent`, `!high`, `!low`).
    * Sin distinguir mayúsculas ni tildes.
@@ -294,7 +318,7 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
   }
 
   const r: Interpretacion = {
-    titulo: '', fecha: null, hora: null, etiquetas: [], etiquetasNuevas: [], prioridad: null, apuntes: [], recurrencia: null, fechaTrabajo: null, recordatorio: null, tramos: [],
+    titulo: '', fecha: null, hora: null, etiquetas: [], etiquetasNuevas: [], prioridad: null, apuntes: [], recurrencia: null, fechaTrabajo: null, recordatorio: null, responsable: null, tramos: [],
   };
   const usados: Candidato[] = [];
   for (const c of elegidos) {
@@ -306,6 +330,7 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
     else if (c.tipo === 'apunte') r.apuntes.push(c.valor as string);
     else if (c.tipo === 'repeticion') { if (r.recurrencia) continue; r.recurrencia = c.valor as string; }
     else if (c.tipo === 'trabajo') { if (r.fechaTrabajo) continue; r.fechaTrabajo = c.valor as string; }
+    else if (c.tipo === 'responsable') { if (r.responsable) continue; r.responsable = c.valor as { valor: string; nombre: string }; }
     else if (c.tipo === 'recordatorio') { if (r.recordatorio !== null) continue; r.recordatorio = c.valor as number; }
     else if (c.tipo === 'etiqueta') {
       const buscada = normalizar(c.valor as string);

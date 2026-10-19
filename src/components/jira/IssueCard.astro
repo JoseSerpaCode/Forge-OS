@@ -12,6 +12,7 @@ import LabelChip from '../labels/LabelChip.astro';
 import { fecha, vencida } from '../../lib/fechas';
 import { prioridadVisible } from '../../lib/prioridad';
 import { describir } from '../../lib/recurrencia';
+import { deFila as responsableDe, iniciales, valorDeContacto } from '../../lib/responsables';
 import type { Funciones } from '../../lib/funcionesEspacio';
 
 interface Props {
@@ -32,6 +33,9 @@ interface Props {
 }
 
 const { issue, canEdit = false, tipo = null, funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false }, carril = null } = Astro.props;
+// A quién va: una persona con cuenta o un contacto (`responsables.ts`).
+const responsable = responsableDe(issue);
+const valorResponsable = responsable?.tipo === 'contacto' ? valorDeContacto(responsable.id) : (issue.assignee_id || '');
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
@@ -61,6 +65,7 @@ const vence = issue.due_date && !hecha && vencida(issue.due_date, new Date(), is
   data-position={issue.position || 0}
   data-sprint-id={issue.sprint_id || 'backlog'}
   data-assignee-id={issue.assignee_id || ''}
+  data-responsable={valorResponsable}
   data-reporter-id={issue.reporter_id || ''}
   data-description={issue.description || ''}
   data-due-date={issue.due_date ? String(issue.due_date).slice(0, 10) : ''}
@@ -87,9 +92,14 @@ const vence = issue.due_date && !hecha && vencida(issue.due_date, new Date(), is
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
       </button>
     )}
-    <div class="w-6 h-6 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center overflow-hidden shrink-0" title={issue.assignee_username || t('modal.unassigned')}>
-      {issue.assignee_avatar ? (
-        <img src={issue.assignee_avatar} alt={issue.assignee_username} class="w-full h-full object-cover" loading="lazy" decoding="async" />
+    {/* Persona con cuenta: su foto. Contacto sin cuenta: sus iniciales, con
+        borde discontinuo para distinguirlo de un miembro sin foto. */}
+    <div class={`card-responsable w-6 h-6 rounded-full bg-forge-bg border ${responsable?.tipo === 'contacto' ? 'border-dashed border-forge-muted' : 'border-forge-border'} flex items-center justify-center overflow-hidden shrink-0 text-[9px] font-bold text-forge-text`}
+      title={responsable?.nombre || t('modal.unassigned')} role="img" aria-label={responsable?.nombre || t('modal.unassigned')}>
+      {responsable?.avatar ? (
+        <img src={responsable.avatar} alt="" class="w-full h-full object-cover" loading="lazy" decoding="async" />
+      ) : responsable ? (
+        <span aria-hidden="true">{iniciales(responsable.nombre)}</span>
       ) : (
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       )}

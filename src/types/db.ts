@@ -63,6 +63,8 @@ export interface Issue {
   position: number;
   reporter_id: string;
   assignee_id: string | null;
+  /** Contacto sin cuenta asignado (migración 54). Excluyente con `assignee_id`. */
+  assignee_contact_id?: string | null;
   created_at: string;
   updated_at: string;
   due_date: string | null;

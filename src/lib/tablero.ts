@@ -1,3 +1,4 @@
+import { COLUMNAS_RESPONSABLE, UNIR_RESPONSABLE, desdeValor } from './responsables';
 import db from './db';
 import { deVarias } from './labels';
 
@@ -76,15 +77,19 @@ function filtros(f: FiltroTablero, c = 'i.') {
     donde.push(`${c}due_date IS NOT NULL AND substr(${c}due_date, 1, 10) BETWEEN ? AND ?`);
     params.push(f.vence.hoy, f.vence.hasta);
   }
-  if (f.responsable) { donde.push(`${c}assignee_id = ?`); params.push(f.responsable); }
+  if (f.responsable) {
+    // `c:<id>` es un contacto (`responsables.ts`); lo demás, una persona.
+    const r = desdeValor(f.responsable);
+    if (r.assignee_contact_id) { donde.push(`${c}assignee_contact_id = ?`); params.push(r.assignee_contact_id); }
+    else { donde.push(`${c}assignee_id = ?`); params.push(r.assignee_id); }
+  }
   return { donde: donde.join(' AND '), params };
 }
 
 const COLUMNAS_TARJETA = `
   i.*,
   u1.username AS reporter_username,
-  u2.username AS assignee_username,
-  u2.avatar_url AS assignee_avatar,
+  ${COLUMNAS_RESPONSABLE},
   (SELECT started_at FROM time_tracking_sessions WHERE issue_id = i.id AND user_id = ?) AS active_session_start,
   (SELECT COUNT(*) FROM issue_page_links pl WHERE pl.issue_id = i.id) AS apuntes,
   (SELECT COUNT(*) FROM issues st WHERE st.parent_issue_id = i.id) AS subtareas_total,
@@ -114,7 +119,7 @@ export function cargarTablero(f: FiltroTablero): Tablero {
              ROW_NUMBER() OVER (PARTITION BY ${particion} ORDER BY ${ORDEN('i.')}) AS rn
       FROM issues i
       LEFT JOIN users u1 ON i.reporter_id = u1.id
-      LEFT JOIN users u2 ON i.assignee_id = u2.id
+      ${UNIR_RESPONSABLE('i')}
       ${unirCarril}
       WHERE ${donde}
     )
@@ -164,7 +169,7 @@ export function masHechas(
     SELECT ${COLUMNAS_TARJETA}, ${CIERRE('i.')} AS cierre
     FROM issues i
     LEFT JOIN users u1 ON i.reporter_id = u1.id
-    LEFT JOIN users u2 ON i.assignee_id = u2.id
+    ${UNIR_RESPONSABLE('i')}
     WHERE ${donde} AND ${extra.join(' AND ')}
     ORDER BY ${CIERRE('i.')} DESC, i.id ASC
     LIMIT ?
@@ -229,7 +234,7 @@ export function cargarVista(
     SELECT ${COLUMNAS_TARJETA}, NULL AS carril
     FROM issues i
     LEFT JOIN users u1 ON i.reporter_id = u1.id
-    LEFT JOIN users u2 ON i.assignee_id = u2.id
+    ${UNIR_RESPONSABLE('i')}
     WHERE ${donde} AND i.status != 'done' AND COALESCE(i.planned_date, i.due_date) IS NOT NULL AND ${rango.sql}
     ORDER BY ${ORDEN_VISTA}
     LIMIT ${TOPE_VISTA}

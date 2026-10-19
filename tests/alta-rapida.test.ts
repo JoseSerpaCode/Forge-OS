@@ -216,3 +216,41 @@ describe('prioridad por nombre', () => {
     expect(r.titulo).toBe('Hola !mundo');
   });
 });
+
+describe('@responsable', () => {
+  const personas = [
+    { valor: 'u-1', nombre: 'jose' },
+    { valor: 'c:juan', nombre: 'Juan Camilo Luna' },
+    { valor: 'c:ana', nombre: 'Ana Pérez' },
+    { valor: 'c:ana2', nombre: 'Ana Gómez' },
+  ];
+  const con = (texto: string) => interpretar(texto, { hoy: MARTES, lang: 'es', etiquetas, personas });
+
+  it('un contacto por su primer nombre, y sale del título', () => {
+    const r = con('Informe de laboratorio @juan el viernes');
+    expect(r.responsable).toEqual({ valor: 'c:juan', nombre: 'Juan Camilo Luna' });
+    expect(r.titulo).toBe('Informe de laboratorio');
+  });
+
+  it('el nombre entero sin espacios ni tildes, y un miembro con cuenta', () => {
+    expect(con('Póster @anaperez').responsable?.valor).toBe('c:ana');
+    expect(con('Póster @Jose').responsable?.valor).toBe('u-1');
+  });
+
+  it('un primer nombre que comparten dos no asigna a ninguno', () => {
+    const r = con('Póster @ana');
+    expect(r.responsable).toBeNull();
+    expect(r.titulo).toBe('Póster @ana');
+  });
+
+  it('un correo o una arroba desconocida se quedan en el título', () => {
+    expect(con('Escribir a profe@juan.edu').responsable).toBeNull();
+    expect(con('Seguir a @nadie').titulo).toBe('Seguir a @nadie');
+  });
+
+  it('solo el primero: el segundo @ se queda en el título', () => {
+    const r = con('Repartir @juan @jose');
+    expect(r.responsable?.valor).toBe('c:juan');
+    expect(r.titulo).toBe('Repartir @jose');
+  });
+});

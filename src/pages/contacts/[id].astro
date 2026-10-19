@@ -1,0 +1,109 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { useTranslations } from '../../i18n/ui';
+import { ficha } from '../../lib/contactos';
+
+/**
+ * La ficha de un contacto: sus tareas y las notas donde aparece, de todos tus
+ * espacios. Solo la ve su dueño; para cualquier otra cuenta no existe.
+ */
+const user = Astro.locals.user!;
+if (!user) return Astro.redirect('/login');
+if (user.is_guest) return Astro.redirect('/register');
+
+const t = useTranslations(Astro.locals.lang || 'en');
+const datos = ficha(user.id, Astro.params.id ?? '');
+if (!datos) return new Response(null, { status: 404 });
+const { contacto, tareas, notas } = datos;
+const campo = 'bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm font-normal text-forge-text focus:border-forge-secondary outline-none';
+---
+
+<MainLayout title={contacto.name}>
+  <div id="contact-page" class="max-w-3xl mx-auto mt-4 sm:mt-8 p-0 sm:p-6 pb-20"
+    data-id={contacto.id}
+    data-t-error={t('contacts.error')}
+    data-t-saved={t('contacts.saved')}
+    data-t-confirm={t('contacts.delete_confirm').replace('{nombre}', contacto.name)}>
+    <a href="/contacts" class="text-sm text-forge-muted hover:text-forge-text">← {t('contacts.back')}</a>
+
+    <form id="contact-edit" class="mt-4 mb-8 p-4 bg-forge-panel border border-forge-border rounded-lg flex flex-col gap-3">
+      <label class="flex flex-col gap-1 text-xs font-semibold text-forge-muted">
+        {t('contacts.name')}
+        <input name="name" type="text" maxlength="80" required value={contacto.name} class={campo} />
+      </label>
+      <label class="flex flex-col gap-1 text-xs font-semibold text-forge-muted">
+        {t('contacts.note')}
+        <input name="note" type="text" maxlength="200" value={contacto.note ?? ''} class={campo} />
+      </label>
+      <div class="flex justify-between gap-2">
+        <button type="button" id="contact-delete" class="px-3 py-1.5 rounded text-sm text-forge-error hover:bg-forge-bg">{t('contacts.delete')}</button>
+        <button type="submit" class="px-4 py-1.5 rounded text-sm font-bold bg-forge-primary text-forge-on-accent">{t('contacts.save')}</button>
+      </div>
+    </form>
+
+    <section class="mb-8">
+      <h2 class="text-sm font-bold uppercase tracking-widest text-forge-muted mb-3">{t('contacts.tasks')}</h2>
+      {tareas.length === 0 ? (
+        <p class="text-sm text-forge-muted">{t('contacts.no_tasks')}</p>
+      ) : (
+        <ul class="divide-y divide-forge-border/50 border border-forge-border rounded-lg bg-forge-panel">
+          {tareas.map((ta) => (
+            <li>
+              <a href={`/w/${ta.sys_tag}/board?issue=${encodeURIComponent(ta.id)}`} class="flex items-center gap-3 px-4 py-2.5 hover:bg-forge-bg">
+                <span class:list={['flex-1 min-w-0 truncate text-sm', ta.status === 'done' ? 'line-through text-forge-muted' : 'text-forge-text']}>{ta.title}</span>
+                {ta.status === 'done' && <span class="sr-only">{t('contacts.done')}</span>}
+                {ta.due_date && <span class="text-xs text-forge-muted shrink-0">{ta.due_date}{ta.due_time ? ` ${ta.due_time}` : ''}</span>}
+                <span class="text-xs text-forge-muted shrink-0 max-w-[30%] truncate">{ta.workspace_name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+
+    <section>
+      <h2 class="text-sm font-bold uppercase tracking-widest text-forge-muted mb-3">{t('contacts.notes')}</h2>
+      {notas.length === 0 ? (
+        <p class="text-sm text-forge-muted">{t('contacts.no_notes')}</p>
+      ) : (
+        <ul class="divide-y divide-forge-border/50 border border-forge-border rounded-lg bg-forge-panel">
+          {notas.map((n) => (
+            <li>
+              <a href={`/w/${n.sys_tag}/p/${n.id}`} class="flex items-center gap-3 px-4 py-2.5 hover:bg-forge-bg">
+                <span class="flex-1 min-w-0 truncate text-sm text-forge-text">{n.title}</span>
+                <span class="text-xs text-forge-muted shrink-0 max-w-[30%] truncate">{n.workspace_name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </div>
+</MainLayout>
+
+<script>
+  const pagina = document.getElementById('contact-page')!;
+  const id = pagina.dataset.id!;
+  const form = document.getElementById('contact-edit') as HTMLFormElement;
+  const error = () => window.showToast?.(pagina.dataset.tError || '', true);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datos = new FormData(form);
+    const res = await fetch(`/api/contacts/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: datos.get('name'), note: datos.get('note') }),
+    }).catch(() => null);
+    if (!res?.ok) return error();
+    window.showToast?.(pagina.dataset.tSaved || '');
+  });
+
+  document.getElementById('contact-delete')?.addEventListener('click', () => {
+    window.forgeConfirm?.(pagina.dataset.tConfirm || '', async () => {
+      const res = await fetch(`/api/contacts/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => null);
+      if (!res?.ok) return error();
+      window.location.href = '/contacts';
+    });
+  });
+</script>

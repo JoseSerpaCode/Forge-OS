@@ -11,6 +11,8 @@ import { funciones } from '../../../lib/funcionesEspacio';
 import { OPCIONES as OPCIONES_PRIORIDAD } from '../../../lib/prioridad';
 import { listar as listarTipos, nombreVisible } from '../../../lib/issueTypes';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
+import { listar as listarContactos } from '../../../lib/contactos';
+import { PREFIJO_CONTACTO, valorDeContacto } from '../../../lib/responsables';
 
 const { sys_tag } = Astro.params;
 const user = Astro.locals.user!;
@@ -103,11 +105,16 @@ const filtroPrioridad = (['highest', 'high', 'medium', 'low'] as const).find((p)
 const venceDias = Number(qp.get('vence'));
 const filtroVence = Number.isInteger(venceDias) && venceDias >= 1 && venceDias <= 60 ? venceDias : null;
 const responsablePedido = qp.get('responsable');
+// Tus contactos sin cuenta, para asignar y filtrar (`lib/contactos.ts`).
+const contactos = user.is_guest ? [] : listarContactos(user.id).map((c) => ({ id: c.id, name: c.name }));
 const filtroResponsable = responsablePedido === 'yo'
   ? user.id
-  : responsablePedido && db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(workspace.id, responsablePedido)
-    ? responsablePedido
-    : null;
+  : responsablePedido?.startsWith(PREFIJO_CONTACTO)
+    // Un contacto solo filtra si es tuyo: el id de uno ajeno no dice nada aquí.
+    ? (contactos.some((c) => valorDeContacto(c.id) === responsablePedido) ? responsablePedido : null)
+    : responsablePedido && db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(workspace.id, responsablePedido)
+      ? responsablePedido
+      : null;
 
 /** Un carril por etiqueta. En la URL, como el filtro: el enlace se puede pasar. */
 const agrupar = Astro.url.searchParams.get('group') === 'label';
@@ -345,6 +352,11 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
                 <option value="">{t('filters.assignee_any')}</option>
                 <option value="yo" selected={responsablePedido === 'yo'}>{t('filters.me')}</option>
                 {workspaceMembers.filter((m) => m.id !== user.id).map((m) => <option value={m.id} selected={responsablePedido === m.id}>{m.username}</option>)}
+                {contactos.length > 0 && (
+                  <optgroup label={t('contacts.title')}>
+                    {contactos.map((c) => <option value={valorDeContacto(c.id)} selected={responsablePedido === valorDeContacto(c.id)}>{c.name}</option>)}
+                  </optgroup>
+                )}
               </select>
             </div>
             <div class="border-t border-forge-border/60 pt-3">
@@ -456,7 +468,7 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} filtrosUrl={new URLSearchParams(Object.entries({ prioridad: filtroPrioridad ?? '', vence: filtroVence ? String(filtroVence) : '', responsable: responsablePedido && filtroResponsable ? responsablePedido : '' }).filter(([, v]) => v)).toString()} vista={vista} grupos={grupos} hoy={hoy} dias={dias} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} contactos={contactos} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} filtrosUrl={new URLSearchParams(Object.entries({ prioridad: filtroPrioridad ?? '', vence: filtroVence ? String(filtroVence) : '', responsable: responsablePedido && filtroResponsable ? responsablePedido : '' }).filter(([, v]) => v)).toString()} vista={vista} grupos={grupos} hoy={hoy} dias={dias} />
     </div>
   </div>
 
