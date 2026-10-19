@@ -10,119 +10,172 @@
    claros sobre fondo oscuro y el `<code>` quedaba a 1.11:1, ilegible. */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
+/* Fuentes de la identidad «Taller», servidas desde `public/fonts`.
+   Archivo es variable en peso y en anchura (62–125 %): estrecha para títulos y
+   cabeceras de columna, normal para todo lo demás. Plex Mono, solo para código,
+   atajos y claves. */
+@font-face {
+  font-family: 'Archivo';
+  src: url('/fonts/archivo-wdth.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Plex Mono';
+  src: url('/fonts/plex-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Plex Mono';
+  src: url('/fonts/plex-mono-500.woff2') format('woff2');
+  font-weight: 500 700;
+  font-display: swap;
+}
+
 @theme {
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
   --color-forge-bg: var(--forge-bg);
   --color-forge-panel: var(--forge-panel);
-  
-  /* Accent Colors */
+  --color-forge-surface-2: var(--forge-surface-2);
+
+  /* Acción: el naranja de relleno. El texto encima va en tinta
+     (`text-forge-on-accent`), nunca en blanco ni en `text-forge-bg`. */
   --color-forge-primary: var(--forge-accent-primary);
   --color-forge-accent: var(--forge-accent-primary);
   --color-forge-accent-hover: var(--forge-accent-primary-hover);
-  
-  /* State Colors */
+  --color-forge-on-accent: var(--forge-on-accent);
+  /* Naranja para TEXTO: el de relleno no llega a 4,5:1 sobre el fondo. */
+  --color-forge-accent-text: var(--forge-accent-text);
+  /* Color de marca (logo, adornos). No es para texto. */
   --color-forge-secondary: var(--forge-accent-secondary);
+
   --color-forge-success: var(--forge-success);
   --color-forge-error: var(--forge-error);
+  --color-forge-danger: var(--forge-error);
   --color-forge-warning: var(--forge-warning);
   --color-forge-info: var(--forge-info);
-  /* Texto sobre fondos del color de acento. El naranja es el mismo en ambos
-     temas, así que este token NO se invierte: usar `text-forge-bg` daba texto
-     claro sobre naranja en tema claro (2.85:1). */
-  --color-forge-on-accent: var(--forge-on-accent);
-  --color-forge-accent-text: var(--forge-accent-text);
 
-  /* Typography & Structure */
+  /* Estados de un ticket. Solo para su marca gráfica (muestra, cinta de
+     columna, barra, serie de una gráfica), nunca de adorno. Salen de
+     `src/lib/status.ts`. */
+  --color-forge-st-todo: var(--forge-st-todo);
+  --color-forge-st-progress: var(--forge-st-progress);
+  --color-forge-st-review: var(--forge-st-review);
+  --color-forge-st-done: var(--forge-st-done);
+
   --color-forge-border: var(--forge-border);
+  /* Borde de los controles: ≥ 3:1 contra el fondo, lo que pide WCAG 1.4.11. */
+  --color-forge-border-strong: var(--forge-border-strong);
   --color-forge-text: var(--forge-text);
   --color-forge-muted: var(--forge-muted);
+  --color-forge-focus: var(--forge-focus);
+
+  --radius-forge: 10px;
+  --radius-forge-lg: 16px;
+  --shadow-forge-float: var(--forge-shadow-float);
 }
 
 @layer base {
-  :root { 
-    --forge-bg: #0D0B0A;
-    --forge-panel: #171615;
-    --forge-text: #E2E8F0;
-    --forge-muted: #9CA3AF;
-    --forge-border: #2C2A29;
+  /* ── Identidad «Taller» (docs/rediseno-diagnostico.md, sección 3) ──────────
+     Tinta sobre papel gris cálido, naranja de seguridad plano. Claro por
+     defecto; el oscuro es grafito cálido, no negro con neón.
 
-    /* Orion's Forge Identity */
-    --forge-accent-primary: #FF5D00;
-    --forge-accent-primary-hover: #E05200;
-    --forge-accent-secondary: #FF8533;
-    --forge-accent-text: #FF8533;
+     Todas las parejas de texto pasan AA (≥ 4,5:1) sobre el fondo y el panel
+     en los dos temas, calculado con la fórmula de WCAG 2.x. Los estados pasan
+     además la validación de paleta para daltonismo, por eso las gráficas usan
+     estos mismos cuatro.
 
-    /* State Colors */
-    --forge-success: #10B981;
-    --forge-error: #EF4444;
-    --forge-warning: #F59E0B;
-    --forge-info: #6BA6FF;
-    --forge-on-accent: #0F172A;
-    /* Sombra de las piezas elevadas de la portada. En oscuro es negra y densa;
-       sobre fondo claro eso mismo se lee como una mancha sucia. */
-    --forge-shadow-strong: rgb(0 0 0 / 0.45);
-  }
-  
-  [data-theme="dark"] { 
-    color-scheme: dark;
-    --forge-bg: #0D0B0A;
-    --forge-panel: #171615;
-    --forge-text: #E2E8F0;
-    --forge-muted: #9CA3AF;
-    --forge-border: #2C2A29;
-
-    --forge-accent-primary: #FF5D00;
-    --forge-accent-primary-hover: #E05200;
-    --forge-accent-secondary: #FF8533;
-    --forge-accent-text: #FF8533;
-
-    --forge-success: #10B981;
-    --forge-error: #EF4444;
-    --forge-warning: #F59E0B;
-    --forge-info: #6BA6FF;
-  }
-
+     Los nombres viejos (`--forge-panel`, `--forge-accent-primary`…) se quedan
+     como están: los usa toda la aplicación y el cambio de identidad es cambiar
+     sus valores, no las pantallas. */
+  :root,
   [data-theme="light"] {
     color-scheme: light;
-    --forge-shadow-strong: rgb(15 23 42 / 0.12);
-    --forge-bg: #F8F6F0;
-    --forge-panel: #FFFFFF;
-    --forge-text: #0F172A;
-    /* #64748B daba 4.40:1 sobre el fondo: justo por debajo del 4.5:1 que pide
-       WCAG AA. #5A6678 sube a 5.39:1 sobre el fondo y 5.82:1 sobre panel
-       blanco, con margen para que los modificadores de opacidad no lo hundan. */
-    --forge-muted: #4F5A6A;
-    --forge-border: #E5E1D8;
+    --forge-bg: #EEECE7;
+    --forge-panel: #F8F7F4;
+    --forge-surface-2: #E4E1DA;
+    --forge-border: #CFCAC0;
+    --forge-border-strong: #7D776C;
+    --forge-text: #171614;
+    --forge-muted: #57534B;
+    --forge-focus: #171614;
 
-    --forge-accent-primary: #FF5D00;
-    --forge-accent-primary-hover: #E05200;
-    --forge-accent-secondary: #CC4A00;
-    /* Naranja para TEXTO sobre fondos claros. Separado del de marca porque
-       #CC4A00 solo da 4.27:1 y oscurecerlo apagaba logos, gradientes y
-       botones, que no son texto y no necesitan contraste de lectura. */
-    --forge-accent-text: #A83C00;
+    --forge-accent-primary: #E8590C;
+    --forge-accent-primary-hover: #D14F0A;
+    /* La marca es fija: no cambia con el tema. */
+    --forge-accent-secondary: #E8590C;
+    --forge-accent-text: #A63C00;
+    --forge-on-accent: #171614;
 
-    --forge-success: #047857;
-    --forge-error: #C41C1C;
-    --forge-warning: #B45309;
-    /* #0284C7 daba 4.10:1 sobre panel blanco. #0369A1 sube a 5.93:1. */
-    --forge-info: #01527E;
-    --forge-on-accent: #0F172A;
+    --forge-success: #266B2A;
+    --forge-error: #A61E1E;
+    --forge-warning: #9C5A0F;
+    --forge-info: #1E5AA8;
+
+    --forge-st-todo: #9C5A0F;
+    --forge-st-progress: #1E5AA8;
+    --forge-st-review: #A23B72;
+    --forge-st-done: #266B2A;
+
+    --forge-shadow-float: 0 10px 28px rgb(23 22 20 / 0.16), 0 1px 0 rgb(23 22 20 / 0.06);
+    --forge-shadow-strong: rgb(23 22 20 / 0.16);
+    --forge-scrim: rgb(23 22 20 / 0.32);
+    --forge-mono: 'Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --forge-bg: #1B1A18;
+    --forge-panel: #232220;
+    --forge-surface-2: #2C2A27;
+    --forge-border: #3D3A36;
+    --forge-border-strong: #857E74;
+    --forge-text: #ECE9E3;
+    --forge-muted: #ABA59B;
+    --forge-focus: #ECE9E3;
+
+    --forge-accent-primary: #F06A1F;
+    --forge-accent-primary-hover: #F47E3C;
+    --forge-accent-secondary: #E8590C;
+    --forge-accent-text: #FF9452;
+    --forge-on-accent: #171614;
+
+    --forge-success: #3FA86A;
+    --forge-error: #FF7A6E;
+    --forge-warning: #BF7F28;
+    --forge-info: #5A8FE6;
+
+    --forge-st-todo: #BF7F28;
+    --forge-st-progress: #5A8FE6;
+    --forge-st-review: #C66BB0;
+    --forge-st-done: #3FA86A;
+
+    --forge-shadow-float: 0 12px 32px rgb(0 0 0 / 0.5);
+    --forge-shadow-strong: rgb(0 0 0 / 0.45);
+    --forge-scrim: rgb(0 0 0 / 0.5);
+  }
+
   body { 
     background-color: var(--forge-bg);
     color: var(--forge-text);
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-sans);
+    /* Cifras tabulares en toda la interfaz: los contadores y las horas no
+       bailan al cambiar. */
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
   }
   
   ::selection {
     background-color: var(--forge-accent-primary);
-    color: #fff;
+    color: var(--forge-on-accent);
   }
   
   .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-family: var(--forge-mono) !important;
   }
   
   dialog {
@@ -171,7 +224,9 @@
   select:focus-visible,
   textarea:focus-visible,
   [tabindex]:focus-visible {
-    outline: 2px solid var(--forge-accent-secondary);
+    /* Anillo de tinta, no naranja: el naranja es acción y en el tema claro
+       no llega a 3:1 sobre el fondo. */
+    outline: 2px solid var(--forge-focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -180,6 +235,35 @@
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--forge-border); border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--forge-muted); }
+}
+
+/* ── Piezas de la identidad que se usan en muchos sitios ─────────────────────
+   El estado de un ticket como píldora: punto del color del estado, tinte
+   suave y el texto **en tinta**. El color de estado nunca tiñe texto (no
+   llega a 4,5:1 sobre su propio tinte en todos los casos). El color va en
+   `--c`, desde `src/lib/status.ts`. */
+@layer components {
+  .estado-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    color: var(--forge-text);
+    background: color-mix(in srgb, var(--c, var(--forge-muted)) 14%, transparent);
+  }
+  .estado-chip::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--c, var(--forge-muted));
+    flex: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

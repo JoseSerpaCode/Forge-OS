@@ -148,14 +148,36 @@ pero deja pasar la coincidencia **exacta**, para que dos invitados del mismo
 espacio puedan llegar a su perfil. Si tocas ese SQL, mira
 `tests/guest-search.test.ts`.
 
+## Rediseño «Taller» (en curso, hacia la 2.0)
+
+El diseño aprobado está en `docs/rediseno/` (maquetas estáticas, `index.html`
+las enlaza) y las razones en `docs/rediseno-diagnostico.md`. Se aplica por
+fases, una PR cada una. Lo que no se ve en el código:
+
+- **Los tokens viejos se quedan como alias.** `--forge-panel`,
+  `--forge-accent-primary`… tienen ahora los valores de «Taller». Cambiar de
+  identidad fue cambiar sus valores, no las pantallas.
+- **Los estados salen de `src/lib/status.ts`** (nombre en i18n, color
+  `--forge-st-*`). Su color es marca gráfica —punto, cinta, barra, serie—,
+  nunca color de texto; el texto va en tinta (`.estado-chip`).
+- **Las gráficas leen los colores del tema** (`src/lib/client/temaGraficas.ts`)
+  y se repintan al cambiarlo. Nada de hexadecimales en Chart.js.
+- **`tests/barandillas-diseno.test.ts`** cuenta por archivo las huellas de
+  interfaz generada (paleta de Tailwind, letra de menos de 12 px, desenfoque,
+  halos, gradientes radiales, elevar al pasar el ratón…) y falla si alguna
+  sube. Si bajan, regenera la lista con `ACTUALIZAR_BARANDILLAS=1`. Al acabar
+  el rediseño tiene que quedar vacía.
+- **Las fuentes se sirven desde `public/fonts`** (Archivo variable y Plex
+  Mono). No vuelvas a Google Fonts: la CSP ya no lo permite.
+
 ## La marca va en un solo componente
 
-`src/components/brand/Logo.astro`. Había cuatro dibujos distintos de la misma F
-—barra lateral, pie, hub y el SVG— con cuatro proporciones y dos letras, porque
-`public/forge-icon.svg` usaba `<text font-family="Arial">` y un SVG no incrusta
-fuentes: el favicon cambiaba de forma según la máquina. Ahora la F es un
-trazado, duplicado a propósito en el componente y en el archivo SVG. **Si
-cambias uno, cambia el otro.**
+`src/components/brand/Logo.astro`, logo «Fragua»: la boca de una fragua con
+las brasas dentro. El trazado está duplicado a propósito en el componente y en
+`public/forge-icon.svg`. **Si cambias uno, cambia el otro.** El arco va en
+`currentColor` y las brasas siempre en `#E8590C`, que no cambia con el tema.
+Los PNG de `public/icons` y `public/og.png` salen del mismo trazado
+(`docs/rediseno/marca/`).
 
 El nombre se escribe **«Forge OS»**, nunca «FORGE OS».
 

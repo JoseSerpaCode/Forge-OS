@@ -266,7 +266,7 @@ const vencidas = pendientes.filter((tarea) => vencida(tarea.due_date)).length;
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
             {t('hub.banner_title')}
           </h2>
-          <p class="text-forge-text/80 text-sm leading-relaxed mb-6 font-medium" set:html={t('hub.banner_desc')} />
+          <p class="text-forge-text text-sm leading-relaxed mb-6 font-medium" set:html={t('hub.banner_desc')} />
           <div class="flex flex-wrap items-center gap-3">
             <button onclick="document.getElementById('new-ws-modal').showModal()" class="bg-forge-secondary text-white font-bold py-2.5 px-6 rounded-xl shadow-lg shadow-forge-secondary/30 hover:shadow-forge-secondary/50 hover:-translate-y-0.5 active:scale-95 transition-all text-sm flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>

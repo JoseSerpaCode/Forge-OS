@@ -1,0 +1,18 @@
+---
+/**
+ * Lo que la marca pone en el `<head>`, igual en la aplicación y en la portada:
+ * iconos y fuentes. El color de la barra del navegador lo pone
+ * cada layout, porque depende del tema con el que se pinta.
+ *
+ * Las fuentes se sirven desde `public/fonts`, no desde Google Fonts. La portada
+ * promete «sin scripts de terceros», y una petición a Google en cada visita
+ * contaba como uno. Además se cargan antes: no hay otra conexión que abrir.
+ * Solo se precarga Archivo, que es la de toda la interfaz; Plex Mono se usa en
+ * atajos y código y puede llegar después.
+ */
+---
+<link rel="preload" href="/fonts/archivo-wdth.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />

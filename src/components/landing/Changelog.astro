@@ -89,7 +89,7 @@ const KIND_LABEL: Record<ChangeKind, string> = {
   .cl-head { max-width: 46ch; margin-bottom: clamp(2rem, 4vw, 3rem); }
 
   .cl-eyebrow {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
     font-size: 0.68rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -181,19 +181,19 @@ const KIND_LABEL: Record<ChangeKind, string> = {
     margin-bottom: 0.9rem;
   }
   .cl-version {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
     font-size: 1rem;
     font-weight: 500;
     color: var(--forge-muted);
   }
   .cl-version[data-latest] { color: var(--forge-accent-text); }
   .cl-date {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
     font-size: 0.72rem;
     color: var(--forge-muted);
   }
   .cl-badge {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
     font-size: 0.6rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -236,7 +236,7 @@ const KIND_LABEL: Record<ChangeKind, string> = {
 
   .cl-kind {
     display: inline-block;
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
     font-size: 0.58rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -267,7 +267,7 @@ const KIND_LABEL: Record<ChangeKind, string> = {
 
   .cl-more {
     margin: 0.75rem 0 0;
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
     font-size: 0.7rem;
     color: var(--forge-muted);
   }

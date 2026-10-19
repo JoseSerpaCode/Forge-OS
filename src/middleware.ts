@@ -184,8 +184,10 @@ function applySecurityHeaders(response: Response): Response {
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
+    // Las fuentes se sirven desde el propio servidor (`public/fonts`): ya no
+    // hace falta abrir la puerta a Google Fonts.
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     "img-src 'self' data: blob:",
     // `storage.googleapis.com` es donde vive la sesión de subida reanudable de
     // Drive. El archivo va del navegador a Google **directamente**, así que sin

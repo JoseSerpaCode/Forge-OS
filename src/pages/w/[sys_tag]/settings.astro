@@ -570,7 +570,7 @@ const wsPendingInvites = (db.prepare(`
                 </div>
                 <span class="text-[10px] text-forge-muted font-mono">{date}</span>
               </div>
-              <div class="text-xs text-forge-text/80 pl-8">
+              <div class="text-xs text-forge-text pl-8">
                 <span class="font-bold text-forge-accent-text">{log.entity_type}</span>: <span class="font-mono text-forge-muted">{log.entity_id.substring(0,8)}</span>
                 {detailsText && <p class="mt-1 font-mono text-sm text-forge-text" title={log.details_json}>{detailsText}</p>}
               </div>

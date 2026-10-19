@@ -32,14 +32,7 @@ const t = useTranslations(lang);
 
 const tipoDe = (task: any) => tipos?.get(`${task.workspace_id ?? ''}:${task.type}`) ?? tipos?.get(task.type) ?? null;
 
-const statusColor: Record<string, string> = {
-  todo: 'bg-forge-muted/20 text-forge-muted',
-  'in-progress': 'bg-forge-info/20 text-forge-info',
-  'in_progress': 'bg-forge-info/20 text-forge-info',
-  review: 'bg-yellow-500/20 text-forge-warning',
-  done: 'bg-green-500/20 text-forge-success',
-  blocked: 'bg-red-500/20 text-forge-error',
-};
+import { info as infoEstado } from '../../lib/status';
 ---
 
 <div class="task-table-container overflow-x-auto w-full">
@@ -111,7 +104,7 @@ const statusColor: Record<string, string> = {
                 {task.due_date ? fecha(task.due_date, lang) : '—'}
               </td>
               <td class="p-3 w-28">
-                <span class={`text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap ${statusColor[task.status] || 'bg-forge-muted/20 text-forge-muted'}`}>
+                <span class="estado-chip" style={`--c:${infoEstado(task.status).color}`}>
                   {/*
                     Sin `|| respaldo`: `useTranslations` devuelve **la clave**
                     cuando no la encuentra, y una clave es una cadena no vacía,
@@ -119,7 +112,7 @@ const statusColor: Record<string, string> = {
                     `status.review`. Ahora la clave tiene que existir, y hay una
                     prueba que lo comprueba enumerando las columnas del tablero.
                   */}
-                  {t(`status.${task.status?.replace('-', '_') || 'todo'}` as any)}
+                  {t(infoEstado(task.status).i18n)}
                 </span>
               </td>
             </tr>

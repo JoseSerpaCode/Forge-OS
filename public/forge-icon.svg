@@ -1,23 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Forge OS">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Forge OS">
   <!--
-    La F va como trazado, no como <text>.
+    «Fragua»: la boca de una fragua sobre su hogar, con las brasas dentro.
+    Rejilla de 64 × 64 y módulo de 4 (docs/rediseno/logo.html).
 
-    La versión anterior dibujaba la letra con font-family="Arial, sans-serif".
-    Un SVG no incrusta fuentes: cada máquina lo componía con la que tuviera a
-    mano, así que el favicon y la imagen de OpenGraph salían con una letra
-    distinta en Linux, en macOS y en Windows — y en un servidor sin fuentes de
-    escritorio, con la de reserva que hubiera. Un logotipo que cambia de forma
-    según quién lo mira no es un logotipo.
+    Este archivo es la referencia de la marca. El mismo trazado va en línea en
+    src/components/brand/Logo.astro: si cambia uno, hay que cambiar el otro.
 
-    Este archivo es la referencia de la marca. Si cambia, hay que cambiar el
-    mismo trazado en src/components/brand/Logo.astro, que lo lleva en línea.
+    El icono lleva el símbolo al 70 % dentro de un cuadrado de tinta; el
+    cuadrado es solo del icono, no del logo. Las brasas son siempre #E8590C,
+    sin depender del tema.
   -->
-  <defs>
-    <linearGradient id="forgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF5D00" />
-      <stop offset="100%" stop-color="#FF8533" />
-    </linearGradient>
-  </defs>
-  <rect width="100" height="100" rx="22" fill="url(#forgeGrad)" />
-  <path d="M32 22 H70 V36 H46 V44 H64 V58 H46 V78 H32 Z" fill="#FFFFFF" />
+  <rect width="64" height="64" rx="14" fill="#171614"/>
+  <g transform="translate(9.6 9.6) scale(0.7)">
+    <path fill="#F8F7F4" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/>
+    <path fill="#E8590C" d="M21 53V45A11 8 0 0 1 43 45V53Z"/>
+  </g>
 </svg>

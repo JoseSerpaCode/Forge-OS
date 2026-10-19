@@ -6,6 +6,23 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.36.0] - 2026-10-19
+
+Primera fase del rediseño «Taller», camino de la 2.0. El diseño aprobado y sus razones están en `docs/rediseno/` y `docs/rediseno-diagnostico.md`.
+
+### Changed
+
+- **Colores nuevos**: tinta sobre papel gris cálido en claro y grafito cálido en oscuro, con el naranja solo para la acción. Todo el texto pasa AA en los dos temas.
+- **Tipografía propia**: Archivo para la interfaz y IBM Plex Mono para código y atajos, servidas desde el propio servidor. Ya no se pide nada a Google Fonts.
+- **Logo nuevo, «Fragua»**: la boca de una fragua con las brasas dentro. También son nuevos el favicon, los iconos para instalar la aplicación y la imagen para redes.
+- **Los estados se llaman igual en todas partes**: «Por hacer», «En curso», «En revisión» y «Hecho». Cada uno tiene su color, que comparten el tablero, las tablas y las gráficas.
+- Las gráficas de Métricas toman los colores del tema y se repintan al cambiarlo.
+- El anillo de foco del teclado es de tinta, no naranja.
+
+### Fixed
+
+- Siete textos tenían opacidad y quedaban por debajo del contraste mínimo.
+
 ## [1.35.0] - 2026-10-19
 
 ### Added

@@ -1,27 +1,26 @@
 ---
 /**
- * La marca, en un solo sitio.
+ * La marca, en un solo sitio: «Fragua».
  *
- * Había cuatro dibujos distintos de lo mismo repartidos por la aplicación:
+ * La boca de una fragua sobre su hogar, con las brasas encendidas dentro. Es
+ * el sitio donde se trabaja, lo mismo que un espacio de Forge. Las cuatro
+ * propuestas y por qué se eligió esta están en `docs/rediseno/logo.html`.
  *
- *   - `public/forge-icon.svg` — cuadrado naranja con la F en Arial.
- *   - La barra lateral — un `<div>` con gradiente y la letra F en la fuente
- *     de la interfaz, 7×7 y `rounded-lg`.
- *   - El pie — el mismo `<div>` a 10×10 y `rounded-xl`, con otra sombra.
- *   - El hub — otro más, 20×20, girado 12 grados.
+ * - El **arco** va en el color del texto: tinta sobre papel, papel sobre
+ *   grafito. Por eso es `currentColor`.
+ * - Las **brasas** van siempre en el naranja de marca `#E8590C`, fijo, sin
+ *   pasar por los tokens del tema: la marca no cambia con el tema.
+ * - Sin cuadrado, sin gradiente, sin halo. El cuadrado de tinta es solo del
+ *   icono de aplicación (`public/forge-icon.svg`).
  *
- * Cuatro proporciones, cuatro radios de esquina y dos letras diferentes (la del
- * SVG dependía de las fuentes del sistema). Y el nombre se escribía «FORGE OS»
- * en dos sitios y «Forge OS» en otros dos.
- *
- * Aquí queda una sola pieza. El trazado es el mismo que el del archivo SVG; va
- * en línea para que herede el tamaño del texto y no dependa de una petición
- * aparte que puede fallar.
+ * El trazado es el mismo que el de `public/forge-icon.svg`. Si cambias uno,
+ * cambia el otro. Va en línea para que herede el color y no dependa de una
+ * petición aparte.
  */
 interface Props {
-  /** Tamaño del emblema. El texto acompaña en proporción. */
+  /** Tamaño del símbolo. El nombre acompaña en proporción. */
   size?: 'sm' | 'md' | 'lg' | 'xl';
-  /** Mostrar el nombre junto al emblema. */
+  /** Mostrar el nombre junto al símbolo. */
   wordmark?: boolean;
   /** Envolver en un enlace a la portada. */
   href?: string;
@@ -41,50 +40,12 @@ const Tag = href ? 'a' : 'span';
   class:list={['brand', `brand-${size}`, className]}
   aria-label={wordmark ? undefined : 'Forge OS'}
 >
-  <svg
-    class="brand-mark"
-    width={px}
-    height={px}
-    viewBox="0 0 100 100"
-    aria-hidden="true"
-    focusable="false"
-  >
-    {/*
-      El id del gradiente lleva el tamaño porque puede haber varias marcas en la
-      misma página —barra lateral y pie— y dos `<defs>` con el mismo id hacen
-      que la segunda gane en algunos navegadores.
-    */}
-    <defs>
-      <linearGradient id={`forgeGrad-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="var(--forge-accent-primary)" />
-        <stop offset="100%" stop-color="var(--forge-accent-secondary)" />
-      </linearGradient>
-    </defs>
-    <rect width="100" height="100" rx="22" fill={`url(#forgeGrad-${size})`} />
-    {/*
-      Blanco literal, no `--forge-on-accent`.
-
-      Ese token vale `#0F172A` en los dos temas, y para lo suyo está bien: es el
-      texto de los botones naranjas, donde da 5,56:1 contra `#FF5D00` y cumple
-      AA. Pero aquí pintaba la F casi negra sobre el emblema, y en tema claro
-      encima parecía un error.
-
-      Un logotipo está exento del mínimo de contraste (WCAG 1.4.3, «Logotypes»),
-      así que el blanco es legítimo aquí y **solo aquí**: cambiar el token
-      habría dejado el texto de veintisiete botones en 3,06:1.
-
-      `public/forge-icon.svg` ya la tenía blanca. Este componente se había
-      desviado del archivo de referencia, que es exactamente lo que la nota de
-      CLAUDE.md pide evitar.
-    */}
-    <path d="M32 22 H70 V36 H46 V44 H64 V58 H46 V78 H32 Z" fill="#FFFFFF" />
+  <svg class="brand-mark" width={px} height={px} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z" />
+    <path fill="#E8590C" d="M21 53V45A11 8 0 0 1 43 45V53Z" />
   </svg>
 
-  {/*
-    «Forge OS», siempre así. El producto se llama así en el README, en el
-    package.json y en el título de todas las páginas; escribirlo «FORGE OS» en
-    la mitad de la interfaz solo hacía dudar de cuál era el nombre.
-  */}
+  {/* «Forge OS», siempre así, nunca «FORGE OS». */}
   {wordmark && <span class="brand-word">Forge OS</span>}
 </Tag>
 
@@ -92,38 +53,18 @@ const Tag = href ? 'a' : 'span';
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.5rem;
     color: var(--forge-text);
     text-decoration: none;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1;
   }
-
-  .brand-mark {
-    flex: none;
-    /* Sin `border-radius` aquí: el `<rect rx="22">` del SVG ya redondea, y
-       redondear también el elemento recortaba el gradiente en las esquinas. */
-    transition: transform 0.2s;
-  }
-
-  /* El resplandor, solo sobre fondo oscuro.
-     Sobre el panel oscuro se lee como un halo intencionado; sobre el blanco del
-     tema claro se lee como una mancha borrosa alrededor del logo, que es
-     justo lo que hacía que la cabecera se viera «rara». */
-  :global([data-theme='dark']) .brand-mark,
-  :global(:root:not([data-theme])) .brand-mark {
-    box-shadow: 0 0 12px color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
-  }
-  a.brand:hover .brand-mark { transform: scale(1.06); }
+  .brand-mark { flex: none; }
 
   .brand-sm .brand-word { font-size: 0.9rem; }
   .brand-md .brand-word { font-size: 1.05rem; }
   .brand-lg .brand-word { font-size: 1.35rem; }
   .brand-xl { gap: 1rem; }
   .brand-xl .brand-word { font-size: 2rem; }
-  :global([data-theme='dark']) .brand-xl .brand-mark,
-  :global(:root:not([data-theme])) .brand-xl .brand-mark {
-    box-shadow: 0 0 30px color-mix(in srgb, var(--forge-accent-primary) 40%, transparent);
-  }
 </style>
