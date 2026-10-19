@@ -761,6 +761,26 @@ for key, name in STATUS[:3]:
     cs = COLUMNS[key][:2]
     mini.append(f'<section class="column s-{key}" style="min-height:0"><header class="column-head"><h2>{name}</h2><span class="n">{COUNTS[key]}</span></header><div class="tape"></div><div class="column-body">{"".join(cs)}</div></section>')
 
+def pin(html, n):
+    """Añade una marca numerada a una tarjeta; remite a la nota con el mismo número."""
+    return html.replace('<article class="card', f'<article data-pin="{n}" class="card', 1)
+
+
+show_cards = {
+    'todo': COLUMNS['todo'][:3],
+    'progress': [pin(COLUMNS['progress'][0], 1), pin(COLUMNS['progress'][1], 3), COLUMNS['progress'][2]],
+    'review': COLUMNS['review'][:1],
+    'done': [pin(card('Selector de plan en ajustes', 'Tarea', ['Facturación'], 'blake', 3, cls='dragging'), 2)
+             + '<div class="slot slot-label">Soltar en «Hecho»</div>'] + COLUMNS['done'][:2],
+}
+show_cols = ''.join(
+    f'<section class="column s-{k}"><header class="column-head"><h2>{n}</h2><span class="n">{COUNTS[k]}</span></header>'
+    f'<div class="column-body">{"".join(show_cards[k])}</div></section>' for k, n in STATUS)
+NOTES = [('1', 'El temporizador corre en el servidor. Cerrar el portátil no pierde la hora registrada, y se para solo al llegar a «Hecho».'),
+         ('2', 'Las tarjetas se arrastran entre columnas. En el móvil, donde arrastrar no funciona, se mueven con un selector.'),
+         ('3', 'Lo que vence hoy se marca en rojo en la propia tarjeta, sin abrirla.')]
+show_notes = ''.join(f'<li data-n="{n}"><span class="pin-n">{n}</span><p>{t}</p></li>' for n, t in NOTES)
+
 demo_board = (f'<section class="column s-progress" style="min-height:0"><header class="column-head"><h2>En curso</h2><span class="n">3</span></header>'
               f'<div class="column-body">{COLUMNS["progress"][0]}{COLUMNS["progress"][1]}</div></section>')
 demo_note = f"""<article class="panel" style="padding:22px 24px">
@@ -796,9 +816,9 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
   </header>
   <section class="hero-x">
     <h1 class="hero-title">
-      <span class="ln">Tablero, <span class="inl inl-col" aria-hidden="true"><i></i>En curso<b>3</b></span></span>
-      <span class="ln">notas <span class="inl inl-note" aria-hidden="true"><i></i>Arquitectura general</span> y</span>
-      <span class="ln">archivos <span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf</span></span>
+      <span class="ln"><span class="w">Tablero,</span><span class="inl inl-col" aria-hidden="true"><i></i>En curso<b>3</b></span></span>
+      <span class="ln"><span class="w">notas</span><span class="inl inl-note" aria-hidden="true"><i></i>Arquitectura general</span></span>
+      <span class="ln"><span class="w">y archivos</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf</span></span>
       <span class="ln ln-wide">en un servidor tuyo.</span>
     </h1>
     <div class="hero-foot">
@@ -811,10 +831,13 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
   </section>
 
   <figure class="showcase">
-    <div class="showcase-sign"><span>Sprint 14 · quedan 4 días</span><strong>Facturación y búsqueda</strong></div>
-    <div class="board" style="grid-template-columns:repeat(3,minmax(0,1fr))">{''.join(mini)}</div>
+    <div class="showcase-sign">
+      <strong>Sprint 14 · Facturación y búsqueda</strong>
+      <span class="sign-meta"><span class="bar" aria-hidden="true"><span style="width:26%;--c:var(--brand-ink)"></span></span>quedan 4 días · 32 h de 121 h</span>
+    </div>
+    <div class="showcase-board"><div class="board">{show_cols}</div></div>
   </figure>
-  <p class="figcaption">El tablero de la instancia de prueba, tal cual.</p>
+  <ol class="show-notes">{show_notes}</ol>
 
   <section class="site-section">
     <h2>Qué hace</h2>
@@ -859,10 +882,17 @@ acceso = HEAD.format(title='Entrar · Forge OS', favicon=FAVICON) + f"""<body>
   <aside class="auth-brand">
     <a href="portada.html" class="brand" style="color:var(--brand-paper)">{mark(30)}<span class="brand-word">Forge OS</span></a>
     <div class="auth-copy">
-      <p class="claim">Lo que tu equipo escribe, planifica y registra, en un archivo tuyo.</p>
-      <ul><li>Un proceso de Node sobre un archivo de SQLite.</li><li>Nadie más lee tu trabajo.</li><li>Licencia MIT. Instálalo donde quieras.</li></ul>
+      <p class="claim">Lo que tu equipo escribe, planifica y registra, <span class="claim-wide">en un archivo tuyo.</span></p>
+      <ul class="auth-facts"><li>Un archivo de SQLite</li><li>Nadie más lee tu trabajo</li><li>Licencia MIT</li></ul>
     </div>
-    <div class="auth-forge" aria-hidden="true"><div class="mouth"><div class="ember"></div></div></div>
+    <div class="auth-scene" aria-hidden="true">
+      <span class="inl inl-col s1"><i></i>En curso<b>3</b></span>
+      <span class="inl inl-note s2"><i></i>Arquitectura general</span>
+      <span class="inl inl-file s3"><em>PDF</em>factura.pdf</span>
+      <span class="inl inl-timer s4"><i></i>En marcha <b>00:42:13</b></span>
+      <span class="scene-people s5"><span class="avatar avatar-lg p-avery">av</span><span class="avatar avatar-lg p-blake">bl</span><span class="avatar avatar-lg p-noor">no</span></span>
+      <div class="auth-forge"><div class="mouth"><div class="ember"></div></div></div>
+    </div>
   </aside>
   <div class="auth-form">
     <form aria-labelledby="acc-t" onsubmit="return false">

@@ -623,6 +623,8 @@ kbd, .kbd {
 }
 .card-foot .push { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .timer {
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
@@ -634,7 +636,7 @@ kbd, .kbd {
 .timer b {
   font-weight: 700; font-stretch: var(--wide);
 }
-.timer .live { display: inline-flex; align-items: center; gap: 6px; }
+.timer .live { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .timer .live::before {
   content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
 }
@@ -844,21 +846,43 @@ kbd, .kbd {
   gap: 48px;
   overflow: hidden;
 }
-.auth-copy { display: flex; flex-direction: column; gap: 22px; max-width: 30rem; }
+.auth-copy { display: flex; flex-direction: column; gap: 24px; max-width: 40rem; }
 .auth-brand .claim {
-  font-size: clamp(2.4rem, 3.8vw, 3.4rem); font-weight: 800; font-stretch: var(--narrow-x); line-height: 0.95; text-wrap: balance;
+  font-size: clamp(2.4rem, 3.8vw, 4.6rem); font-weight: 800; font-stretch: var(--narrow-x); line-height: 0.95; text-wrap: balance;
 }
 .auth-brand ul { display: flex; flex-direction: column; gap: 10px; font-size: var(--t-14); color: #CFC9BF; }
 .auth-brand li { display: flex; gap: 10px; }
 .auth-brand li::before {
   content: ''; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--brand-orange); flex: none;
 }
-/* La fragua del logo a gran escala, apoyada en el borde inferior. */
+.claim-wide { display: block; margin-top: 0.3em; font-size: 0.62em; font-stretch: var(--wide); font-weight: 700; letter-spacing: -0.025em; color: #FF9452; }
+.auth-facts { flex-direction: row !important; flex-wrap: wrap; gap: 8px !important; }
+.auth-facts li { border: 1px solid #5C574F; border-radius: var(--r-pill); padding: 6px 12px; font-size: var(--t-13); font-weight: 600; color: var(--brand-paper); }
+.auth-facts li::before { display: none; }
+/* La escena va siempre en claro sobre la tinta, en los dos temas. */
+.auth-scene {
+  --surface-1: #F8F7F4; --bg: #EEECE7; --text: #171614; --muted: #57534B;
+  --border: #CFCAC0; --border-strong: #7D776C; --tint: 22%;
+  --shadow-float: 0 14px 30px rgb(0 0 0 / 0.45);
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 360px;
+  color: var(--text);
+}
+.auth-scene .inl { position: absolute; z-index: 2; font-size: 1.05rem; }
+/* Colocadas desde abajo, alrededor de la boca: salen de la fragua. */
+.auth-scene .s1 { left: 4%; bottom: 280px; transform: rotate(-8deg); }
+.auth-scene .s2 { right: 2%; bottom: 250px; transform: rotate(5deg); }
+.auth-scene .s3 { left: 0; bottom: 120px; transform: rotate(-4deg); }
+.auth-scene .s4 { right: 0; bottom: 96px; transform: rotate(4deg); --c: var(--brand-orange); }
+.auth-scene .s4 b { font-stretch: var(--wide); font-weight: 700; margin-left: 0.3em; }
+.scene-people { position: absolute; z-index: 2; left: 42%; bottom: 330px; display: flex; gap: 6px; transform: rotate(-3deg); }
 .auth-forge {
-  margin-top: auto;
-  align-self: center;
-  width: min(76%, 420px);
-  aspect-ratio: 1 / 0.82;
+  position: absolute;
+  bottom: 0; left: 50%;
+  translate: -50% 0;
+  width: clamp(240px, 46%, 380px);
+  aspect-ratio: 1 / 0.86;
   background: var(--brand-orange);
   border-radius: 50% 50% 0 0 / 58% 58% 0 0;
   display: flex;
@@ -961,15 +985,50 @@ kbd, .kbd {
 .hero-side { display: flex; flex-direction: column; gap: 16px; }
 .hero-side p:first-child { font-size: var(--t-16); line-height: 1.6; color: var(--muted); max-width: 46ch; }
 .hero-side .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-/* El producto dentro de la boca de la fragua; el remate hace de rótulo. */
+/* El tablero sale de la boca de la fragua: el remate hace de rótulo y las
+   columnas llegan al borde inferior, cortadas, como si siguieran. */
 .showcase {
   background: var(--brand-orange);
-  border-radius: 50% 50% 24px 24px / 210px 210px 24px 24px;
-  padding: 64px clamp(14px, 3vw, 40px) clamp(14px, 3vw, 40px);
+  border-radius: 50% 50% 24px 24px / 190px 190px 24px 24px;
+  padding: 58px clamp(14px, 3vw, 40px) 0;
+  overflow: hidden;
 }
-.showcase-sign { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 40px; color: var(--brand-ink); text-align: center; }
-.showcase-sign span { font-size: var(--t-14); font-weight: 650; }
-.showcase-sign strong { font-size: clamp(2.2rem, 5vw, 4rem); font-weight: 800; font-stretch: 64%; line-height: 0.92; letter-spacing: -0.01em; }
+.showcase-sign { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 36px; color: var(--brand-ink); text-align: center; }
+.showcase-sign strong { font-size: clamp(1.6rem, 3vw, 2.5rem); font-weight: 800; font-stretch: var(--narrow-x); line-height: 1; }
+.sign-meta { display: inline-flex; align-items: center; gap: 12px; font-size: var(--t-14); font-weight: 650; }
+.sign-meta .bar { width: 120px; background: color-mix(in srgb, var(--brand-ink) 22%, var(--brand-orange)); }
+.showcase-board { height: clamp(420px, 44vw, 560px); overflow: hidden; }
+.showcase .board { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.showcase .column { min-height: 900px; border-radius: 50% 50% 0 0 / 46px 46px 0 0; }
+/* Marcas numeradas sobre las tarjetas; las notas de debajo las explican. */
+.showcase .card[data-pin]::before {
+  content: attr(data-pin);
+  position: absolute;
+  top: -11px; left: -11px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--brand-ink);
+  color: var(--brand-paper);
+  display: grid; place-items: center;
+  font-size: var(--t-13);
+  font-weight: 800;
+  font-stretch: var(--wide);
+  box-shadow: 0 0 0 3px var(--brand-orange);
+  z-index: 3;
+}
+.show-notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 40px; padding: 24px 0 8px; border-bottom: 1px solid var(--border); }
+.show-notes li { display: flex; gap: 12px; align-items: flex-start; }
+.show-notes p { font-size: var(--t-14); line-height: 1.55; color: var(--muted); }
+.pin-n {
+  width: 26px; height: 26px; flex: none;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  display: grid; place-items: center;
+  font-size: var(--t-13);
+  font-weight: 800;
+  font-stretch: var(--wide);
+}
 .features-rows { display: flex; flex-direction: column; }
 .feature { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px 56px; align-items: center; padding-block: 36px; border-top: 1px solid var(--border); }
 .feature:first-child { border-top: 0; padding-top: 8px; }
@@ -1001,82 +1060,85 @@ kbd, .kbd {
 @media (max-width: 820px) {
   .feature, .cta-final { grid-template-columns: minmax(0, 1fr); }
   .feature:nth-child(even) .feature-demo { order: 0; }
-  .showcase .board { grid-template-columns: minmax(0, 1fr) !important; }
-  .showcase { border-radius: 50% 50% 22px 22px / 120px 120px 22px 22px; padding-top: 48px; }
+  .showcase .board { grid-template-columns: minmax(0, 1fr); }
+  .showcase { border-radius: 50% 50% 22px 22px / 110px 110px 22px 22px; padding-top: 44px; }
+  .show-notes { grid-template-columns: minmax(0, 1fr); }
+  .showcase .board .column { display: none; }
+  .showcase .board .column.s-progress { display: block; }
+  .show-notes li[data-n="2"] { display: none; }
+  .sign-meta { flex-wrap: wrap; justify-content: center; }
   .auth-brand { display: none; }
 }
 
 /* ── Portada: titular que enseña el producto ───────────────────────────── */
 .hero-x { padding-block: 72px 48px; }
 .hero-title {
-  font-size: clamp(3rem, 9.6vw, 9.4rem);
-  line-height: 0.9;
+  font-size: clamp(3rem, 8.4vw, 8.6rem);
+  line-height: 0.92;
   font-weight: 800;
   font-stretch: 64%;
   letter-spacing: -0.02em;
 }
-.hero-title .ln { display: block; }
-/* En escalera: cada línea un paso más a la derecha, y la tesis cierra al otro lado. */
+/* Cada línea: la palabra y, a su derecha, la pieza de interfaz centrada en
+   la altura de las minúsculas. */
+.hero-title .ln { display: flex; align-items: center; gap: 0.16em; }
+.hero-title .w { white-space: nowrap; }
+/* En escalera, con pasos iguales; la tesis cierra al otro lado. */
 @media (min-width: 821px) {
-  .hero-title .ln:nth-child(2) { padding-left: 1.1em; }
-  .hero-title .ln:nth-child(3) { padding-left: 2.2em; }
-  .hero-title .ln-wide { text-align: right; }
+  .hero-title .ln:nth-child(2) { padding-left: 0.8em; }
+  .hero-title .ln:nth-child(3) { padding-left: 1.6em; }
+  .hero-title .ln-wide { justify-content: flex-end; }
 }
-/* La tesis, en el ancho opuesto: estrecho arriba, extendido abajo. */
 .hero-title .ln-wide {
-  font-size: 0.4em;
+  font-size: 0.38em;
   font-stretch: var(--wide);
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1;
-  margin-top: 0.45em;
+  margin-top: 0.5em;
   color: var(--accent-text);
 }
-/* Piezas reales de la interfaz dentro de la frase. */
+/* Las tres piezas comparten escala (proporcional al titular), altura y
+   tipografía; solo cambian su forma. */
 .inl {
   display: inline-flex;
   align-items: center;
-  gap: 0.6em;
-  vertical-align: middle;
-  position: relative;
-  top: -0.06em;
-  margin-inline: 0.12em;
-  padding: 0.55em 1em;
-  font-size: clamp(0.85rem, 1.45vw, 1.3rem);
+  gap: 0.55em;
+  flex: none;
+  height: 2.7em;
+  padding-inline: 1.05em;
+  margin-top: 0.12em;
+  font-size: max(0.75rem, 0.15em);
   font-stretch: 100%;
   font-weight: 650;
   letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
   color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  box-shadow: 0 1px 0 var(--border);
 }
-.inl i { width: 0.6em; height: 0.6em; border-radius: 50%; background: var(--c); flex: none; }
+.inl i { width: 0.62em; height: 0.62em; border-radius: 50%; background: var(--c); flex: none; }
+/* Columna del tablero: remate en arco y la inclinación de lo que se arrastra. */
 .inl-col {
   --c: var(--st-progress);
+  height: 3em;
+  padding-top: 0.25em;
   background: color-mix(in srgb, var(--c) var(--tint), var(--bg));
-  border-radius: 2.4em 2.4em 0.5em 0.5em;
-  padding: 1em 1.3em 0.6em;
+  border-color: transparent;
+  border-radius: 1.5em 1.5em 0.45em 0.45em;
   font-stretch: var(--narrow-x);
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  transform: rotate(-4deg);
+  letter-spacing: 0.03em;
+  transform: rotate(-3deg);
 }
-.inl-col b { font-stretch: var(--wide); font-weight: 700; margin-left: 0.4em; }
-.inl-note {
-  --c: var(--st-todo);
-  background: var(--surface-1);
-  border: 1.5px solid var(--border-strong);
-  border-radius: var(--r-pill);
-}
-.inl-file {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow-float);
-  transform: rotate(2deg);
-}
-.inl-file em { font-style: normal; font-family: var(--mono); font-size: 0.75em; font-weight: 500; border: 1px solid var(--border-strong); border-radius: 6px; padding: 0.2em 0.4em; color: var(--muted); }
+.inl-col b { font-stretch: var(--wide); font-weight: 700; margin-left: 0.3em; }
+.inl-note { --c: var(--st-todo); }
+.inl-file { border-radius: 0.8em; box-shadow: var(--shadow-float); transform: rotate(2deg); }
+.inl-file em { font-style: normal; font-family: var(--mono); font-size: 0.78em; font-weight: 500; border: 1px solid var(--border-strong); border-radius: 0.4em; padding: 0.25em 0.45em; color: var(--muted); }
 .hero-foot {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1093,7 +1155,7 @@ kbd, .kbd {
 @media (max-width: 820px) {
   .hero-x { padding-block: 40px 32px; }
   .hero-foot { grid-template-columns: minmax(0, 1fr); }
-  .inl { font-size: 0.8rem; }
+  .hero-title .ln { flex-wrap: wrap; row-gap: 0.06em; }
   .hero-title .ln-wide { font-size: 0.5em; }
 }
 
@@ -1116,10 +1178,17 @@ kbd, .kbd {
   <aside class="auth-brand">
     <a href="portada.html" class="brand" style="color:var(--brand-paper)"><svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/><path fill="var(--brand-orange)" d="M21 53V45A11 8 0 0 1 43 45V53Z"/></svg><span class="brand-word">Forge OS</span></a>
     <div class="auth-copy">
-      <p class="claim">Lo que tu equipo escribe, planifica y registra, en un archivo tuyo.</p>
-      <ul><li>Un proceso de Node sobre un archivo de SQLite.</li><li>Nadie más lee tu trabajo.</li><li>Licencia MIT. Instálalo donde quieras.</li></ul>
+      <p class="claim">Lo que tu equipo escribe, planifica y registra, <span class="claim-wide">en un archivo tuyo.</span></p>
+      <ul class="auth-facts"><li>Un archivo de SQLite</li><li>Nadie más lee tu trabajo</li><li>Licencia MIT</li></ul>
     </div>
-    <div class="auth-forge" aria-hidden="true"><div class="mouth"><div class="ember"></div></div></div>
+    <div class="auth-scene" aria-hidden="true">
+      <span class="inl inl-col s1"><i></i>En curso<b>3</b></span>
+      <span class="inl inl-note s2"><i></i>Arquitectura general</span>
+      <span class="inl inl-file s3"><em>PDF</em>factura.pdf</span>
+      <span class="inl inl-timer s4"><i></i>En marcha <b>00:42:13</b></span>
+      <span class="scene-people s5"><span class="avatar avatar-lg p-avery">av</span><span class="avatar avatar-lg p-blake">bl</span><span class="avatar avatar-lg p-noor">no</span></span>
+      <div class="auth-forge"><div class="mouth"><div class="ember"></div></div></div>
+    </div>
   </aside>
   <div class="auth-form">
     <form aria-labelledby="acc-t" onsubmit="return false">
