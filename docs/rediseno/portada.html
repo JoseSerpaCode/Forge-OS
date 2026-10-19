@@ -1454,6 +1454,84 @@ kbd, .kbd {
 }
 .card.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 
+/* ── «Qué hace»: cuatro bloques a ancho completo ───────────────────────── */
+.qh-head { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px 56px; align-items: end; margin-bottom: 36px; }
+.qh-head h2 { margin: 0; }
+.qh-lead { font-size: var(--t-20); line-height: 1.45; max-width: 42ch; text-wrap: pretty; }
+.qh-index { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.qh-index a { display: inline-flex; gap: 10px; align-items: baseline; padding: 8px 18px; border: 1px solid var(--border-strong); border-radius: var(--r-pill); font-weight: 650; }
+.qh-index a:hover { background: var(--surface-2); }
+.qh-index b { font-family: var(--mono); font-size: var(--t-12); font-weight: 500; color: var(--accent-text); }
+.qh-feat { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px 56px; padding-block: 56px; border-top: 1px solid var(--border); scroll-margin-top: 16px; }
+.qh-feat:nth-of-type(even) { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.qh-feat:nth-of-type(even) .qh-text { order: 2; }
+.qh-text { align-self: start; position: sticky; top: 24px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.qh-n { font-stretch: var(--wide); font-weight: 700; font-size: var(--t-13); color: var(--accent-text); }
+.qh-text h3 { font-size: clamp(3.4rem, 6.4vw, 6rem); font-weight: 800; font-stretch: 64%; line-height: .88; letter-spacing: -0.02em; }
+.qh-text > p { color: var(--muted); font-size: var(--t-16); line-height: 1.6; max-width: 46ch; }
+.qh-facts { border-top: 1px solid var(--border-strong); margin-top: 6px; }
+.qh-facts > div { display: grid; grid-template-columns: minmax(0, 9.4rem) minmax(0, 1fr); gap: 16px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.qh-facts dt { font-stretch: var(--wide); font-weight: 700; font-size: 1.3rem; line-height: 1.1; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.qh-facts dd { font-size: var(--t-14); line-height: 1.5; color: var(--muted); }
+.qh-stage { background: var(--surface-2); border-radius: 30px; padding: clamp(20px, 3.4vw, 48px); min-width: 0; min-height: 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; position: relative; }
+.qh-feat:nth-of-type(odd) .qh-stage { border-top-right-radius: 240px; }
+.qh-feat:nth-of-type(even) .qh-stage { border-top-left-radius: 240px; }
+/* Tablero: una columna, una tarjeta en el aire y el aviso que deja al soltarla */
+.qh-board { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 250px); justify-content: center; align-content: center; gap: 22px 20px; }
+.qh-board .column { min-height: 0; }
+.qh-drag { margin-top: 84px; }
+.qh-board .qh-toast { grid-column: 1 / -1; justify-self: center; margin-top: 6px; }
+/* Notas: la nota, la barra de formato sobre lo seleccionado y el menú de tickets */
+.qh-note { position: relative; width: min(100%, 540px); padding-bottom: 120px; }
+.qh-doc { padding: 24px 26px; position: relative; }
+.qh-doc p { font-size: var(--t-16); line-height: 1.65; }
+.qh-doc .doc-title { line-height: 1; }
+.qh-sel { position: relative; padding-top: 50px; }
+.qh-bubble { top: 4px; left: 8%; }
+.qh-note .qh-menu { position: absolute; right: -14px; bottom: 0; width: min(310px, 90%); z-index: 3; }
+.qh-back { display: flex; gap: 10px; align-items: flex-start; font-size: var(--t-14); line-height: 1.5; color: var(--muted); max-width: 46ch; }
+.qh-back .icon { margin-top: 2px; flex: none; }
+.qh-back b { color: var(--text); }
+/* Archivos: el camino de los bytes y la lista resultante */
+.qh-flow { width: 100%; max-width: 560px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(64px, 1.1fr) minmax(0, 1fr); grid-template-areas: ". server ." "browser arrow drive"; gap: 0 8px; align-items: center; }
+.qh-flow .node { background: var(--surface-1); border: 1.5px solid var(--text); border-radius: 16px; padding: 12px 10px; text-align: center; font-size: var(--t-14); }
+.qh-flow .node small { display: block; font-size: var(--t-12); color: var(--muted); margin-top: 2px; line-height: 1.35; }
+.qh-flow .server { grid-area: server; border-style: dashed; border-color: var(--border-strong); margin-bottom: 34px; position: relative; }
+.qh-flow .server::after { content: ''; position: absolute; left: 50%; top: 100%; height: 57px; border-left: 2px dashed var(--border-strong); }
+.qh-flow .browser { grid-area: browser; }
+.qh-flow .drive { grid-area: drive; }
+.qh-flow .arrow { grid-area: arrow; position: relative; height: 46px; }
+.qh-flow .arrow::before { content: ''; position: absolute; left: 0; right: 8px; top: 50%; height: 5px; margin-top: -2.5px; border-radius: 3px; background: var(--accent); }
+.qh-flow .arrow::after { content: ''; position: absolute; right: 0; top: 50%; margin-top: -9px; border: 9px solid transparent; border-right: 0; border-left: 14px solid var(--accent); }
+.qh-flow .lbl { position: absolute; left: 0; right: 0; top: calc(50% + 10px); text-align: center; font-size: var(--t-12); font-weight: 650; color: var(--accent-text); }
+/* Métricas: cifras, gráfica y una nota pegada encima */
+.qh-metrics { align-items: stretch; }
+.qh-top { display: flex; gap: 20px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.qh-sticky { width: 210px; margin-top: 4px; padding: 12px 14px; background: var(--text); color: var(--bg); border-radius: 14px; font-size: var(--t-13); line-height: 1.4; rotate: 2deg; box-shadow: var(--shadow-float); }
+.qh-sticky b { display: block; font-size: var(--t-20); margin-bottom: 2px; }
+@media (max-width: 1000px) {
+  .qh-head, .qh-feat, .qh-feat:nth-of-type(even) { grid-template-columns: minmax(0, 1fr); }
+  .qh-feat:nth-of-type(even) .qh-text { order: 0; }
+  .qh-text { position: static; }
+  .qh-stage { min-height: 0; }
+  .qh-feat:nth-of-type(odd) .qh-stage, .qh-feat:nth-of-type(even) .qh-stage { border-top-left-radius: 30px; border-top-right-radius: 160px; }
+}
+@media (max-width: 640px) {
+  .qh-feat { padding-block: 36px; gap: 24px; }
+  .qh-text h3 { font-size: clamp(3.2rem, 17vw, 4.4rem); }
+  .qh-facts > div { grid-template-columns: minmax(0, 7.4rem) minmax(0, 1fr); gap: 12px; }
+  .qh-facts dt { font-size: 1.1rem; }
+  .qh-board { grid-template-columns: minmax(0, 1fr); }
+  .qh-drag { margin-top: 0; }
+  .qh-stage { padding: 18px 14px; border-radius: 24px; border-top-right-radius: 110px !important; border-top-left-radius: 24px !important; }
+  .qh-note { padding-bottom: 150px; }
+  .qh-note .qh-menu { right: 0; width: min(310px, 100%); }
+  .qh-flow .server small, .qh-flow .drive small { display: none; }
+  .qh-sticky { width: auto; rotate: none; }
+  .feature:first-child .feature-demo { display: block; }
+}
+.qh-metrics { padding-top: clamp(56px, 6vw, 92px); }
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */
@@ -1508,13 +1586,46 @@ kbd, .kbd {
   </figure>
   <ol class="show-notes"><li data-n="1"><span class="pin-n">1</span><p>El temporizador corre en el servidor. Cerrar el portátil no pierde la hora registrada, y se para solo al llegar a «Hecho».</p></li><li data-n="2"><span class="pin-n">2</span><p>Las tarjetas se arrastran entre columnas. En el móvil, donde arrastrar no funciona, se mueven con un selector.</p></li><li data-n="3"><span class="pin-n">3</span><p>Lo que vence hoy se marca en rojo en la propia tarjeta, sin abrirla.</p></li></ol>
 
-  <section class="site-section">
-    <h2>Qué hace <svg class="pf pf-throw" viewBox="-50 -165 196 205" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(-8)"><path d="M-10 -2L-24 28" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L26 22" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L40 -90" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-34 -16" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E0A23A"/><circle cx="0" cy="-80" r="18" fill="#E0A23A"/></g><path d="M44 -100Q80 -150 118 -132" stroke="#5C574F" stroke-width="4" stroke-dasharray="1 11" stroke-linecap="round" fill="none"/><circle cx="128" cy="-128" r="13" fill="#E8590C"/></svg></h2>
-    <div class="features-rows"><div class="feature"><div class="feature-text"><h3>Tablero</h3><p>Cuatro columnas, sprints con fecha de cierre y un temporizador por ticket que corre en el servidor. Se detiene solo al llegar a «Hecho»: cerrar el portátil no pierde la hora.</p></div><div class="feature-demo"><section class="column s-progress" style="min-height:0"><header class="column-head"><h2>En curso</h2><span class="n">3</span></header><div class="column-body"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#6B3FA0"></span>Épica · 13 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="avatar p-avery" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card " style="--type:#2E7D6B"><h3>Generar facturas en PDF</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#2E7D6B"></span>Historia · 5 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="due late">Vence hoy</span><span class="avatar p-blake" title="blake">bl</span></span></div></article></div></section></div></div><div class="feature"><div class="feature-text"><h3>Notas</h3><p>Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.</p></div><div class="feature-demo"><article class="panel" style="padding:22px 24px">
-  <p class="doc-title" style="font-size:2rem">Arquitectura general</p>
-  <p class="hint" style="margin:8px 0 14px">avery · editada hace 5 min</p>
-  <p style="font-size:var(--t-16);line-height:1.6">Cada consulta va filtrada por <code class="mono">workspace_id</code>. Lo detalla <span class="ticket-ref"><span class="sw" style="--c:var(--st-todo)"></span>Búsqueda de texto completo</span>, que es el primer caso que lo cruza.</p>
-</article></div></div><div class="feature"><div class="feature-text"><h3>Archivos</h3><p>Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso. Las etiquetas son las mismas que las de los tickets.</p></div><div class="feature-demo"><div class="panel" style="padding:6px 0"><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;"><span class="file-kind">PDF</span><b class="demo-fname" style="font-weight:600">factura-plantilla.pdf</b><span style="margin-left:auto"><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">PNG</span><b class="demo-fname" style="font-weight:600">avatar-rechazado.png</b><span style="margin-left:auto"><span class="chip" style="--c:#4D7C0F"><span class="sw"></span>Interfaz</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">CSV</span><b class="demo-fname" style="font-weight:600">consumo-septiembre.csv</b><span style="margin-left:auto"><span class="chip" style="--c:#334155"><span class="sw"></span>API</span></span></div></div></div></div><div class="feature"><div class="feature-text"><h3>Métricas</h3><p>Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad, no con lo que se estimó.</p></div><div class="feature-demo"><div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div><svg viewBox="0 0 560 250" role="img" aria-label="Burndown del sprint 14: quedan 14 de 40 puntos con 4 días por delante; la línea ideal marcaría unos 6.">
+  <section class="site-section qh" id="que-hace">
+    <header class="qh-head">
+      <h2>Qué hace <svg class="pf pf-throw" viewBox="-50 -165 196 205" aria-hidden="true" focusable="false" overflow="visible"><g transform="translate(0 0) rotate(-8)"><path d="M-10 -2L-24 28" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M10 -2L26 22" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M15 -46L40 -90" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-15 -44L-34 -16" stroke="#E0A23A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M-22.0 0V-36.0A22.0 22.0 0 0 1 22.0 -36.0V0Z" fill="#E0A23A"/><circle cx="0" cy="-80" r="18" fill="#E0A23A"/></g><path d="M44 -100Q80 -150 118 -132" stroke="#5C574F" stroke-width="4" stroke-dasharray="1 11" stroke-linecap="round" fill="none"/><circle cx="128" cy="-128" r="13" fill="#E8590C"/></svg></h2>
+      <p class="qh-lead">Cuatro piezas en un solo proceso de Node. Lo que se enseña aquí son las mismas piezas de la aplicación, con los mismos datos.</p>
+      <nav class="qh-index" aria-label="Funciones"><a href="#qh-tablero"><b>01</b>Tablero</a><a href="#qh-notas"><b>02</b>Notas</a><a href="#qh-archivos"><b>03</b>Archivos</a><a href="#qh-metricas"><b>04</b>Métricas</a></nav>
+    </header>
+    <article class="qh-feat" id="qh-tablero"><div class="qh-text"><span class="qh-n">01 / 04</span><h3>Tablero</h3><p>Cuatro columnas, sprints con fecha de cierre y un temporizador por ticket que corre en el servidor. Se detiene solo al llegar a «Hecho»: cerrar el portátil no pierde la hora.</p><dl class="qh-facts"><div><dt>4</dt><dd>columnas por sprint, con fecha de cierre y puntos por ticket.</dd></div><div><dt>1</dt><dd>temporizador por ticket; corre en el servidor, no en tu pestaña.</dd></div><div><dt>0 h</dt><dd>perdidas por cerrar el portátil: se para solo en «Hecho».</dd></div></dl></div><div class="qh-stage qh-board">
+  <section class="column s-progress"><header class="column-head"><h2>En curso</h2><span class="n">3</span></header>
+    <div class="column-body"><article class="card " style="--type:#6B3FA0"><h3>Facturación por uso</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#6B3FA0"></span>Épica · 13 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="avatar p-avery" title="avery">av</span></span></div><div class="timer"><span class="live">En marcha <b>00:42:13</b></span><button class="btn btn-secondary btn-sm" type="button">Parar</button></div></article><article class="card " style="--type:#2E7D6B"><h3>Generar facturas en PDF</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#2E7D6B"></span>Historia · 5 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="due late">Vence hoy</span><span class="avatar p-blake" title="blake">bl</span></span></div></article></div></section>
+  <div class="qh-drag"><article class="card dragging" style="--type:#5F6B7A"><h3>Selector de plan en ajustes</h3><div class="card-foot"><span class="type"><span class="sw" style="--c:#5F6B7A"></span>Tarea · 3 pts</span><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span><span class="push"><span class="avatar p-blake" title="blake">bl</span></span></div></article><div class="slot slot-label">Soltar en «Hecho»</div></div>
+  <div class="toast qh-toast"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Movido a «Hecho». El temporizador se paró.<span class="act">Deshacer</span></div>
+</div></article><article class="qh-feat" id="qh-notas"><div class="qh-text"><span class="qh-n">02 / 04</span><h3>Notas</h3><p>Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.</p><dl class="qh-facts"><div><dt>2 vías</dt><dd>el enlace se ve desde la nota y desde el ticket.</dd></div><div><dt>1 esquema</dt><dd>el editor y el servidor validan lo mismo: lo que ves es lo que se guarda.</dd></div><div><dt>0 HTML</dt><dd>el texto no viaja como HTML; no hay nada que sanear.</dd></div></dl></div><div class="qh-stage qh-notes">
+  <div class="qh-note">
+    <article class="panel qh-doc">
+      <p class="doc-title" style="font-size:2.2rem">Arquitectura general</p>
+      <p class="hint" style="margin:8px 0 16px">avery · editando · <span class="chip" style="--c:#334155"><span class="sw"></span>API</span></p>
+      <div class="qh-sel">
+        <div class="bubble qh-bubble"><span class="on"><b>B</b></span><span><i>I</i></span><span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span><span class="sepv"></span><span>T2</span><span>#</span></div>
+        <p>Cada consulta va filtrada por <code class="mono">workspace_id</code>. <span class="sel"><b>Ese filtro es la frontera entre espacios</b></span>, así que vive en la capa de datos y no en la interfaz.</p>
+      </div>
+      <p style="margin-top:14px">Para las facturas, mira <span class="typing"><b>#fact</b><span class="caret"></span></span></p>
+    </article>
+    <div class="menu qh-menu"><span class="menu-label">Enlazar un ticket</span>
+      <div role="listbox" aria-label="Tickets que coinciden"><span class="menu-item on" role="option" aria-selected="true"><span class="sw" style="--c:var(--st-progress)"></span><span>Generar facturas en PDF</span><span class="push hint">En curso</span></span><span class="menu-item" role="option" aria-selected="false"><span class="sw" style="--c:var(--st-progress)"></span><span>Facturación por uso</span><span class="push hint">En curso</span></span><span class="menu-item" role="option" aria-selected="false"><span class="sw" style="--c:var(--st-done)"></span><span>Selector de plan en ajustes</span><span class="push hint">Hecho</span></span></div></div>
+  </div>
+  <p class="qh-back"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>La nota ya sale en el ticket <b>Generar facturas en PDF</b>. Sin un segundo enlace.</span></p>
+</div></article><article class="qh-feat" id="qh-archivos"><div class="qh-text"><span class="qh-n">03 / 04</span><h3>Archivos</h3><p>Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso. Las etiquetas son las mismas que las de los tickets.</p><dl class="qh-facts"><div><dt>0 bytes</dt><dd>pasan por el servidor al subir a Drive: el navegador sube directo.</dd></div><div><dt>drive.file</dt><dd>el permiso mínimo: Forge solo ve lo que él mismo crea.</dd></div><div><dt>AES-256</dt><dd>cifra el token de refresco; la llave se queda en tu máquina.</dd></div></dl></div><div class="qh-stage qh-files">
+  <div class="qh-flow" role="img" aria-label="Al subir un archivo, el servidor solo entrega la dirección de subida; los bytes van del navegador directamente al Drive.">
+    <div class="node server"><b>Servidor</b><small>abre la sesión y entrega solo la URL</small></div>
+    <div class="node browser"><b>Tu navegador</b></div>
+    <div class="arrow"><span class="lbl">los bytes, directos</span></div>
+    <div class="node drive"><b>Tu Drive</b><small>carpeta del espacio</small></div>
+  </div>
+  <div class="panel" style="padding:6px 0;width:100%"><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;"><span class="file-kind">PDF</span><b class="demo-fname" style="font-weight:600">factura-plantilla.pdf</b><span style="margin-left:auto"><span class="chip" style="--c:#9A3412"><span class="sw"></span>Facturación</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">PNG</span><b class="demo-fname" style="font-weight:600">avatar-rechazado.png</b><span style="margin-left:auto"><span class="chip" style="--c:#4D7C0F"><span class="sw"></span>Interfaz</span></span></div><div style="display:flex;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);"><span class="file-kind">CSV</span><b class="demo-fname" style="font-weight:600">consumo-septiembre.csv</b><span style="margin-left:auto"><span class="chip" style="--c:#334155"><span class="sw"></span>API</span></span></div></div>
+</div></article><article class="qh-feat" id="qh-metricas"><div class="qh-text"><span class="qh-n">04 / 04</span><h3>Métricas</h3><p>Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad, no con lo que se estimó.</p><dl class="qh-facts"><div><dt>1 / día</dt><dd>foto del burndown, a la hora local del espacio.</dd></div><div><dt>4</dt><dd>gráficas: burndown, velocidad, carga y estimado frente a registrado.</dd></div><div><dt>Tabla</dt><dd>cada gráfica tiene sus datos en tabla, para copiarlos.</dd></div></dl></div><div class="qh-stage qh-metrics">
+  <div class="qh-top">
+    <div class="figures" style="margin:0"><div><b class="wide fig">14</b><span class="hint">puntos sin cerrar</span></div><div><b class="wide fig">4</b><span class="hint">días para el cierre</span></div><div><b class="wide fig">+5,3</b><span class="hint">sobre el ideal</span></div></div>
+    <p class="qh-sticky"><b class="wide">23 oct</b>Al ritmo actual, 14 puntos se quedan sin cerrar.</p>
+  </div>
+  <div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span><span style="margin-left:auto"><span class="seg" role="group" aria-label="Vista de la gráfica"><button type="button" aria-pressed="true">Gráfica</button><button type="button" aria-pressed="false">Tabla</button></span></span></div><svg viewBox="0 0 560 250" role="img" aria-label="Burndown del sprint 14: quedan 14 de 40 puntos con 4 días por delante; la línea ideal marcaría unos 6.">
   <g class="grid"><line x1="34" x2="496" y1="224.0" y2="224.0"/><line x1="34" x2="496" y1="170.5" y2="170.5"/><line x1="34" x2="496" y1="117.0" y2="117.0"/><line x1="34" x2="496" y1="63.5" y2="63.5"/><line x1="34" x2="496" y1="10.0" y2="10.0"/></g><text x="26" y="228.0" text-anchor="end">0</text><text x="26" y="174.5" text-anchor="end">10</text><text x="26" y="121.0" text-anchor="end">20</text><text x="26" y="67.5" text-anchor="end">30</text><text x="26" y="14.0" text-anchor="end">40</text><text x="34.0" y="244" text-anchor="middle">26 sep</text><text x="149.5" y="244" text-anchor="middle">3 oct</text><text x="265.0" y="244" text-anchor="middle">10 oct</text><text x="380.5" y="244" text-anchor="middle">17 oct</text><text x="496.0" y="244" text-anchor="middle">23 oct</text>
   <line class="axis" x1="34" x2="496" y1="224.0" y2="224.0"/>
   <line x1="34.0" y1="10.0" x2="496.0" y2="224.0" stroke="var(--border-strong)" stroke-width="2" stroke-dasharray="5 4"/>
@@ -1525,7 +1636,8 @@ kbd, .kbd {
   <text x="423.5" y="153.1" class="lbl">14 pts</text>
   <text x="502.0" y="218.0">Ideal</text>
   <g class="tip"><line x1="314.5" x2="314.5" y1="10" y2="224.0" stroke="var(--text)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="314.5" cy="111.65" r="5" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2"/><g transform="translate(164.5 37.650000000000006)"><rect width="136" height="56" rx="10" fill="var(--text)"/><text x="12" y="20" style="fill:var(--bg);font-weight:700">13 oct · 21 pts</text><text x="12" y="40" style="fill:var(--bg)">ideal 15,7 · +5,3</text></g></g>
-</svg></div></div></div></div>
+</svg></div>
+</div></article>
   </section>
 
   <section class="placa">

@@ -940,13 +940,75 @@ demo_files = '<div class="panel" style="padding:6px 0">' + ''.join(
     for i, (k, n, l) in enumerate([('PDF', 'factura-plantilla.pdf', 'Facturación'), ('PNG', 'avatar-rechazado.png', 'Interfaz'), ('CSV', 'consumo-septiembre.csv', 'API')])) + '</div>'
 demo_chart = f'<div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div>{burndown()}</div>'
 
+# «Qué hace»: cuatro bloques a ancho completo. Cada uno lleva el título a
+# escala de titular, tres datos concretos y una demo compuesta con varias piezas
+# a la vez (no una caja gris con una sola).
+def qh_facts(items):
+    return '<dl class="qh-facts">' + ''.join(f'<div><dt>{k}</dt><dd>{v}</dd></div>' for k, v in items) + '</dl>'
+
+
+def qh_opt(color, name, meta, on=False):
+    return (f'<span class="menu-item{" on" if on else ""}" role="option" aria-selected="{"true" if on else "false"}">'
+            f'<span class="sw" style="--c:{color}"></span><span>{name}</span><span class="push hint">{meta}</span></span>')
+
+
+_drag = card('Selector de plan en ajustes', 'Tarea', ['Facturación'], 'blake', 3, cls='dragging')
+qh_board = f"""<div class="qh-stage qh-board">
+  <section class="column s-progress"><header class="column-head"><h2>En curso</h2><span class="n">3</span></header>
+    <div class="column-body">{COLUMNS['progress'][0]}{COLUMNS['progress'][1]}</div></section>
+  <div class="qh-drag">{_drag}<div class="slot slot-label">Soltar en «Hecho»</div></div>
+  <div class="toast qh-toast">{icon('check')}Movido a «Hecho». El temporizador se paró.<span class="act">Deshacer</span></div>
+</div>"""
+
+qh_notes = f"""<div class="qh-stage qh-notes">
+  <div class="qh-note">
+    <article class="panel qh-doc">
+      <p class="doc-title" style="font-size:2.2rem">Arquitectura general</p>
+      <p class="hint" style="margin:8px 0 16px">avery · editando · {chip('API')}</p>
+      <div class="qh-sel">
+        <div class="bubble qh-bubble"><span class="on"><b>B</b></span><span><i>I</i></span><span>{icon('link')}</span><span class="sepv"></span><span>T2</span><span>#</span></div>
+        <p>Cada consulta va filtrada por <code class="mono">workspace_id</code>. <span class="sel"><b>Ese filtro es la frontera entre espacios</b></span>, así que vive en la capa de datos y no en la interfaz.</p>
+      </div>
+      <p style="margin-top:14px">Para las facturas, mira <span class="typing"><b>#fact</b><span class="caret"></span></span></p>
+    </article>
+    <div class="menu qh-menu"><span class="menu-label">Enlazar un ticket</span>
+      <div role="listbox" aria-label="Tickets que coinciden">{qh_opt('var(--st-progress)', 'Generar facturas en PDF', 'En curso', True)}{qh_opt('var(--st-progress)', 'Facturación por uso', 'En curso')}{qh_opt('var(--st-done)', 'Selector de plan en ajustes', 'Hecho')}</div></div>
+  </div>
+  <p class="qh-back">{icon('link')}<span>La nota ya sale en el ticket <b>Generar facturas en PDF</b>. Sin un segundo enlace.</span></p>
+</div>"""
+
+qh_files = f"""<div class="qh-stage qh-files">
+  <div class="qh-flow" role="img" aria-label="Al subir un archivo, el servidor solo entrega la dirección de subida; los bytes van del navegador directamente al Drive.">
+    <div class="node server"><b>Servidor</b><small>abre la sesión y entrega solo la URL</small></div>
+    <div class="node browser"><b>Tu navegador</b></div>
+    <div class="arrow"><span class="lbl">los bytes, directos</span></div>
+    <div class="node drive"><b>Tu Drive</b><small>carpeta del espacio</small></div>
+  </div>
+  {demo_files.replace('<div class="panel" style="padding:6px 0">', '<div class="panel" style="padding:6px 0;width:100%">', 1)}
+</div>"""
+
+qh_chart = f"""<div class="qh-stage qh-metrics">
+  <div class="qh-top">
+    <div class="figures" style="margin:0"><div><b class="wide fig">14</b><span class="hint">puntos sin cerrar</span></div><div><b class="wide fig">4</b><span class="hint">días para el cierre</span></div><div><b class="wide fig">+5,3</b><span class="hint">sobre el ideal</span></div></div>
+    <p class="qh-sticky"><b class="wide">23 oct</b>Al ritmo actual, 14 puntos se quedan sin cerrar.</p>
+  </div>
+  <div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span><span style="margin-left:auto">{segmented(['Gráfica', 'Tabla'], 0, 'Vista de la gráfica')}</span></div>{burndown()}</div>
+</div>"""
+
 FEATURES = [
-    ('Tablero', 'Cuatro columnas, sprints con fecha de cierre y un temporizador por ticket que corre en el servidor. Se detiene solo al llegar a «Hecho»: cerrar el portátil no pierde la hora.', demo_board),
-    ('Notas', 'Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.', demo_note),
-    ('Archivos', 'Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso. Las etiquetas son las mismas que las de los tickets.', demo_files),
-    ('Métricas', 'Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad, no con lo que se estimó.', demo_chart),
+    ('tablero', 'Tablero', 'Cuatro columnas, sprints con fecha de cierre y un temporizador por ticket que corre en el servidor. Se detiene solo al llegar a «Hecho»: cerrar el portátil no pierde la hora.',
+     [('4', 'columnas por sprint, con fecha de cierre y puntos por ticket.'), ('1', 'temporizador por ticket; corre en el servidor, no en tu pestaña.'), ('0 h', 'perdidas por cerrar el portátil: se para solo en «Hecho».')], qh_board),
+    ('notas', 'Notas', 'Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.',
+     [('2 vías', 'el enlace se ve desde la nota y desde el ticket.'), ('1 esquema', 'el editor y el servidor validan lo mismo: lo que ves es lo que se guarda.'), ('0 HTML', 'el texto no viaja como HTML; no hay nada que sanear.')], qh_notes),
+    ('archivos', 'Archivos', 'Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso. Las etiquetas son las mismas que las de los tickets.',
+     [('0 bytes', 'pasan por el servidor al subir a Drive: el navegador sube directo.'), ('drive.file', 'el permiso mínimo: Forge solo ve lo que él mismo crea.'), ('AES-256', 'cifra el token de refresco; la llave se queda en tu máquina.')], qh_files),
+    ('metricas', 'Métricas', 'Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad, no con lo que se estimó.',
+     [('1 / día', 'foto del burndown, a la hora local del espacio.'), ('4', 'gráficas: burndown, velocidad, carga y estimado frente a registrado.'), ('Tabla', 'cada gráfica tiene sus datos en tabla, para copiarlos.')], qh_chart),
 ]
-features = ''.join(f'<div class="feature"><div class="feature-text"><h3>{t}</h3><p>{d}</p></div><div class="feature-demo">{demo}</div></div>' for t, d, demo in FEATURES)
+features = ''.join(
+    f'<article class="qh-feat" id="qh-{k}"><div class="qh-text"><span class="qh-n">0{i} / 04</span><h3>{t}</h3><p>{d}</p>{qh_facts(f)}</div>{demo}</article>'
+    for i, (k, t, d, f, demo) in enumerate(FEATURES, 1))
+qh_index = ''.join(f'<a href="#qh-{k}"><b>0{i}</b>{t}</a>' for i, (k, t, *_r) in enumerate(FEATURES, 1))
 
 portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
 <div class="site">
@@ -988,9 +1050,13 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
   </figure>
   <ol class="show-notes">{show_notes}</ol>
 
-  <section class="site-section">
-    <h2>Qué hace {PF_THROW}</h2>
-    <div class="features-rows">{features}</div>
+  <section class="site-section qh" id="que-hace">
+    <header class="qh-head">
+      <h2>Qué hace {PF_THROW}</h2>
+      <p class="qh-lead">Cuatro piezas en un solo proceso de Node. Lo que se enseña aquí son las mismas piezas de la aplicación, con los mismos datos.</p>
+      <nav class="qh-index" aria-label="Funciones">{qh_index}</nav>
+    </header>
+    {features}
   </section>
 
   <section class="placa">
