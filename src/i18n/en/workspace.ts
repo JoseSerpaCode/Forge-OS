@@ -168,4 +168,13 @@ export const en = {
   'ws.settings.feat_points_desc': 'Estimate effort in points and sort by them.',
   'ws.settings.feat_saved': 'Saved.',
   'ws.settings.feat_error': 'The change could not be saved.',
+  'dashboard.this_week': 'This week',
+  'dashboard.done_week': '{n} done in the last 7 days',
+  'dashboard.overdue_count': '{n} overdue',
+  'dashboard.upcoming': 'Upcoming deadlines',
+  'dashboard.no_upcoming': 'Nothing due soon.',
+  'ws.settings.templates': 'Task templates',
+  'ws.settings.templates_desc': 'Create them from a task panel (“Save as template”) and use them when creating a new one.',
+  'ws.settings.templates_none': 'No templates.',
+  'ws.settings.template_delete': 'Delete the “{nombre}” template',
 } as const;

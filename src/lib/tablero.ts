@@ -50,10 +50,17 @@ export interface FiltroTablero {
   labelId?: string | null;
   /** Un carril por etiqueta. Una tarea con dos etiquetas sale en los dos. */
   agruparPorEtiqueta?: boolean;
+  /** `low` incluye `lowest`: en pantalla son la misma «baja». */
+  prioridad?: 'highest' | 'high' | 'medium' | 'low' | null;
+  /** Solo las que vencen entre `hoy` y `hoy + vence - 1`. */
+  vence?: { hoy: string; hasta: string } | null;
+  /** Id de la persona responsable (ya comprobada como del espacio). */
+  responsable?: string | null;
 }
 
 function filtros(f: FiltroTablero, c = 'i.') {
-  const donde: string[] = [`${c}workspace_id = ?`];
+  // Las subtareas no son tarjetas: viven dentro del panel de su tarea.
+  const donde: string[] = [`${c}workspace_id = ?`, `${c}parent_issue_id IS NULL`];
   const params: unknown[] = [f.workspaceId];
   if (f.sprintId === null) donde.push(`${c}sprint_id IS NULL`);
   else if (typeof f.sprintId === 'string') { donde.push(`${c}sprint_id = ?`); params.push(f.sprintId); }
@@ -61,6 +68,15 @@ function filtros(f: FiltroTablero, c = 'i.') {
     donde.push(`EXISTS (SELECT 1 FROM issue_labels fl WHERE fl.issue_id = ${c}id AND fl.label_id = ?)`);
     params.push(f.labelId);
   }
+  if (f.prioridad) {
+    if (f.prioridad === 'low') donde.push(`${c}priority IN ('low', 'lowest')`);
+    else { donde.push(`${c}priority = ?`); params.push(f.prioridad); }
+  }
+  if (f.vence) {
+    donde.push(`${c}due_date IS NOT NULL AND substr(${c}due_date, 1, 10) BETWEEN ? AND ?`);
+    params.push(f.vence.hoy, f.vence.hasta);
+  }
+  if (f.responsable) { donde.push(`${c}assignee_id = ?`); params.push(f.responsable); }
   return { donde: donde.join(' AND '), params };
 }
 
@@ -70,7 +86,9 @@ const COLUMNAS_TARJETA = `
   u2.username AS assignee_username,
   u2.avatar_url AS assignee_avatar,
   (SELECT started_at FROM time_tracking_sessions WHERE issue_id = i.id AND user_id = ?) AS active_session_start,
-  (SELECT COUNT(*) FROM issue_page_links pl WHERE pl.issue_id = i.id) AS apuntes
+  (SELECT COUNT(*) FROM issue_page_links pl WHERE pl.issue_id = i.id) AS apuntes,
+  (SELECT COUNT(*) FROM issues st WHERE st.parent_issue_id = i.id) AS subtareas_total,
+  (SELECT COUNT(*) FROM issues st WHERE st.parent_issue_id = i.id AND st.status = 'done') AS subtareas_hechas
 `;
 
 export interface Tablero {
@@ -167,4 +185,65 @@ export const cursorDe = (t: any) => `${t.cierre ?? t.done_at ?? t.updated_at}|${
 function ponerEtiquetas(tarjetas: any[]) {
   const porTarea = deVarias('issue', [...new Set(tarjetas.map((t) => t.id))]);
   for (const t of tarjetas) t.labels = porTarea.get(t.id) ?? [];
+}
+
+/**
+ * Las vistas «Hoy» y «Próximos».
+ *
+ * Miran fechas, no columnas: «Hoy» son las vencidas y las de hoy; «Próximos»,
+ * una agenda de días. Ninguna enseña las hechas. Las dos ignoran los sprints:
+ * lo que vence el viernes vence el viernes, esté en el sprint que esté.
+ *
+ * `hoy` llega ya calculado en la zona de quien mira (`hoyEn(user.timezone)`):
+ * el servidor corre en UTC y a las 19:00 en Bogotá ya sería mañana.
+ */
+export const TOPE_VISTA = 300;
+
+export interface Grupo {
+  /** `vencidas`, `hoy` o una fecha `AAAA-MM-DD`. */
+  clave: string;
+  fecha: string | null;
+  tarjetas: any[];
+}
+
+/**
+ * El día en que una tarea sale en «Próximos»: el de trabajo si lo tiene, y si
+ * no, el de entrega. Mover el día en que se hace no puede mover la fecha que
+ * puso el profesor.
+ */
+const DIA_AGENDA = `substr(COALESCE(i.planned_date, i.due_date), 1, 10)`;
+
+const ORDEN_VISTA = `${DIA_AGENDA} ASC, i.due_time IS NULL ASC, i.due_time ASC,
+  CASE i.priority WHEN 'highest' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END ASC, i.position ASC`;
+
+export function cargarVista(
+  f: FiltroTablero & { vista: 'hoy' | 'proximos'; hoy: string; hasta?: string }
+): Grupo[] {
+  const { donde, params } = filtros({ ...f, sprintId: undefined, agruparPorEtiqueta: false });
+  // «Hoy»: lo que vence hasta hoy y lo planificado para hasta hoy.
+  const rango = f.vista === 'hoy'
+    ? { sql: '((i.due_date IS NOT NULL AND substr(i.due_date, 1, 10) <= ?) OR (i.planned_date IS NOT NULL AND i.planned_date <= ?))', params: [f.hoy, f.hoy] }
+    : { sql: `${DIA_AGENDA} BETWEEN ? AND ?`, params: [f.hoy, f.hasta ?? f.hoy] };
+
+  const tarjetas = db.prepare(`
+    SELECT ${COLUMNAS_TARJETA}, NULL AS carril
+    FROM issues i
+    LEFT JOIN users u1 ON i.reporter_id = u1.id
+    LEFT JOIN users u2 ON i.assignee_id = u2.id
+    WHERE ${donde} AND i.status != 'done' AND COALESCE(i.planned_date, i.due_date) IS NOT NULL AND ${rango.sql}
+    ORDER BY ${ORDEN_VISTA}
+    LIMIT ${TOPE_VISTA}
+  `).all(f.userId, ...params, ...rango.params) as any[];
+  ponerEtiquetas(tarjetas);
+
+  const grupos = new Map<string, Grupo>();
+  for (const t of tarjetas) {
+    const entrega = t.due_date ? String(t.due_date).slice(0, 10) : null;
+    const dia = String(t.planned_date ?? t.due_date).slice(0, 10);
+    // Vencida es la que pasó su **entrega**; atrasarse en el plan no es vencer.
+    const clave = f.vista === 'hoy' ? (entrega && entrega < f.hoy ? 'vencidas' : 'hoy') : dia;
+    if (!grupos.has(clave)) grupos.set(clave, { clave, fecha: f.vista === 'hoy' ? null : dia, tarjetas: [] });
+    grupos.get(clave)!.tarjetas.push(t);
+  }
+  return [...grupos.values()];
 }

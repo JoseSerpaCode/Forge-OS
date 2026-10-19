@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deSQLite, fecha, relativo, hoyLocal, vencida, patronFecha, leerFechaUsuario, fechaCorta } from '../src/lib/fechas';
+import { deSQLite, fecha, relativo, hoyLocal, vencida, patronFecha, leerFechaUsuario, fechaCorta, hoyEn, minutoEn, esZona, sumarDiasIso } from '../src/lib/fechas';
 
 /**
  * El desfase que veía el usuario.
@@ -142,5 +142,27 @@ describe('vencimientos con hora', () => {
   it('una hora de otro día no cambia nada', () => {
     expect(vencida('2026-10-25', new Date(2026, 9, 24, 23, 0, 0), '08:00')).toBe(false);
     expect(vencida('2026-10-23', new Date(2026, 9, 24, 1, 0, 0), '23:00')).toBe(true);
+  });
+});
+
+describe('el día en la zona de quien mira', () => {
+  it('a las 01:00 UTC del 20 todavía es el 19 en Bogotá', () => {
+    const ahora = new Date('2026-10-20T01:00:00Z');
+    expect(hoyEn('America/Bogota', ahora)).toBe('2026-10-19');
+    expect(hoyEn('UTC', ahora)).toBe('2026-10-20');
+    expect(minutoEn('America/Bogota', ahora)).toBe('20:00');
+  });
+  it('una zona inventada cuenta como UTC, no revienta', () => {
+    expect(esZona('Marte/Olympus')).toBe(false);
+    expect(hoyEn('Marte/Olympus', new Date('2026-10-20T01:00:00Z'))).toBe('2026-10-20');
+  });
+  it('vencida con zona: en Bogotá, a las 20:00 del 19, la del 19 a las 18:00 ya venció y la del 20 no', () => {
+    const ahora = new Date('2026-10-20T01:00:00Z');
+    expect(vencida('2026-10-19', ahora, '18:00', 'America/Bogota')).toBe(true);
+    expect(vencida('2026-10-19', ahora, null, 'America/Bogota')).toBe(false);
+    expect(vencida('2026-10-20', ahora, null, 'America/Bogota')).toBe(false);
+  });
+  it('sumar días cruza meses y años', () => {
+    expect(sumarDiasIso('2026-12-30', 3)).toBe('2027-01-02');
   });
 });

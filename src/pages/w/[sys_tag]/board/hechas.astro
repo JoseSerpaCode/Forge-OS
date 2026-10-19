@@ -15,6 +15,7 @@ import db from '../../../../lib/db';
 import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
 import { masHechas, cursorDe } from '../../../../lib/tablero';
 import { funciones } from '../../../../lib/funcionesEspacio';
+import { hoyEn, sumarDiasIso } from '../../../../lib/fechas';
 import { listar as listarTipos } from '../../../../lib/issueTypes';
 
 export const partial = true;
@@ -46,7 +47,17 @@ const carril = agrupar && carrilPedido
   : '';
 if (agrupar && carril === null) return new Response('Not Found', { status: 404 });
 
+// Los mismos filtros que el tablero, validados igual.
+const prioridad = (['highest', 'high', 'medium', 'low'] as const).find((p) => p === q.get('prioridad')) ?? null;
+const venceDias = Number(q.get('vence'));
+const hoy = hoyEn(user.timezone);
+const vence = Number.isInteger(venceDias) && venceDias >= 1 && venceDias <= 60 ? { hoy, hasta: sumarDiasIso(hoy, venceDias - 1) } : null;
+const resp = q.get('responsable');
+const responsable = resp === 'yo' ? user.id
+  : resp && db.prepare('SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?').get(ws.id, resp) ? resp : null;
+
 const { tarjetas, hayMas } = masHechas({
+  prioridad, vence, responsable,
   workspaceId: ws.id,
   userId: user.id,
   sprintId,

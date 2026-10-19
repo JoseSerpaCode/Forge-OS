@@ -11,6 +11,7 @@ import db from '../../lib/db';
 import { useTranslations } from '../../i18n/ui';
 import { nombreDeRol } from '../../lib/roles';
 import { solicitudesPendientes as contarSolicitudes, rolEnEspacio, sysTagDeEspacio } from '../../lib/consultas';
+import { listar as listarVistas } from '../../lib/vistasGuardadas';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
@@ -32,6 +33,10 @@ const currentPath = Astro.url.pathname;
  * sentidos, así que ni se consulta.
  */
 const pendientes = contarSolicitudes(user?.id ?? '', !!user?.is_guest);
+
+// Las vistas guardadas del tablero, de quien mira y en este espacio.
+const vistasGuardadas = user && workspaceId && sys_tag ? listarVistas(user.id, workspaceId, sys_tag) : [];
+const urlActual = `${Astro.url.pathname}${Astro.url.search}`;
 
 
 // Determine active sections
@@ -120,6 +125,18 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
           <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="11"/><rect x="17" y="3" width="5" height="7"/></svg>
           {t('sidebar.kanban')}
         </a>
+        {vistasGuardadas.length > 0 && (
+          <ul class="vistas-guardadas ml-7 -mt-0.5 mb-1 space-y-0.5" aria-label={t('views.section')} data-sys-tag={sys_tag} data-t-deleted={t('views.deleted')}>
+            {vistasGuardadas.map((v) => (
+              <li class="group/vista flex items-center gap-1">
+                <a href={v.url} aria-current={urlActual === v.url ? 'page' : undefined}
+                  class:list={['flex-1 min-w-0 truncate text-xs px-2 py-1 rounded-md transition-colors', urlActual === v.url ? 'text-forge-accent-text font-semibold' : 'text-forge-muted hover:text-forge-text']}>{v.name}</a>
+                <button type="button" class="borrar-vista shrink-0 opacity-0 group-hover/vista:opacity-100 focus:opacity-100 text-forge-muted hover:text-forge-error text-xs px-1" data-id={v.id}
+                  aria-label={t('views.delete').replace('{nombre}', v.name)}>×</button>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* Knowledge Base */}
         <a 
@@ -272,6 +289,20 @@ const isOwner = userRole === 'owner' || userRole === 'sysadmin';
     </div>
   </div>
 </aside>
+
+<script>
+  // Borrar una vista guardada desde la barra lateral.
+  document.querySelector<HTMLElement>('.vistas-guardadas')?.addEventListener('click', async (e) => {
+    const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('.borrar-vista');
+    const lista = boton?.closest<HTMLElement>('.vistas-guardadas');
+    if (!boton || !lista) return;
+    const res = await fetch(`/api/w/${lista.dataset.sysTag}/views`, {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: boton.dataset.id }),
+    }).catch(() => null);
+    if (res?.ok) { boton.closest('li')?.remove(); window.showToast?.(lista.dataset.tDeleted || ''); }
+    else window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+  });
+</script>
 
 <script is:inline>
   /**

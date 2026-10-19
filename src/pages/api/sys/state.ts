@@ -88,7 +88,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
           results = results.concat(pages);
         }
         if (filter === 'all' || filter === 'issue') {
-          const issues = db.prepare(`SELECT i.title, 'issue' as type, '/w/' || w.sys_tag || '/board?issue=' || i.id as url FROM issues i JOIN workspaces w ON i.workspace_id = w.id WHERE i.title LIKE ? LIMIT 5`).all(query);
+          const issues = db.prepare(`SELECT i.title, 'issue' as type, '/w/' || w.sys_tag || '/board?issue=' || COALESCE(i.parent_issue_id, i.id) as url FROM issues i JOIN workspaces w ON i.workspace_id = w.id WHERE i.title LIKE ? LIMIT 5`).all(query);
           results = results.concat(issues);
         }
       } else {
@@ -102,7 +102,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
             results = results.concat(pages);
           }
           if (filter === 'all' || filter === 'issue') {
-            const issues = db.prepare(`SELECT i.title, 'issue' as type, '/w/' || w.sys_tag || '/board?issue=' || i.id as url FROM issues i JOIN workspaces w ON i.workspace_id = w.id WHERE i.title LIKE ? AND i.workspace_id IN (${placeholders}) LIMIT 5`).all(query, ...userWorkspaces);
+            const issues = db.prepare(`SELECT i.title, 'issue' as type, '/w/' || w.sys_tag || '/board?issue=' || COALESCE(i.parent_issue_id, i.id) as url FROM issues i JOIN workspaces w ON i.workspace_id = w.id WHERE i.title LIKE ? AND i.workspace_id IN (${placeholders}) LIMIT 5`).all(query, ...userWorkspaces);
             results = results.concat(issues);
           }
         }

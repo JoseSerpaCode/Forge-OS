@@ -160,14 +160,17 @@ export function diaDeCalendario(valor: unknown): string | null {
  *
  * Una entrega «de hoy» no está vencida a las nueve de la mañana. Con hora
  * (`due_time`, `HH:MM` de pared y en su propia columna) vence en ese minuto: a
- * las 18:00 todavía no, a las 18:01 sí.
+ * las 18:00 todavía no, a las 18:01 sí. Con `zona`, «hoy» y «ahora» son los de
+ * quien mira y no los de la máquina, que en el servidor es UTC.
  */
-export function vencida(valor: unknown, ahora: Date = new Date(), hora?: string | null): boolean {
+export function vencida(valor: unknown, ahora: Date = new Date(), hora?: string | null, zona?: string | null): boolean {
   const dia = diaDeCalendario(valor);
   if (!dia) return false;
-  const hoy = hoyLocal(ahora);
+  const hoy = zona ? hoyEn(zona, ahora) : hoyLocal(ahora);
   if (dia !== hoy || !hora || !/^\d{2}:\d{2}$/.test(hora)) return dia < hoy;
-  const minutoActual = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+  const minutoActual = zona
+    ? minutoEn(zona, ahora)
+    : `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
   return hora < minutoActual;
 }
 
@@ -191,6 +194,39 @@ export function diasHasta(valor: unknown, ahora: Date = new Date()): number | nu
     return Date.UTC(a, m - 1, d);
   };
   return Math.round((comoUTC(dia) - comoUTC(hoyLocal(ahora))) / 86_400_000);
+}
+
+/** ¿Es una zona IANA que este motor conoce? Lo que no, se trata como UTC. */
+export function esZona(zona: unknown): zona is string {
+  if (typeof zona !== 'string' || !zona || zona.length > 64) return false;
+  try { new Intl.DateTimeFormat('en-US', { timeZone: zona }); return true; }
+  catch { return false; }
+}
+
+/**
+ * El día de hoy en una zona concreta, como `AAAA-MM-DD`.
+ *
+ * `hoyLocal()` usa la zona **de la máquina**, que en el navegador es la buena
+ * pero en el servidor es UTC. Para pintar en el servidor lo que es «hoy» para
+ * quien mira hace falta su zona (`users.timezone`).
+ */
+export function hoyEn(zona: string | null | undefined, ahora: Date = new Date()): string {
+  const z = esZona(zona) ? zona : 'UTC';
+  // `en-CA` formatea como AAAA-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: z, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora);
+}
+
+/** `HH:MM` ahora mismo en esa zona. */
+export function minutoEn(zona: string | null | undefined, ahora: Date = new Date()): string {
+  const z = esZona(zona) ? zona : 'UTC';
+  return new Intl.DateTimeFormat('en-GB', { timeZone: z, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ahora);
+}
+
+/** `AAAA-MM-DD` más `n` días, sin pasar por zonas. */
+export function sumarDiasIso(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const f = new Date(Date.UTC(y, m - 1, d + n));
+  return f.toISOString().slice(0, 10);
 }
 
 /**

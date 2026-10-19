@@ -376,6 +376,79 @@ test.describe('sprints encendidos: mover y borrar bien', () => {
   });
 });
 
+test.describe('vistas Hoy y Próximos', () => {
+  const ESP = 'e2e-vistas';
+  // El día de hoy en la zona del navegador de pruebas, que es la que la página
+  // guarda en la cuenta al cargar.
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const masDias = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
+
+  test('Hoy: vencidas y de hoy; ni las hechas ni las de mañana', async ({ page }) => {
+    const ws = espacio(ESP);
+    tarea(ws, { title: 'Vencida', due_date: masDias(-2) });
+    tarea(ws, { title: 'De hoy', due_date: masDias(0) });
+    tarea(ws, { title: 'De mañana', due_date: masDias(1) });
+    tarea(ws, { title: 'Hecha de hoy', due_date: masDias(0), status: 'done' });
+    await entrar(page);
+    // Primera carga: la página manda la zona horaria; la segunda ya la usa.
+    await page.goto(`/w/${ESP}/board`);
+    await page.waitForTimeout(300);
+    await page.goto(`/w/${ESP}/board?vista=hoy`);
+    await expect(page.locator('[data-grupo="vencidas"]')).toContainText('Vencida');
+    await expect(page.locator('[data-grupo="hoy"]')).toContainText('De hoy');
+    await expect(page.locator('.issue-card', { hasText: 'De mañana' })).toHaveCount(0);
+    await expect(page.locator('.issue-card', { hasText: 'Hecha de hoy' })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Vista' }).locator('a[aria-current="page"]')).toHaveText('Hoy');
+  });
+
+  test('Próximos: arrastrar a otro día cambia el día de trabajo, nunca la entrega', async ({ page }) => {
+    const ws = espacio(ESP);
+    const entrega = masDias(5);
+    const id = tarea(ws, { title: 'Se mueve', due_date: entrega });
+    await entrar(page);
+    await page.goto(`/w/${ESP}/board?vista=proximos`);
+    const destino = masDias(2);
+    await page.locator(`.issue-card[data-issue-id="${id}"]`).dragTo(page.locator(`.dia-proximos[data-fecha="${destino}"]`));
+    await expect.poll(() => {
+      const d = getTestDb();
+      const v = d.prepare('SELECT due_date, planned_date FROM issues WHERE id = ?').get(id) as any;
+      d.close();
+      return `${String(v.due_date).slice(0, 10)}|${v.planned_date}`;
+    }).toBe(`${entrega}|${destino}`);
+    // La página se recarga sola al soltar: ahora sale en el día de trabajo,
+    // con su línea «Lo hago».
+    await expect(page.locator(`.dia-proximos[data-fecha="${destino}"] .issue-card[data-issue-id="${id}"] .card-planned`)).toBeVisible();
+  });
+});
+
+test.describe('subtareas', () => {
+  const ESP = 'e2e-subtareas';
+
+  test('se añaden con Enter, la tarjeta cuenta y al terminar todas se ofrece completar', async ({ page }) => {
+    const ws = espacio(ESP);
+    const id = tarea(ws, { title: 'Informe de laboratorio' });
+    await entrar(page);
+    await page.goto(`/w/${ESP}/board`);
+    await page.locator(`.issue-card[data-issue-id="${id}"] h4`).click();
+    const nueva = page.locator('#modal-subtareas-nueva');
+    await nueva.fill('Tomar datos');
+    await nueva.press('Enter');
+    await nueva.fill('Redactar');
+    await nueva.press('Enter');
+    const tarjeta = page.locator(`.issue-card[data-issue-id="${id}"]`);
+    await expect(tarjeta.locator('.card-subtareas')).toContainText('0/2');
+
+    await page.getByLabel('Hecha: «Tomar datos»').check();
+    await page.getByLabel('Hecha: «Redactar»').check();
+    await expect(tarjeta.locator('.card-subtareas')).toContainText('2/2');
+    await expect(page.locator('#forge-toast-action')).toHaveText('Completar tarea');
+
+    // No son tarjetas del tablero.
+    await page.goto(`/w/${ESP}/board`);
+    await expect(page.locator('.issue-card', { hasText: 'Tomar datos' })).toHaveCount(0);
+  });
+});
+
 test.describe('la tarjeta y el panel dicen lo mismo', () => {
   const ESP = 'e2e-coherencia';
   const nombreEnPanel = (page: Page) => page.locator('#modal-issue-type option:checked').textContent();
@@ -423,6 +496,53 @@ test.describe('la tarjeta y el panel dicen lo mismo', () => {
     await tarjeta.locator('h4').click();
     expect((await nombreEnPanel(page))?.trim()).toBe('Lectura');
   });
+});
+
+test.describe('repetir y calendario', () => {
+  const ESP = 'e2e-repetir';
+
+  test('una tarea de cada lunes: al completarla aparece la siguiente', async ({ page }) => {
+    espacio(ESP);
+    await entrar(page);
+    await page.goto(`/w/${ESP}/board`);
+    await page.locator('#btn-new-issue').click();
+    await page.fill('#nt-linea', 'Lectura semanal cada lunes');
+    await expect(page.locator('#nt-chips')).toContainText('cada lunes');
+    await page.locator('#nt-linea').press('Enter');
+    await page.waitForLoadState('load');
+    const primera = page.locator('.issue-card', { hasText: 'Lectura semanal' });
+    await expect(primera.locator('.card-repeat')).toBeVisible();
+    await primera.locator('.btn-completar').click();
+    await expect(page.locator('#forge-toast-msg')).toContainText('La siguiente queda para');
+    await page.reload();
+    await expect(page.locator('.board-column[data-status="todo"] .issue-card', { hasText: 'Lectura semanal' })).toHaveCount(1);
+  });
+
+  test('calendario .ics: el enlace sirve, devuelve 304 sin cambios y revocado da 404', async ({ page }) => {
+    const ws = espacio(ESP);
+    tarea(ws, { title: 'Entrega para el calendario', due_date: '2030-01-15' });
+    await entrar(page);
+    const creado = await page.request.post('/api/user/calendar', { headers: ORIGIN, data: { workspace_id: ws.id } });
+    expect(creado.status()).toBe(201);
+    const { id, url } = await creado.json();
+    const ruta = new URL(url).pathname;
+
+    // Sin sesión, como lo pide Google.
+    const anonimo = await page.context().browser()!.newContext();
+    const ics = await anonimo.request.get(`http://localhost:${PUERTO}${ruta}`);
+    expect(ics.status()).toBe(200);
+    expect(ics.headers()['content-type']).toContain('text/calendar');
+    expect(await ics.text()).toContain('SUMMARY:Entrega para el calendario');
+    const repetida = await anonimo.request.get(`http://localhost:${PUERTO}${ruta}`, { headers: { 'If-None-Match': ics.headers()['etag'] } });
+    expect(repetida.status()).toBe(304);
+
+    expect((await page.request.delete('/api/user/calendar', { headers: ORIGIN, data: { id } })).status()).toBe(200);
+    expect((await anonimo.request.get(`http://localhost:${PUERTO}${ruta}`)).status()).toBe(404);
+    // Control: un token que nunca existió da lo mismo, 404.
+    expect((await anonimo.request.get(`http://localhost:${PUERTO}/cal/inventadoinventadoinventado.ics`)).status()).toBe(404);
+    await anonimo.close();
+  });
+
 });
 
 test.describe('cabecera del tablero', () => {

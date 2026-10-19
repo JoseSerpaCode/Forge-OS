@@ -294,6 +294,19 @@ lo es: los archivos siguen en su Drive.
   que llegan con «ver más» no tienen oyentes propios.
 - **Borrar tareas pasa por `IssueService.borrarSinComprobar`**: `attachments`,
   `drive_file_links` y `resource_links` no tienen clave foránea hacia `issues`.
+- **«Hoy» es el de quien mira**: `hoyEn(user.timezone)` (`src/lib/fechas.ts`), no
+  `new Date()` en el servidor, que corre en UTC. La zona la guarda el navegador
+  solo (`/api/user/timezone`); `null` cuenta como UTC.
+- **Las subtareas no son tarjetas.** Toda lista de tareas lleva
+  `parent_issue_id IS NULL` (en `tablero.ts` va dentro de `filtros()`); una lista
+  nueva que se olvide de eso las enseña sueltas. Un solo nivel y `sprint_id` NULL.
+- **Repetir y reabrir pasan por `IssueService.trasCambioDeEstado`**, que llaman
+  `update()` y `move.ts` dentro de su transacción. `next_issue_id` es lo que
+  impide crear dos siguientes con un doble clic.
+- **`planned_date` es el día de trabajo; `due_date`, la entrega.** Arrastrar en
+  «Próximos» cambia el primero, nunca el segundo.
+- **El calendario `.ics` (`/cal/<token>.ics`) es una ruta pública**: la llave es
+  el token, del que solo se guarda el hash.
 - **Los contactos sin cuenta** (responsables que no son usuarios) entrarán como
   otra opción del mismo desplegable de responsable, no como otro campo.
 

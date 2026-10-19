@@ -24,8 +24,11 @@ const pwRow = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(use
 const hasPassword = typeof pwRow?.password_hash === 'string' && pwRow.password_hash.startsWith('$2');
 import { useTranslations } from '../i18n/ui';
 import { credentialsFor } from '../lib/oauth';
+import { listarFeeds } from '../lib/calendario';
+import { relativo } from '../lib/fechas';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+const feeds = listarFeeds(user.id);
 
 // Un botón «Conectar» que lleva a un 404 es peor que no ofrecerlo: quien lo
 // pulsa cree que la aplicación está rota. Si el proveedor no tiene
@@ -424,6 +427,56 @@ const oauthNotice =
       
       <div class="h-px w-full bg-forge-border/40 my-10"></div>
       
+      {/* Calendario .ics: suscribirse desde Google Calendar. */}
+      <section id="calendario" class="grid grid-cols-1 md:grid-cols-3 gap-8"
+        data-t-copied={t('cal.copied')} data-t-error={t('cal.error')}>
+        <div class="md:col-span-1">
+          <h2 class="text-base font-semibold text-forge-text">{t('cal.title')}</h2>
+          <p class="text-sm text-forge-muted mt-1">{t('cal.desc')}</p>
+        </div>
+        <div class="md:col-span-2 space-y-4">
+          <div class="flex flex-wrap items-end gap-2">
+            <div class="flex-1 min-w-[12rem]">
+              <label class="block text-xs font-semibold text-forge-muted mb-1" for="cal-alcance">{t('cal.scope')}</label>
+              <select id="cal-alcance" class="w-full bg-forge-bg border border-forge-border rounded-md p-2 text-sm text-forge-text">
+                <option value="">{t('cal.scope_all')}</option>
+                {memberships.map((m: any) => <option value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            <button type="button" id="cal-crear" class="bg-forge-primary text-forge-on-accent font-bold px-4 py-2 rounded-md text-sm">{t('cal.create')}</button>
+          </div>
+          <div id="cal-nuevo" class="hidden border border-forge-secondary/50 rounded-md p-3 space-y-2">
+            <p class="text-xs text-forge-muted">{t('cal.once')}</p>
+            <div class="flex gap-2">
+              <label class="sr-only" for="cal-url">URL</label>
+              <input id="cal-url" type="text" readonly class="flex-1 min-w-0 bg-forge-bg border border-forge-border rounded-md p-2 text-xs font-mono text-forge-text" />
+              <button type="button" id="cal-copiar" class="shrink-0 border border-forge-border rounded-md px-3 text-sm text-forge-text hover:border-forge-secondary">{t('cal.copy')}</button>
+            </div>
+          </div>
+          {feeds.length === 0 ? (
+            <p class="text-sm text-forge-muted italic">{t('cal.none')}</p>
+          ) : (
+            <ul class="border border-forge-border/60 rounded-md divide-y divide-forge-border/40">
+              {feeds.map((f) => {
+                const alcance = f.workspace_name ?? t('cal.scope_all');
+                return (
+                  <li class="flex items-center justify-between gap-3 px-3 py-2">
+                    <span class="min-w-0">
+                      <span class="block text-sm text-forge-text truncate">{alcance}</span>
+                      <span class="block text-xs text-forge-muted">{f.last_fetched_at ? t('cal.last_read').replace('{cuando}', relativo(f.last_fetched_at, lang)) : t('cal.never_read')}</span>
+                    </span>
+                    <button type="button" class="cal-revocar shrink-0 text-xs font-bold text-forge-muted hover:text-forge-error px-2 py-1" data-id={f.id}
+                      aria-label={t('cal.revoke').replace('{alcance}', alcance)}>×</button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <div class="h-px w-full bg-forge-border/40 my-10"></div>
+
       <!-- Workspace Management -->
       <section id="workspace-memberships" class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="md:col-span-1">
@@ -1071,6 +1124,39 @@ const oauthNotice =
       } finally {
         revisarNombre();
       }
+    });
+  })();
+</script>
+
+<script>
+  // Enlaces de calendario: crear (el token se enseña una vez), copiar y revocar.
+  (() => {
+    const raiz = document.getElementById('calendario');
+    if (!raiz) return;
+    document.getElementById('cal-crear')?.addEventListener('click', async () => {
+      const alcance = (document.getElementById('cal-alcance') as HTMLSelectElement).value;
+      const res = await fetch('/api/user/calendar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(alcance ? { workspace_id: alcance } : {}),
+      }).catch(() => null);
+      if (!res?.ok) { window.showToast?.(raiz.dataset.tError || '', true); return; }
+      const { url } = await res.json();
+      (document.getElementById('cal-url') as HTMLInputElement).value = url;
+      document.getElementById('cal-nuevo')?.classList.remove('hidden');
+    });
+    document.getElementById('cal-copiar')?.addEventListener('click', async () => {
+      const campo = document.getElementById('cal-url') as HTMLInputElement;
+      try { await navigator.clipboard.writeText(campo.value); window.showToast?.(raiz.dataset.tCopied || ''); }
+      catch { campo.select(); }
+    });
+    raiz.addEventListener('click', async (e) => {
+      const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('.cal-revocar');
+      if (!boton) return;
+      const res = await fetch('/api/user/calendar', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: boton.dataset.id }),
+      }).catch(() => null);
+      if (res?.ok) boton.closest('li')?.remove();
+      else window.showToast?.(window.forgeMsg?.errGenerico || '', true);
     });
   })();
 </script>
