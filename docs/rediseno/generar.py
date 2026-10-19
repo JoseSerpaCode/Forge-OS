@@ -258,8 +258,8 @@ def card(title, type_, labels=(), who=None, pts=None, due=None, late=False, time
         right.append(f'<span class="due{" late" if late else ""}">{due}</span>')
     if who:
         right.append(f'<span class="avatar p-{who}" title="{who}">{who[:2]}</span>')
-    meta = (f'<span class="chip type" style="--c:{TYPES[type_]}">{type_}</span>'
-            + (f'<span class="pts">{pts} pts</span>' if pts else ''))
+    meta = (f'<span class="type"><span class="sw" style="--c:{TYPES[type_]}"></span>{type_}'
+            + (f' · {pts} pts' if pts else '') + '</span>')
     t = ''
     if timer:
         t = (f'<div class="timer"><span class="live">En marcha <b>{timer}</b></span>'
@@ -760,6 +760,28 @@ mini = []
 for key, name in STATUS[:3]:
     cs = COLUMNS[key][:2]
     mini.append(f'<section class="column s-{key}" style="min-height:0"><header class="column-head"><h2>{name}</h2><span class="n">{COUNTS[key]}</span></header><div class="tape"></div><div class="column-body">{"".join(cs)}</div></section>')
+
+demo_board = (f'<section class="column s-progress" style="min-height:0"><header class="column-head"><h2>En curso</h2><span class="n">3</span></header>'
+              f'<div class="column-body">{COLUMNS["progress"][0]}{COLUMNS["progress"][1]}</div></section>')
+demo_note = f"""<article class="panel" style="padding:22px 24px">
+  <p class="doc-title" style="font-size:2rem">Arquitectura general</p>
+  <p class="hint" style="margin:8px 0 14px">avery · editada hace 5 min</p>
+  <p style="font-size:var(--t-16);line-height:1.6">Cada consulta va filtrada por <code class="mono">workspace_id</code>. Lo detalla <span class="ticket-ref"><span class="sw" style="--c:var(--st-todo)"></span>Búsqueda de texto completo</span>, que es el primer caso que lo cruza.</p>
+</article>"""
+demo_files = '<div class="panel" style="padding:6px 0">' + ''.join(
+    f'<div style="display:flex;gap:10px;align-items:center;padding:12px 18px;{"border-top:1px solid var(--border);" if i else ""}">'
+    f'<span class="file-kind">{k}</span><b style="font-weight:600">{n}</b><span style="margin-left:auto">{chip(l)}</span></div>'
+    for i, (k, n, l) in enumerate([('PDF', 'factura-plantilla.pdf', 'Facturación'), ('PNG', 'avatar-rechazado.png', 'Interfaz'), ('CSV', 'consumo-septiembre.csv', 'API')])) + '</div>'
+demo_chart = f'<div class="panel chart" style="padding:18px 20px"><div class="legend"><span><i class="line" style="--c:var(--text)"></i>Real</span><span><i class="dash" style="--c:var(--border-strong)"></i>Ideal</span></div>{burndown()}</div>'
+
+FEATURES = [
+    ('Tablero', 'Cuatro columnas, sprints con fecha de cierre y un temporizador por ticket que corre en el servidor. Se detiene solo al llegar a «Hecho»: cerrar el portátil no pierde la hora.', demo_board),
+    ('Notas', 'Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.', demo_note),
+    ('Archivos', 'Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso. Las etiquetas son las mismas que las de los tickets.', demo_files),
+    ('Métricas', 'Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad, no con lo que se estimó.', demo_chart),
+]
+features = ''.join(f'<div class="feature"><div class="feature-text"><h3>{t}</h3><p>{d}</p></div><div class="feature-demo">{demo}</div></div>' for t, d, demo in FEATURES)
+
 portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
 <div class="site">
   <header class="site-head">
@@ -773,31 +795,26 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
     </nav>
   </header>
   <section class="hero">
-    <div>
-      <h1>Tablero, notas y archivos de tu equipo, en un servidor tuyo.</h1>
-    </div>
-    <div>
+    <h1>Tablero, notas y archivos de tu equipo, en un servidor tuyo.</h1>
+    <div class="hero-side">
       <p>Un tablero por sprint, notas enlazadas a los tickets que describen y archivos que se guardan en tu Drive. Todo en un proceso de Node y un archivo de SQLite. Software libre, sin cuotas por persona.</p>
       <div class="actions"><a class="btn btn-primary" href="tablero.html">Probar sin cuenta</a><a class="btn btn-secondary" href="#">Instalarlo</a></div>
-      <p class="hint" style="margin-top:10px">La prueba crea un espacio temporal que dura 30 días. Si luego te registras, te lo llevas.</p>
+      <p class="hint">La prueba crea un espacio temporal que dura 30 días. Si luego te registras, te lo llevas.</p>
     </div>
   </section>
-  <figure class="figure">
+
+  <figure class="showcase">
+    <div class="showcase-sign"><span>Sprint 14 · quedan 4 días</span><strong>Facturación y búsqueda</strong></div>
     <div class="board" style="grid-template-columns:repeat(3,minmax(0,1fr))">{''.join(mini)}</div>
   </figure>
-  <p class="figcaption">El tablero de la instancia de prueba, tal cual. El temporizador corre en el servidor: cerrar el portátil no pierde la hora registrada.</p>
+  <p class="figcaption">El tablero de la instancia de prueba, tal cual.</p>
 
   <section class="site-section">
     <h2>Qué hace</h2>
-    <div class="features">
-      <div><h3>Tablero</h3><p>Cuatro columnas, arrastrar y soltar, sprints con fecha de cierre y un temporizador por ticket que se detiene solo al llegar a «Hecho».</p></div>
-      <div><h3>Notas</h3><p>Editor por bloques con títulos, listas, tablas y código. Una nota enlazada a un ticket aparece en el ticket, sin un segundo enlace que mantener.</p></div>
-      <div><h3>Archivos</h3><p>Se suben directamente al Drive de quien conecta el espacio. El servidor no guarda los bytes ni ve el token de acceso.</p></div>
-      <div><h3>Métricas</h3><p>Burndown, velocidad y carga por persona, calculados con el tiempo que se registró de verdad.</p></div>
-    </div>
+    <div class="features-rows">{features}</div>
   </section>
 
-  <section class="site-section">
+  <section class="placa">
     <h2>Ficha técnica</h2>
     <table class="datasheet">
       <tr><th>Licencia</th><td>MIT. Todas las funciones, sin plan de pago.</td></tr>
@@ -817,7 +834,12 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
     </ul>
   </section>
 
-  <footer class="site-foot">{brand(18)}<span>MIT · hecho en Bogotá</span><span style="margin-left:auto">v1.28.5</span></footer>
+  <section class="cta-final">
+    <div><h2>Pruébalo con un sprint de verdad.</h2><p>Sin cuenta y sin tarjeta. El espacio de prueba dura 30 días y te lo llevas al registrarte.</p></div>
+    <div class="actions"><a class="btn btn-ink" href="tablero.html">Probar sin cuenta</a><a class="btn btn-ink-outline" href="#">Instalarlo</a></div>
+  </section>
+
+  <footer class="site-foot">{brand(20)}<span>MIT · hecho en Bogotá</span><span style="margin-left:auto">v1.28.5</span></footer>
 </div>
 </body>
 </html>
@@ -829,11 +851,11 @@ acceso = HEAD.format(title='Entrar · Forge OS', favicon=FAVICON) + f"""<body>
 <div class="auth">
   <aside class="auth-brand">
     <a href="portada.html" class="brand" style="color:var(--brand-paper)">{mark(30)}<span class="brand-word">Forge OS</span></a>
-    <div class="auth-arch">
+    <div class="auth-copy">
       <p class="claim">Lo que tu equipo escribe, planifica y registra, en un archivo tuyo.</p>
       <ul><li>Un proceso de Node sobre un archivo de SQLite.</li><li>Nadie más lee tu trabajo.</li><li>Licencia MIT. Instálalo donde quieras.</li></ul>
     </div>
-    <span style="font-size:var(--t-12);color:#CFC9BF">v1.28.5</span>
+    <div class="auth-forge" aria-hidden="true"><div class="mouth"><div class="ember"></div></div></div>
   </aside>
   <div class="auth-form">
     <form aria-labelledby="acc-t" onsubmit="return false">
