@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portada · Forge OS (propuesta «Taller»)</title>
+<title>Portada · Forge OS</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23171614'/%3E%3Cg transform='translate(9.6 9.6) scale(0.7)'%3E%3Cpath fill='%23F8F7F4' fill-rule='evenodd' d='M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z'/%3E%3Cpath fill='%23E8590C' d='M21 53V45A11 8 0 0 1 43 45V53Z'/%3E%3C/g%3E%3C/svg%3E">
 <style>
 /* Forge OS — propuesta «Taller». Maqueta estática, no es código de la app.
@@ -102,6 +102,34 @@
   --scrim: rgb(0 0 0 / 0.5);
 
   color-scheme: dark;
+}
+
+/* Sin elección explícita, sigue al sistema. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #1B1A18;
+    --surface-1: #232220;
+    --surface-2: #2C2A27;
+    --border: #3D3A36;
+    --border-strong: #857E74;
+    --text: #ECE9E3;
+    --muted: #ABA59B;
+    --accent: #F06A1F;
+    --on-accent: #171614;
+    --accent-text: #FF9452;
+    --focus: #ECE9E3;
+    --danger: #FF7A6E;
+
+    --st-todo: #BF7F28;
+    --st-progress: #5A8FE6;
+    --st-review: #C66BB0;
+    --st-done: #3FA86A;
+
+    --shadow-float: 0 12px 32px rgb(0 0 0 / 0.5);
+    --scrim: rgb(0 0 0 / 0.5);
+
+    color-scheme: dark;
+  }
 }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
@@ -226,6 +254,7 @@ button { cursor: pointer; }
 .sidebar-foot span { font-size: var(--t-12); color: var(--muted); }
 
 .topbar {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -233,7 +262,7 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--border);
   background: var(--bg);
 }
-.crumbs { margin-right: auto; display: flex; gap: 8px; align-items: center; font-size: var(--t-14); white-space: nowrap; }
+.crumbs { margin-right: auto; min-width: 0; overflow: hidden; display: flex; gap: 8px; align-items: center; font-size: var(--t-14); white-space: nowrap; }
 .crumbs a { color: var(--muted); }
 .crumbs .sep { color: var(--border-strong); }
 .crumbs [aria-current] { font-weight: 600; }
@@ -420,6 +449,7 @@ kbd, .kbd {
 .link { color: var(--accent-text); font-weight: 600; font-size: var(--t-13); }
 .link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
+.panel:has(> .table) { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: var(--t-14); }
 .table th {
   text-align: left;
@@ -729,12 +759,14 @@ kbd, .kbd {
   .hero { grid-template-columns: 1fr; align-items: start; }
 }
 @media (max-width: 820px) {
-  .app { grid-template-columns: 1fr; }
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .site-head { height: auto; padding-block: 12px; flex-wrap: wrap; row-gap: 8px; }
+  .site-head nav { margin-left: 0; flex-wrap: wrap; }
   .sidebar { display: none; }
   .search { display: none; }
   .page { padding: 16px 16px 40px; }
   .page-title { font-size: var(--t-26); }
-  .board { grid-template-columns: 1fr; }
+  .board { grid-template-columns: minmax(0, 1fr); }
   .board .column:not(:first-child) { display: none; }
   .tabs {
     display: grid;
@@ -747,7 +779,9 @@ kbd, .kbd {
   .tabs a { padding: 9px 4px; text-align: center; font-size: var(--t-13); font-weight: 600; border-right: 1px solid var(--border); }
   .tabs a:last-child { border-right: 0; }
   .tabs a[aria-current='page'] { background: var(--text); color: var(--bg); }
-  .notes, .split, .settings, .auth, .features, .rules { grid-template-columns: 1fr; }
+  .notes, .split, .settings, .auth, .features, .rules { grid-template-columns: minmax(0, 1fr); }
+  .figure .board { grid-template-columns: minmax(0, 1fr) !important; }
+  .prose table { display: block; overflow-x: auto; }
   .tree, .subnav, .auth-brand { display: none; }
   .doc { padding: 20px 16px 60px; }
   .row-2 { grid-template-columns: 1fr; }
