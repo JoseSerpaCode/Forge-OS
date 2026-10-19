@@ -10,7 +10,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Fijado y no `ubuntu-latest`: el 19 de octubre de 2026 GitHub empezó a
+    # pasar `ubuntu-latest` a Ubuntu 26, y la primera ejecución se quedó
+    # colgada sin arrancar. Playwright y better-sqlite3 están probados en la
+    # 24.04; subir de imagen es un cambio aparte, con su propia CI.
+    runs-on: ubuntu-24.04
     env:
       NODE_ENV: test
     steps:
