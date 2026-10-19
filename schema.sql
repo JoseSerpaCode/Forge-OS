@@ -72,6 +72,8 @@ CREATE TABLE issues (
  recurrence TEXT, -- regla de repetición, ver src/lib/recurrencia.ts (migración 45)
  next_issue_id TEXT REFERENCES issues(id) ON DELETE SET NULL, -- la siguiente creada al completar (migración 45)
  planned_date DATE, -- el día en que se piensa hacer; due_date es la entrega (migración 46)
+ reminder_minutes INTEGER, -- antelación del recordatorio (migración 50)
+ reminded_at DATETIME, -- cuándo se avisó (migración 50)
  FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
  FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL,
  FOREIGN KEY (parent_issue_id) REFERENCES issues(id) ON DELETE CASCADE,
@@ -289,7 +291,7 @@ CREATE TABLE workspace_join_requests (
   UNIQUE (workspace_id, user_id)
 );
 
--- Tablero (migraciones 44–49): ver src/lib/db.ts.
+-- Tablero (migraciones 44–50): ver src/lib/db.ts.
 CREATE INDEX IF NOT EXISTS idx_issues_parent ON issues(parent_issue_id);
 CREATE TABLE IF NOT EXISTS saved_views (
  id TEXT PRIMARY KEY,

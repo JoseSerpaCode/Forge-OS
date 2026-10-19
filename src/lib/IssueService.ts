@@ -14,6 +14,7 @@ export { ApiError } from './errors';
 import { esPrioridad } from './prioridad';
 import { esPaginaDelEspacio, vincular } from './apuntes';
 import { esRegla, siguiente as siguienteFecha } from './recurrencia';
+import { esAntelacion } from './recordatorios';
 import { hoyEn, diaDeCalendario } from './fechas';
 
 /**
@@ -69,13 +70,18 @@ export class IssueService {
     }
 
     // Whitelist allowed fields to prevent SQL injection via keys
-    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'sprint_id', 'position', 'due_date', 'due_time', 'recurrence', 'planned_date'];
+    const allowedFields = ['title', 'description', 'status', 'priority', 'story_points', 'estimated_hours', 'type', 'assignee_id', 'sprint_id', 'position', 'due_date', 'due_time', 'recurrence', 'planned_date', 'reminder_minutes'];
 
     // Validar antes de escribir: la `CHECK` de la base rechazaría lo mismo,
     // pero con un 500 que no dice qué campo estaba mal.
     if ('priority' in data && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
     if ('due_time' in data && !esHora((data as any).due_time)) throw new ApiError(400, 'Invalid due_time');
     if ((data as any).due_time === '') (data as any).due_time = null;
+    if ('reminder_minutes' in data) {
+      const m = (data as any).reminder_minutes;
+      if (m === '' || m === undefined) (data as any).reminder_minutes = null;
+      else if (!esAntelacion(m)) throw new ApiError(400, 'Invalid reminder_minutes');
+    }
     if ('planned_date' in data) {
       const dia = (data as any).planned_date;
       if (dia === '' || dia === null) (data as any).planned_date = null;
@@ -113,6 +119,8 @@ export class IssueService {
       finalClause += `, ${SET_DONE_AT}`;
       values.push(safeData.status);
     }
+    // Otra fecha, otra hora u otra antelación: el aviso vuelve a estar pendiente.
+    if ('due_date' in safeData || 'due_time' in safeData || 'reminder_minutes' in safeData) finalClause += ', reminded_at = NULL';
     values.push(issueId); // for WHERE id = ?
 
     db.prepare(`UPDATE issues SET ${finalClause} WHERE id = ?`).run(...values);
@@ -241,10 +249,10 @@ export class IssueService {
         const ultima = db.prepare("SELECT MAX(position) AS p FROM issues WHERE workspace_id = ? AND status = 'todo'").get(t.workspace_id) as any;
         db.prepare(`
           INSERT INTO issues (id, workspace_id, sprint_id, type, title, description, status, priority, story_points,
-                              estimated_hours, reporter_id, assignee_id, position, due_date, due_time, recurrence, planned_date)
-          VALUES (?, ?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              estimated_hours, reporter_id, assignee_id, position, due_date, due_time, recurrence, planned_date, reminder_minutes)
+          VALUES (?, ?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(id, t.workspace_id, sprintId, t.type, t.title, t.description, t.priority, t.story_points,
-          t.estimated_hours, userId, t.assignee_id, (ultima?.p ?? 0) + 100000, fecha, t.due_time, t.recurrence, planificada);
+          t.estimated_hours, userId, t.assignee_id, (ultima?.p ?? 0) + 100000, fecha, t.due_time, t.recurrence, planificada, t.reminder_minutes);
         db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) SELECT ?, label_id FROM issue_labels WHERE issue_id = ?').run(id, issueId);
         db.prepare('INSERT OR IGNORE INTO issue_page_links (issue_id, page_id, linked_by) SELECT ?, page_id, ? FROM issue_page_links WHERE issue_id = ?').run(id, userId, issueId);
         IssueService.copiarSubtareas(issueId, id, userId);
@@ -393,6 +401,8 @@ export class IssueService {
     }
     if (data.priority !== undefined && data.priority !== null && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
     if (data.due_time !== undefined && !esHora(data.due_time)) throw new ApiError(400, 'Invalid due_time');
+    const antelacion = (data as any).reminder_minutes ?? null;
+    if (!esAntelacion(antelacion)) throw new ApiError(400, 'Invalid reminder_minutes');
     const planificada = (data as any).planned_date || null;
     if (planificada && !esDia(planificada)) throw new ApiError(400, 'Invalid planned_date');
     const regla = (data as any).recurrence || null;
@@ -425,11 +435,11 @@ export class IssueService {
 
     db.transaction(() => {
       db.prepare(`
-        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, due_time, description, estimated_hours, priority, recurrence, planned_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, due_date, due_time, description, estimated_hours, priority, recurrence, planned_date, reminder_minutes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position,
         data.assignee_id || null, data.due_date || null, (data.due_date && data.due_time) || null, data.description || null, horas,
-        data.priority || 'medium', regla, planificada);
+        data.priority || 'medium', regla, planificada, data.due_date ? antelacion : null);
       const ponerEtiqueta = db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) VALUES (?, ?)');
       for (const id of etiquetas) ponerEtiqueta.run(issueId, id);
       for (const id of paginas) vincular(issueId, id, userId);

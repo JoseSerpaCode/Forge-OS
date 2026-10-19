@@ -6,6 +6,12 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.32.0] - 2026-10-19
+
+### Added
+
+- **Recordatorios** antes de una entrega («recordar 1 h antes»), como notificación de la aplicación, en la zona horaria de quien los recibe. Los recibe quien tiene la tarea asignada, o quien la creó si no tiene responsable, y solo mientras siga siendo miembro del espacio. Migración 50.
+
 ## [1.31.0] - 2026-10-19
 
 Vistas por fecha, subtareas, repeticiones y lo que hace falta para organizarse sin sprints.

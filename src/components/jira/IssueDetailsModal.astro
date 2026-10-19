@@ -200,6 +200,18 @@ const t = useTranslations(lang);
           {PRIORIDADES.map((p) => <option value={p.valor} selected={p.valor === 'medium'}>{t(`priority.${p.nivel}`)}</option>)}
         </select>
       </div>
+      <div class="space-y-2">
+        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-remind">{t('remind.label')}</label>
+        <select id="modal-issue-remind" data-t-needs-date={t('remind.needs_date')} data-t-saved={t('remind.saved')} data-t-custom={t('remind.custom')}
+          class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+          <option value="">{t('remind.none')}</option>
+          <option value="0">{t('remind.at_time')}</option>
+          <option value="60">{t('remind.1h')}</option>
+          <option value="1440">{t('remind.1d')}</option>
+          <option value="2880">{t('remind.2d')}</option>
+          <option value="10080">{t('remind.1w')}</option>
+        </select>
+      </div>
       {/* Repetir. Las opciones que dependen del día («el mismo día») se
           resuelven con la fecha de entrega al guardar: `@` es ese día. */}
       <div class="space-y-2">
@@ -2178,4 +2190,36 @@ const t = useTranslations(lang);
     });
   })();
 
+  // ── Recordar ───────────────────────────────────────────────────────────────
+  (() => {
+    const selOpt = document.getElementById('modal-issue-remind') as HTMLSelectElement | null;
+    if (!selOpt) return;
+    const sel: HTMLSelectElement = selOpt;
+    let anterior = '';
+    sel.addEventListener('recordar-sincronizar', () => {
+      const v = sel.dataset.minutos || '';
+      sel.querySelector('option[data-personalizada]')?.remove();
+      if (v && !Array.from(sel.options).some((o) => o.value === v)) {
+        const op = new Option((sel.dataset.tCustom || '').replace('{n}', v), v);
+        op.dataset.personalizada = '1';
+        sel.append(op);
+      }
+      sel.value = v;
+      anterior = v;
+    });
+    sel.addEventListener('change', async () => {
+      const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
+      if (!issueId) return;
+      const fecha = (document.getElementById('modal-issue-due-date') as HTMLInputElement | null)?.value;
+      if (sel.value && !fecha) { sel.value = anterior; window.showToast?.(sel.dataset.tNeedsDate || '', true); return; }
+      const res = await fetch(`/api/issues/${issueId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reminder_minutes: sel.value === '' ? null : Number(sel.value) }),
+      }).catch(() => null);
+      if (!res?.ok) { sel.value = anterior; window.showToast?.(window.forgeMsg?.errGenerico || '', true); return; }
+      anterior = sel.value;
+      tarjetasDe(issueId).forEach((card) => { card.dataset.reminder = sel.value; });
+      window.showToast?.(sel.dataset.tSaved || '');
+    });
+  })();
 </script>

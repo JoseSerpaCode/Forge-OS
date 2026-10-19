@@ -498,7 +498,7 @@ test.describe('la tarjeta y el panel dicen lo mismo', () => {
   });
 });
 
-test.describe('repetir y calendario', () => {
+test.describe('repetir, calendario y recordatorios', () => {
   const ESP = 'e2e-repetir';
 
   test('una tarea de cada lunes: al completarla aparece la siguiente', async ({ page }) => {
@@ -543,6 +543,25 @@ test.describe('repetir y calendario', () => {
     await anonimo.close();
   });
 
+  test('el recordatorio se pone en el panel y necesita fecha', async ({ page }) => {
+    const ws = espacio(ESP);
+    const sin = tarea(ws, { title: 'Sin fecha para recordar' });
+    const con = tarea(ws, { title: 'Con fecha para recordar', due_date: '2030-01-15' });
+    await entrar(page);
+    await page.goto(`/w/${ESP}/board`);
+    await page.locator(`.issue-card[data-issue-id="${sin}"] h4`).click();
+    await page.locator('#modal-issue-remind').selectOption('60');
+    await expect(page.locator('#modal-issue-remind')).toHaveValue('');
+    await page.goto(`/w/${ESP}/board`);
+    await page.locator(`.issue-card[data-issue-id="${con}"] h4`).click();
+    await page.locator('#modal-issue-remind').selectOption('1440');
+    await expect.poll(() => {
+      const d = getTestDb();
+      const v = (d.prepare('SELECT reminder_minutes FROM issues WHERE id = ?').get(con) as any).reminder_minutes;
+      d.close();
+      return v;
+    }).toBe(1440);
+  });
 });
 
 test.describe('cabecera del tablero', () => {

@@ -23,7 +23,7 @@
 import { DE_ATAJO, type Prioridad } from './prioridad';
 import { diaDe, primera, type Dia } from './recurrencia';
 
-export type TipoTramo = 'fecha' | 'hora' | 'etiqueta' | 'prioridad' | 'apunte' | 'repeticion' | 'trabajo';
+export type TipoTramo = 'fecha' | 'hora' | 'etiqueta' | 'prioridad' | 'apunte' | 'repeticion' | 'trabajo' | 'recordatorio';
 
 export interface Tramo {
   tipo: TipoTramo;
@@ -46,6 +46,8 @@ export interface Interpretacion {
   recurrencia: string | null;
   /** «hacer el martes»: el día en que se hace, aparte de la entrega. */
   fechaTrabajo: string | null;
+  /** «recordar 1 h antes»: minutos de antelación respecto a la entrega. */
+  recordatorio: number | null;
   tramos: Tramo[];
 }
 
@@ -256,6 +258,16 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
   }
   candidatos.push(...buscarRepeticiones(texto, lang), ...buscarHoras(texto));
 
+  // «recordar 1 h antes», «avisar 2 días antes», «remind me 30 min before».
+  const avisos = lang === 'es'
+    ? /(?<![\p{L}\p{N}])(?:recordar(?:me)?|av[ií]sa(?:r(?:me)?|me))\s+(\d{1,3})\s*(min(?:utos?)?|h(?:oras?)?|d(?:[ií]as?)?|semanas?)\s+antes(?![\p{L}\p{N}])/giu
+    : /(?<![\p{L}\p{N}])remind(?:\s+me)?\s+(\d{1,3})\s*(min(?:utes?)?|h(?:ours?)?|d(?:ays?)?|weeks?)\s+before(?![\p{L}\p{N}])/giu;
+  for (const m of texto.matchAll(avisos)) {
+    const u = m[2].toLowerCase();
+    const factor = u.startsWith('min') ? 1 : u.startsWith('h') ? 60 : u.startsWith('d') ? 1440 : 10080;
+    const minutos = Number(m[1]) * factor;
+    if (minutos <= 20160) candidatos.push({ tipo: 'recordatorio', inicio: m.index!, fin: m.index! + m[0].length, valor: minutos });
+  }
 
   /**
    * «hacer el martes», «trabajar el 15/11», «do tue»: una fecha precedida de
@@ -282,7 +294,7 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
   }
 
   const r: Interpretacion = {
-    titulo: '', fecha: null, hora: null, etiquetas: [], etiquetasNuevas: [], prioridad: null, apuntes: [], recurrencia: null, fechaTrabajo: null, tramos: [],
+    titulo: '', fecha: null, hora: null, etiquetas: [], etiquetasNuevas: [], prioridad: null, apuntes: [], recurrencia: null, fechaTrabajo: null, recordatorio: null, tramos: [],
   };
   const usados: Candidato[] = [];
   for (const c of elegidos) {
@@ -294,6 +306,7 @@ export function interpretar(texto: string, ctx: Contexto): Interpretacion {
     else if (c.tipo === 'apunte') r.apuntes.push(c.valor as string);
     else if (c.tipo === 'repeticion') { if (r.recurrencia) continue; r.recurrencia = c.valor as string; }
     else if (c.tipo === 'trabajo') { if (r.fechaTrabajo) continue; r.fechaTrabajo = c.valor as string; }
+    else if (c.tipo === 'recordatorio') { if (r.recordatorio !== null) continue; r.recordatorio = c.valor as number; }
     else if (c.tipo === 'etiqueta') {
       const buscada = normalizar(c.valor as string);
       const hallada = catalogo.find((e) => normalizar(e.name) === buscada);

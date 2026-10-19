@@ -68,6 +68,7 @@ const vence = issue.due_date && !hecha && vencida(issue.due_date, new Date(), is
   data-planned-date={issue.planned_date || ''}
   data-priority={issue.priority || 'medium'}
   data-recurrence={issue.recurrence || ''}
+  data-reminder={issue.reminder_minutes ?? ''}
   data-subtareas-total={subTotal}
   data-subtareas-hechas={subHechas}
   data-status={issue.status}

@@ -558,6 +558,11 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       repEl.dataset.regla = card.dataset.recurrence || '';
       repEl.dispatchEvent(new Event('repeticion-sincronizar'));
     }
+    const recEl = document.getElementById('modal-issue-remind') as HTMLSelectElement | null;
+    if (recEl) {
+      recEl.dataset.minutos = card.dataset.reminder || '';
+      recEl.dispatchEvent(new Event('recordar-sincronizar'));
+    }
 
     w.loadIssueAttachments?.(issueId);
     // `refreshTimeTrackingUI` además rellena la fecha de entrega: se llama
