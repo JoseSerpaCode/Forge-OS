@@ -5,6 +5,12 @@ import db from '../../../../lib/db';
 import { checkWorkspaceAccess } from '../../../../lib/guard';
 import { useTranslations } from '../../../../i18n/ui';
 import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
+import { deVarias } from '../../../../lib/labels';
+import { extracto } from '../../../../lib/notes/extracto';
+import { relativo } from '../../../../lib/fechas';
+import { tonoDe, esFotoReal } from '../../../../lib/tonos';
+import { iniciales } from '../../../../lib/responsables';
+import LabelChip from '../../../../components/labels/LabelChip.astro';
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -17,65 +23,119 @@ const acceso = abrirEspacioDePagina(sys_tag, user, 'viewer');
 if (!acceso.ok) return Astro.redirect(acceso.redirigir);
 const ws = acceso.ws;
 
-let targetPageId = null;
+// El índice de notas (docs/rediseno/notas-indice.html). Antes esta ruta
+// saltaba sin más a la última nota abierta; ahora enseña todas, y la última
+// queda a un clic en «Seguir con…».
+const ultima = user.last_page_id
+  ? (db.prepare('SELECT id, title FROM pages WHERE id = ? AND workspace_id = ?').get(user.last_page_id, ws.id) as { id: string; title: string } | undefined) ?? null
+  : null;
 
-// Intentar usar la última página visitada por el usuario
-if (user.last_page_id) {
-  const lastPage = db.prepare('SELECT id FROM pages WHERE id = ? AND workspace_id = ?').get(user.last_page_id, ws.id) as any;
-  if (lastPage) targetPageId = lastPage.id;
-}
+const notas = db.prepare(`
+  SELECT p.id, p.title, p.parent_page_id, p.content_json, p.updated_at,
+         u.username AS autor, u.avatar_url AS autor_avatar,
+         (SELECT COUNT(*) FROM issue_page_links l WHERE l.page_id = p.id) AS tareas
+  FROM pages p LEFT JOIN users u ON u.id = p.created_by
+  WHERE p.workspace_id = ?
+  ORDER BY p.updated_at DESC
+`).all(ws.id) as Array<{ id: string; title: string; parent_page_id: string | null; content_json: string | null; updated_at: string; autor: string | null; autor_avatar: string | null; tareas: number }>;
 
-// Fallback a la primera página si no hay historial
-if (!targetPageId) {
-  const firstPage = db.prepare('SELECT id FROM pages WHERE workspace_id = ? ORDER BY (parent_page_id IS NOT NULL), position ASC, created_at ASC LIMIT 1').get(ws.id) as any;
-  if (firstPage) targetPageId = firstPage.id;
-}
-
-if (targetPageId) {
-  return Astro.redirect(`/w/${sys_tag}/p/${targetPageId}`);
-}
+const titulos = new Map(notas.map((n) => [n.id, n.title]));
+const ruta = (n: { parent_page_id: string | null }) => {
+  const partes: string[] = [];
+  let padre = n.parent_page_id;
+  for (let i = 0; padre && i < 6; i++) {
+    partes.unshift(titulos.get(padre) ?? '');
+    padre = notas.find((x) => x.id === padre)?.parent_page_id ?? null;
+  }
+  return partes.filter(Boolean).join(' / ');
+};
+const etiquetasNotas = deVarias('page', notas.map((n) => n.id));
+const recientes = notas.slice(0, 3);
 ---
 
-<MainLayout hideFooter={true} title={t('sidebar.knowledge')}>
+<MainLayout hideFooter={true} title={t('sidebar.knowledge')} workspaceId={ws.id}>
   <div class="flex h-full overflow-hidden">
     <PageTree workspaceId={ws.id} sysTag={sys_tag!} />
-    
-    <div class="flex-1 flex flex-col min-w-0">
-      {/* La puerta al índice, para la página que no tiene editor.
 
-          El botón que lo abre vive en la fila del título del editor, y aquí no
-          hay editor: al moverlo allí, esta pantalla se quedó **sin ninguna
-          forma de abrir el árbol**, y con ella sin forma de crear la primera
-          página desde un teléfono. El texto de abajo seguía señalando un botón
-          que ya no existía. */}
-      <div class="md:hidden p-4 pb-0">
-        <button
-          type="button"
-          id="btn-open-tree"
-          aria-controls="page-tree-aside"
-          aria-expanded="false"
-          class="w-full h-11 flex items-center justify-center gap-2 rounded-lg border border-forge-border text-forge-text text-sm font-semibold"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          {t('kb.open_tree')}
-        </button>
+    <div class="flex-1 min-w-0 overflow-y-auto">
+      <div class="px-4 sm:px-7 py-6 pb-16 max-w-[70rem]">
+        <header class="page-head">
+          <div class="min-w-0">
+            <h1 class="page-title">{t('sidebar.knowledge')}</h1>
+            <p class="page-sub">{notas.length === 1 ? t('kb.index.sub_one').replace('{ws}', ws.name) : t('kb.index.sub_n').replace('{n}', String(notas.length)).replace('{ws}', ws.name)}</p>
+          </div>
+          <div class="flex gap-2">
+            {/* El índice también se abre en móvil, donde el árbol es un cajón. */}
+            <button type="button" id="btn-open-tree" aria-controls="page-tree-aside" aria-expanded="false" class="md:hidden btn btn-secondary">{t('kb.open_tree')}</button>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('btn-new-root-page')?.click()">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              {t('kb.new_page')}
+            </button>
+          </div>
+        </header>
+
+        {notas.length === 0 ? (
+          <div class="panel px-5 py-8 text-center max-w-xl">
+            <p class="font-semibold text-forge-text mb-1">{t('kb.empty_desc')}</p>
+            <p class="text-sm text-forge-muted md:hidden">{t('kb.empty_cta_movil')}</p>
+            <p class="text-sm text-forge-muted hidden md:block">{t('kb.empty_cta')}</p>
+          </div>
+        ) : (
+          <>
+            {ultima && (
+              <a href={`/w/${sys_tag}/p/${ultima.id}`} class="panel flex items-center justify-between gap-3 px-4 py-3 mb-6 hover:border-forge-border-strong">
+                <span class="text-sm min-w-0 truncate"><span class="text-forge-muted">{t('kb.index.continue')}</span> <b>{ultima.title || t('kb.untitled')}</b></span>
+                <span aria-hidden="true">→</span>
+              </a>
+            )}
+
+            {/* «Recientes» en vez de «Fijadas»: las notas no se fijan, pero las
+                que se tocaron hace poco son casi siempre las que se buscan. */}
+            <h2 class="section-title mb-3">{t('kb.index.recent')}</h2>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+              {recientes.map((n) => (
+                <a href={`/w/${sys_tag}/p/${n.id}`} class="panel nota-tarjeta flex flex-col gap-2 p-4 hover:border-forge-border-strong">
+                  <strong class="text-base leading-snug">{n.title || t('kb.untitled')}</strong>
+                  {extracto(n.content_json) && <p class="text-sm text-forge-muted line-clamp-3">{extracto(n.content_json)}</p>}
+                  {(etiquetasNotas.get(n.id)?.length ?? 0) > 0 && (
+                    <span class="flex flex-wrap gap-1.5">{etiquetasNotas.get(n.id)!.map((e) => <LabelChip name={e.name} color={e.color} size="sm" />)}</span>
+                  )}
+                  <span class="hint mt-auto">{n.autor ?? '—'} · {relativo(n.updated_at, lang)}</span>
+                </a>
+              ))}
+            </div>
+
+            <h2 class="section-title mb-3">{t('kb.index.all')}</h2>
+            <div class="panel overflow-x-auto">
+              <table class="tabla">
+                <thead><tr><th>{t('table.name')}</th><th>{t('kb.index.col_labels')}</th><th>{t('kb.index.col_edited')}</th><th class="num">{t('kb.index.col_tasks')}</th></tr></thead>
+                <tbody>
+                  {notas.map((n) => (
+                    <tr>
+                      <td class="titulo min-w-[14rem]">
+                        {ruta(n) && <span class="hint block font-normal">{ruta(n)} /</span>}
+                        <a href={`/w/${sys_tag}/p/${n.id}`} class="hover:underline underline-offset-2">{n.title || t('kb.untitled')}</a>
+                      </td>
+                      <td>
+                        {(etiquetasNotas.get(n.id)?.length ?? 0) > 0
+                          ? <span class="flex flex-wrap gap-1.5">{etiquetasNotas.get(n.id)!.map((e) => <LabelChip name={e.name} color={e.color} size="sm" />)}</span>
+                          : <span class="text-forge-muted">—</span>}
+                      </td>
+                      <td class="whitespace-nowrap">
+                        <span class="flex items-center gap-2">
+                          <span class="avatar" style={`--c:${tonoDe(n.autor)}`} aria-hidden="true">{esFotoReal(n.autor_avatar) ? <img src={n.autor_avatar!} alt="" loading="lazy" decoding="async" /> : iniciales(n.autor ?? '?')}</span>
+                          <span class="text-forge-muted">{relativo(n.updated_at, lang)}</span>
+                        </span>
+                      </td>
+                      <td class="num">{n.tareas || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
-
-    <div class="flex-1 flex flex-col items-center justify-center text-forge-muted">
-      <div class="w-16 h-16 border border-dashed border-forge-border rounded-lg flex items-center justify-center mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-      </div>
-      <div class="text-forge-text font-bold text-lg mb-2">{t('kb.empty_desc')}</div>
-      {/* Dos textos porque son dos sitios distintos.
-
-          El original mandaba a «Nueva Página» en la barra lateral. En un
-          teléfono no hay barra lateral: el árbol vive en un cajón que se abre
-          con el botón redondo de abajo a la izquierda. Mandar a alguien a un
-          sitio que no existe en su pantalla es peor que no decirle nada, porque
-          se pone a buscarlo. */}
-      <div class="text-forge-muted text-sm md:hidden">{t('kb.empty_cta_movil')}</div>
-      <div class="text-forge-muted text-sm hidden md:block">{t('kb.empty_cta')}</div>
-    </div>
     </div>
   </div>
 </MainLayout>

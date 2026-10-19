@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.40.0] - 2026-10-19
+
+Fase 4 del rediseño «Taller»: las notas.
+
+### Added
+
+- **Índice de notas** en «Notas»: la última que abriste a un clic («Seguir con…»), las tres más recientes con su resumen y una tabla con todas, con su ruta en el árbol, etiquetas, quién la editó y cuándo, y cuántas tareas la enlazan. Antes esta página saltaba directamente a la última nota.
+
+### Changed
+
+- **El árbol de notas va sin caja**: una columna con su línea, filas en píldora y la nota abierta en un tinte. Sin el icono de documento repetido en cada fila; el emoji propio de una nota se conserva.
+- **La nota se lee a 68 caracteres de ancho**, con el título en Archivo estrecho y, debajo, quién la escribió, cuándo y el estado de guardado. «Guardado» ya no flota abajo a la derecha encima del texto.
+- **Prosa nueva**: viñetas cuadradas en naranja, código y bloques de código sobre un tinte, citas con una raya a la izquierda y tablas con la cabecera teñida.
+- El resaltado de texto lleva el texto en tinta sobre un tinte naranja: el blanco sobre naranja no llegaba al contraste mínimo.
+
+### Fixed
+
+- «Draft», «Copy Link to Page» y «Toggle Sidebar» salían en inglés con la interfaz en español. El árbol vacío decía «EMPTY_SPACE».
+
 ## [1.39.0] - 2026-10-19
 
 Fase 3 del rediseño «Taller»: Panel e Inicio.

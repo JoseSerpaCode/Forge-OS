@@ -63,7 +63,8 @@ test('Knowledge Base: Create, auto-save and cascading delete', async ({ page }) 
 
   // Add subpage via UI
   // Hover over the tree item and click the add child button
-  await page.hover('li.pl-4 > div');
+  // Por su clase de árbol y su id, no por el relleno que tuviera (`pl-4`).
+  await page.hover(`li.tree-item[data-page-id="${parentId}"] > .tree-row`);
   await page.click(`.add-child-btn[data-parent-id="${parentId}"]`);
   
   // Should redirect to new subpage
