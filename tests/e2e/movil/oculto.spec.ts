@@ -51,9 +51,19 @@ test('una tarjeta que es enlace no se convierte en fila', async ({ page }) => {
    * una fila y salía «ISSUES PENDIENTES 1» pegado en una línea.
    */
   await page.waitForLoadState('networkidle');
-  // Por estructura y no por texto: la suite corre con la interfaz en inglés y
-  // atar la prueba al idioma la haría fallar al traducir una cadena.
-  const tarjeta = page.locator('a[href*="/board"]:has(.text-4xl)').first();
+  // Las tarjetas de cifras del panel desaparecieron con el rediseño, pero la
+  // regla que se protege aquí sigue: un enlace `block` con dos hijos apilados
+  // tiene que seguir apilado en móvil. Se mete uno en la página real, con las
+  // hojas de estilo reales, en vez de depender de qué pantalla lo use hoy.
+  await page.evaluate(() => {
+    const a = document.createElement('a');
+    a.href = '/board';
+    a.id = 'tarjeta-prueba';
+    a.className = 'block';
+    a.innerHTML = '<span class="block">Rótulo</span><span class="block text-4xl">1</span>';
+    document.querySelector('main')?.prepend(a);
+  });
+  const tarjeta = page.locator('#tarjeta-prueba');
   await expect(tarjeta).toBeVisible();
 
   const filas = await tarjeta.evaluate((el: HTMLElement) => {

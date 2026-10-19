@@ -194,304 +194,221 @@ const priorityColor: Record<string, string> = {
   low: 'text-forge-info',
   lowest: 'text-forge-muted',
 };
+
+// ──── Rediseño «Taller» (docs/rediseno/panel.html) ────
+// Cuántas hay en cada estado: en el sprint activo si lo hay; si no, todas
+// las del espacio menos las hechas hace más de una semana (las de siempre
+// harían la barra eterna).
+import { ESTADOS, INFO as INFO_ESTADO } from '../../../lib/status';
+const filasEstado = (activeSprint
+  ? db.prepare(`SELECT status, COUNT(*) AS n FROM issues WHERE workspace_id = ? AND sprint_id = ? AND parent_issue_id IS NULL GROUP BY status`).all(workspace.id, activeSprint.id)
+  : db.prepare(`SELECT status, COUNT(*) AS n FROM issues WHERE workspace_id = ? AND parent_issue_id IS NULL AND (status != 'done' OR done_at >= datetime('now', '-7 days')) GROUP BY status`).all(workspace.id)
+) as Array<{ status: string; n: number }>;
+const porEstado = Object.fromEntries(ESTADOS.map((e) => [e, filasEstado.find((f) => f.status === e)?.n ?? 0])) as Record<string, number>;
+const totalEstados = ESTADOS.reduce((n, e) => n + porEstado[e], 0);
+const numMiembros = (db.prepare('SELECT COUNT(*) AS n FROM workspace_members WHERE workspace_id = ?').get(workspace.id) as any).n as number;
+
+// La carga de cada persona, por estado y solo de lo abierto. En neutro: una
+// barra roja culpa a alguien de algo que el gráfico no sabe.
+const cargaFilas = db.prepare(`
+  SELECT assignee_id, status, COUNT(*) AS n FROM issues
+  WHERE workspace_id = ? AND parent_issue_id IS NULL AND status != 'done'
+  GROUP BY assignee_id, status
+`).all(workspace.id) as Array<{ assignee_id: string | null; status: string; n: number }>;
+const carga = members.map((m: any) => ({
+  ...m,
+  estados: ESTADOS.filter((e) => e !== 'done').map((e) => ({ e, n: cargaFilas.find((f) => f.assignee_id === m.id && f.status === e)?.n ?? 0 })),
+}));
+const maxCarga = Math.max(1, ...carga.map((m: any) => m.openCount));
+import { tonoDe, esFotoReal } from '../../../lib/tonos';
+import { iniciales } from '../../../lib/responsables';
+
 ---
 
 <MainLayout hideFooter={true} title={`${t('sidebar.dashboard')} — ${workspace.name}`} workspaceId={workspace.id}>
-  <div class="space-y-6 max-w-[1400px] pb-12">
-    
-    {/* En móvil, el título arriba y los botones debajo.
-
-        En una fila, los dos botones se llevan su ancho natural y el título se
-        queda con lo que sobra: «Panel Principal — Resumen del Espacio» caía en
-        una columna de cuatro palabras, una por línea, junto a dos botones que
-        tampoco cabían. */}
-    <!-- Header -->
-    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+  <div class="pb-12">
+    {/* Panel del espacio (fase 3 del rediseño). Sin «Bienvenido», sin tarjetas
+        de cifras genéricas: el estado del trabajo, lo tuyo, y quién lleva qué. */}
+    <header class="page-head">
       <div class="min-w-0">
-        <h1 class="text-2xl font-bold text-forge-text truncate">{workspace.name}</h1>
-        <p class="text-sm text-forge-muted mt-0.5">{t('sidebar.dashboard')} — {t('dashboard.workspace_overview')}</p>
+        <h1 class="page-title">{workspace.name}</h1>
+        <p class="page-sub">#{sys_tag} · {numMiembros === 1 ? t('dashboard.people_one') : t('dashboard.people_count').replace('{n}', String(numMiembros))} · {pendingIssues.count === 1 ? t('dashboard.open_one') : t('dashboard.open_count').replace('{n}', String(pendingIssues.count))}</p>
       </div>
       <div class="flex gap-2 shrink-0">
-        <a href={`/w/${sys_tag}/board`} class="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded bg-forge-primary text-forge-on-accent hover:opacity-90 transition-opacity">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-          {t('dashboard.open_board')}
-        </a>
-        <a href={`/w/${sys_tag}/p`} class="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded bg-forge-panel border border-forge-border text-forge-text hover:border-forge-secondary transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-          {t('dashboard.knowledge_base')}
-        </a>
+        <a href={`/w/${sys_tag}/p`} class="btn btn-secondary">{t('sidebar.knowledge')}</a>
+        <a href={`/w/${sys_tag}/board`} class="btn btn-primary">{t('dashboard.open_board')}</a>
       </div>
     </header>
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {funcs.sprints ? (
-      /* Sprint activo */
-      <div class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors group">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.active_sprint')}</span>
-          {activeSprints.length > 1 ? (
-             <form id="sprint-selector-form" method="get">
-               <select name="sprint" onchange="this.form.submit()" class="bg-forge-bg border border-forge-border text-xs rounded p-1 text-forge-text focus:outline-none focus:border-forge-secondary">
-                 {activeSprints.map(s => <option value={s.id} selected={activeSprint?.id === s.id}>{s.name}</option>)}
-               </select>
-             </form>
-          ) : (
-             <div class={`w-2 h-2 rounded-full ${activeSprint ? 'bg-forge-secondary animate-pulse' : 'bg-forge-muted'}`}></div>
-          )}
-        </div>
-        {activeSprint ? (
-          <>
-            <div class="text-xl font-black text-forge-text mb-1 truncate">{activeSprint.name}</div>
-            <div class="flex items-center gap-2 mb-2">
-              <div class="flex-1 h-1 bg-forge-bg rounded-full overflow-hidden">
-                <div class="h-full bg-forge-secondary rounded-full transition-all" style={`width: ${sprintProgress}%`}></div>
-              </div>
-              <span class="text-[10px] font-mono text-forge-muted shrink-0">{sprintProgress}%</span>
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
+      <div class="flex flex-col gap-4 min-w-0">
+        {/* El estado del trabajo: del sprint si se usan sprints; si no, de la
+            semana. Tres cifras que sirven para decidir y una barra por estado. */}
+        <section class="panel">
+          <div class="panel-cabeza">
+            {activeSprint ? (
+              <>
+                <h2>{activeSprint.name}</h2>
+                <span class="text-sm text-forge-muted">{activeSprint.end_date ? t('dashboard.sprint_ends').replace('{fecha}', formatDate(activeSprint.end_date)) : ''}</span>
+              </>
+            ) : (
+              <>
+                <h2>{funcs.sprints ? t('dashboard.no_active_sprint') : t('dashboard.this_week')}</h2>
+                <a class="enlace" href={`/w/${sys_tag}/board?vista=hoy`}>{t('view.today')}</a>
+              </>
+            )}
+          </div>
+          <div class="panel-cuerpo">
+            <div class="grid grid-cols-3 gap-4 mb-4">
+              {activeSprint ? (
+                <>
+                  <div><b class="cifra">{sprintProgress} %</b><span class="hint">{t('dashboard.fig_done_pct')}</span></div>
+                  <div><b class="cifra">{sprintDaysLeft}</b><span class="hint">{t('dashboard.fig_days_left')}</span></div>
+                  <div><b class="cifra">{pendingIssues.count}</b><span class="hint">{t('dashboard.fig_open')}</span></div>
+                </>
+              ) : (
+                <>
+                  <div><b class="cifra">{hechasSemana}</b><span class="hint">{t('dashboard.fig_done_week')}</span></div>
+                  <div><b class:list={['cifra', vencidasTotal > 0 && '!text-forge-error']}>{vencidasTotal}</b><span class="hint">{t('dashboard.fig_overdue')}</span></div>
+                  <div><b class="cifra">{pendingIssues.count}</b><span class="hint">{t('dashboard.fig_open')}</span></div>
+                </>
+              )}
             </div>
-            <span class="text-xs text-forge-muted">
-              {sprintDaysLeft > 0 ? t('dashboard.ends_in').replace('{days}', String(sprintDaysLeft)) : t('dashboard.ending_today')}
-            </span>
-          </>
-        ) : (
-          <div class="mt-1">
-            <div class="text-forge-muted text-sm">{t('dashboard.no_active_sprint')}</div>
-            <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-accent-text hover:underline mt-1 inline-block">{t('dashboard.new_sprint')}</a>
-          </div>
-        )}
-      </div>
-      ) : (
-        <a href={`/w/${sys_tag}/board?vista=hoy`} class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors">
-          <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.this_week')}</span>
-          <div class="text-xl font-black text-forge-text mt-3 mb-1">{t('dashboard.done_week').replace('{n}', String(hechasSemana))}</div>
-          <span class:list={['text-xs', vencidasTotal > 0 ? 'text-forge-error font-bold' : 'text-forge-muted']}>{t('dashboard.overdue_count').replace('{n}', String(vencidasTotal))}</span>
-        </a>
-      )}
-
-      <!-- Issues pendientes -->
-      <a href={`/w/${sys_tag}/board${activeSprint ? `?sprint=${activeSprint.id}` : ''}`} class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors group block">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.pending_issues')}</span>
-          <svg class="text-forge-muted group-hover:text-forge-accent-text transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <div class="text-4xl font-black text-forge-accent-text">{pendingIssues.count}</div>
-        {blockedIssues.count > 0 && (
-          <div class="text-xs text-forge-error mt-1 font-medium">{t('dashboard.blocked').replace('{count}', String(blockedIssues.count))}</div>
-        )}
-      </a>
-
-      <!-- KB Pages -->
-      <a href={`/w/${sys_tag}/p`} class="bg-forge-panel border border-forge-border rounded-xl p-4 hover:border-forge-secondary/50 transition-colors group block">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-bold text-forge-muted uppercase tracking-wider">{t('dashboard.kb_pages')}</span>
-          <svg class="text-forge-muted group-hover:text-forge-accent-text transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-        </div>
-        <div class="text-4xl font-black text-forge-text">{totalPages.count}</div>
-        <div class="text-xs text-forge-muted mt-1">{t('dashboard.knowledge_articles')}</div>
-      </a>
-    </div>
-
-    <!-- Middle Row: Roadmap -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      {funcs.sprints ? (
-      /* Roadmap */
-      <div class="lg:col-span-2 bg-forge-panel border border-forge-border rounded-xl p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-bold text-forge-text flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            {t('dashboard.roadmap')}
-          </h2>
-          <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors">{t('dashboard.view_board')}</a>
-        </div>
-
-        {allSprints.length === 0 ? (
-          <div class="py-8 text-center text-forge-muted text-sm">
-            <p>{t('dashboard.no_sprints')}</p>
-            <a href={`/w/${sys_tag}/board`} class="text-forge-accent-text hover:underline text-xs mt-2 inline-block">{t('dashboard.create_sprint')}</a>
-          </div>
-        ) : (
-          <div class="space-y-3" id="roadmap-container">
-            {allSprints.map((sprint, i) => {
-              // Calculate bar widths relative to first sprint start and last sprint end
-              const firstStart = allSprints.find(s => s.start_date)?.start_date;
-              const lastEnd = [...allSprints].reverse().find(s => s.end_date)?.end_date;
-              
-              let barLeft = 0;
-              let barWidth = 50; // default
-              
-              if (firstStart && lastEnd && sprint.start_date && sprint.end_date) {
-                // Con `deSQLite`, como el resto de fechas: `new Date()` leía una
-                // fecha solo-día como UTC y una marca de SQLite como hora local,
-                // y en una misma barra podían convivir las dos.
-                const ms = (v: unknown) => deSQLite(v)?.getTime() ?? NaN;
-                const rangeStart = ms(firstStart);
-                const rangeEnd = ms(lastEnd);
-                const range = rangeEnd - rangeStart || 1;
-                const sprintStart = ms(sprint.start_date);
-                const sprintEnd = ms(sprint.end_date);
-                barLeft = Math.max(0, Math.min(100, ((sprintStart - rangeStart) / range) * 100));
-                barWidth = Math.max(8, Math.min(100 - barLeft, ((sprintEnd - sprintStart) / range) * 100));
-              } else {
-                barLeft = (i / Math.max(allSprints.length, 3)) * 60;
-                barWidth = 100 / Math.max(allSprints.length, 3) * 0.8;
-              }
-
-              const barColor = sprint.status === 'completed' ? 'bg-forge-muted/40' : 
-                               sprint.status === 'active' ? 'bg-forge-secondary' : 
-                               'bg-forge-secondary/30';
-              
-              return (
-                <div class="flex items-center gap-3">
-                  <span class="text-xs text-forge-muted font-mono w-20 shrink-0 truncate" title={sprint.name}>{sprint.name}</span>
-                  <div class="flex-1 h-4 bg-forge-bg rounded-full relative overflow-hidden border border-forge-border/30">
-                    <div 
-                      class={`absolute h-full rounded-full ${barColor} transition-all duration-700`}
-                      style={`left: ${barLeft}%; width: ${barWidth}%`}
-                    ></div>
-                    {sprint.status === 'active' && (
-                      <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="text-[9px] font-bold text-forge-on-accent z-10">{sprintProgress}%</span>
-                      </div>
-                    )}
-                  </div>
-                  <div class="flex items-center gap-1 shrink-0">
-                    {sprint.end_date && (
-                      <span class="text-[10px] text-forge-muted font-mono w-16 text-right">{formatDate(sprint.end_date)}</span>
-                    )}
-                    <span class={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                      sprint.status === 'completed' ? 'bg-forge-muted/20 text-forge-muted' :
-                      sprint.status === 'active' ? 'bg-forge-secondary/20 text-forge-accent-text' :
-                      'bg-forge-panel text-forge-muted border border-forge-border'
-                    }`}>{sprint.status}</span>
-                  </div>
+            {totalEstados > 0 && (
+              <>
+                <div class="barra !h-3.5 !bg-transparent" aria-hidden="true">
+                  {ESTADOS.filter((e) => porEstado[e] > 0).map((e) => (
+                    <span style={`width:${(porEstado[e] / totalEstados) * 100}%;--c:${INFO_ESTADO[e].color}`}></span>
+                  ))}
                 </div>
-              );
-            })}
-
-            {milestones.map(m => (
-              <div class="flex items-center gap-3 pt-1 border-t border-forge-border/30 mt-1">
-                <span class="text-xs text-forge-warning font-mono w-20 shrink-0 flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                  {m.name}
-                </span>
-                <div class="flex-1 border-t border-dashed border-yellow-400/20"></div>
-                <span class="text-[10px] font-mono text-forge-warning shrink-0">{formatDate(m.target_date)}</span>
-              </div>
-            ))}
+                <ul class="flex gap-x-5 gap-y-2 flex-wrap mt-3">
+                  {ESTADOS.map((e) => (
+                    <li class="flex items-center gap-2 text-sm">
+                      <span class="estado-chip" style={`--c:${INFO_ESTADO[e].color}`}>{t(INFO_ESTADO[e].i18n)}</span>
+                      <b class="wide">{porEstado[e]}</b>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {blockedIssues.count > 0 && (
+              <p class="hint mt-3 !text-forge-error">{t('dashboard.blocked').replace('{count}', String(blockedIssues.count))}</p>
+            )}
           </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-cabeza">
+            <h2>{t('dashboard.my_tasks')}</h2>
+            <a class="enlace" href={`/w/${sys_tag}/board?responsable=yo`}>{t('dashboard.view_all_board')}</a>
+          </div>
+          <div class="overflow-x-auto">
+            <TaskTable tasks={myTasks} sys_tag={sys_tag} tipos={tiposDelEspacio} />
+          </div>
+        </section>
+
+        {funcs.sprints ? (
+          <section class="panel">
+            <div class="panel-cabeza">
+              <h2>{t('dashboard.roadmap')}</h2>
+              <a class="enlace" href={`/w/${sys_tag}/metrics`}>{t('sidebar.metrics')}</a>
+            </div>
+            {allSprints.length === 0 ? (
+              <p class="panel-cuerpo text-sm text-forge-muted">{t('dashboard.no_sprints')}</p>
+            ) : (
+              <div class="overflow-x-auto">
+                <table class="tabla">
+                  <thead><tr><th>{t('dashboard.col_sprint')}</th><th>{t('dashboard.col_dates')}</th><th>{t('dashboard.col_status')}</th></tr></thead>
+                  <tbody>
+                    {allSprints.map((sprint) => (
+                      <tr>
+                        <td class="titulo"><a href={`/w/${sys_tag}/board?sprint=${sprint.id}`} class="hover:underline underline-offset-2">{sprint.name}</a></td>
+                        <td class="text-forge-muted whitespace-nowrap">{sprint.start_date ? formatDate(sprint.start_date) : '—'} – {sprint.end_date ? formatDate(sprint.end_date) : '—'}</td>
+                        <td class="text-forge-muted">{t(`sprint.status_${sprint.status}` as any)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {milestones.length > 0 && (
+              <ul class="panel-cuerpo border-t border-forge-border pt-3 space-y-1.5">
+                {milestones.map((m) => (
+                  <li class="flex justify-between gap-3 text-sm"><span>{m.name}</span><span class="due">{formatDate(m.target_date)}</span></li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : (
+          <section class="panel">
+            <div class="panel-cabeza">
+              <h2>{t('dashboard.upcoming')}</h2>
+              <a class="enlace" href={`/w/${sys_tag}/board?vista=proximos`}>{t('view.upcoming')}</a>
+            </div>
+            {proximasEntregas.length === 0 ? (
+              <p class="panel-cuerpo text-sm text-forge-muted">{t('dashboard.no_upcoming')}</p>
+            ) : (
+              <ul class="px-2 pb-2">
+                {proximasEntregas.map((tarea) => (
+                  <li>
+                    <a href={`/w/${sys_tag}/board?issue=${tarea.id}`} class="flex items-center justify-between gap-3 rounded-[10px] px-2 py-2 hover:bg-forge-surface-2">
+                      <span class="text-sm font-semibold text-forge-text truncate">{tarea.title}</span>
+                      <span class="due shrink-0">{fecha(tarea.due_date, lang)}{tarea.due_time ? ` · ${tarea.due_time}` : ''}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         )}
       </div>
-      ) : (
-        <div class="lg:col-span-2 bg-forge-panel border border-forge-border rounded-xl p-5">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="font-bold text-forge-text">{t('dashboard.upcoming')}</h2>
-            <a href={`/w/${sys_tag}/board?vista=proximos`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors">{t('view.upcoming')}</a>
+
+      <div class="flex flex-col gap-4 min-w-0">
+        {/* La carga, solo si hay a quién comparar: en un espacio de una
+            persona es una barra sola que no dice nada. */}
+        {carga.length > 1 && (
+          <section class="panel">
+            <div class="panel-cabeza"><h2>{t('dashboard.workload')}</h2></div>
+            <ul class="panel-cuerpo">
+              {carga.map((m: any) => (
+                <li class="grid grid-cols-[8.5rem_1fr_1.75rem] gap-2.5 items-center py-1.5">
+                  <span class="flex gap-2 items-center min-w-0">
+                    <span class="avatar" style={`--c:${tonoDe(m.username)}`} aria-hidden="true">
+                      {esFotoReal(m.avatar_url) ? <img src={m.avatar_url} alt="" loading="lazy" decoding="async" /> : iniciales(m.username)}
+                    </span>
+                    <span class="text-sm truncate">{m.username}</span>
+                  </span>
+                  <span class="barra !h-3 !bg-transparent" aria-hidden="true" style={`width:${Math.max(4, (m.openCount / maxCarga) * 100)}%`}>
+                    {m.estados.filter((x: any) => x.n > 0).map((x: any) => <span style={`flex:${x.n};--c:${INFO_ESTADO[x.e as 'todo'].color}`}></span>)}
+                    {m.openCount === 0 && <span style="flex:1;--c:var(--forge-surface-2)"></span>}
+                  </span>
+                  <span class="text-sm text-forge-muted text-right">{m.openCount}</span>
+                </li>
+              ))}
+            </ul>
+            <p class="hint px-4 pb-4 -mt-2">{t('dashboard.workload_hint')}</p>
+          </section>
+        )}
+
+        <section class="panel">
+          <div class="panel-cabeza">
+            <h2>{t('dashboard.recent_activity')}</h2>
+            <a class="enlace" href="/activity">{t('activity.view_all_short')}</a>
           </div>
-          {proximasEntregas.length === 0 ? (
-            <p class="py-6 text-center text-forge-muted text-sm">{t('dashboard.no_upcoming')}</p>
+          {recentActivity.length === 0 ? (
+            <p class="panel-cuerpo text-sm text-forge-muted">{t('dashboard.no_activity')}</p>
           ) : (
-            <ul class="space-y-2">
-              {proximasEntregas.map((tarea) => (
-                <li>
-                  <a href={`/w/${sys_tag}/board?issue=${tarea.id}`} class="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-forge-bg transition-colors">
-                    <span class="text-sm text-forge-text truncate">{tarea.title}</span>
-                    <span class="text-xs font-mono text-forge-muted shrink-0">{fecha(tarea.due_date, lang)}{tarea.due_time ? ` · ${tarea.due_time}` : ''}</span>
-                  </a>
+            <ul class="panel-cuerpo">
+              {recentActivity.map((act) => (
+                <li class="py-2 border-b border-forge-border last:border-b-0 text-sm">
+                  <b>{act.username || t('activity.system')}</b> <span class="text-forge-muted">{actionLabel(act.action)}</span>
+                  <span class="hint block">{formatRelative(act.timestamp)}</span>
                 </li>
               ))}
             </ul>
           )}
-        </div>
-      )}
-
-      <!-- Workload -->
-      <div class="bg-forge-panel border border-forge-border rounded-xl p-5">
-        <h2 class="font-bold text-forge-text flex items-center gap-2 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-          {t('dashboard.workload')}
-        </h2>
-        {members.length === 0 ? (
-          <div class="text-sm text-forge-muted text-center py-6">{t('dashboard.no_members')}</div>
-        ) : (
-          <div class="space-y-3">
-            {members.map((member: any) => (
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <div class="flex items-center gap-2">
-                    <img src={member.avatar_url || '/default-avatar.svg'} class="w-5 h-5 rounded-full border border-forge-border" alt={member.username} loading="lazy" decoding="async" />
-                    <span class="text-xs font-medium text-forge-text truncate max-w-[100px]">{member.username}</span>
-                  </div>
-                  <span class="text-[10px] font-mono text-forge-muted">{member.openCount} {t('dashboard.open')}</span>
-                </div>
-                <div class="h-1.5 bg-forge-bg rounded-full overflow-hidden">
-                  <div 
-                    class={`h-full rounded-full transition-all duration-700 ${
-                      member.openCount === 0 ? 'bg-forge-muted/20' :
-                      member.openCount / maxWorkload > 0.75 ? 'bg-red-400' :
-                      member.openCount / maxWorkload > 0.5 ? 'bg-yellow-400' :
-                      'bg-forge-secondary'
-                    }`}
-                    style={`width: ${maxWorkload > 0 ? (member.openCount / maxWorkload) * 100 : 0}%`}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        </section>
       </div>
-    </div>
-
-    <!-- Bottom Row: My Tasks + Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- My Tasks -->
-      <div class="lg:col-span-2 bg-forge-panel border border-forge-border rounded-xl p-5 overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-bold text-forge-text flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            {t('dashboard.my_tasks')}
-          </h2>
-          <a href={`/w/${sys_tag}/board`} class="text-xs text-forge-muted hover:text-forge-accent-text transition-colors">
-            {t('dashboard.view_all_board')}
-          </a>
-        </div>
-        <div class="flex-1 overflow-x-auto -mx-5 px-5">
-          <TaskTable tasks={myTasks} sys_tag={sys_tag} tipos={tiposDelEspacio} />
-        </div>
-      </div>
-
-      <!-- Recent Activity -->
-      <div class="bg-forge-panel border border-forge-border rounded-xl p-5">
-        <h2 class="font-bold text-forge-text flex items-center gap-2 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          {t('dashboard.recent_activity')}
-        </h2>
-        {recentActivity.length === 0 ? (
-          <div class="text-sm text-forge-muted text-center py-6">{t('dashboard.no_activity')}</div>
-        ) : (
-          <div class="space-y-3">
-            {recentActivity.map(act => (
-              <div class="flex items-start gap-2.5">
-                <img 
-                  src={act.avatar_url || '/default-avatar.svg'} 
-                  class="w-6 h-6 rounded-full border border-forge-border bg-forge-bg shrink-0 mt-0.5" 
-                  alt={act.username}
-                loading="lazy" decoding="async" />
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs text-forge-text">
-                    <span class="font-bold">{act.username || 'System'}</span>
-                    {' '}<span class="text-forge-muted">{actionLabel(act.action)}</span>
-                  </p>
-                  <p class="text-[10px] text-forge-muted mt-0.5">{formatRelative(act.timestamp)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
     </div>
   </div>
-
 </MainLayout>

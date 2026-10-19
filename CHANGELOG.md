@@ -6,6 +6,17 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.39.0] - 2026-10-19
+
+Fase 3 del rediseño «Taller»: Panel e Inicio.
+
+### Changed
+
+- **Panel del espacio** sin tarjetas de cifras sueltas. Arriba, el estado del trabajo: del sprint activo si se usan sprints, o de la semana si no. Son tres cifras que sirven para decidir y una barra con el color de cada estado. Debajo, tus tareas, los sprints o las próximas entregas, y a la derecha la carga por persona (en colores de estado, nunca en rojo) y la actividad. La carga solo aparece si hay más de una persona en el espacio.
+- **Inicio** sin saludo ni banner. Lo pendiente para ti, agrupado por espacio, y tus espacios en una tabla con rol, personas y tareas abiertas. Con lo social encendido, una línea que dice cómo invitar a alguien, en vez de «Forge es mejor con amigos».
+- Las tablas de tareas ya no enseñan el id hexadecimal y sus cabeceras van en tipo oración.
+- Textos en tipo oración: «Abrir tablero», «Actividad reciente», «Tus tareas», «Crear espacio», «Tus espacios»… («Workspace» ya no aparece en la interfaz en español).
+
 ## [1.38.0] - 2026-10-19
 
 Fase 2 del rediseño «Taller»: el armazón.
