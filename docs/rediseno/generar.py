@@ -876,6 +876,49 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
 """
 write('portada.html', portada)
 
+# ── Escena del acceso: la fragua como parque ────────────────────────────────
+# Figuras abstractas con las formas de la marca: cuerpo en arco (como los
+# avatares), cabeza circular y trazos redondeados. Sin cara. Un tono por persona.
+VIOLET, TEAL, OCHRE, CREAM = '#A98BF0', '#3FB6C9', '#E0A23A', '#F1E9DC'
+
+
+def figure(x, y, color, rot=0, arms=(), legs=(), w=44, h=58, extra=''):
+    """Figura con la base del cuerpo en (x, y). Cuerpo en arco, cabeza encima,
+    extremidades como trazos de 12 que salen de hombros y cadera; `extra` va en
+    las mismas coordenadas locales (lo que la figura sostiene)."""
+    r = w / 2
+    body = f'M{-r} 0V{-h + r}A{r} {r} 0 0 1 {r} {-h + r}V0Z'
+    limbs = ''.join(f'<path d="{d}" stroke="{color}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
+                    for d in (*legs, *arms))
+    head = f'<circle cx="0" cy="{-h - 22}" r="18" fill="{color}"/>'
+    return f'<g transform="translate({x} {y}) rotate({rot})">{limbs}<path d="{body}" fill="{color}"/>{head}{extra}</g>'
+
+
+TICKET = ('<g transform="translate(0 -116) rotate(-5)">'
+          '<rect x="-46" y="-18" width="92" height="36" rx="9" fill="#F8F7F4"/>'
+          '<circle cx="-30" cy="0" r="6" fill="#E8590C"/>'
+          '<rect x="-18" y="-7" width="50" height="6" rx="3" fill="#CFCAC0"/>'
+          '<rect x="-18" y="3" width="32" height="6" rx="3" fill="#CFCAC0"/></g>')
+FILE = ('<g transform="translate(0 -118) rotate(4)">'
+        '<rect x="-38" y="-24" width="76" height="46" rx="8" fill="#F8F7F4"/>'
+        '<rect x="-28" y="-14" width="26" height="15" rx="4" fill="none" stroke="#7D776C" stroke-width="2.5"/>'
+        '<rect x="-28" y="7" width="48" height="5" rx="2.5" fill="#CFCAC0"/></g>')
+
+UP = ('M-15 -46L-28 -96', 'M15 -46L28 -96')
+
+PLAYGROUND = f"""<svg viewBox="0 0 640 540" preserveAspectRatio="xMidYMax meet">
+  <path d="M195 540V400A125 125 0 0 1 445 400V540Z" fill="#E8590C"/>
+  <path d="M258 540V455A62 62 0 0 1 382 455V540Z" fill="#171614"/>
+  {figure(320, 492, CREAM, w=34, h=44)}
+  <path d="M258 540V505A62 34 0 0 1 382 505V540Z" fill="#E8590C"/>
+  {figure(320, 275, VIOLET, arms=UP, legs=('M-10 -4L-14 26', 'M10 -4L16 26'), extra=TICKET)}
+  {figure(409, 312, TEAL, rot=45, arms=('M-15 -46L-34 -94', 'M15 -46L8 -100'), legs=('M6 -6L54 -6', 'M-6 -2L48 6'))}
+  <path d="M132 316Q164 212 236 196" stroke="#6E685F" stroke-width="3" stroke-dasharray="1 10" stroke-linecap="round" fill="none"/>
+  <circle cx="244" cy="194" r="13" fill="#E8590C"/>
+  {figure(108, 430, OCHRE, rot=-12, arms=('M15 -46L40 -90', 'M-15 -44L-36 -18'), legs=('M-10 -2L-30 22', 'M10 -2L32 14'))}
+  {figure(560, 476, VIOLET, rot=6, arms=UP, legs=('M-8 -2L-26 30', 'M10 -2L22 32'), extra=FILE)}
+</svg>"""
+
 # ── Acceso ──────────────────────────────────────────────────────────────────
 acceso = HEAD.format(title='Entrar · Forge OS', favicon=FAVICON) + f"""<body>
 <div class="auth">
@@ -885,14 +928,7 @@ acceso = HEAD.format(title='Entrar · Forge OS', favicon=FAVICON) + f"""<body>
       <p class="claim">Lo que tu equipo escribe, planifica y registra, <span class="claim-wide">en un archivo tuyo.</span></p>
       <ul class="auth-facts"><li>Un archivo de SQLite</li><li>Nadie más lee tu trabajo</li><li>Licencia MIT</li></ul>
     </div>
-    <div class="auth-scene" aria-hidden="true">
-      <span class="inl inl-col s1"><i></i>En curso<b>3</b></span>
-      <span class="inl inl-note s2"><i></i>Arquitectura general</span>
-      <span class="inl inl-file s3"><em>PDF</em>factura.pdf</span>
-      <span class="inl inl-timer s4"><i></i>En marcha <b>00:42:13</b></span>
-      <span class="scene-people s5"><span class="avatar avatar-lg p-avery">av</span><span class="avatar avatar-lg p-blake">bl</span><span class="avatar avatar-lg p-noor">no</span></span>
-      <div class="auth-forge"><div class="mouth"><div class="ember"></div></div></div>
-    </div>
+    <div class="auth-scene" aria-hidden="true">{PLAYGROUND}</div>
   </aside>
   <div class="auth-form">
     <form aria-labelledby="acc-t" onsubmit="return false">

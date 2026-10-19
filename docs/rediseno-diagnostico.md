@@ -433,6 +433,15 @@ esta identidad, en claro y oscuro.
     en Archivo extendido (125 %).
 - **Sombra** solo en la tarjeta arrastrada y en las capas flotantes. La
   tarjeta arrastrada se inclina 2,5°.
+- **Ilustración:** personas abstractas hechas con las formas de la marca, sin
+  cara ni rasgos: cuerpo en arco como los avatares, cabeza circular y
+  extremidades como trazos redondeados de grosor fijo.
+  - Llevan los tonos de las personas del espacio y juegan en la fragua como
+    en un parque.
+  - Se usan en el acceso y, si hace falta, en estados vacíos. No en pantallas
+    de trabajo.
+  - Se evita a propósito el estilo de ilustración corporativa de miembros
+    exagerados, otro rasgo típico de lo generado.
 - Densidad alta.
 
 Esta forma sustituye a una primera versión de esquinas de 2 px que resultaba

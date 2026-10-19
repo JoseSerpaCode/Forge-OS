@@ -1157,3 +1157,7 @@ kbd, .kbd {
 /* La columna de ejemplo de «Qué hace» tiene el ancho de una columna real:
    estirada al panel, el arco se achata. */
 .feature-demo > .column { max-width: 420px; margin-inline: auto; }
+
+/* Escena del acceso: SVG apoyado en el borde inferior. */
+.auth-scene { margin-inline: -48px; }
+.auth-scene svg { position: absolute; left: 50%; bottom: 0; translate: -50% 0; width: min(100%, 720px); height: auto; max-height: 100%; }
