@@ -3,6 +3,7 @@ import EventEmitter from 'events';
 import dns from 'dns/promises';
 import { Agent, fetch as undiciFetch } from 'undici';
 import db from './db';
+import { funciones } from './funcionesEspacio';
 import crypto from 'crypto';
 
 function isBlockedIP(ip: string): boolean {
@@ -49,6 +50,10 @@ export const TRIGGER_ISSUE_STATUS_CHANGED = 'issue_status_changed';
 export const ACTION_WEBHOOK = 'webhook';
 
 ForgeEvents.on('issue.status_changed', async ({ issueId, workspaceId, newStatus, userId }) => {
+  // Con la función apagada las reglas se conservan pero no se ejecutan:
+  // apagar no puede seguir mandando webhooks que ya no se ven en Ajustes.
+  if (!funciones(workspaceId).automatizaciones) return;
+
   // 1. Buscar reglas activas en el workspace
   const rules = db
     .prepare('SELECT * FROM automations WHERE workspace_id = ? AND trigger_type = ? AND is_active = 1')

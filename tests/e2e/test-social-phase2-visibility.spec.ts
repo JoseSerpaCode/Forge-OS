@@ -24,8 +24,8 @@ test.describe('Social Phase 2 - Profile Visibility & Anti-Enumeration', () => {
         target = { id: randomUUID(), username: 'tgt_' + randomUUID().substring(0, 8) };
         thirdUser = { id: randomUUID(), username: 'third_' + randomUUID().substring(0, 8) };
         
-        db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, '123')").run(visitor.id, visitor.username);
-        db.prepare("INSERT INTO users (id, username, password_hash) VALUES (?, ?, '123')").run(target.id, target.username);
+        db.prepare("INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, '123', 1)").run(visitor.id, visitor.username);
+        db.prepare("INSERT INTO users (id, username, password_hash, social_enabled) VALUES (?, ?, '123', 1)").run(target.id, target.username);
 
         const sessionIdVisitor = randomUUID();
         const expires = new Date(Date.now() + 86400000).toISOString();

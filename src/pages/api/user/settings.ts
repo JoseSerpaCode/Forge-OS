@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
       // Account settings
       username, current_password, new_password, theme_preference,
       // Profile fields
-      avatar_url, banner_url, bio, pronouns, public_email, is_public,
+      avatar_url, banner_url, bio, pronouns, public_email, is_public, social_enabled,
       // Notification preferences
       notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system,
     } = data;
@@ -163,6 +163,13 @@ export const POST: APIRoute = async ({ request, locals, cookies }) => {
     if (is_public !== undefined) {
       updateFields.push('is_public = ?');
       values.push(user.is_guest === 1 ? 0 : (is_public ? 1 : 0));
+    }
+
+    // ── Amigos y solicitudes ────────────────────────────────────────────────
+    // Un invitado no tiene vida social: se queda en 0 aunque lo pida.
+    if (social_enabled !== undefined) {
+      updateFields.push('social_enabled = ?');
+      values.push(user.is_guest === 1 ? 0 : (social_enabled ? 1 : 0));
     }
 
     // ── Theme ───────────────────────────────────────────────────────────────

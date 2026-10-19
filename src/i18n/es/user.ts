@@ -162,4 +162,8 @@ export const es = {
   'cal.last_read': 'Leído por última vez: {cuando}',
   'cal.never_read': 'Aún no se ha leído',
   'cal.error': 'No se ha podido crear el enlace.',
+  'friends.off': 'Los amigos y las solicitudes están apagados en tu cuenta. Puedes encenderlos en Ajustes, junto al perfil público.',
+  'friends.off_cta': 'Ir a Ajustes',
+  'user.settings.social': 'Amigos y solicitudes',
+  'user.settings.social_note': 'Apagado, no ves «Personas» ni el banner del Hub, y nadie puede mandarte solicitudes. Tu perfil se puede seguir viendo.',
 } as const;

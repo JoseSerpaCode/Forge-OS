@@ -10,6 +10,12 @@ vi.mock('../src/lib/db', () => ({
   }
 }));
 
+// El motor no se ejecuta con la función apagada (migración 51); aquí se mide
+// la protección SSRF, así que se da por encendida.
+vi.mock('../src/lib/funcionesEspacio', () => ({
+  funciones: () => ({ sprints: false, tiempo: false, puntos: false, automatizaciones: true, auditoria: false }),
+}));
+
 vi.mock('dns/promises', () => ({
   default: {
     lookup: vi.fn()

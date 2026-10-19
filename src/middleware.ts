@@ -92,7 +92,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const sessionData = db.prepare(`
     SELECT u.id, u.username, u.avatar_url, u.is_sysadmin, u.is_guest,
            u.theme_preference, u.last_workspace_id, u.last_page_id,
-           u.bio, u.pronouns, u.public_email, u.github_id, u.google_id, u.timezone,
+           u.bio, u.pronouns, u.public_email, u.github_id, u.google_id, u.timezone, u.social_enabled,
            s.expires_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id

@@ -14,7 +14,7 @@ const memberships = db.prepare(`
 `).all(user.id) as any[];
 
 const tienePassword = (h: unknown) => typeof h === 'string' && h.startsWith('$2');
-const userProfile = db.prepare('SELECT bio, banner_url, pronouns, public_email, email, is_public, github_id, google_id, password_hash, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
+const userProfile = db.prepare('SELECT bio, banner_url, pronouns, public_email, email, is_public, social_enabled, github_id, google_id, password_hash, notif_mute_all, notif_mute_assign, notif_mute_mention, notif_mute_sprint, notif_mute_system FROM users WHERE id = ?').get(user.id) as any || {};
 
 // Una cuenta creada por un proveedor guarda la cadena `oauth` como hash, que no
 // es bcrypt válido. A quien está en esa situación no se le puede pedir «la
@@ -202,6 +202,23 @@ const oauthNotice =
                   <div class="w-11 h-6 bg-forge-bg peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-forge-muted after:border-forge-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-forge-primary peer-checked:after:bg-white border border-forge-border/60"></div>
                 </label>
               </div>
+
+              {/* Amigos y solicitudes. Apagado esconde «Personas», el banner del
+                  Hub y los botones de los perfiles, y nadie puede mandarte
+                  solicitudes. Mirar perfiles sigue funcionando. */}
+              {!user.is_guest && (
+                <div class="pt-4 border-t border-forge-border/40 flex items-center justify-between gap-6">
+                  <div>
+                    <h4 id="profile-social-nombre" class="text-sm font-semibold text-forge-text">{t('user.settings.social')}</h4>
+                    <p id="profile-social-desc" class="text-xs text-forge-muted">{t('user.settings.social_note')}</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" id="profile-social" class="sr-only peer" checked={userProfile.social_enabled === 1}
+                      aria-labelledby="profile-social-nombre" aria-describedby="profile-social-desc" />
+                    <div class="w-11 h-6 bg-forge-bg peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-forge-muted after:border-forge-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-forge-primary peer-checked:after:bg-white border border-forge-border/60 peer-focus-visible:ring-2 peer-focus-visible:ring-forge-secondary"></div>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
           <!-- Card Footer -->
@@ -854,6 +871,9 @@ const oauthNotice =
         public_email: document.getElementById('profile-email').value,
         is_public: document.getElementById('profile-is-public').checked,
       };
+      const social = document.getElementById('profile-social');
+      if (social) payload.social_enabled = social.checked;
+      const socialCambia = social && social.checked !== social.defaultChecked;
 
       // El avatar solo viaja si se ha elegido uno nuevo.
       //
@@ -865,7 +885,8 @@ const oauthNotice =
       // momento. La biografía, los pronombres y el correo no se guardaban nunca.
       if (newAvatarUrl) payload.avatar_url = newAvatarUrl;
 
-      await handleSave(btnSaveProfile, '/api/user/settings', payload, msgGuardado);
+      // Encender o apagar lo social cambia la navegación: se recarga para verla.
+      await handleSave(btnSaveProfile, '/api/user/settings', payload, msgGuardado, socialCambia ? () => window.location.reload() : undefined);
     });
 
     document.getElementById('btn-logout-all')?.addEventListener('click', () => {

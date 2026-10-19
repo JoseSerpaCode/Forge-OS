@@ -85,15 +85,15 @@ afterAll(() => {
 describe('migración 40: funciones del espacio', () => {
   it('enciende solo lo que cada espacio ya usaba', () => {
     const f = (id: string) => funcionesMod.funciones(id);
-    expect(f('w-sprints')).toEqual({ sprints: true, tiempo: false, puntos: false });
-    expect(f('w-horas')).toEqual({ sprints: false, tiempo: true, puntos: false });
-    expect(f('w-puntos')).toEqual({ sprints: false, tiempo: false, puntos: true });
-    expect(f('w-vacio')).toEqual({ sprints: false, tiempo: false, puntos: false });
+    expect(f('w-sprints')).toMatchObject({ sprints: true, tiempo: false, puntos: false });
+    expect(f('w-horas')).toMatchObject({ sprints: false, tiempo: true, puntos: false });
+    expect(f('w-puntos')).toMatchObject({ sprints: false, tiempo: false, puntos: true });
+    expect(f('w-vacio')).toMatchObject({ sprints: false, tiempo: false, puntos: false });
   });
 
   it('un espacio nuevo nace con todo apagado', () => {
     db.exec("INSERT INTO workspaces (id, name, sys_tag, created_by) VALUES ('w-nuevo','N','w-nuevo','u-owner')");
-    expect(funcionesMod.funciones('w-nuevo')).toEqual({ sprints: false, tiempo: false, puntos: false });
+    expect(funcionesMod.funciones('w-nuevo')).toEqual({ sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false });
   });
 
   it('la CHECK rechaza valores que no son 0 o 1', () => {

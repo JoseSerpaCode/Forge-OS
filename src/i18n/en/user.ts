@@ -162,4 +162,8 @@ export const en = {
   'cal.last_read': 'Last read: {cuando}',
   'cal.never_read': 'Not read yet',
   'cal.error': 'The link could not be created.',
+  'friends.off': 'Friends and requests are turned off for your account. You can turn them on in Settings, next to your public profile.',
+  'friends.off_cta': 'Go to Settings',
+  'user.settings.social': 'Friends and requests',
+  'user.settings.social_note': 'While off, People and the Hub banner are hidden and nobody can send you requests. Your profile can still be viewed.',
 } as const;

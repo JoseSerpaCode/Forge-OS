@@ -8,7 +8,13 @@ test('A1 bug: clicking New Rule button', async ({ page }) => {
   await page.click('button[type="submit"]');
   await page.waitForURL('**/');
 
-  // Create a workspace first or go to an existing one
+  // Las automatizaciones nacen apagadas (migración 51): sin encenderlas no
+  // hay botón «Nueva regla» que pulsar.
+  const origin = new URL(page.url()).origin;
+  await page.request.patch('/api/w/test-workspace/features', {
+    data: { automatizaciones: true },
+    headers: { Origin: origin },
+  });
   await page.goto('/w/test-workspace/settings');
 
   // Listen to console errors

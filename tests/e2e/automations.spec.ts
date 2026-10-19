@@ -34,6 +34,12 @@ async function entrarConEspacioPropio(page: any) {
   });
   expect(res.ok(), await res.text()).toBeTruthy();
   const body = await res.json();
+  // Las automatizaciones nacen apagadas en un espacio nuevo (migración 51).
+  const enc = await page.request.patch(`/api/w/${tag}/features`, {
+    data: { automatizaciones: true },
+    headers: { Origin: origin },
+  });
+  expect(enc.ok(), await enc.text()).toBeTruthy();
   return { origin, tag, wsId: body.id ?? body.workspace_id };
 }
 

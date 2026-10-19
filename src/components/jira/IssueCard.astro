@@ -31,7 +31,7 @@ interface Props {
   carril?: string | null;
 }
 
-const { issue, canEdit = false, tipo = null, funciones = { sprints: false, tiempo: false, puntos: false }, carril = null } = Astro.props;
+const { issue, canEdit = false, tipo = null, funciones = { sprints: false, tiempo: false, puntos: false, automatizaciones: false, auditoria: false }, carril = null } = Astro.props;
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 

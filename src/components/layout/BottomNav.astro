@@ -38,11 +38,14 @@ if (!sysTag && user?.last_workspace_id) {
 const ruta = Astro.url.pathname;
 const pendientes = solicitudesPendientes(user?.id ?? '', !!user?.is_guest);
 
-let rol = user?.is_sysadmin === 1 ? 'sysadmin' : 'viewer';
+// Fuera de un espacio no hay rol (ver Sidebar.astro).
+let rol: string | null = user?.is_sysadmin === 1 ? 'sysadmin' : null;
 if (workspaceId && user?.is_sysadmin !== 1) {
   rol = rolEnEspacio(workspaceId, user?.id ?? '') ?? rol;
 }
 const esPropietario = rol === 'owner' || rol === 'sysadmin';
+// Amigos y solicitudes, solo si la cuenta los tiene encendidos (migración 52).
+const socialOn = !user?.is_guest && user?.social_enabled === 1;
 
 /**
  * Fuera de un espacio la barra no se esconde: cambia de destinos.
@@ -76,8 +79,8 @@ const pestanas = enEspacio
       { href: '/', etiqueta: t('nav.hub'), icono: 'panel', activa: ruta === '/' },
       { href: '/activity', etiqueta: t('sidebar.activity'), icono: 'tablero',
         activa: ruta.startsWith('/activity') },
-      { href: '/people', etiqueta: t('friends.title'), icono: 'paginas',
-        activa: ruta.startsWith('/people') },
+      ...(socialOn ? [{ href: '/people', etiqueta: t('friends.title'), icono: 'paginas',
+        activa: ruta.startsWith('/people') }] : []),
     ];
 ---
 
@@ -155,6 +158,7 @@ const pestanas = enEspacio
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           <span class="flex-1">{t('user.menu.profile')}</span>
         </a>
+        {socialOn && (
         <a href="/people" class="fila-hoja">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           <span class="flex-1">{t('friends.title')}</span>
@@ -162,6 +166,7 @@ const pestanas = enEspacio
             <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-xs font-black flex items-center justify-center">{pendientes > 9 ? '9+' : pendientes}</span>
           )}
         </a>
+        )}
       </>
     )}
 

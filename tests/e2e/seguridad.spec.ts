@@ -42,10 +42,19 @@ test.describe('permisos por rol', () => {
       como[u] = await sesionDe(browser, u);
     }
 
+    // Un ticket solo para esta prueba. Compartía `i-auditoria` con las demás
+    // del fichero, que corren en paralelo y lo modifican, y de vez en cuando
+    // fallaba sin que hubiera nada mal en los permisos.
+    const ticket = `i-roles-${Math.random().toString(36).slice(2, 8)}`;
+    const db = getTestDb();
+    db.prepare(`INSERT INTO issues (id, workspace_id, title, type, reporter_id, status)
+                VALUES (?, 'ws-auditoria', 'Ticket de roles', 'task', 'aud-owner', 'todo')`).run(ticket);
+    db.close();
+
     // Mover un ticket: PATCH y con `position`. Escrito de otra forma devuelve
     // 404 para todo el mundo y la prueba deja de medir permisos.
     const mover = (u: string) =>
-      como[u].fetch('/api/issues/i-auditoria/move', {
+      como[u].fetch(`/api/issues/${ticket}/move`, {
         method: 'PATCH',
         data: { status: 'done', position: 1 },
         headers: ORIGIN_HEADER,

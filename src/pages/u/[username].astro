@@ -12,7 +12,7 @@ const lang = Astro.cookies.get('lang')?.value || defaultLang;
 const t = useTranslations(lang as any);
 
 // Get user profile
-const profile = db.prepare('SELECT id, username, avatar_url, banner_url, bio, created_at, is_guest FROM users WHERE username = ?').get(username) as any;
+const profile = db.prepare('SELECT id, username, avatar_url, banner_url, bio, created_at, is_guest, social_enabled FROM users WHERE username = ?').get(username) as any;
 
 let isBlockedByProfile = false;
 let isProfileBlockedByMe = false;

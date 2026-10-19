@@ -22,9 +22,20 @@ if (user.is_guest) return Astro.redirect('/register');
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+// Con lo social apagado (migración 52) esta página explica cómo encenderlo
+// en vez de enseñar una lista de amigos que no se puede usar.
+const socialOn = user.social_enabled === 1;
 ---
 
 <MainLayout title={t('friends.title')}>
+  {!socialOn ? (
+    <div class="max-w-xl mx-auto mt-10 p-6 bg-forge-panel border border-forge-border rounded-lg">
+      <h1 class="text-xl font-bold text-forge-text mb-2">{t('friends.title')}</h1>
+      <p class="text-sm text-forge-muted mb-4">{t('friends.off')}</p>
+      <a href="/settings" class="inline-block bg-forge-primary text-forge-on-accent font-bold px-4 py-2 rounded text-sm">{t('friends.off_cta')}</a>
+    </div>
+  ) : (
+  <>
   <div
     id="people-page"
     class="max-w-3xl mx-auto mt-4 sm:mt-8 p-0 sm:p-6 pb-20"
@@ -97,6 +108,8 @@ const t = useTranslations(lang);
       <p class="text-xs text-forge-muted mt-1.5">{t('friends.empty_hint_search')}</p>
     </div>
   </div>
+  </>
+  )}
 </MainLayout>
 
 <script is:inline define:vars={{ etiquetas: {
