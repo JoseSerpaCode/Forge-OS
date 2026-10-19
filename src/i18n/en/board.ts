@@ -11,6 +11,8 @@
  */
 
 export const en = {
+  'card.timer_running': 'Running',
+  'card.points_short': 'pts',
   'card.due': 'Due:',
   'board.backlog': 'Backlog',
   'board.sprint_start': 'Start',
@@ -123,6 +125,7 @@ export const en = {
   'board.sort_error': 'The board could not be sorted.',
   'board.group_label': 'By label',
   'board.no_label': 'No label',
+  'board.drop_here': 'Nothing here. Drag a card in.',
   'board.show_more': 'Show more ({n})',
   'board.loading': 'Loading…',
   'card.complete': 'Complete “{titulo}”',

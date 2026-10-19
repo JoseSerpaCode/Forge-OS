@@ -56,8 +56,10 @@ export function deFila(fila: {
 
 /** «Juan Camilo Luna» → «JC». Para la tarjeta, donde no hay foto. */
 export function iniciales(nombre: string): string {
+  // «Juan Camilo» → «JC»; un nombre de usuario de una palabra («blake») da
+  // sus dos primeras letras, no una sola.
   const partes = nombre.trim().split(/\s+/).filter(Boolean);
-  const letras = partes.slice(0, 2).map((p) => [...p][0] ?? '');
+  const letras = partes.length > 1 ? partes.slice(0, 2).map((p) => [...p][0] ?? '') : [...(partes[0] ?? '')].slice(0, 2);
   return letras.join('').toLocaleUpperCase() || '?';
 }
 

@@ -302,7 +302,8 @@ test.describe('tipo de tarea', () => {
     await expect(badge).toHaveAttribute('data-type-key', 'bug');
     // El nombre traducido, no la clave cruda.
     await expect(badge).not.toHaveText(/^\s*bug\s*$/);
-    const franja = await tarjeta.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--franja'));
+    // El color del tipo va en la muesca de la tarjeta (`--tipo`), no en una franja.
+    const franja = await tarjeta.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--tipo'));
     const db = getTestDb();
     const color = (db.prepare("SELECT color FROM issue_types WHERE workspace_id = ? AND key = 'bug'").get(ws.id) as any).color;
     db.close();

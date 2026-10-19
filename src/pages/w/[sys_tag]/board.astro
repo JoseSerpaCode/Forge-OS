@@ -195,6 +195,9 @@ if (funcs.tiempo) {
 const metaDescription = `${workspace.name} board on Forge OS. Track issues, sprints, and tasks efficiently.`;
 const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
 
+
+// El sprint que se mira, para la línea de datos bajo el título.
+const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) => sp.id === activeSprintId) ?? null) : null;
 ---
 
 <MainLayout hideFooter={true}
@@ -204,70 +207,52 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
 >
   <div class="h-full flex flex-col pt-4 overflow-hidden">
     {/*
-      La barra se amontonaba.
-      El título ocupaba dos líneas con un nombre de espacio largo, el bloque de
-      tiempo quedaba estrujado a 14rem con el texto partido a mitad de frase, y
-      los seis controles caían en dos filas pegadas. Ahora el título se recorta
-      —el nombre completo está en la barra lateral y en la pestaña—, el bloque
-      de tiempo tiene su ancho y los controles respiran al envolverse.
+      Cabecera del tablero (fase 1 del rediseño, docs/rediseno/tablero.html).
+
+      El título en Archivo estrecho, entero —se parte en líneas, no se recorta—
+      y debajo una línea de datos: el sprint que se mira y las horas, con su
+      barra. En móvil el título se esconde: la barra superior ya dice dónde
+      estás y aquí cuesta una fila entera.
+
+      Debajo, la barra de herramientas en dos grupos con todos los controles a
+      la misma altura: a la izquierda lo que cambia **qué** se ve (vista,
+      sprint, etiqueta, filtros, carriles); a la derecha lo que **hace** algo
+      (ordenar, acciones del sprint, nueva tarea).
     */}
-    {/* En móvil el `<h1>` no se pinta: la barra superior ya dice «Captura /
-        Tablero» dos centímetros más arriba, y repetirlo cuesta una fila entera
-        de las pocas que hay antes de la primera tarjeta. */}
-    {/* El título se lee entero: se parte en líneas en vez de recortarse.
-        Recortado a 15rem salía «Atlas Platform Boa…», y con los botones nuevos
-        de la cabecera el hueco era aún menor. Hasta `xl` va encima de los
-        controles; a partir de ahí, al lado, ocupando lo que dejen. */}
-    <header class="mb-4 flex flex-col xl:flex-row justify-between items-start gap-x-4 gap-y-3">
-      <div class="flex items-center gap-4 min-w-0 w-full xl:w-auto xl:flex-1">
-        <h1 class="hidden sm:block min-w-0 text-xl sm:text-2xl font-bold text-forge-text leading-tight [overflow-wrap:anywhere]">{workspace.name} · {t('nav.board')}</h1>
-        {/*
-          La etiqueta encima y la cifra debajo, no una al lado de la otra.
-          En horizontal, «0h registradas — sin estimar» no cabía junto a
-          «TIEMPO» y se partía a mitad de frase, encima del rótulo.
-        */}
-        {funcs.tiempo && (
-          <div class="hidden lg:flex flex-col w-[11rem] shrink-0 bg-forge-bg/80 border border-forge-border rounded-lg px-3 py-2 shadow-sm" id="sprint-time-container" data-t-no-estimate={t('dashboard.logged_no_estimate')} data-logged={totalLogged} data-estimated={totalEstimated}>
-            <span class="text-[9px] font-mono text-forge-muted font-bold tracking-widest uppercase leading-none">{t('dashboard.time') || 'Time'}</span>
-            <span class="text-[11px] font-mono font-bold text-forge-accent-text leading-tight mt-1 mb-1.5 truncate" id="sprint-time-text">
-              {totalEstimated > 0
-                ? `${totalLogged}h / ${totalEstimated}h`
-                : `${totalLogged}h ${t('dashboard.logged') || 'logged'}`}
-            </span>
-            <div class="h-1.5 w-full bg-forge-panel rounded-full overflow-hidden border border-forge-border">
-              <div id="sprint-time-bar" class={`h-full transition-all ${totalEstimated > 0 && (totalLogged / totalEstimated) > 1 ? 'bg-forge-error' : 'bg-forge-secondary'}`} style={`width: ${totalEstimated > 0 ? Math.min((totalLogged / totalEstimated) * 100, 100) : 0}%`}></div>
-            </div>
+    <header class="page-head !mb-3">
+      <div class="min-w-0 max-sm:hidden">
+        <h1 class="page-title">{workspace.name}</h1>
+        {(sprintActual || funcs.tiempo) && (
+          <div class="page-meta">
+            {sprintActual && <span>{sprintActual.name}{sprintActual.status === 'active' ? ` · ${t('board.sprint_active_suffix').replace(/[()]/g, '').trim()}` : ''}</span>}
+            {funcs.tiempo && (
+              <span class="inline-flex items-center gap-2.5" id="sprint-time-container" data-t-no-estimate={t('dashboard.logged_no_estimate')} data-logged={totalLogged} data-estimated={totalEstimated}>
+                <span class="barra w-28" aria-hidden="true">
+                  <span id="sprint-time-bar" class:list={['block h-full rounded-full', totalEstimated > 0 && totalLogged / totalEstimated > 1 ? 'bg-forge-error' : 'bg-forge-text']} style={`width: ${totalEstimated > 0 ? Math.min((totalLogged / totalEstimated) * 100, 100) : 0}%`}></span>
+                </span>
+                <span id="sprint-time-text">
+                  {totalEstimated > 0
+                    ? `${totalLogged}h / ${totalEstimated}h`
+                    : t('dashboard.logged_no_estimate').replace('{h}', String(totalLogged))}
+                </span>
+              </span>
+            )}
           </div>
         )}
       </div>
+    </header>
 
-      {/* El `z-50` del botón naranja era para que su tooltip saliera por encima
-          de las tarjetas, pero lo ponía también por encima del desplegable de
-          notificaciones —que está en `z-50` y se pinta antes—: al abrir la
-          campana, «+ Nuevo ticket» aparecía flotando encima del panel. `z-10`
-          basta para el tooltip y deja pasar lo que va por delante.
-
-        En móvil, rejilla de dos columnas; a partir de `sm`, la fila de siempre.
-
-        Envolviendo a la brava, los cuatro controles caían en tres filas
-        desiguales —dos arriba, uno solo debajo, el botón naranja descolgado— y
-        entre el título y la primera tarjeta se iban 160 px de pantalla. Una
-        rejilla los deja en dos filas parejas y ocupa la mitad.
-      */}
-      <div class="grid grid-cols-2 gap-2 w-full items-center sm:flex sm:flex-wrap sm:gap-x-2 sm:gap-y-2.5 xl:w-auto xl:max-w-[70%] xl:justify-end">
+    <div class="barra-herramientas max-sm:!justify-start">
+      <div class="grupo-herramientas max-sm:contents">
         {/* La vista: enlaces con `aria-current`, no pestañas que fingen serlo. */}
-        <nav aria-label={t('view.switcher')} class="col-span-2 sm:col-span-1 flex rounded-md border border-forge-border overflow-hidden text-sm">
+        <nav aria-label={t('view.switcher')} class="segmentado max-sm:w-full max-sm:[&>a]:flex-1">
           {([['tablero', t('view.board')], ['hoy', t('view.today')], ['proximos', t('view.upcoming')]] as const).map(([v, texto]) => (
-            <a href={enlaceVista(v)} aria-current={vista === v ? 'page' : undefined}
-              class:list={['flex-1 sm:flex-none text-center px-3 py-1.5 transition-colors',
-                vista === v ? 'bg-forge-primary text-forge-on-accent font-semibold' : 'bg-forge-bg text-forge-text hover:bg-forge-panel']}>
-              {texto}
-            </a>
+            <a href={enlaceVista(v)} aria-current={vista === v ? 'page' : undefined}>{texto}</a>
           ))}
         </nav>
 
         {vista === 'tablero' && funcs.sprints && (
-          <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="w-full sm:w-auto min-w-0 bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
+          <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="campo campo-inline max-w-[16rem]">
             <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
             {sprints.map(s => (
               <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? t('board.sprint_active_suffix') : s.status === 'completed' ? t('board.sprint_completed_suffix') : ''}</option>
@@ -275,24 +260,86 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
           </select>
         )}
 
-        {/*
-          Ordenar es una **acción**, no una vista.
+        {/* Filtro por etiqueta. Solo aparece si hay etiquetas: un desplegable
+            con una única opción vacía es ruido. */}
+        {etiquetasDelEspacio.length > 0 && (
+          <select id="label-filter" aria-label={t('labels.filter')} class="campo campo-inline max-w-[14rem]">
+            <option value="">{t('labels.filter_all')}</option>
+            {etiquetasDelEspacio.map((e: any) => (
+              <option value={e.id} selected={etiquetaFiltro?.id === e.id}>{e.name}</option>
+            ))}
+          </select>
+        )}
 
-          Antes era un desplegable que cambiaba el `ORDER BY` sin tocar
-          `position`; como lo que se veía no era el orden guardado, arrastrar no
-          podía funcionar y el tablero pedía volver al orden manual. Ahora
-          ordenar reescribe el orden de cada columna una vez —con «Deshacer»— y
-          se puede seguir arrastrando a partir de ahí. «Hecho» no se toca: va
-          siempre por cuándo se terminó.
+        {/* Más filtros y guardar la vista, en un desplegable. */}
+        <details class="relative" id="filtros-tablero" data-sys-tag={sys_tag}
+          data-t-saved={t('views.saved')} data-t-error={t('views.error')}>
+          <summary class="btn btn-secondary list-none [&::-webkit-details-marker]:hidden" aria-pressed={(filtroPrioridad || filtroVence || responsablePedido) ? 'true' : 'false'}>
+            {t('filters.button')}
+          </summary>
+          <div class="menu menu-sprint absolute sm:left-0 top-full mt-1.5 w-72 z-50 !p-3 space-y-3">
+            <label class="field">
+              <span class="field-label">{t('priority.label')}</span>
+              <select id="filtro-prioridad" data-param="prioridad" class="filtro-param campo">
+                <option value="">{t('filters.priority_any')}</option>
+                {OPCIONES_PRIORIDAD.map((p) => (
+                  <option value={p.valor} selected={filtroPrioridad === p.valor}>{t(`priority.${p.nivel}`)}</option>
+                ))}
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">{t('filters.due')}</span>
+              <select id="filtro-vence" data-param="vence" class="filtro-param campo">
+                <option value="">{t('filters.due_any')}</option>
+                {[3, 7, 14, 30].map((n) => <option value={n} selected={filtroVence === n}>{t('filters.due_days').replace('{n}', String(n))}</option>)}
+              </select>
+            </label>
+            <label class="field">
+              <span class="field-label">{t('filters.assignee')}</span>
+              <select id="filtro-responsable" data-param="responsable" class="filtro-param campo">
+                <option value="">{t('filters.assignee_any')}</option>
+                <option value="yo" selected={responsablePedido === 'yo'}>{t('filters.me')}</option>
+                {workspaceMembers.filter((m) => m.id !== user.id).map((m) => <option value={m.id} selected={responsablePedido === m.id}>{m.username}</option>)}
+                {contactos.length > 0 && (
+                  <optgroup label={t('contacts.title')}>
+                    {contactos.map((c) => <option value={valorDeContacto(c.id)} selected={responsablePedido === valorDeContacto(c.id)}>{c.name}</option>)}
+                  </optgroup>
+                )}
+              </select>
+            </label>
+            <div class="border-t border-forge-border pt-3 field">
+              <label class="field-label" for="vista-nombre">{t('views.save_label')}</label>
+              <div class="flex gap-1.5">
+                <input id="vista-nombre" type="text" maxlength="40" class="campo flex-1 min-w-0" />
+                <button type="button" id="btn-guardar-vista" class="btn btn-primary shrink-0">{t('views.save')}</button>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        {/* Un carril por etiqueta: con una etiqueta por asignatura, cada
+            asignatura con sus cuatro columnas. */}
+        {vista === 'tablero' && etiquetasDelEspacio.length > 0 && (
+          <button type="button" id="btn-group-label" aria-pressed={agrupar ? 'true' : 'false'} class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg>
+            {t('board.group_label')}
+          </button>
+        )}
+      </div>
+
+      <div class="grupo-herramientas max-sm:contents">
+        {/*
+          Ordenar es una **acción**, no una vista: reescribe el orden de cada
+          columna una vez —con «Deshacer»— y se puede seguir arrastrando a
+          partir de ahí. «Hecho» no se toca: va siempre por cuándo se terminó.
         */}
         {vista === 'tablero' && puedeEditar && (
           <div class="relative" id="sort-menu-root">
-            <button id="btn-sort-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sort-menu"
-              class="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-forge-bg border border-forge-border rounded-md px-3 py-1.5 text-sm text-forge-text hover:border-forge-secondary transition-colors">
+            <button id="btn-sort-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sort-menu" class="btn btn-secondary">
               {t('board.sort_action')}
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
-            <div id="sort-menu" role="menu" class="hidden menu-sprint absolute sm:left-0 top-full mt-1 min-w-[13rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1"
+            <div id="sort-menu" role="menu" class="hidden menu menu-sprint absolute sm:right-0 top-full mt-1.5 min-w-[13rem] z-50"
               data-t-done={t('board.sorted_by')}
               data-t-undo={t('board.undo')}
               data-t-undone={t('board.sort_undone')}
@@ -304,125 +351,33 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
                 ['created', t('board.sort_created')],
                 ...(funcs.puntos ? [['points', t('board.sort_points')]] : []),
               ].map(([clave, texto]) => (
-                <button type="button" role="menuitem" class="sprint-menu-item orden-item" data-orden={clave}>{texto}</button>
+                <button type="button" role="menuitem" class="sprint-menu-item menu-item orden-item" data-orden={clave}>{texto}</button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Un carril por etiqueta: con una etiqueta por asignatura, cada
-            asignatura con sus cuatro columnas. */}
-        {vista === 'tablero' && etiquetasDelEspacio.length > 0 && (
-          <button type="button" id="btn-group-label" aria-pressed={agrupar ? 'true' : 'false'}
-            class:list={['w-full sm:w-auto flex items-center justify-center gap-1.5 border rounded-md px-3 py-1.5 text-sm transition-colors',
-              agrupar ? 'bg-forge-secondary/10 border-forge-secondary text-forge-text' : 'bg-forge-bg border-forge-border text-forge-text hover:border-forge-secondary']}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg>
-            {t('board.group_label')}
-          </button>
-        )}
-
-        {/* Más filtros y guardar la vista, en un desplegable: la barra ya no
-            da para más controles sueltos. */}
-        <details class="relative" id="filtros-tablero" data-sys-tag={sys_tag}
-          data-t-saved={t('views.saved')} data-t-error={t('views.error')}>
-          <summary class:list={['list-none cursor-pointer flex items-center justify-center gap-1.5 border rounded-md px-3 py-1.5 text-sm transition-colors',
-            (filtroPrioridad || filtroVence || responsablePedido) ? 'bg-forge-secondary/10 border-forge-secondary text-forge-text' : 'bg-forge-bg border-forge-border text-forge-text hover:border-forge-secondary']}>
-            {t('filters.button')}
-          </summary>
-          <div class="menu-sprint absolute sm:right-0 top-full mt-1 w-64 bg-forge-panel border border-forge-border rounded-xl shadow-xl z-50 p-3 space-y-3">
-            <div>
-              <label class="block text-xs font-semibold text-forge-muted mb-1" for="filtro-prioridad">{t('priority.label')}</label>
-              <select id="filtro-prioridad" data-param="prioridad" class="filtro-param w-full bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text">
-                <option value="">{t('filters.priority_any')}</option>
-                {OPCIONES_PRIORIDAD.map((p) => (
-                  <option value={p.valor} selected={filtroPrioridad === p.valor}>{t(`priority.${p.nivel}`)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-forge-muted mb-1" for="filtro-vence">{t('filters.due')}</label>
-              <select id="filtro-vence" data-param="vence" class="filtro-param w-full bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text">
-                <option value="">{t('filters.due_any')}</option>
-                {[3, 7, 14, 30].map((n) => <option value={n} selected={filtroVence === n}>{t('filters.due_days').replace('{n}', String(n))}</option>)}
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-forge-muted mb-1" for="filtro-responsable">{t('filters.assignee')}</label>
-              <select id="filtro-responsable" data-param="responsable" class="filtro-param w-full bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text">
-                <option value="">{t('filters.assignee_any')}</option>
-                <option value="yo" selected={responsablePedido === 'yo'}>{t('filters.me')}</option>
-                {workspaceMembers.filter((m) => m.id !== user.id).map((m) => <option value={m.id} selected={responsablePedido === m.id}>{m.username}</option>)}
-                {contactos.length > 0 && (
-                  <optgroup label={t('contacts.title')}>
-                    {contactos.map((c) => <option value={valorDeContacto(c.id)} selected={responsablePedido === valorDeContacto(c.id)}>{c.name}</option>)}
-                  </optgroup>
-                )}
-              </select>
-            </div>
-            <div class="border-t border-forge-border/60 pt-3">
-              <label class="block text-xs font-semibold text-forge-muted mb-1" for="vista-nombre">{t('views.save_label')}</label>
-              <div class="flex gap-1.5">
-                <input id="vista-nombre" type="text" maxlength="40" class="flex-1 min-w-0 bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text" />
-                <button type="button" id="btn-guardar-vista" class="shrink-0 bg-forge-primary text-forge-on-accent font-bold rounded-lg px-2.5 text-xs">{t('views.save')}</button>
-              </div>
-            </div>
-          </div>
-        </details>
-
-        {/* Filtro por etiqueta. Solo aparece si hay etiquetas: un desplegable
-            con una única opción vacía es ruido. */}
-        {etiquetasDelEspacio.length > 0 && (
-          <select id="label-filter" aria-label={t('labels.filter')} class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
-            <option value="">{t('labels.filter_all')}</option>
-            {etiquetasDelEspacio.map((e: any) => (
-              <option value={e.id} selected={etiquetaFiltro?.id === e.id}>{e.name}</option>
-            ))}
-          </select>
-        )}
-        
-        {/*
-          Las acciones del sprint, en un menú.
-
-          Estaban las tres sueltas en la barra: completar, desactivar y borrar.
-          Con el selector de sprint, el de orden, el de etiquetas y los dos
-          botones de crear, eso son **ocho controles** en una fila que no da
-          para ocho: se partía en dos y el «+ Issue» acababa solo abajo.
-
-          Van juntas porque son la misma cosa —el estado de este sprint— y
-          porque se usan una vez cada mucho, no en cada visita. Lo que se usa a
-          diario se queda fuera.
-        */}
+        {/* Las acciones del sprint, en un menú: se usan una vez cada mucho, no
+            en cada visita. Lo que se usa a diario se queda fuera. */}
         {vista === 'tablero' && funcs.sprints && acceso.rol !== 'viewer' && (
           <div class="relative" id="sprint-menu-root">
-            <button
-              id="btn-sprint-menu"
-              type="button"
-              aria-haspopup="true"
-              aria-expanded="false"
-              aria-controls="sprint-menu"
-              class="flex items-center gap-1.5 bg-forge-bg border border-forge-border rounded-md px-3 py-1.5 text-sm text-forge-text hover:border-forge-secondary transition-colors"
-            >
+            <button id="btn-sprint-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sprint-menu" class="btn btn-secondary">
               {t('board.sprint_actions')}
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
 
-            <div id="sprint-menu" role="menu" class="hidden menu-sprint absolute sm:right-0 top-full mt-1 min-w-[13rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1">
-              {/* Crear un sprint también es una acción de sprint, y tampoco es
-                  algo de cada día: sacarlo de la barra es lo que hace que
-                  «+ Issue» —eso sí es de cada día— deje de caer a otra fila. */}
+            <div id="sprint-menu" role="menu" class="hidden menu menu-sprint absolute sm:right-0 top-full mt-1.5 min-w-[13rem] z-50">
               {(acceso.rol === 'owner' || acceso.rol === 'editor') && (
                 <>
-                  <button type="button" role="menuitem" id="btn-new-sprint" class="sprint-menu-item">
+                  <button type="button" role="menuitem" id="btn-new-sprint" class="sprint-menu-item menu-item">
                     {t('board.create_sprint')}
                   </button>
-                  {/* Borrar se podía solo con el sprint abierto delante, y desde
-                      el backlog no había forma de llegar. */}
                   {acceso.rol === 'owner' && sprints.length > 0 && (
-                    <button type="button" role="menuitem" id="btn-manage-sprints" class="sprint-menu-item">
+                    <button type="button" role="menuitem" id="btn-manage-sprints" class="sprint-menu-item menu-item">
                       {t('sprint.manage')}
                     </button>
                   )}
-                  <div class="h-px bg-forge-border/50 my-1"></div>
+                  <div class="menu-sep"></div>
                 </>
               )}
 
@@ -430,22 +385,22 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
                   backlog no hay nada que completar ni que borrar. */}
               {activeSprintId && currentSprintObj && (
                 <>
-                  <button type="button" role="menuitem" id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class="sprint-menu-item">
+                  <button type="button" role="menuitem" id="btn-toggle-sprint" data-sprint-id={activeSprintId} data-current-status={currentSprintObj.status} class="sprint-menu-item menu-item">
                     {currentSprintObj.status === 'planned' ? t('board.sprint_start') : currentSprintObj.status === 'active' ? t('board.sprint_complete') : t('board.sprint_reopen')}
                   </button>
 
                   {currentSprintObj.status === 'active' && (
-                    <button type="button" role="menuitem" id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item">
+                    <button type="button" role="menuitem" id="btn-deactivate-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item menu-item">
                       {t('board.deactivate')}
                     </button>
                   )}
 
                   {acceso.rol === 'owner' && (
                     <>
-                      <div class="h-px bg-forge-border/50 my-1"></div>
+                      <div class="menu-sep"></div>
                       {/* Borrar reorganiza el trabajo de todo el equipo, así que
                           es de dueños. Los tickets no se van con él. */}
-                      <button type="button" role="menuitem" id="btn-delete-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item hover:text-forge-error">
+                      <button type="button" role="menuitem" id="btn-delete-sprint" data-sprint-id={activeSprintId} class="sprint-menu-item menu-item !text-forge-error">
                         {t('board.delete_sprint')}
                       </button>
                     </>
@@ -457,14 +412,15 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
         )}
 
         {acceso.rol !== 'viewer' && (
-          <button id="btn-new-issue" title={t('board.new_issue_hint')} class="w-full sm:w-auto bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-md text-sm hover:opacity-90 transition-opacity sm:ml-2 relative group z-10 justify-center">
-            + {t('board.new_issue')}
-            <!-- Tooltip -->
-            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-forge-panel border border-forge-border text-forge-text text-[10px] px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl z-50">{t('board.new_issue')} <kbd class="font-mono bg-forge-bg border border-forge-border px-1 py-0.5 rounded text-[8px] ml-1">C</kbd></span>
+          <button id="btn-new-issue" type="button" title={t('board.new_issue_hint')} class="btn btn-primary max-sm:flex-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            {t('board.new_issue')}
+            {/* El atajo solo donde hay teclado. */}
+            <kbd class="max-sm:hidden" aria-hidden="true">C</kbd>
           </button>
         )}
       </div>
-    </header>
+    </div>
 
     <div class="flex-1 overflow-hidden">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
@@ -474,19 +430,19 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
 
   {/* Gestionar sprints: la lista, con borrar en cada uno. */}
   {funcs.sprints && acceso.rol === 'owner' && (
-    <dialog id="gestionar-sprints" aria-labelledby="gestionar-sprints-titulo" class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-[calc(100vw-2rem)] max-w-[440px] text-forge-text shadow-xl backdrop:bg-black/50">
-      <h2 id="gestionar-sprints-titulo" class="text-lg font-bold mb-4">{t('sprint.manage_title')}</h2>
+    <dialog id="gestionar-sprints" aria-labelledby="gestionar-sprints-titulo" class="ventana !max-w-[28rem]">
+      <h2 id="gestionar-sprints-titulo" class="ventana-titulo">{t('sprint.manage_title')}</h2>
       <ul class="space-y-2">
         {sprints.map((sp) => (
-          <li class="flex items-center justify-between gap-3 border border-forge-border rounded-xl px-3 py-2">
+          <li class="flex items-center justify-between gap-3 border-b border-forge-border last:border-b-0 py-2">
             <span class="min-w-0 truncate text-sm">{sp.name} <span class="text-forge-muted">{sp.status === 'active' ? t('board.sprint_active_suffix') : sp.status === 'completed' ? t('board.sprint_completed_suffix') : ''}</span></span>
-            <button type="button" class="btn-borrar-sprint shrink-0 text-xs font-bold text-forge-muted hover:text-forge-error px-2 py-1 rounded" data-sprint-id={sp.id}
+            <button type="button" class="btn-borrar-sprint btn btn-ghost btn-sm !text-forge-error shrink-0" data-sprint-id={sp.id}
               aria-label={t('sprint.delete_named').replace('{nombre}', sp.name)}>{t('board.delete_sprint')}</button>
           </li>
         ))}
       </ul>
-      <div class="flex justify-end mt-5">
-        <button type="button" class="px-4 py-2 text-sm text-forge-muted hover:text-forge-text" onclick="document.getElementById('gestionar-sprints').close()">{t('common.close')}</button>
+      <div class="ventana-pie">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('gestionar-sprints').close()">{t('common.close')}</button>
       </div>
     </dialog>
 
@@ -499,32 +455,32 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
       data-t-confirm={t('sprint.delete_confirm')}
       data-t-confirm-danger={t('sprint.delete_confirm_danger')}
       data-t-error={t('sprint.err_delete')}
-      class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-[calc(100vw-2rem)] max-w-[560px] max-h-[85vh] flex-col text-forge-text shadow-xl backdrop:bg-black/60 open:flex">
-      <h2 id="borrar-sprint-titulo" class="text-lg font-bold mb-1">{t('sprint.delete_title')}</h2>
+      class="ventana !max-w-[35rem] max-h-[85vh] flex-col open:flex">
+      <h2 id="borrar-sprint-titulo" class="ventana-titulo !mb-1">{t('sprint.delete_title')}</h2>
       <p class="text-sm text-forge-muted mb-4">{t('sprint.delete_lead')}</p>
       <div class="flex items-center justify-between gap-3 mb-3">
-        <label class="text-xs font-semibold text-forge-muted" for="borrar-sprint-todas">{t('sprint.delete_all')}</label>
-        <select id="borrar-sprint-todas" class="bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text focus:border-forge-secondary outline-none"></select>
+        <label class="field-label" for="borrar-sprint-todas">{t('sprint.delete_all')}</label>
+        <select id="borrar-sprint-todas" class="campo campo-inline"></select>
       </div>
       <ul id="borrar-sprint-lista" class="space-y-2 overflow-y-auto flex-1 min-h-0 pr-1"></ul>
       <p id="borrar-sprint-resumen" class="text-sm text-forge-muted mt-4" aria-live="polite"></p>
-      <div class="flex justify-end gap-3 mt-4">
-        <button type="button" class="px-4 py-2 text-sm font-bold text-forge-muted hover:text-forge-text" onclick="document.getElementById('borrar-sprint-modal').close()">{t('modal.cancel')}</button>
-        <button type="button" id="borrar-sprint-confirmar" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"></button>
+      <div class="ventana-pie">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('borrar-sprint-modal').close()">{t('modal.cancel')}</button>
+        <button type="button" id="borrar-sprint-confirmar" class="btn btn-primary"></button>
       </div>
     </dialog>
   )}
 
   <!-- New Sprint Modal -->
-  <dialog id="new-sprint-modal" data-t-name-required={t('board.sprint_name_required')} class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 class="text-xl font-bold mb-4">{t('board.create_sprint')}</h2>
+  <dialog id="new-sprint-modal" data-t-name-required={t('board.sprint_name_required')} class="ventana">
+    <h2 class="ventana-titulo">{t('board.create_sprint')}</h2>
     <div class="mb-4">
-      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="sprint-name">{t('board.sprint_name')}</label>
-      <input type="text" id="sprint-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" placeholder={t('board.sprint_name_ph')}>
+      <label class="block field-label mb-1.5" for="sprint-name">{t('board.sprint_name')}</label>
+      <input type="text" id="sprint-name" class="campo" placeholder={t('board.sprint_name_ph')}>
     </div>
-    <div class="flex justify-end gap-3 mt-6">
-      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('new-sprint-modal').close()">{t('modal.cancel')}</button>
-      <button type="button" id="btn-save-sprint" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:bg-forge-accent-hover transition-colors">{t('modal.create')}</button>
+    <div class="ventana-pie">
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('new-sprint-modal').close()">{t('modal.cancel')}</button>
+      <button type="button" id="btn-save-sprint" class="btn btn-primary">{t('modal.create')}</button>
     </div>
   </dialog>
 
@@ -545,8 +501,8 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
     data-t-err-delete={t('sprint.err_delete')}
     data-t-err={t('sprint.err_close')}
     data-t-no-target={t('sprint.err_no_target')}
-    class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-full max-w-[480px] text-forge-text shadow-xl backdrop:bg-black/60">
-    <h2 class="text-xl font-bold mb-1">{t('sprint.close_title')}</h2>
+    class="ventana !max-w-[30rem]">
+    <h2 class="ventana-titulo !mb-1">{t('sprint.close_title')}</h2>
     <p id="close-sprint-lead" class="text-sm text-forge-muted mb-5"></p>
 
     <div class="space-y-2">
@@ -555,7 +511,7 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
         { v: 'next', t: t('sprint.close_next'), d: t('sprint.close_next_desc') },
         { v: 'keep', t: t('sprint.close_keep'), d: t('sprint.close_keep_desc') },
       ].map((o, i) => (
-        <label class="flex gap-3 items-start border border-forge-border rounded-xl p-3 cursor-pointer hover:border-forge-secondary/50 transition-colors has-[:checked]:border-forge-secondary has-[:checked]:bg-forge-secondary/5">
+        <label class="flex gap-3 items-start border border-forge-border rounded-[14px] p-3 cursor-pointer hover:border-forge-border-strong has-[:checked]:border-forge-text has-[:checked]:bg-forge-surface-2">
           <input type="radio" name="close-strategy" value={o.v} checked={i === 0} class="mt-1 accent-forge-primary shrink-0">
           <span class="min-w-0">
             <span class="block text-sm font-bold text-forge-text">{o.t}</span>
@@ -566,17 +522,17 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
     </div>
 
     <div id="close-sprint-target-wrap" class="hidden mt-4">
-      <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5" for="close-sprint-target">{t('sprint.close_target')}</label>
-      <select id="close-sprint-target" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary focus:outline-none">
+      <label class="block field-label mb-1.5" for="close-sprint-target">{t('sprint.close_target')}</label>
+      <select id="close-sprint-target" class="campo">
         {sprints.filter((sp: any) => sp.status !== 'completed').map((sp: any) => (
           <option value={sp.id} data-current={sp.id === activeSprintId ? 'true' : 'false'}>{sp.name}</option>
         ))}
       </select>
     </div>
 
-    <div class="flex justify-end gap-3 mt-6">
-      <button type="button" class="px-4 py-2 text-sm font-bold text-forge-muted hover:text-forge-text" onclick="document.getElementById('close-sprint-modal').close()">{t('sprint.close_cancel')}</button>
-      <button type="button" id="btn-close-sprint-confirm" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">{t('sprint.close_confirm')}</button>
+    <div class="ventana-pie">
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('close-sprint-modal').close()">{t('sprint.close_cancel')}</button>
+      <button type="button" id="btn-close-sprint-confirm" class="btn btn-primary">{t('sprint.close_confirm')}</button>
     </div>
   </dialog>
 
@@ -965,12 +921,12 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
       // Un desplegable por tarea, con `aria-label` y no `id` fijo: se repiten.
       lista.replaceChildren(...(datos.issues as Array<{ id: string; title: string }>).map((tarea) => {
         const li = document.createElement('li');
-        li.className = 'flex items-center justify-between gap-3 border border-forge-border rounded-xl px-3 py-2';
+        li.className = 'flex items-center justify-between gap-3 border-b border-forge-border last:border-b-0 py-2';
         const nombre = document.createElement('span');
         nombre.className = 'min-w-0 truncate text-sm';
         nombre.textContent = tarea.title;
         const sel = document.createElement('select');
-        sel.className = 'destino-tarea shrink-0 max-w-[45%] bg-forge-bg border border-forge-border rounded-lg p-1.5 text-sm text-forge-text focus:border-forge-secondary outline-none';
+        sel.className = 'destino-tarea campo campo-inline shrink-0 max-w-[45%]';
         sel.dataset.issueId = tarea.id;
         sel.setAttribute('aria-label', (t.tTargetFor || '').replace('{titulo}', tarea.title));
         rellenar(sel);
@@ -1073,9 +1029,9 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
         const pct = Math.min((logged / estimated) * 100, 100);
         bar.style.width = `${pct}%`;
         if (logged / estimated > 1) {
-          bar.className = 'h-full transition-all bg-forge-error';
+          bar.className = 'block h-full rounded-full bg-forge-error';
         } else {
-          bar.className = 'h-full transition-all bg-forge-secondary';
+          bar.className = 'block h-full rounded-full bg-forge-text';
         }
       } else {
         bar.style.width = '0%';
@@ -1108,9 +1064,9 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
         const pct = Math.min((logged / estimated) * 100, 100);
         bar.style.width = `${pct}%`;
         if (logged / estimated > 1) {
-          bar.className = 'h-full transition-all bg-forge-error';
+          bar.className = 'block h-full rounded-full bg-forge-error';
         } else {
-          bar.className = 'h-full transition-all bg-forge-secondary';
+          bar.className = 'block h-full rounded-full bg-forge-text';
         }
       } else {
         bar.style.width = '0%';
@@ -1145,21 +1101,4 @@ const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
     }
   }
 
-  .sprint-menu-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 9px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--forge-text);
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-    transition: background-color 0.15s, color 0.15s;
-  }
-  .sprint-menu-item:hover {
-    background: var(--forge-bg);
-    color: var(--forge-accent-text);
-  }
 </style>

@@ -41,11 +41,11 @@ const patron = patronFecha(lang);
       autocomplete="off"
       placeholder={patron}
       aria-describedby={`${id}-error`}
-      class:list={['campo-fecha-texto flex-1 min-w-0 font-mono', inputClass]}
+      class:list={['campo-fecha-texto flex-1 min-w-0', inputClass]}
     />
     <button
       type="button"
-      class="campo-fecha-boton shrink-0 px-2.5 rounded-lg border border-forge-border/50 bg-forge-bg text-forge-muted hover:text-forge-accent-text hover:border-forge-secondary/50 transition-colors"
+      class="campo-fecha-boton btn btn-secondary btn-icon shrink-0 !rounded-[10px] !h-auto"
       aria-label={t('date.open_calendar')}
       title={t('date.open_calendar')}
     >

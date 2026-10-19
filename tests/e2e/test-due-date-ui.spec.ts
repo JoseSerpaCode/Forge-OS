@@ -50,17 +50,16 @@ test.describe('Due Date Visual Indicator', () => {
     await expect(pastTodoCard).toBeVisible();
     
     // Wait for the due date element to be visible within the card
-    const pastTodoDue = pastTodoCard.locator('div:has-text("Due:")');
-    await expect(pastTodoDue).toHaveClass(/text-forge-error/);
-    await expect(pastTodoDue).toHaveClass(/font-bold/);
+    const pastTodoDue = pastTodoCard.locator('.card-due');
+    // Rediseño «Taller»: la fecha vencida lleva `.late` (rojo y seminegrita).
+    await expect(pastTodoDue).toHaveClass(/\blate\b/);
 
     // Check Past Done Issue
     const pastDoneCard = page.locator(`[id="${issuePastDone}"]`);
     await expect(pastDoneCard).toBeVisible();
     
-    const pastDoneDue = pastDoneCard.locator('div:has-text("Due:")');
+    const pastDoneDue = pastDoneCard.locator('.card-due');
     // Ensure it doesn't have the red error class
-    await expect(pastDoneDue).not.toHaveClass(/text-forge-error/);
-    await expect(pastDoneDue).toHaveClass(/text-forge-muted/);
+    await expect(pastDoneDue).not.toHaveClass(/\blate\b/);
   });
 });

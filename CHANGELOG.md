@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.37.0] - 2026-10-19
+
+Fase 1 del rediseño «Taller»: el tablero.
+
+### Changed
+
+- **Columnas con forma de arco**, como la boca de la fragua del logo. Cada una va teñida del color de su estado y lleva el rótulo y la cifra grandes. Caben cuatro columnas a 1280 px sin desplazar de lado.
+- **Tarjeta compacta**: título, tipo, etiquetas, señales (prioridad, repetición, subtareas, notas), fecha y responsable. La descripción y el id hexadecimal se quedan en el panel. El color del tipo va en una muesca arriba, no en una franja lateral, y nada se mueve al pasar el ratón.
+- **Responsable en arco** con iniciales y el tono de cada persona. Los contactos sin cuenta llevan borde discontinuo.
+- **Cabecera y barra nuevas**: el título entero, y debajo dos grupos: a la izquierda lo que cambia qué se ve (vista, sprint, etiqueta, filtros, carriles) y a la derecha lo que hace algo (ordenar, sprint, nueva tarea con su atajo C).
+- **El panel del ticket es un cajón** que flota sobre el tablero, con el título grande y campos, botones y ventanas iguales en todas partes.
+- **Alta rápida**, vistas Hoy y Próximos y carriles por etiqueta con el mismo lenguaje. En Próximos, un día sin tareas ocupa una sola línea.
+- Etiquetas como píldoras teñidas de su color, con el texto siempre en tinta.
+
+### Fixed
+
+- La barra de tiempo del panel pasaba por verde y naranja antes del rojo. Ahora va en tinta y solo se pone roja al pasarse de lo estimado.
+- «Points saved» salía en inglés al cambiar los puntos.
+
 ## [1.36.0] - 2026-10-19
 
 Primera fase del rediseño «Taller», camino de la 2.0. El diseño aprobado y sus razones están en `docs/rediseno/` y `docs/rediseno-diagnostico.md`.

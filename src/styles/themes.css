@@ -1,5 +1,6 @@
 /* src/styles/themes.css */
 @import 'tailwindcss';
+@import './taller.css';
 @plugin '@tailwindcss/typography';
 
 /* La variante `dark:` debe seguir al tema de la app, no al del sistema
@@ -415,6 +416,21 @@
     button:has(> svg:only-child):not(.hidden) {
       min-width: 2.75rem;
       justify-content: center;
+    }
+
+    /* El círculo de completar una tarea: el dibujo se queda en 18 px —es un
+       círculo, estirarlo a 44 lo convierte en una píldora— y el área que se
+       toca crece por fuera con un pseudoelemento. */
+    button.btn-completar {
+      min-height: 0;
+      width: 1.125rem;
+      height: 1.125rem;
+      position: relative;
+    }
+    button.btn-completar::after {
+      content: '';
+      position: absolute;
+      inset: -0.75rem;
     }
 
     /* Los desplegables nativos se quedaban en 28–33px de alto. */

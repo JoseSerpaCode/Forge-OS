@@ -4,6 +4,8 @@
  * el alta, para que los dos digan y hagan lo mismo.
  */
 
+import { tonoDe } from '../../lib/tonos';
+
 const PREFIJO = 'c:';
 
 /** Lo que espera la API a partir del valor del `<select>`. */
@@ -15,8 +17,11 @@ export function aPayload(valor: string): { assignee_id: string | null; assignee_
 }
 
 export function iniciales(nombre: string): string {
+  // «Juan Camilo» → «JC»; un nombre de usuario de una palabra («blake») da
+  // sus dos primeras letras, no una sola.
   const partes = nombre.trim().split(/\s+/).filter(Boolean);
-  return partes.slice(0, 2).map((p) => [...p][0] ?? '').join('').toLocaleUpperCase() || '?';
+  const letras = partes.length > 1 ? partes.slice(0, 2).map((p) => [...p][0] ?? '') : [...(partes[0] ?? '')].slice(0, 2);
+  return letras.join('').toLocaleUpperCase() || '?';
 }
 
 /** Repinta el círculo del responsable de una tarjeta, sin foto: iniciales. */
@@ -28,9 +33,11 @@ export function pintarEnTarjeta(card: HTMLElement, valor: string, nombre: string
   const etiqueta = valor ? nombre : sinAsignar;
   caja.title = etiqueta;
   caja.setAttribute('aria-label', etiqueta);
-  caja.classList.toggle('border-dashed', valor.startsWith(PREFIJO));
-  caja.classList.toggle('border-forge-muted', valor.startsWith(PREFIJO));
-  caja.classList.toggle('border-forge-border', !valor.startsWith(PREFIJO));
+  // El arco con iniciales y el tono de la persona; borde discontinuo si es
+  // un contacto sin cuenta. Sin responsable no se pinta (`.hidden`).
+  caja.classList.toggle('avatar-contacto', valor.startsWith(PREFIJO));
+  caja.classList.toggle('hidden', !valor);
+  caja.style.setProperty('--c', tonoDe(nombre));
   caja.replaceChildren();
   if (valor) {
     const s = document.createElement('span');

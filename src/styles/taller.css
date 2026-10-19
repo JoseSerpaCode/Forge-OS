@@ -1,0 +1,422 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Componentes de la identidad «Taller»
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Las piezas que se repiten en todas las pantallas: botón, campo, insignia,
+   avatar, panel, cabecera de página, segmentado, menú, columna y tarjeta.
+   Salen de `docs/rediseno/taller.css` (la maqueta aprobada) con los tokens de
+   `themes.css`.
+
+   Van en `@layer components`: una utilidad de Tailwind en el mismo elemento
+   gana siempre, así que una pantalla puede ajustar un margen sin pelearse con
+   la especificidad. Lo que no debería hacer es reinventar la pieza: un botón
+   nuevo es `.btn`, no otra combinación de clases (ver la regla 10 del
+   diagnóstico). Los componentes de `src/components/ui/` pintan estas clases.
+
+   Cuatro reglas que no se ven en el código:
+   - **El color de estado o de etiqueta nunca tiñe texto.** Va en el punto
+     (`.sw`) y en un tinte suave del fondo; el texto, en tinta.
+   - **Sombra solo en lo que flota**: menús, ventanas y la tarjeta arrastrada.
+   - **Nada se mueve al pasar el ratón.** Cambia el borde o el fondo.
+   - **Mayúsculas solo en las cabeceras de columna.** */
+
+@layer components {
+  /* ── Texto ──────────────────────────────────────────────────────────── */
+  .narrow { font-stretch: 75%; }
+  .wide { font-stretch: 125%; font-weight: 650; letter-spacing: -0.01em; }
+
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  /* El título de página en Archivo muy estrecho y pesado: es el rótulo del
+     taller. `balance` para que un nombre largo se parta en dos líneas
+     parecidas en vez de dejar una palabra sola. */
+  .page-title {
+    font-size: clamp(1.75rem, 3vw, 2.875rem);
+    line-height: 0.98;
+    font-weight: 800;
+    font-stretch: 68%;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    color: var(--forge-text);
+  }
+  .page-sub { margin-top: 0.375rem; color: var(--forge-muted); font-size: 0.875rem; }
+  .page-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    margin-top: 0.5rem;
+    color: var(--forge-muted);
+    font-size: 0.8125rem;
+    flex-wrap: wrap;
+  }
+  .section-title {
+    font-size: 1.625rem;
+    font-weight: 800;
+    font-stretch: 68%;
+    line-height: 1.05;
+    color: var(--forge-text);
+  }
+
+  /* ── Botones ────────────────────────────────────────────────────────── */
+  .btn {
+    height: 2.125rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
+    background: none;
+    color: var(--forge-text);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.12s, border-color 0.12s;
+  }
+  .btn:disabled, .btn[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
+  /* Naranja de acción con el texto en tinta: blanco sobre este naranja no
+     llega a 4,5:1. */
+  .btn-primary { background: var(--forge-accent-primary); color: var(--forge-on-accent); }
+  .btn-primary:hover:not(:disabled) { background: var(--forge-accent-primary-hover); }
+  .btn-secondary { background: var(--forge-panel); border-color: var(--forge-border-strong); }
+  .btn-ghost:hover:not(:disabled),
+  .btn-secondary:hover:not(:disabled),
+  .btn-secondary[aria-expanded='true'],
+  .btn-secondary[aria-pressed='true'] { background: var(--forge-surface-2); }
+  .btn-secondary[aria-pressed='true'] { border-color: var(--forge-text); }
+  .btn-danger { background: var(--forge-panel); border-color: var(--forge-error); color: var(--forge-error); }
+  .btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--forge-error) 10%, var(--forge-panel)); }
+  .btn-sm { height: 1.75rem; padding: 0 0.6875rem; font-size: 0.75rem; }
+  .btn-icon { width: 2.125rem; padding: 0; }
+  .btn-icon.btn-sm { width: 1.75rem; }
+  .btn svg { width: 1rem; height: 1rem; flex: none; }
+  .btn-sm svg { width: 0.875rem; height: 0.875rem; }
+
+  .kbd, .btn kbd {
+    font-family: var(--forge-mono);
+    font-size: 0.6875rem;
+    line-height: 1;
+    padding: 0.1875rem 0.375rem;
+    border: 1px solid var(--forge-border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: var(--forge-surface-2);
+    color: var(--forge-text);
+  }
+  .btn-primary kbd {
+    background: rgb(255 255 255 / 0.25);
+    border-color: rgb(23 22 20 / 0.35);
+    color: var(--forge-on-accent);
+  }
+
+  /* ── Campos ─────────────────────────────────────────────────────────── */
+  .field { display: flex; flex-direction: column; gap: 0.375rem; }
+  .field-label { font-size: 0.8125rem; font-weight: 600; color: var(--forge-text); }
+  .hint { font-size: 0.75rem; color: var(--forge-muted); }
+  /* Un solo campo: borde fuerte (≥ 3:1 contra el fondo, WCAG 1.4.11), radio de
+     10 px y la misma altura que un botón secundario para que una fila de
+     controles quede alineada. */
+  .campo {
+    height: 2.125rem;
+    width: 100%;
+    padding: 0 0.75rem;
+    border: 1px solid var(--forge-border-strong);
+    border-radius: 10px;
+    background: var(--forge-panel);
+    color: var(--forge-text);
+    font-size: 0.875rem;
+  }
+  textarea.campo { height: auto; min-height: 5.5rem; padding: 0.5rem 0.625rem; line-height: 1.5; }
+  select.campo {
+    appearance: none;
+    padding-right: 2rem;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .campo-inline { width: auto; }
+  .campo:hover { border-color: var(--forge-text); }
+
+  /* ── Insignias ──────────────────────────────────────────────────────── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.375rem;
+    padding: 0 0.5625rem 0 0.5rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c, var(--forge-muted)) 12%, var(--forge-panel));
+    color: var(--forge-text);
+    font-size: 0.75rem;
+    font-weight: 550;
+    white-space: nowrap;
+  }
+  .chip-sm { height: 1.25rem; padding: 0 0.5rem 0 0.4375rem; gap: 0.3125rem; }
+  .sw {
+    width: 0.5rem;
+    height: 0.5rem;
+    flex: none;
+    border-radius: 50%;
+    background: var(--c, var(--forge-muted));
+  }
+
+  /* Avatar en forma de arco, como la boca de la fragua. Sin foto, iniciales
+     sobre un tinte del tono de la persona (`--c`). */
+  .avatar {
+    width: 1.375rem;
+    height: 1.5rem;
+    border-radius: 999px 999px 5px 5px;
+    background: color-mix(in srgb, var(--c, var(--forge-muted)) 24%, var(--forge-panel));
+    color: var(--forge-text);
+    display: inline-grid;
+    place-items: center;
+    padding-top: 3px;
+    font-size: 0.625rem;
+    font-weight: 750;
+    flex: none;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar:has(img) { padding-top: 0; }
+  /* Un contacto sin cuenta: mismo arco, borde discontinuo. */
+  .avatar-contacto { background: var(--forge-panel); outline: 1.5px dashed var(--forge-muted); outline-offset: -1.5px; }
+  .avatar-vacio { background: none; outline: 1.5px dashed var(--forge-border-strong); outline-offset: -1.5px; color: var(--forge-muted); }
+  .avatar-lg { width: 2.125rem; height: 2.375rem; font-size: 0.8125rem; }
+
+  .due { font-size: 0.75rem; color: var(--forge-muted); white-space: nowrap; }
+  .due.late { color: var(--forge-error); font-weight: 600; }
+
+  /* ── Paneles ────────────────────────────────────────────────────────── */
+  .panel {
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 16px;
+  }
+  .barra {
+    height: 0.5rem;
+    background: var(--forge-surface-2);
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+    gap: 3px;
+  }
+  .barra > span { display: block; height: 100%; background: var(--c, var(--forge-text)); border-radius: 999px; }
+
+  /* ── Segmentado (vistas Tablero · Hoy · Próximos) ───────────────────── */
+  .segmentado {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    border-radius: 999px;
+    background: var(--forge-surface-2);
+  }
+  .segmentado > a,
+  .segmentado > button {
+    height: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.875rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--forge-muted);
+    white-space: nowrap;
+  }
+  .segmentado > a:hover,
+  .segmentado > button:hover { color: var(--forge-text); }
+  .segmentado > [aria-current='page'],
+  .segmentado > [aria-selected='true'] {
+    background: var(--forge-panel);
+    color: var(--forge-text);
+    box-shadow: 0 0 0 1px var(--forge-border);
+  }
+
+  /* ── Menús y capas que flotan ───────────────────────────────────────── */
+  .menu {
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border-strong);
+    border-radius: 14px;
+    box-shadow: var(--forge-shadow-float);
+    padding: 0.25rem;
+  }
+  .menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    color: var(--forge-text);
+  }
+  .menu-item:hover, .menu-item:focus-visible { background: var(--forge-surface-2); }
+  .menu-sep { height: 1px; background: var(--forge-border); margin: 0.25rem 0.5rem; }
+
+  /* Una sola forma de ventana (docs/rediseno/ventanas.html): título estrecho,
+     cuerpo y pie con la acción principal a la derecha. Sombra porque flota;
+     detrás, un velo sin desenfoque. */
+  .ventana {
+    background: var(--forge-panel);
+    color: var(--forge-text);
+    border: 1px solid var(--forge-border-strong);
+    border-radius: 18px;
+    box-shadow: var(--forge-shadow-float);
+    padding: 1.25rem 1.375rem;
+    width: calc(100vw - 2rem);
+    max-width: 26rem;
+  }
+  .ventana::backdrop { background: var(--forge-scrim); }
+  .ventana-titulo { font-size: 1.625rem; font-weight: 800; font-stretch: 68%; line-height: 1.05; margin-bottom: 1rem; }
+  .ventana-pie { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
+
+  /* El cajón del ticket flota a 8 px del borde: cerrado tiene que irse
+     también ese margen y la sombra, o asoma una línea. Por id, para ganar a
+     la utilidad `translate-x-full` sin cambiar su nombre (la buscan el
+     tablero y las pruebas). */
+  #issue-details-modal.cajon-ticket.translate-x-full { translate: calc(100% + 2rem) 0; }
+
+  /* ── Barra de herramientas ──────────────────────────────────────────── */
+  .barra-herramientas {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--forge-border);
+  }
+  .grupo-herramientas { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+
+  /* ── Tablero: columnas ──────────────────────────────────────────────── */
+  /* La columna remata en medio óvalo: el arco de la fragua del logo. Va
+     teñida de su estado (`--c`), más fuerte en la cabecera. */
+  .columna {
+    --c: var(--forge-muted);
+    background: color-mix(in srgb, var(--c) 8%, var(--forge-bg));
+    border-radius: 50% 50% 16px 16px / 46px 46px 16px 16px;
+  }
+  [data-theme='dark'] .columna { background: color-mix(in srgb, var(--c) 12%, var(--forge-bg)); }
+  .columna-cabeza {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.875rem 1.25rem 0.875rem;
+    background: color-mix(in srgb, var(--c) 15%, var(--forge-bg));
+    border-radius: 50% 50% 0 0 / 46px 46px 0 0;
+  }
+  [data-theme='dark'] .columna-cabeza { background: color-mix(in srgb, var(--c) 24%, var(--forge-bg)); }
+  .columna-titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.5625rem;
+    font-size: 1.1875rem;
+    font-weight: 800;
+    font-stretch: 68%;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--forge-text);
+    min-width: 0;
+  }
+  .columna-titulo::before {
+    content: '';
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    background: var(--c);
+    flex: none;
+  }
+  .columna-n {
+    font-size: 1.375rem;
+    font-stretch: 125%;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--forge-text);
+  }
+
+  /* Cuatro columnas que caben a 1280 px sin desplazar de lado; por debajo de
+     cuatro veces 15rem, el contenedor se desplaza. */
+  @media (min-width: 40rem) {
+    .columnas-tablero { grid-template-columns: repeat(4, minmax(15rem, 1fr)); }
+  }
+
+  /* ── Tablero: tarjeta ───────────────────────────────────────────────── */
+  .tarjeta {
+    position: relative;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 14px;
+    padding: 0.875rem 1rem 0.8125rem;
+    transition: border-color 0.12s;
+  }
+  .tarjeta:hover { border-color: var(--forge-border-strong); }
+  /* La muesca: el color del tipo de ticket, arriba a la izquierda. Sustituye a
+     la franja lateral, que pintaba de color todo un borde. */
+  .tarjeta::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 1rem;
+    width: 1.75rem;
+    height: 4px;
+    border-radius: 0 0 4px 4px;
+    background: var(--tipo, var(--forge-border-strong));
+  }
+  .tarjeta-titulo { font-size: 0.9375rem; font-weight: 600; line-height: 1.38; color: var(--forge-text); overflow-wrap: anywhere; }
+  .tarjeta-pie { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .tarjeta-pie .empuja { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .tarjeta-meta { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: var(--forge-muted); white-space: nowrap; }
+  .tarjeta-meta svg { width: 0.75rem; height: 0.75rem; flex: none; }
+  .tarjeta-crono {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--forge-border);
+    font-size: 0.75rem;
+  }
+  .en-marcha { display: inline-flex; align-items: center; gap: 0.375rem; white-space: nowrap; color: var(--forge-text); }
+  .en-marcha::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--forge-accent-primary); }
+  .en-marcha b { font-weight: 700; font-stretch: 125%; }
+  /* La tarjeta arrastrada se inclina y proyecta sombra. Es el único movimiento
+     del tablero. */
+  .tarjeta.dragging,
+  .tarjeta.is-dragging {
+    transform: rotate(1deg);
+    box-shadow: var(--forge-shadow-float);
+    border-color: var(--forge-border-strong);
+  }
+
+  /* Donde se va a soltar una tarjeta: borde discontinuo del color de la
+     columna (o del texto, en un día de «Próximos»), no un relleno naranja. */
+  .soltar-aqui {
+    outline: 2px dashed color-mix(in srgb, var(--c, var(--forge-text)) 70%, var(--forge-bg));
+    outline-offset: -6px;
+    border-radius: 14px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tarjeta.dragging, .tarjeta.is-dragging { transform: none; }
+  }
+}

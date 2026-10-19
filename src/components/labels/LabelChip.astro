@@ -2,7 +2,7 @@
 /**
  * Una etiqueta.
  *
- * El color va en un punto, no en el fondo. Con fondos de color habría que
+ * El color va en el punto y en un tinte suave del fondo, nunca en el texto. Con fondos de color habría que
  * calcular el contraste del texto para cada color y cada tema —y en cuanto
  * alguien elige el ámbar, el texto blanco desaparece—. Así el color distingue
  * pero no puede romper la lectura: el texto usa siempre el color normal de la
@@ -26,17 +26,10 @@ const pequeña = size === 'sm';
 const tono = /^#[0-9a-f]{6}$/i.test(color) ? color : '#8B8D98';
 ---
 
-<span
-  class:list={[
-    'inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text max-w-full',
-    pequeña ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs',
-    className,
-  ]}
->
-  <span
-    class:list={['rounded-full shrink-0', pequeña ? 'w-1.5 h-1.5' : 'w-2 h-2']}
-    style={`background-color:${tono}`}
-    aria-hidden="true"
-  ></span>
+{/* Píldora teñida del color de la etiqueta, con el punto y el texto en tinta:
+    el tinte es suave (12 %) para que cualquier color elegido deje el texto
+    por encima de 4,5:1 (docs/rediseno/componentes.html). */}
+<span class:list={['chip max-w-full', pequeña && 'chip-sm', className]} style={`--c:${tono}`}>
+  <span class="sw" aria-hidden="true"></span>
   <span class="truncate">{name}</span>
 </span>
