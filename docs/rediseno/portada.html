@@ -1006,6 +1006,97 @@ kbd, .kbd {
   .auth-brand { display: none; }
 }
 
+/* ── Portada: titular que enseña el producto ───────────────────────────── */
+.hero-x { padding-block: 72px 48px; }
+.hero-title {
+  font-size: clamp(3rem, 9.6vw, 9.4rem);
+  line-height: 0.9;
+  font-weight: 800;
+  font-stretch: 64%;
+  letter-spacing: -0.02em;
+}
+.hero-title .ln { display: block; }
+/* En escalera: cada línea un paso más a la derecha, y la tesis cierra al otro lado. */
+@media (min-width: 821px) {
+  .hero-title .ln:nth-child(2) { padding-left: 1.1em; }
+  .hero-title .ln:nth-child(3) { padding-left: 2.2em; }
+  .hero-title .ln-wide { text-align: right; }
+}
+/* La tesis, en el ancho opuesto: estrecho arriba, extendido abajo. */
+.hero-title .ln-wide {
+  font-size: 0.4em;
+  font-stretch: var(--wide);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  margin-top: 0.45em;
+  color: var(--accent-text);
+}
+/* Piezas reales de la interfaz dentro de la frase. */
+.inl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  vertical-align: middle;
+  position: relative;
+  top: -0.06em;
+  margin-inline: 0.12em;
+  padding: 0.55em 1em;
+  font-size: clamp(0.85rem, 1.45vw, 1.3rem);
+  font-stretch: 100%;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--text);
+}
+.inl i { width: 0.6em; height: 0.6em; border-radius: 50%; background: var(--c); flex: none; }
+.inl-col {
+  --c: var(--st-progress);
+  background: color-mix(in srgb, var(--c) var(--tint), var(--bg));
+  border-radius: 2.4em 2.4em 0.5em 0.5em;
+  padding: 1em 1.3em 0.6em;
+  font-stretch: var(--narrow-x);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transform: rotate(-4deg);
+}
+.inl-col b { font-stretch: var(--wide); font-weight: 700; margin-left: 0.4em; }
+.inl-note {
+  --c: var(--st-todo);
+  background: var(--surface-1);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r-pill);
+}
+.inl-file {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-float);
+  transform: rotate(2deg);
+}
+.inl-file em { font-style: normal; font-family: var(--mono); font-size: 0.75em; font-weight: 500; border: 1px solid var(--border-strong); border-radius: 6px; padding: 0.2em 0.4em; color: var(--muted); }
+.hero-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px 64px;
+  align-items: end;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.hero-foot > p { font-size: var(--t-16); line-height: 1.6; color: var(--muted); max-width: 54ch; }
+.hero-cta { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.hero-cta .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-lg { height: 44px; padding: 0 22px; font-size: var(--t-14); }
+@media (max-width: 820px) {
+  .hero-x { padding-block: 40px 32px; }
+  .hero-foot { grid-template-columns: minmax(0, 1fr); }
+  .inl { font-size: 0.8rem; }
+  .hero-title .ln-wide { font-size: 0.5em; }
+}
+
 </style>
 <script>
   /* Única lógica de la maqueta: alternar tema claro / oscuro. */
@@ -1032,12 +1123,19 @@ kbd, .kbd {
       <a class="btn btn-primary" href="acceso.html">Crear cuenta</a>
     </nav>
   </header>
-  <section class="hero">
-    <h1>Tablero, notas y archivos de tu equipo, en un servidor tuyo.</h1>
-    <div class="hero-side">
+  <section class="hero-x">
+    <h1 class="hero-title">
+      <span class="ln">Tablero, <span class="inl inl-col" aria-hidden="true"><i></i>En curso<b>3</b></span></span>
+      <span class="ln">notas <span class="inl inl-note" aria-hidden="true"><i></i>Arquitectura general</span> y</span>
+      <span class="ln">archivos <span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf</span></span>
+      <span class="ln ln-wide">en un servidor tuyo.</span>
+    </h1>
+    <div class="hero-foot">
       <p>Un tablero por sprint, notas enlazadas a los tickets que describen y archivos que se guardan en tu Drive. Todo en un proceso de Node y un archivo de SQLite. Software libre, sin cuotas por persona.</p>
-      <div class="actions"><a class="btn btn-primary" href="tablero.html">Probar sin cuenta</a><a class="btn btn-secondary" href="#">Instalarlo</a></div>
-      <p class="hint">La prueba crea un espacio temporal que dura 30 días. Si luego te registras, te lo llevas.</p>
+      <div class="hero-cta">
+        <div class="actions"><a class="btn btn-primary btn-lg" href="tablero.html">Probar sin cuenta</a><a class="btn btn-secondary btn-lg" href="#">Instalarlo</a></div>
+        <p class="hint">La prueba dura 30 días. Si luego te registras, te la llevas.</p>
+      </div>
     </div>
   </section>
 

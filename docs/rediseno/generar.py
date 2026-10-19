@@ -794,12 +794,19 @@ portada = HEAD.format(title='Portada · Forge OS', favicon=FAVICON) + f"""<body>
       <a class="btn btn-primary" href="acceso.html">Crear cuenta</a>
     </nav>
   </header>
-  <section class="hero">
-    <h1>Tablero, notas y archivos de tu equipo, en un servidor tuyo.</h1>
-    <div class="hero-side">
+  <section class="hero-x">
+    <h1 class="hero-title">
+      <span class="ln">Tablero, <span class="inl inl-col" aria-hidden="true"><i></i>En curso<b>3</b></span></span>
+      <span class="ln">notas <span class="inl inl-note" aria-hidden="true"><i></i>Arquitectura general</span> y</span>
+      <span class="ln">archivos <span class="inl inl-file" aria-hidden="true"><em>PDF</em>factura.pdf</span></span>
+      <span class="ln ln-wide">en un servidor tuyo.</span>
+    </h1>
+    <div class="hero-foot">
       <p>Un tablero por sprint, notas enlazadas a los tickets que describen y archivos que se guardan en tu Drive. Todo en un proceso de Node y un archivo de SQLite. Software libre, sin cuotas por persona.</p>
-      <div class="actions"><a class="btn btn-primary" href="tablero.html">Probar sin cuenta</a><a class="btn btn-secondary" href="#">Instalarlo</a></div>
-      <p class="hint">La prueba crea un espacio temporal que dura 30 días. Si luego te registras, te lo llevas.</p>
+      <div class="hero-cta">
+        <div class="actions"><a class="btn btn-primary btn-lg" href="tablero.html">Probar sin cuenta</a><a class="btn btn-secondary btn-lg" href="#">Instalarlo</a></div>
+        <p class="hint">La prueba dura 30 días. Si luego te registras, te la llevas.</p>
+      </div>
     </div>
   </section>
 
