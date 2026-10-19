@@ -166,4 +166,13 @@ export const es = {
   'friends.off_cta': 'Ir a Ajustes',
   'user.settings.social': 'Amigos y solicitudes',
   'user.settings.social_note': 'Apagado, no ves «Personas» ni el banner del Hub, y nadie puede mandarte solicitudes. Tu perfil se puede seguir viendo.',
+  'push.title': 'Avisos en este dispositivo',
+  'push.desc': 'Los recordatorios llegan aunque Forge esté cerrado. En iPhone, primero hay que añadir Forge a la pantalla de inicio.',
+  'push.enable': 'Activar avisos',
+  'push.disable': 'Desactivar en este dispositivo',
+  'push.on': 'Activados en este dispositivo.',
+  'push.off': 'Desactivados en este dispositivo.',
+  'push.denied': 'El navegador tiene bloqueados los avisos de este sitio. Se cambia en los permisos del navegador.',
+  'push.unsupported': 'Este navegador no admite avisos Web Push.',
+  'push.error': 'No se han podido activar los avisos.',
 } as const;

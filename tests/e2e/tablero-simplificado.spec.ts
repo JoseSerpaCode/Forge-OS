@@ -618,3 +618,28 @@ test.describe('cabecera del tablero', () => {
     }
   });
 });
+
+test.describe('avisos Web Push', () => {
+  test('el navegador no pide permiso al cargar Ajustes; sin claves VAPID no se ofrece ni se acepta', async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as any).__pedidos = 0;
+      if ('Notification' in window) {
+        const original = Notification.requestPermission.bind(Notification);
+        Notification.requestPermission = (...a: any[]) => { (window as any).__pedidos++; return original(...a); };
+      }
+    });
+    await entrar(page);
+    await page.goto('/settings');
+    expect(await page.evaluate(() => (window as any).__pedidos)).toBe(0);
+    // El servidor de pruebas no tiene claves: la sección no sale y suscribirse da 503.
+    await expect(page.locator('#avisos-push')).toHaveCount(0);
+    const r = await page.request.post('/api/user/push', {
+      headers: ORIGIN,
+      data: { endpoint: 'https://push.ejemplo.com/x', keys: { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA', auth: 'tBHItJI5svbpez7KI4CCXg' } },
+    });
+    expect(r.status()).toBe(503);
+    // El service worker y el manifest se sirven desde el propio origen.
+    expect((await page.request.get('/sw.js')).status()).toBe(200);
+    expect((await page.request.get('/manifest.webmanifest')).status()).toBe(200);
+  });
+});

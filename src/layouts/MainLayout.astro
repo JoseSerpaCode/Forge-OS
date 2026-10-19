@@ -89,6 +89,9 @@ Astro.response.headers.set('Pragma', 'no-cache');
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     
     <link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
+    {/* Para instalarla en la pantalla de inicio: en iPhone es la única forma de
+        recibir avisos Web Push. */}
+    <link rel="manifest" href="/manifest.webmanifest" />
     
     <title>{title} | Forge OS</title>
     <script is:inline>

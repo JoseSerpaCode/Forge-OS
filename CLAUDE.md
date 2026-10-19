@@ -309,6 +309,15 @@ lo es: los archivos siguen en su Drive.
   dentro del servidor, arrancado desde el middleware; en `NODE_ENV=test` no
   arranca. `reminded_at` vuelve a NULL si cambian la fecha, la hora o la
   antelación.
+- **Web Push** (`lib/push.ts`, `public/sw.js`) solo existe con `VAPID_*` en el
+  entorno; sin ellas no se ofrece ni se manda nada. Sale **después** de la
+  transacción del recordatorio (es red) y solo si `NotificationService.notify`
+  devolvió `true`, para que los silencios valgan también fuera de la app. El
+  service worker no cachea nada: una caché con sesión enseñaría datos viejos.
+  El endpoint de cada suscripción lo manda el navegador y el servidor le hará
+  peticiones: por eso solo se aceptan los servicios de push reales
+  (`SERVICIOS_PUSH` en `lib/push.ts`), no «cualquier https que no parezca
+  interno». Como mucho `MAX_SUSCRIPCIONES` dispositivos por cuenta.
 - **El calendario `.ics` (`/cal/<token>.ics`) es una ruta pública**: la llave es
   el token, del que solo se guarda el hash.
 - **Los contactos sin cuenta** (responsables que no son usuarios) entrarán como
