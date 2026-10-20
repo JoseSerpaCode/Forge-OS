@@ -215,6 +215,38 @@
   }
   .barra > span { display: block; height: 100%; background: var(--c, var(--forge-text)); border-radius: 999px; }
 
+  /* Tabla: cabecera tenue en tipo oración (sin mayúsculas), filas separadas
+     por una línea y el título en seminegrita. */
+  .tabla { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .tabla th {
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--forge-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--forge-border-strong);
+    white-space: nowrap;
+  }
+  .tabla td { padding: 0.5625rem 0.75rem; border-bottom: 1px solid var(--forge-border); vertical-align: middle; }
+  .tabla tr:last-child td { border-bottom: 0; }
+  .tabla .num { text-align: right; }
+  .tabla td.titulo { font-weight: 600; }
+  .tabla tbody tr:hover td { background: color-mix(in srgb, var(--forge-surface-2) 60%, transparent); }
+
+  .panel-cabeza {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem 0.625rem;
+  }
+  .panel-cabeza h2 { font-size: 1rem; font-weight: 700; color: var(--forge-text); }
+  .panel-cuerpo { padding: 0 1rem 1rem; }
+  .enlace { color: var(--forge-accent-text); font-weight: 600; font-size: 0.8125rem; }
+  .enlace:hover { text-decoration: underline; text-underline-offset: 3px; }
+  /* Cifras que importan, en Archivo ancho. */
+  .cifra { display: block; font-size: 1.875rem; font-weight: 700; font-stretch: 125%; line-height: 1.05; color: var(--forge-text); }
+
   /* ── Segmentado (vistas Tablero · Hoy · Próximos) ───────────────────── */
   .segmentado {
     display: inline-flex;
