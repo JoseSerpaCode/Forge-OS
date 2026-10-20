@@ -288,7 +288,8 @@
   .segmentado > a:hover,
   .segmentado > button:hover { color: var(--forge-text); }
   .segmentado > [aria-current='page'],
-  .segmentado > [aria-selected='true'] {
+  .segmentado > [aria-selected='true'],
+  .segmentado > [aria-pressed='true'] {
     background: var(--forge-panel);
     color: var(--forge-text);
     box-shadow: 0 0 0 1px var(--forge-border);

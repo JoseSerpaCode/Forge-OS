@@ -18,414 +18,297 @@ const workspace = acceso.ws;
 if (user.is_guest) return Astro.redirect(`/w/${sys_tag}/board`);
 
 // Fetch sprints for the scope selector
+import { funciones } from '../../../../lib/funcionesEspacio';
+import { ESTADOS, INFO as INFO_ESTADO } from '../../../../lib/status';
+const funcs = funciones(workspace.id);
 const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace_id = ? ORDER BY start_date DESC, rowid DESC').all(workspace.id) as any[];
 
 ---
 
-<MainLayout hideFooter={true} title={`Metrics - ${workspace.name}`} workspaceId={workspace.id}>
-  <div class="h-full flex flex-col p-4 overflow-y-auto">
-    <header class="mb-6 flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl font-bold text-forge-text">{t('metrics.title')}</h1>
-        <p class="text-forge-muted text-sm mt-1">{t('metrics.desc')}</p>
+<MainLayout hideFooter={true} title={`${t('metrics.title')} — ${workspace.name}`} workspaceId={workspace.id}>
+  {/* Métricas (docs/rediseno/metricas.html): cada gráfica con su tabla —los
+      mismos datos, para lector de pantalla o para copiar— y los colores de
+      estado de `status.ts`. Solo las gráficas que el espacio puede llenar: sin
+      sprints no hay avance ni velocidad, y sin medición de tiempo no hay
+      estimado y registrado. */}
+  <div class="pb-12" id="metricas"
+    data-sprints={funcs.sprints ? 'true' : 'false'}
+    data-tiempo={funcs.tiempo ? 'true' : 'false'}>
+    <header class="page-head">
+      <div class="min-w-0">
+        <h1 class="page-title">{t('metrics.title')}</h1>
+        <p class="page-sub max-w-2xl">{t('metrics.desc')}</p>
       </div>
-      <div>
-        <!-- Global Sprint Scope for metrics that support it -->
-        <select id="global-sprint-selector" class="bg-forge-bg text-forge-text border border-forge-border rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-forge-secondary">
-          <option value="all">{t('metrics.global_hist')}</option>
-          {sprints.map(s => (
-            <option value={s.id}>{s.name} {s.status === 'active' ? '(Active)' : s.status === 'completed' ? '(Completed)' : ''}</option>
-          ))}
-        </select>
-      </div>
+      {funcs.sprints && (
+        <label class="field">
+          <span class="sr-only">{t('a11y.sprint_selector')}</span>
+          <select id="global-sprint-selector" class="campo campo-inline max-w-[18rem]">
+            <option value="all">{t('metrics.global_hist')}</option>
+            {sprints.map((s) => (
+              <option value={s.id}>{s.name} {s.status === 'active' ? t('board.sprint_active_suffix') : s.status === 'completed' ? t('board.sprint_completed_suffix') : ''}</option>
+            ))}
+          </select>
+        </label>
+      )}
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="metrics-grid">
-      <!-- WIDGET: DISTRIBUTION -->
-      <div class="bg-forge-panel border border-forge-border rounded-lg p-5 flex flex-col min-h-[350px]">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="text-lg font-bold text-forge-text">{t('metrics.workload_dist')}</h2>
-            <p class="text-xs text-forge-muted mt-1" id="dist-scope-label">{t('metrics.scope_hist')}</p>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" id="metrics-grid">
+      <section class="panel flex flex-col min-h-[22rem]" data-grafica="dist">
+        <div class="panel-cabeza !items-start">
+          <div class="min-w-0">
+            <h2>{t('metrics.workload_dist')}</h2>
+            <p class="hint mt-0.5" id="dist-scope-label">{t('metrics.scope_hist')}</p>
+          </div>
+          <div class="segmentado shrink-0" role="group" aria-label={t('metrics.view_label')}>
+            <button type="button" class="!h-7 !px-3" data-vista="grafica" aria-pressed="true">{t('metrics.view_chart')}</button>
+            <button type="button" class="!h-7 !px-3" data-vista="tabla" aria-pressed="false">{t('metrics.view_table')}</button>
           </div>
         </div>
-        <div id="dist-empty-state" class="hidden flex-1 flex flex-col items-center justify-center text-forge-muted">
-          <svg class="w-10 h-10 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-          <p class="text-sm">No issues found</p>
+        <div class="panel-cuerpo flex-1 flex flex-col">
+          <p id="dist-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div class="relative flex-1 w-full min-h-[16rem]" id="dist-chart-container"><canvas id="dist-canvas"></canvas></div>
+          <div class="hidden overflow-x-auto" id="dist-table-container"></div>
         </div>
-        <div class="relative flex-1 w-full" id="dist-chart-container">
-          <canvas id="distributionChart"></canvas>
-        </div>
-      </div>
-
-      <!-- WIDGET: BURNDOWN (SNAPSHOT) -->
-      <div class="bg-forge-panel border border-forge-border rounded-lg p-5 flex flex-col min-h-[350px]">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="text-lg font-bold text-forge-text">{t('metrics.sprint_burndown')}</h2>
-            <p class="text-xs text-forge-muted mt-1" id="burn-scope-label">{t('metrics.scope_sprint')}</p>
+      </section>
+      {funcs.sprints && (
+      <section class="panel flex flex-col min-h-[22rem]" data-grafica="burn">
+        <div class="panel-cabeza !items-start">
+          <div class="min-w-0">
+            <h2>{t('metrics.sprint_burndown')}</h2>
+            <p class="hint mt-0.5" id="burn-scope-label">{t('metrics.scope_sprint')}</p>
+          </div>
+          <div class="segmentado shrink-0" role="group" aria-label={t('metrics.view_label')}>
+            <button type="button" class="!h-7 !px-3" data-vista="grafica" aria-pressed="true">{t('metrics.view_chart')}</button>
+            <button type="button" class="!h-7 !px-3" data-vista="tabla" aria-pressed="false">{t('metrics.view_table')}</button>
           </div>
         </div>
-        <div id="burn-empty-state" class="flex-1 flex flex-col items-center justify-center text-forge-muted">
-          <svg class="w-10 h-10 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          <p class="text-sm">{t('metrics.select_sprint')}</p>
+        <div class="panel-cuerpo flex-1 flex flex-col">
+          <p id="burn-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div class="relative flex-1 w-full min-h-[16rem]" id="burn-chart-container"><canvas id="burn-canvas"></canvas></div>
+          <div class="hidden overflow-x-auto" id="burn-table-container"></div>
         </div>
-        <div class="relative flex-1 w-full hidden" id="burn-chart-container">
-          <canvas id="burndownChart"></canvas>
-        </div>
-      </div>
-
-      <!-- WIDGET: VELOCITY -->
-      <div class="bg-forge-panel border border-forge-border rounded-lg p-5 flex flex-col min-h-[350px]">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="text-lg font-bold text-forge-text">{t('metrics.velocity_trend')}</h2>
-            <p class="text-xs text-forge-muted mt-1" id="vel-scope-label">{t('metrics.scope_5sprints')}</p>
+      </section>
+      )}
+      {funcs.sprints && (
+      <section class="panel flex flex-col min-h-[22rem]" data-grafica="vel">
+        <div class="panel-cabeza !items-start">
+          <div class="min-w-0">
+            <h2>{t('metrics.velocity_trend')}</h2>
+            <p class="hint mt-0.5" id="vel-scope-label">{t('metrics.scope_5sprints')}</p>
+          </div>
+          <div class="segmentado shrink-0" role="group" aria-label={t('metrics.view_label')}>
+            <button type="button" class="!h-7 !px-3" data-vista="grafica" aria-pressed="true">{t('metrics.view_chart')}</button>
+            <button type="button" class="!h-7 !px-3" data-vista="tabla" aria-pressed="false">{t('metrics.view_table')}</button>
           </div>
         </div>
-        <div id="vel-empty-state" class="hidden flex-1 flex flex-col items-center justify-center text-forge-muted">
-          <svg class="w-10 h-10 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-          <p class="text-sm">{t('metrics.not_enough_sprints')}</p>
+        <div class="panel-cuerpo flex-1 flex flex-col">
+          <p id="vel-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div class="relative flex-1 w-full min-h-[16rem]" id="vel-chart-container"><canvas id="vel-canvas"></canvas></div>
+          <div class="hidden overflow-x-auto" id="vel-table-container"></div>
         </div>
-        <div class="relative flex-1 w-full" id="vel-chart-container">
-          <canvas id="velocityChart"></canvas>
-        </div>
-      </div>
-
-      <!-- WIDGET: PRECISION -->
-      <div class="bg-forge-panel border border-forge-border rounded-lg p-5 flex flex-col min-h-[350px]">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="text-lg font-bold text-forge-text">{t('metrics.estimation_precision')}</h2>
-            <p class="text-xs text-forge-muted mt-1" id="prec-scope-label">{t('metrics.scope_hist')}</p>
+      </section>
+      )}
+      {funcs.tiempo && (
+      <section class="panel flex flex-col min-h-[22rem]" data-grafica="prec">
+        <div class="panel-cabeza !items-start">
+          <div class="min-w-0">
+            <h2>{t('metrics.estimation_precision')}</h2>
+            <p class="hint mt-0.5" id="prec-scope-label">{t('metrics.scope_hist')}</p>
+          </div>
+          <div class="segmentado shrink-0" role="group" aria-label={t('metrics.view_label')}>
+            <button type="button" class="!h-7 !px-3" data-vista="grafica" aria-pressed="true">{t('metrics.view_chart')}</button>
+            <button type="button" class="!h-7 !px-3" data-vista="tabla" aria-pressed="false">{t('metrics.view_table')}</button>
           </div>
         </div>
-        <div id="prec-empty-state" class="hidden flex-1 flex flex-col items-center justify-center text-forge-muted">
-          <svg class="w-10 h-10 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          <p class="text-sm">No time tracking data found</p>
+        <div class="panel-cuerpo flex-1 flex flex-col">
+          <p id="prec-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div class="relative flex-1 w-full min-h-[16rem]" id="prec-chart-container"><canvas id="prec-canvas"></canvas></div>
+          <div class="hidden overflow-x-auto" id="prec-table-container"></div>
         </div>
-        <div class="relative flex-1 w-full" id="prec-chart-container">
-          <canvas id="precisionChart"></canvas>
-        </div>
-      </div>
-
+      </section>
+      )}
     </div>
+    {!funcs.sprints && !funcs.tiempo && <p class="hint mt-4 max-w-2xl">{t('metrics.no_charts')}</p>}
   </div>
 
   <script define:vars={{
-    tTodo: t('metrics.todo'),
-    tInProgress: t('metrics.in_progress'),
-    tDone: t('metrics.done'),
-    tEstimated: t('metrics.estimated_h'),
-    tLogged: t('metrics.logged_h'),
-    // Las gráficas de distribución y precisión traían cada una su propia
-    // etiqueta de «sin asignar» desde el SQL, en idiomas distintos, en la misma
-    // pantalla. Ahora el servidor devuelve NULL y la palabra se pone aquí, una
-    // sola vez y en el idioma del usuario.
-    tUnassigned: t('modal.unassigned')
+    T: {
+      estados: Object.fromEntries(ESTADOS.map((e) => [e, t(INFO_ESTADO[e].i18n)])),
+      estimated: t('metrics.estimated_h'),
+      logged: t('metrics.logged_h'),
+      unassigned: t('modal.unassigned'),
+      scopeHist: t('metrics.scope_hist'),
+      scopeSprint: t('metrics.scope_one_sprint'),
+      selectSprint: t('metrics.select_sprint'),
+      loadError: t('metrics.load_error'),
+      noIssues: t('metrics.no_issues'),
+      noSprintIssues: t('metrics.no_sprint_issues'),
+      notEnough: t('metrics.not_enough_sprints'),
+      noTime: t('metrics.no_time'),
+      completed: t('metrics.completed'),
+      remaining: t('metrics.remaining'),
+      doneOf: t('metrics.done_of'),
+      velocity: t('metrics.velocity_series'),
+      colPerson: t('metrics.col_person'),
+      colSprint: t('metrics.col_sprint'),
+      colDone: t('metrics.col_done'),
+      colCount: t('metrics.col_count'),
+      tableHint: t('metrics.table_hint'),
+    },
   }}>
-    window.metricsLabels = {
-      todo: tTodo,
-      in_progress: tInProgress,
-      done: tDone,
-      estimated: tEstimated,
-      logged: tLogged,
-      unassigned: tUnassigned
-    };
+    window.metricsT = T;
   </script>
 
   <script>
     import Chart from 'chart.js/auto';
     import { aplicarDefectos, alCambiarTema } from '../../../../lib/client/temaGraficas';
-    
-    // @ts-ignore
+    import { escaparHtml } from '../../../../lib/texto';
+
+    const T: any = (window as any).metricsT;
+    const raiz = document.getElementById('metricas')!;
     const sysTag = window.location.pathname.split('/')[2];
-    let distChart: any = null;
-
-    // Colores del tema, no hexadecimales: ver `lib/client/temaGraficas.ts`.
+    const ESTADOS = ['todo', 'in_progress', 'review', 'done'];
     let tema = aplicarDefectos(Chart);
+    const graficas: Record<string, any> = {};
 
-    const sprintSelector = document.getElementById('global-sprint-selector') as HTMLSelectElement;
-
-    // Load Distribution
-    async function loadDistribution(sprintId: string) {
-      const url = sprintId === 'all' 
-        ? `/api/w/${sysTag}/metrics/distribution`
-        : `/api/w/${sysTag}/metrics/distribution?sprint_id=${sprintId}`;
-      
-      const res = await fetch(url);
-      const emptyState = document.getElementById('dist-empty-state');
-      const chartContainer = document.getElementById('dist-chart-container');
-      const label = document.getElementById('dist-scope-label');
-      
-      if (!res.ok) {
-        if (emptyState) emptyState.querySelector('p')!.textContent = 'Failed to load data';
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-      
-      const data = await res.json();
-      
-      if (label) {
-        label.textContent = sprintId === 'all' ? 'Scope: Historical Total' : `Scope: Sprint Specific`;
-      }
-
-      if (!data || data.length === 0) {
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-
-      emptyState?.classList.add('hidden');
-      chartContainer?.classList.remove('hidden');
-
-      // Process 2D data: Group by assignee, stack by status
-      const assignees = [...new Set(data.map((d: any) => d.assignee ?? (window as any).metricsLabels.unassigned))];
-      const statuses = ['todo', 'in_progress', 'done'];
-      
-      const datasets = statuses.map(status => {
-        const color = tema.estado[status];
-
-        return {
-          label: (window as any).metricsLabels[status] || status.replace('_', ' ').toUpperCase(),
-          data: assignees.map(a => {
-            const row = data.find((d: any) => (d.assignee ?? (window as any).metricsLabels.unassigned) === a && d.status === status);
-            return row ? row.count : 0;
-          }),
-          backgroundColor: color,
-        };
+    // ── Gráfica | Tabla ───────────────────────────────────────────────────
+    document.querySelectorAll<HTMLElement>('[data-grafica]').forEach((panel) => {
+      panel.querySelectorAll<HTMLButtonElement>('[data-vista]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const tabla = b.dataset.vista === 'tabla';
+          panel.querySelectorAll<HTMLButtonElement>('[data-vista]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+          const clave = panel.dataset.grafica;
+          document.getElementById(`${clave}-table-container`)?.classList.toggle('hidden', !tabla);
+          const vacio = !document.getElementById(`${clave}-empty-state`)?.classList.contains('hidden');
+          document.getElementById(`${clave}-chart-container`)?.classList.toggle('hidden', tabla || vacio);
+        });
       });
+    });
 
-      const ctx = document.getElementById('distributionChart') as HTMLCanvasElement;
-      if (distChart) distChart.destroy();
-      
-      // @ts-ignore
-      distChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: assignees,
-          datasets: datasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { stacked: true },
-            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
-      });
+    const enTabla = (clave: string) =>
+      document.querySelector(`[data-grafica="${clave}"] [data-vista="tabla"]`)?.getAttribute('aria-pressed') === 'true';
+
+    function vacio(clave: string, texto: string) {
+      const p = document.getElementById(`${clave}-empty-state`);
+      if (p) { p.textContent = texto; p.classList.remove('hidden'); }
+      document.getElementById(`${clave}-chart-container`)?.classList.add('hidden');
+      const tabla = document.getElementById(`${clave}-table-container`);
+      if (tabla) tabla.innerHTML = '';
     }
 
-    sprintSelector.addEventListener('change', (e) => {
-      const sprintId = (e.target as HTMLSelectElement).value;
-      loadDistribution(sprintId);
-      loadBurndown(sprintId);
-      loadPrecision(sprintId);
-    });
+    function lleno(clave: string) {
+      document.getElementById(`${clave}-empty-state`)?.classList.add('hidden');
+      document.getElementById(`${clave}-chart-container`)?.classList.toggle('hidden', enTabla(clave));
+      document.getElementById(`${clave}-table-container`)?.classList.toggle('hidden', !enTabla(clave));
+    }
 
-    // Initial load - read selected value instead of hardcoding 'all'
-    const initialSprintId = sprintSelector.value || 'all';
-    loadDistribution(initialSprintId);
-    loadBurndown(initialSprintId);
-    loadVelocity(); // Velocity is always historical
-    loadPrecision(initialSprintId);
+    /** La tabla de una gráfica: mismas cifras, en texto. */
+    function pintarTabla(clave: string, titulo: string, cabecera: string[], filas: Array<Array<string | number>>) {
+      const cont = document.getElementById(`${clave}-table-container`);
+      if (!cont) return;
+      const th = cabecera.map((c, i) => `<th${i > 0 ? ' class="num"' : ''}>${escaparHtml(c)}</th>`).join('');
+      const tr = filas.map((f) => `<tr>${f.map((c, i) => `<td${i > 0 ? ' class="num"' : ' class="titulo"'}>${escaparHtml(String(c))}</td>`).join('')}</tr>`).join('');
+      cont.innerHTML = `<table class="tabla"><caption class="sr-only">${escaparHtml(titulo)}</caption><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table><p class="hint mt-2">${escaparHtml(T.tableHint)}</p>`;
+    }
 
-    // Al cambiar de tema, las gráficas se vuelven a pintar con los colores nuevos.
-    alCambiarTema(() => {
-      tema = aplicarDefectos(Chart);
-      const sprintId = sprintSelector.value || 'all';
-      loadDistribution(sprintId);
-      loadBurndown(sprintId);
-      loadVelocity();
-      loadPrecision(sprintId);
-    });
+    const titulo = (clave: string) => document.querySelector(`[data-grafica="${clave}"] h2`)?.textContent || '';
+    const alcance = (clave: string, sprintId: string) => {
+      const l = document.getElementById(`${clave}-scope-label`);
+      if (l) l.textContent = sprintId === 'all' ? T.scopeHist : T.scopeSprint;
+    };
+    const opciones = (extra: any = {}) => ({ responsive: true, maintainAspectRatio: false, ...extra });
 
-    let burnChart: any = null;
+    // ── Carga por persona ─────────────────────────────────────────────────
+    async function cargarDistribucion(sprintId: string) {
+      alcance('dist', sprintId);
+      const res = await fetch(`/api/w/${sysTag}/metrics/distribution${sprintId === 'all' ? '' : `?sprint_id=${encodeURIComponent(sprintId)}`}`).catch(() => null);
+      if (!res?.ok) return vacio('dist', T.loadError);
+      const datos = await res.json();
+      if (!datos?.length) return vacio('dist', T.noIssues);
+      const personas = [...new Set(datos.map((d: any) => d.assignee ?? T.unassigned))] as string[];
+      const cuenta = (p: string, e: string) => datos.find((d: any) => (d.assignee ?? T.unassigned) === p && d.status === e)?.count ?? 0;
+      lleno('dist');
+      graficas.dist?.destroy();
+      graficas.dist = new Chart(document.getElementById('dist-canvas') as HTMLCanvasElement, {
+        type: 'bar',
+        data: { labels: personas, datasets: ESTADOS.map((e) => ({ label: T.estados[e], data: personas.map((p) => cuenta(p, e)), backgroundColor: tema.estado[e], borderRadius: 4 })) },
+        options: opciones({ scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } }),
+      });
+      pintarTabla('dist', titulo('dist'), [T.colPerson, ...ESTADOS.map((e) => T.estados[e])], personas.map((p) => [p, ...ESTADOS.map((e) => cuenta(p, e))]));
+    }
 
-    async function loadBurndown(sprintId: string) {
-      const emptyState = document.getElementById('burn-empty-state');
-      const chartContainer = document.getElementById('burn-chart-container');
-      const label = document.getElementById('burn-scope-label');
-
-      if (sprintId === 'all') {
-        if (label) label.textContent = 'Scope: Requires Sprint';
-        if (emptyState) emptyState.querySelector('p')!.textContent = 'Select a specific sprint above to view';
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-
-      if (label) label.textContent = 'Scope: Current Sprint';
-      
-      const res = await fetch(`/api/w/${sysTag}/metrics/burndown?sprint_id=${sprintId}`);
-      if (!res.ok) {
-        if (emptyState) emptyState.querySelector('p')!.textContent = 'Failed to load burndown data';
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-      const data = await res.json();
-
-      if (!data || data.total_issues === 0) {
-        if (emptyState) emptyState.querySelector('p')!.textContent = 'No issues in this sprint';
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-
-      emptyState?.classList.add('hidden');
-      chartContainer?.classList.remove('hidden');
-
-      const remaining = data.total_issues - data.completed_issues;
-
-      const ctx = document.getElementById('burndownChart') as HTMLCanvasElement;
-      if (burnChart) burnChart.destroy();
-      
-      // @ts-ignore
-      burnChart = new Chart(ctx, {
+    // ── Avance del sprint ─────────────────────────────────────────────────
+    async function cargarAvance(sprintId: string) {
+      if (!document.getElementById('burn-canvas')) return;
+      if (sprintId === 'all') return vacio('burn', T.selectSprint);
+      alcance('burn', sprintId);
+      const res = await fetch(`/api/w/${sysTag}/metrics/burndown?sprint_id=${encodeURIComponent(sprintId)}`).catch(() => null);
+      if (!res?.ok) return vacio('burn', T.loadError);
+      const d = await res.json();
+      if (!d || d.total_issues === 0) return vacio('burn', T.noSprintIssues);
+      const quedan = d.total_issues - d.completed_issues;
+      lleno('burn');
+      graficas.burn?.destroy();
+      graficas.burn = new Chart(document.getElementById('burn-canvas') as HTMLCanvasElement, {
         type: 'doughnut',
-        data: {
-          labels: ['Completed', 'Remaining'],
-          datasets: [{
-            data: [data.completed_issues, remaining],
-            backgroundColor: [tema.estado.done, tema.borde],
-            borderWidth: 0,
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '75%',
-          plugins: {
-            title: {
-              display: true,
-              text: `${data.completed_issues} of ${data.total_issues} Done`,
-              color: tema.texto,
-              font: { size: 16 }
-            }
-          }
-        }
+        data: { labels: [T.completed, T.remaining], datasets: [{ data: [d.completed_issues, quedan], backgroundColor: [tema.estado.done, tema.borde], borderWidth: 0 }] },
+        options: opciones({ cutout: '72%', plugins: { title: { display: true, text: T.doneOf.replace('{n}', d.completed_issues).replace('{total}', d.total_issues), color: tema.texto, font: { size: 16, weight: 700 } } } }),
       });
+      pintarTabla('burn', titulo('burn'), ['', T.colCount], [[T.completed, d.completed_issues], [T.remaining, quedan]]);
     }
 
-    let velChart: any = null;
-
-    async function loadVelocity() {
-      const res = await fetch(`/api/w/${sysTag}/metrics/velocity`);
-      const emptyState = document.getElementById('vel-empty-state');
-      const chartContainer = document.getElementById('vel-chart-container');
-      
-      if (!res.ok) {
-        if (emptyState) emptyState.querySelector('p')!.textContent = 'Failed to load velocity';
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-      const data = await res.json();
-
-      if (!data || data.length === 0) {
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-
-      emptyState?.classList.add('hidden');
-      chartContainer?.classList.remove('hidden');
-
-      const ctx = document.getElementById('velocityChart') as HTMLCanvasElement;
-      if (velChart) velChart.destroy();
-      
-      // @ts-ignore
-      velChart = new Chart(ctx, {
+    // ── Tareas cerradas por sprint ────────────────────────────────────────
+    async function cargarVelocidad() {
+      if (!document.getElementById('vel-canvas')) return;
+      const res = await fetch(`/api/w/${sysTag}/metrics/velocity`).catch(() => null);
+      if (!res?.ok) return vacio('vel', T.loadError);
+      const datos = await res.json();
+      if (!datos?.length) return vacio('vel', T.notEnough);
+      lleno('vel');
+      graficas.vel?.destroy();
+      graficas.vel = new Chart(document.getElementById('vel-canvas') as HTMLCanvasElement, {
         type: 'line',
-        data: {
-          labels: data.map((d: any) => d.sprint_name),
-          datasets: [{
-            label: 'Completed Issues',
-            data: data.map((d: any) => d.velocity),
-            borderColor: tema.estado.in_progress,
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
+        data: { labels: datos.map((d: any) => d.sprint_name), datasets: [{ label: T.velocity, data: datos.map((d: any) => d.velocity), borderColor: tema.texto, backgroundColor: tema.texto, borderWidth: 2, tension: 0.25 }] },
+        options: opciones({ scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }),
       });
+      pintarTabla('vel', titulo('vel'), [T.colSprint, T.colDone], datos.map((d: any) => [d.sprint_name, d.velocity]));
     }
 
-    let precChart: any = null;
-
-    async function loadPrecision(sprintId: string) {
-      const url = sprintId === 'all' 
-        ? `/api/w/${sysTag}/metrics/precision`
-        : `/api/w/${sysTag}/metrics/precision?sprint_id=${sprintId}`;
-      
-      const res = await fetch(url);
-      const emptyState = document.getElementById('prec-empty-state');
-      const chartContainer = document.getElementById('prec-chart-container');
-      const label = document.getElementById('prec-scope-label');
-      
-      if (!res.ok) {
-        if (emptyState) emptyState.querySelector('p')!.textContent = 'Failed to load precision data';
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-      const data = await res.json();
-      
-      if (label) {
-        label.textContent = sprintId === 'all' ? 'Scope: Historical Total' : `Scope: Sprint Specific`;
-      }
-
-      if (!data || data.length === 0 || data.every((d: any) => d.estimated_hours === 0 && d.logged_hours === 0)) {
-        emptyState?.classList.remove('hidden');
-        chartContainer?.classList.add('hidden');
-        return;
-      }
-
-      emptyState?.classList.add('hidden');
-      chartContainer?.classList.remove('hidden');
-
-      const ctx = document.getElementById('precisionChart') as HTMLCanvasElement;
-      if (precChart) precChart.destroy();
-      
-      // @ts-ignore
-      precChart = new Chart(ctx, {
+    // ── Estimado y registrado ─────────────────────────────────────────────
+    async function cargarPrecision(sprintId: string) {
+      if (!document.getElementById('prec-canvas')) return;
+      alcance('prec', sprintId);
+      const res = await fetch(`/api/w/${sysTag}/metrics/precision${sprintId === 'all' ? '' : `?sprint_id=${encodeURIComponent(sprintId)}`}`).catch(() => null);
+      if (!res?.ok) return vacio('prec', T.loadError);
+      const datos = await res.json();
+      if (!datos?.length || datos.every((d: any) => !d.estimated_hours && !d.logged_hours)) return vacio('prec', T.noTime);
+      const nombres = datos.map((d: any) => d.assignee ?? T.unassigned);
+      const h = (v: number) => Math.round((v || 0) * 10) / 10;
+      lleno('prec');
+      graficas.prec?.destroy();
+      graficas.prec = new Chart(document.getElementById('prec-canvas') as HTMLCanvasElement, {
         type: 'bar',
-        data: {
-          labels: data.map((d: any) => d.assignee ?? (window as any).metricsLabels.unassigned),
-          datasets: [
-            {
-              label: (window as any).metricsLabels.estimated,
-              data: data.map((d: any) => d.estimated_hours),
-              backgroundColor: tema.tenue,
-            },
-            {
-              label: (window as any).metricsLabels.logged,
-              data: data.map((d: any) => d.logged_hours),
-              backgroundColor: tema.acento,
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
+        data: { labels: nombres, datasets: [
+          { label: T.estimated, data: datos.map((d: any) => h(d.estimated_hours)), backgroundColor: tema.borde, borderRadius: 4 },
+          { label: T.logged, data: datos.map((d: any) => h(d.logged_hours)), backgroundColor: tema.texto, borderRadius: 4 },
+        ] },
+        options: opciones({ scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }),
       });
+      pintarTabla('prec', titulo('prec'), [T.colPerson, T.estimated, T.logged], datos.map((d: any, i: number) => [nombres[i], h(d.estimated_hours), h(d.logged_hours)]));
     }
 
+    const selector = document.getElementById('global-sprint-selector') as HTMLSelectElement | null;
+    const todo = () => {
+      const sprint = selector?.value || 'all';
+      cargarDistribucion(sprint);
+      cargarAvance(sprint);
+      cargarVelocidad();
+      cargarPrecision(sprint);
+    };
+    selector?.addEventListener('change', todo);
+    todo();
+
+    // Al cambiar de tema, las gráficas se repintan con los colores nuevos.
+    alCambiarTema(() => { tema = aplicarDefectos(Chart); todo(); });
   </script>
 </MainLayout>
