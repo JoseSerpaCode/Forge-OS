@@ -24,7 +24,6 @@ import { listar as listarPlantillas } from '../../lib/plantillas';
 import CampoFecha from '../forms/CampoFecha.astro';
 import OpcionesResponsable from './OpcionesResponsable.astro';
 import { listar as listarContactos } from '../../lib/contactos';
-import LabelChip from '../labels/LabelChip.astro';
 
 interface Props { workspaceId: string }
 const { workspaceId } = Astro.props;
@@ -181,8 +180,10 @@ const campo = 'campo';
           <legend class="block field-label mb-1.5">{t('quick.labels')}</legend>
           <div id="nt-etiquetas" class="flex flex-wrap gap-1.5">
             {etiquetas.map((e) => (
-              <button type="button" class="nt-etiqueta rounded-full p-0.5 outline-2 outline-offset-0 aria-pressed:outline aria-pressed:outline-forge-text" aria-pressed="false" data-id={e.id}>
-                <LabelChip name={e.name} color={e.color} size="sm" />
+              <button type="button" class="nt-etiqueta etiqueta-opcion" aria-pressed="false" data-id={e.id} style={`--c:${/^#[0-9a-f]{6}$/i.test(e.color) ? e.color : '#8B8D98'}`}>
+                <span class="sw" aria-hidden="true"></span>
+                <svg class="marca" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="truncate">{e.name}</span>
               </button>
             ))}
           </div>
@@ -343,22 +344,28 @@ const campo = 'campo';
         catalogo = [...catalogo, { id: e.id, name: e.name, color: e.color }];
         const b = document.createElement('button');
         b.type = 'button';
-        // Igual que las que pinta el servidor: la píldora de la etiqueta dentro
-        // de un botón que se enciende.
-        b.className = 'nt-etiqueta rounded-full p-0.5 outline-2 outline-offset-0 aria-pressed:outline aria-pressed:outline-forge-text';
+        // Igual que las que pinta el servidor (`.etiqueta-opcion`), ya elegida.
+        b.className = 'nt-etiqueta etiqueta-opcion';
         b.dataset.id = e.id;
         b.setAttribute('aria-pressed', 'true');
-        const chip = document.createElement('span');
-        chip.className = 'chip chip-sm max-w-full';
-        chip.style.setProperty('--c', e.color);
+        b.style.setProperty('--c', e.color);
         const sw = document.createElement('span');
         sw.className = 'sw';
         sw.setAttribute('aria-hidden', 'true');
+        const marca = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        marca.setAttribute('class', 'marca');
+        marca.setAttribute('viewBox', '0 0 24 24');
+        marca.setAttribute('fill', 'none');
+        marca.setAttribute('stroke', 'currentColor');
+        marca.setAttribute('stroke-width', '3');
+        marca.setAttribute('aria-hidden', 'true');
+        const linea = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        linea.setAttribute('points', '20 6 9 17 4 12');
+        marca.append(linea);
         const rotulo = document.createElement('span');
         rotulo.className = 'truncate';
         rotulo.textContent = e.name;
-        chip.append(sw, rotulo);
-        b.append(chip);
+        b.append(sw, marca, rotulo);
         contEtiquetas.append(b);
         analizar();
       } catch (err) {

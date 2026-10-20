@@ -65,7 +65,54 @@ export function listar(workspaceId: string): Plantilla[] {
   });
 }
 
-export type Resultado = { ok: true; id: string } | { ok: false; error: 'nombre_vacio' | 'nombre_largo' | 'no_existe' };
+export type Resultado =
+  | { ok: true; id: string }
+  | { ok: false; error: 'nombre_vacio' | 'nombre_largo' | 'titulo_vacio' | 'no_existe' };
+
+function nombreValido(nombre: unknown): string | { error: 'nombre_vacio' | 'nombre_largo' } {
+  const n = typeof nombre === 'string' ? nombre.trim() : '';
+  if (!n) return { error: 'nombre_vacio' };
+  if (n.length > LARGO_NOMBRE) return { error: 'nombre_largo' };
+  return n;
+}
+
+/**
+ * Lo que llega del formulario de ajustes, limpio y con las etiquetas de
+ * **este** espacio: una plantilla no guarda ids de etiquetas ajenas, aunque al
+ * usarla se saltarían igual.
+ */
+function contenidoDelEspacio(entrada: unknown, workspaceId: string): Contenido | null {
+  const c = limpiarContenido(entrada);
+  if (!c) return null;
+  if (c.label_ids?.length) {
+    c.label_ids = c.label_ids.filter((l) => db.prepare('SELECT 1 FROM labels WHERE id = ? AND workspace_id = ?').get(l, workspaceId));
+    if (!c.label_ids.length) delete c.label_ids;
+  }
+  return c;
+}
+
+/** Crear una plantilla desde cero (ajustes del espacio), sin pasar por una tarea. */
+export function crear(workspaceId: string, nombre: unknown, entrada: unknown, userId: string): Resultado {
+  const n = nombreValido(nombre);
+  if (typeof n !== 'string') return { ok: false, error: n.error };
+  const contenido = contenidoDelEspacio(entrada, workspaceId);
+  if (!contenido) return { ok: false, error: 'titulo_vacio' };
+  const id = crypto.randomUUID();
+  db.prepare('INSERT INTO task_templates (id, workspace_id, name, payload_json, created_by) VALUES (?, ?, ?, ?, ?)')
+    .run(id, workspaceId, n, JSON.stringify(contenido), userId);
+  return { ok: true, id };
+}
+
+/** Cambiar el nombre o el contenido de una plantilla del espacio. */
+export function actualizar(id: string, workspaceId: string, nombre: unknown, entrada: unknown): Resultado {
+  const n = nombreValido(nombre);
+  if (typeof n !== 'string') return { ok: false, error: n.error };
+  const contenido = contenidoDelEspacio(entrada, workspaceId);
+  if (!contenido) return { ok: false, error: 'titulo_vacio' };
+  const cambios = db.prepare('UPDATE task_templates SET name = ?, payload_json = ? WHERE id = ? AND workspace_id = ?')
+    .run(n, JSON.stringify(contenido), id, workspaceId).changes;
+  return cambios ? { ok: true, id } : { ok: false, error: 'no_existe' };
+}
 
 /**
  * Guardar una tarea como plantilla: su título, descripción, tipo, prioridad,
@@ -73,9 +120,8 @@ export type Resultado = { ok: true; id: string } | { ok: false; error: 'nombre_v
  * desde hoy (lo que se pase, o lo que falte hasta su fecha).
  */
 export function desdeTarea(issueId: string, workspaceId: string, nombre: unknown, userId: string, desplazamiento?: unknown): Resultado {
-  const n = typeof nombre === 'string' ? nombre.trim() : '';
-  if (!n) return { ok: false, error: 'nombre_vacio' };
-  if (n.length > LARGO_NOMBRE) return { ok: false, error: 'nombre_largo' };
+  const n = nombreValido(nombre);
+  if (typeof n !== 'string') return { ok: false, error: n.error };
   const t = db.prepare('SELECT * FROM issues WHERE id = ? AND workspace_id = ?').get(issueId, workspaceId) as any;
   if (!t) return { ok: false, error: 'no_existe' };
   const etiquetas = (db.prepare('SELECT label_id FROM issue_labels WHERE issue_id = ?').all(issueId) as Array<{ label_id: string }>).map((r) => r.label_id);

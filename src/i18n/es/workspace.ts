@@ -201,7 +201,7 @@ export const es = {
   'dashboard.upcoming': 'Próximas entregas',
   'dashboard.no_upcoming': 'Nada con fecha próximamente.',
   'ws.settings.templates': 'Plantillas de tareas',
-  'ws.settings.templates_desc': 'Se crean desde el panel de una tarea («Guardar como plantilla») y se usan al crear una nueva.',
+  'ws.settings.templates_desc': 'Una tarea en conserva: título, descripción, etiquetas, pasos y una entrega a tantos días. Se usan al crear una tarea («Desde plantilla» o escribiendo /nombre). También puedes guardar cualquier tarea como plantilla desde su panel.',
   'ws.settings.templates_none': 'No hay plantillas.',
   'ws.settings.template_delete': 'Borrar la plantilla «{nombre}»',
   'dashboard.people_count': '{n} personas',

@@ -33,9 +33,11 @@ test('cambiar el avatar y el banner es alcanzable', async ({ page }) => {
   for (const id of ['#avatar-file-input', '#banner-file-input']) {
     const control = page.locator(id);
     await expect(control, `${id} no existe`).toHaveCount(1);
-    // El `<input type=file>` va superpuesto y transparente a propósito; lo que
-    // importa es que ocupe sitio y se pueda tocar.
-    const caja = await control.boundingBox();
+    // El `<input type=file>` va escondido dentro de su `<label>`, que es lo
+    // que se toca: lo que importa es que esa etiqueta ocupe sitio y se vea.
+    const etiqueta = page.locator(`label:has(${id})`);
+    await expect(etiqueta, `${id} no está dentro de una etiqueta`).toBeVisible();
+    const caja = await etiqueta.boundingBox();
     expect(caja, `${id} no ocupa sitio en la pantalla`).toBeTruthy();
     expect(caja!.width, `${id} mide ${caja!.width}px de ancho`).toBeGreaterThan(30);
   }

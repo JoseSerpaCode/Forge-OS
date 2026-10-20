@@ -1,0 +1,267 @@
+---
+/**
+ * Plantillas de tareas, en los ajustes del espacio.
+ *
+ * Antes solo se podían crear desde el panel de una tarea («Guardar como
+ * plantilla»), y aquí solo se listaban y borraban: quien llegaba a esta
+ * sección buscando cómo crear una no encontraba nada que pulsar. Ahora se
+ * crean y se editan aquí mismo, o se parte de una de las de serie, como en
+ * las tablas.
+ */
+import { useTranslations } from '../../i18n/ui';
+import type { Contenido, Plantilla } from '../../lib/plantillas';
+import { plantillasDeSerie } from '../../lib/plantillasDeSerie';
+import { OPCIONES as OPCIONES_PRIORIDAD } from '../../lib/prioridad';
+import { describir } from '../../lib/recurrencia';
+
+interface Props {
+  sysTag: string;
+  plantillas: Plantilla[];
+  etiquetas: Array<{ id: string; name: string; color: string }>;
+  tipos: Array<{ key: string; nombre: string }>;
+}
+
+const { sysTag, plantillas, etiquetas, tipos } = Astro.props;
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
+const deSerie = plantillasDeSerie(lang);
+const REPETICIONES = ['d:1', 'd:7', 'd:14'];
+const tono = (c: string) => (/^#[0-9a-f]{6}$/i.test(c) ? c : '#8B8D98');
+
+// «4 pasos · entrega a 7 días»: lo que distingue a una plantilla de otra.
+const resumen = (c: Contenido) => [
+  c.subtareas?.length ? t('tpl.sum_steps').replace('{n}', String(c.subtareas.length)) : '',
+  c.due_offset === undefined ? t('tpl.sum_no_due')
+    : c.due_offset === 0 ? t('tpl.sum_due_same')
+    : t('tpl.sum_due').replace('{n}', String(c.due_offset)),
+].filter(Boolean).join(' · ');
+---
+
+<div id="plantillas-espacio" class="panel p-6" data-sys-tag={sysTag}
+  data-t-new={t('tpl.new')} data-t-edit={t('tpl.edit')} data-t-error={t('tpl.error')}
+  data-t-err-name={t('tpl.err_name')} data-t-err-title={t('tpl.err_title')} data-t-deleted={t('tpl.deleted')}>
+  <div class="flex flex-wrap items-start justify-between gap-3 mb-1">
+    <h2 class="text-lg font-bold text-forge-text">{t('ws.settings.templates')}</h2>
+    <button type="button" class="nueva-plantilla btn btn-primary btn-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      {t('tpl.new')}
+    </button>
+  </div>
+  <p class="text-sm text-forge-muted mb-4 max-w-2xl">{t('ws.settings.templates_desc')}</p>
+
+  {plantillas.length === 0 ? (
+    <p class="text-sm text-forge-muted mb-6">{t('ws.settings.templates_none')}</p>
+  ) : (
+    <ul class="mb-6 border border-forge-border rounded-[14px] divide-y divide-forge-border">
+      {plantillas.map((p) => (
+        <li class="flex items-center gap-2 pl-4 pr-2 py-2">
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-semibold text-forge-text truncate">{p.name}</span>
+            <span class="block text-xs text-forge-muted truncate">{p.contenido.title} · {resumen(p.contenido)}</span>
+          </span>
+          <button type="button" class="editar-plantilla btn btn-ghost btn-icon btn-sm"
+            data-plantilla={JSON.stringify({ id: p.id, name: p.name, contenido: p.contenido })}
+            aria-label={t('tpl.edit_named').replace('{nombre}', p.name)} title={t('tpl.edit')}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          </button>
+          <button type="button" class="borrar-plantilla btn btn-ghost btn-icon btn-sm !text-forge-error" data-id={p.id}
+            aria-label={t('ws.settings.template_delete').replace('{nombre}', p.name)} title={t('ws.settings.template_delete').replace('{nombre}', p.name)}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )}
+
+  <h3 class="field-label">{t('tpl.gallery')}</h3>
+  <p class="hint mb-3">{t('tpl.gallery_desc')}</p>
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    {deSerie.map((p) => (
+      <div class="border border-forge-border rounded-[14px] p-4 flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-forge-text">{p.nombre}</span>
+        <span class="text-sm text-forge-muted flex-1">{p.descripcion}</span>
+        <span class="hint">{resumen(p.contenido)}</span>
+        <button type="button" class="base-plantilla btn btn-secondary btn-sm self-start mt-1.5"
+          data-plantilla={JSON.stringify({ name: p.nombre, contenido: p.contenido })}
+          aria-label={`${t('tpl.use_as_base')}: ${p.nombre}`}>{t('tpl.use_as_base')}</button>
+      </div>
+    ))}
+  </div>
+</div>
+
+<dialog id="dialogo-plantilla" class="ventana !max-w-[36rem]" aria-labelledby="dialogo-plantilla-titulo">
+  <h2 id="dialogo-plantilla-titulo" class="ventana-titulo">{t('tpl.new')}</h2>
+  <form id="form-plantilla" class="space-y-4" novalidate>
+    <input type="hidden" name="id" />
+    <div>
+      <label class="block field-label mb-1.5" for="pl-nombre">{t('tpl.name')}</label>
+      <input id="pl-nombre" name="name" type="text" class="campo" maxlength="60" autocomplete="off" aria-describedby="pl-nombre-ayuda" />
+      <p id="pl-nombre-ayuda" class="hint mt-1.5">{t('tpl.name_hint')}</p>
+    </div>
+    <div>
+      <label class="block field-label mb-1.5" for="pl-titulo">{t('tpl.task_title')}</label>
+      <input id="pl-titulo" name="title" type="text" class="campo" maxlength="200" autocomplete="off" />
+    </div>
+    <div>
+      <label class="block field-label mb-1.5" for="pl-desc">{t('modal.description')}</label>
+      <textarea id="pl-desc" name="description" rows="4" class="campo !h-auto py-2"></textarea>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block field-label mb-1.5" for="pl-prioridad">{t('priority.label')}</label>
+        <select id="pl-prioridad" name="priority" class="campo">
+          {OPCIONES_PRIORIDAD.map((p) => <option value={p.valor}>{t(`priority.${p.nivel}` as any)}</option>)}
+        </select>
+      </div>
+      <div>
+        <label class="block field-label mb-1.5" for="pl-tipo">{t('modal.type')}</label>
+        <select id="pl-tipo" name="type" class="campo">
+          {tipos.map((ti) => <option value={ti.key}>{ti.nombre}</option>)}
+        </select>
+      </div>
+      <div>
+        <label class="block field-label mb-1.5" for="pl-entrega">{t('tpl.due')}</label>
+        <input id="pl-entrega" name="due_offset" type="number" min="0" max="365" step="1" inputmode="numeric" class="campo" aria-describedby="pl-entrega-ayuda" />
+      </div>
+      <div>
+        <label class="block field-label mb-1.5" for="pl-hora">{t('modal.due_time')}</label>
+        <input id="pl-hora" name="due_time" type="time" class="campo" />
+      </div>
+    </div>
+    <p id="pl-entrega-ayuda" class="hint !-mt-2">{t('tpl.due_hint')}</p>
+    <div>
+      <label class="block field-label mb-1.5" for="pl-repetir">{t('repeat.label')}</label>
+      <select id="pl-repetir" name="recurrence" class="campo">
+        <option value="">{t('tpl.no_repeat')}</option>
+        {REPETICIONES.map((r) => <option value={r}>{describir(r, lang)}</option>)}
+      </select>
+    </div>
+    {etiquetas.length > 0 && (
+      <fieldset>
+        <legend class="block field-label mb-1.5">{t('quick.labels')}</legend>
+        <div class="flex flex-wrap gap-1.5">
+          {etiquetas.map((e) => (
+            <button type="button" class="pl-etiqueta etiqueta-opcion" aria-pressed="false" data-id={e.id} style={`--c:${tono(e.color)}`}>
+              <span class="sw" aria-hidden="true"></span>
+              <svg class="marca" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="truncate">{e.name}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    )}
+    <div>
+      <label class="block field-label mb-1.5" for="pl-pasos">{t('tpl.steps')}</label>
+      <textarea id="pl-pasos" name="subtareas" rows="4" class="campo !h-auto py-2" aria-describedby="pl-pasos-ayuda"></textarea>
+      <p id="pl-pasos-ayuda" class="hint mt-1.5">{t('tpl.steps_hint')}</p>
+    </div>
+    <p id="pl-error" class="text-sm text-forge-error hidden" role="alert"></p>
+    <div class="ventana-pie">
+      <button type="button" class="cerrar-plantilla btn btn-ghost">{t('modal.cancel')}</button>
+      <button type="submit" class="btn btn-primary">{t('modal.save')}</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  type Contenido = {
+    title?: string; description?: string; type?: string; priority?: string; label_ids?: string[];
+    subtareas?: string[]; recurrence?: string; due_offset?: number; due_time?: string;
+  };
+  type Datos = { id?: string; name?: string; contenido?: Contenido };
+
+  const raiz = document.getElementById('plantillas-espacio');
+  const dialogo = document.getElementById('dialogo-plantilla') as HTMLDialogElement | null;
+  const form = document.getElementById('form-plantilla') as HTMLFormElement | null;
+
+  if (raiz && dialogo && form) {
+    const d = raiz.dataset;
+    const campo = <T extends HTMLElement>(nombre: string) => form.elements.namedItem(nombre) as unknown as T;
+    const error = document.getElementById('pl-error')!;
+    const entrega = campo<HTMLInputElement>('due_offset');
+    const repetir = campo<HTMLSelectElement>('recurrence');
+    const etiquetas = () => Array.from(form.querySelectorAll<HTMLButtonElement>('.pl-etiqueta'));
+
+    // Repetir cuenta desde la entrega: sin entrega no hay de dónde.
+    const ajustarRepetir = () => {
+      repetir.disabled = entrega.value === '';
+      if (repetir.disabled) repetir.value = '';
+    };
+    entrega.addEventListener('input', ajustarRepetir);
+
+    function abrir(datos: Datos = {}) {
+      const c = datos.contenido ?? {};
+      form!.reset();
+      campo<HTMLInputElement>('id').value = datos.id ?? '';
+      campo<HTMLInputElement>('name').value = datos.name ?? '';
+      campo<HTMLInputElement>('title').value = c.title ?? '';
+      campo<HTMLTextAreaElement>('description').value = c.description ?? '';
+      campo<HTMLSelectElement>('priority').value = c.priority === 'lowest' ? 'low' : (c.priority ?? 'medium');
+      const tipo = campo<HTMLSelectElement>('type');
+      tipo.value = c.type && Array.from(tipo.options).some((o) => o.value === c.type) ? c.type : (tipo.options[0]?.value ?? '');
+      entrega.value = c.due_offset === undefined ? '' : String(c.due_offset);
+      campo<HTMLInputElement>('due_time').value = c.due_time ?? '';
+      ajustarRepetir();
+      if (!repetir.disabled) repetir.value = Array.from(repetir.options).some((o) => o.value === c.recurrence) ? (c.recurrence ?? '') : '';
+      campo<HTMLTextAreaElement>('subtareas').value = (c.subtareas ?? []).join('\n');
+      const puestas = new Set(c.label_ids ?? []);
+      etiquetas().forEach((b) => b.setAttribute('aria-pressed', String(puestas.has(b.dataset.id!))));
+      error.classList.add('hidden');
+      document.getElementById('dialogo-plantilla-titulo')!.textContent = datos.id ? d.tEdit || '' : d.tNew || '';
+      dialogo!.showModal();
+      campo<HTMLInputElement>('name').focus();
+    }
+
+    raiz.addEventListener('click', async (e) => {
+      const objetivo = e.target as HTMLElement;
+      if (objetivo.closest('.nueva-plantilla')) { abrir(); return; }
+      const conDatos = objetivo.closest<HTMLElement>('.editar-plantilla, .base-plantilla');
+      if (conDatos?.dataset.plantilla) { abrir(JSON.parse(conDatos.dataset.plantilla)); return; }
+      const borrar = objetivo.closest<HTMLButtonElement>('.borrar-plantilla');
+      if (!borrar) return;
+      const res = await fetch(`/api/w/${d.sysTag}/templates`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: borrar.dataset.id }),
+      }).catch(() => null);
+      if (res?.ok) {
+        borrar.closest('li')?.remove();
+        window.showToast?.(d.tDeleted || '');
+      } else {
+        window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      }
+    });
+
+    dialogo.addEventListener('click', (e) => {
+      const objetivo = e.target as HTMLElement;
+      if (objetivo === dialogo || objetivo.closest('.cerrar-plantilla')) { dialogo.close(); return; }
+      const etiqueta = objetivo.closest<HTMLButtonElement>('.pl-etiqueta');
+      if (etiqueta) etiqueta.setAttribute('aria-pressed', String(etiqueta.getAttribute('aria-pressed') !== 'true'));
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = campo<HTMLInputElement>('id').value;
+      const dias = entrega.value.trim();
+      const contenido: Contenido = {
+        title: campo<HTMLInputElement>('title').value.trim(),
+        description: campo<HTMLTextAreaElement>('description').value,
+        priority: campo<HTMLSelectElement>('priority').value,
+        type: campo<HTMLSelectElement>('type').value || undefined,
+        due_offset: dias === '' ? undefined : Number(dias),
+        due_time: campo<HTMLInputElement>('due_time').value || undefined,
+        recurrence: repetir.value || undefined,
+        label_ids: etiquetas().filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.id!),
+        subtareas: campo<HTMLTextAreaElement>('subtareas').value.split('\n').map((s) => s.trim()).filter(Boolean),
+      };
+      const res = await fetch(`/api/w/${d.sysTag}/templates`, {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id || undefined, name: campo<HTMLInputElement>('name').value, contenido }),
+      }).catch(() => null);
+      if (res?.ok) { window.location.reload(); return; }
+      const codigo = (await res?.json().catch(() => null))?.error_code;
+      error.textContent = codigo === 'nombre_vacio' || codigo === 'nombre_largo' ? d.tErrName || ''
+        : codigo === 'titulo_vacio' ? d.tErrTitle || '' : d.tError || '';
+      error.classList.remove('hidden');
+    });
+  }
+</script>

@@ -85,3 +85,32 @@ describe('guardar y usar', () => {
     expect(db.prepare("SELECT created_by FROM task_templates WHERE name = 'Sobrevive'").get()).toEqual({ created_by: null });
   });
 });
+
+describe('crear y editar desde los ajustes', () => {
+  it('crea sin pasar por una tarea, y se queda solo con las etiquetas del espacio', () => {
+    const r = plantillas.crear('w', 'Informe', { title: 'Informe de laboratorio', label_ids: ['l1', 'de-otro-espacio'], due_offset: 7, recurrence: 'd:7' }, 'u');
+    expect(r.ok).toBe(true);
+    const p = plantillas.listar('w').find((x) => x.name === 'Informe')!;
+    expect(p.contenido).toEqual({ title: 'Informe de laboratorio', label_ids: ['l1'], due_offset: 7, recurrence: 'd:7' });
+  });
+  it('sin nombre o sin título no se crea', () => {
+    expect(plantillas.crear('w', '  ', { title: 'X' }, 'u')).toEqual({ ok: false, error: 'nombre_vacio' });
+    expect(plantillas.crear('w', 'X'.repeat(61), { title: 'X' }, 'u')).toEqual({ ok: false, error: 'nombre_largo' });
+    expect(plantillas.crear('w', 'Sin título', { description: 'nada' }, 'u')).toEqual({ ok: false, error: 'titulo_vacio' });
+  });
+  it('edita nombre y contenido, y no toca la de otro espacio', () => {
+    const { id } = plantillas.crear('w', 'Borrador', { title: 'Uno' }, 'u') as { ok: true; id: string };
+    expect(plantillas.actualizar(id, 'w', 'Definitiva', { title: 'Dos', subtareas: ['a', 'b'] }).ok).toBe(true);
+    const p = plantillas.listar('w').find((x) => x.id === id)!;
+    expect(p).toMatchObject({ name: 'Definitiva', contenido: { title: 'Dos', subtareas: ['a', 'b'] } });
+    expect(plantillas.actualizar(id, 'w2', 'Robada', { title: 'X' })).toEqual({ ok: false, error: 'no_existe' });
+  });
+  it('las de serie pasan la misma lista blanca sin perder nada', async () => {
+    const { plantillasDeSerie } = await import('../src/lib/plantillasDeSerie');
+    for (const lang of ['es', 'en']) {
+      for (const p of plantillasDeSerie(lang)) {
+        expect(plantillas.limpiarContenido(p.contenido), `${lang}/${p.clave}`).toEqual(p.contenido);
+      }
+    }
+  });
+});

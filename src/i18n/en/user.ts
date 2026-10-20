@@ -11,12 +11,12 @@
  */
 
 export const en = {
-  'user.settings.title': 'User settings',
+  'user.settings.title': 'Profile and account',
   'user.settings.profile': 'Profile',
   'user.settings.account': 'Account',
   'user.settings.workspaces': 'Workspaces',
   'user.settings.language': 'Language',
-  'user.settings.desc': 'Manage your public profile, security, and connected services.',
+  'user.settings.desc': 'How others see you, your account, your notifications and your workspaces.',
   'user.settings.signout_all': 'Sign out everywhere',
   'user.settings.signout_all_confirm': 'This closes every session on every device, including this one. You will need to sign in again.',
   'user.settings.signout': 'Sign out',
@@ -36,8 +36,7 @@ export const en = {
   'profile.member_since': 'Member since',
   'profile.bio_placeholder': 'Write something about yourself…',
   'profile.save_bio': 'Save bio',
-  'user.menu.profile': 'My profile',
-  'user.menu.account': 'Account settings',
+  'user.menu.account': 'Profile and account',
   'user.menu.guest': 'Guest',
   'user.menu.unregistered': 'Unregistered',
   'user.menu.register': 'Sign in or create an account',
@@ -178,4 +177,6 @@ export const en = {
   'push.denied': 'The browser is blocking notifications for this site. Change it in the browser permissions.',
   'push.unsupported': 'This browser does not support Web Push.',
   'push.error': 'Notifications could not be turned on.',
+  'user.settings.view_public': 'View your public profile',
+  'profile.edit': 'Edit profile and account',
 } as const;

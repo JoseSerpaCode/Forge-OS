@@ -91,7 +91,10 @@ function clavesAceptadas(codigo: string): Set<string> | null {
 
   for (const m of codigo.matchAll(patron)) {
     alguna = true;
-    for (const trozo of m[1].split(',')) {
+    // Sin comentarios: `// Profile fields\n avatar_url` no es un nombre, y la
+    // primera clave detrás de cada comentario se daba por no aceptada.
+    const lista = m[1].replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const trozo of lista.split(',')) {
       // De `label_id: labelId` interesa `label_id`, que es lo que viaja.
       const nombre = trozo.split(':')[0].replace(/\.\.\./, '').trim();
       if (/^[a-zA-Z_$][\w$]*$/.test(nombre)) encontradas.add(nombre);

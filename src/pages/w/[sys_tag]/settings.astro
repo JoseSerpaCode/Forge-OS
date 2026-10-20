@@ -10,6 +10,7 @@ import { listar as listarTipos, nombreVisible } from '../../../lib/issueTypes';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 import { funciones as funcionesDe } from '../../../lib/funcionesEspacio';
 import { listar as listarPlantillas } from '../../../lib/plantillas';
+import PlantillasTareas from '../../../components/workspace/PlantillasTareas.astro';
 
 const user = Astro.locals.user!;
 const t = useTranslations(Astro.locals.lang || 'en');
@@ -450,23 +451,8 @@ const wsPendingInvites = (db.prepare(`
       </div>
     </div>
 
-    <div id="plantillas-espacio" class="panel p-6" data-sys-tag={sys_tag}>
-      <h2 class="text-lg font-bold text-forge-text mb-1">{t('ws.settings.templates')}</h2>
-      <p class="text-sm text-forge-muted mb-4">{t('ws.settings.templates_desc')}</p>
-      {plantillas.length === 0 ? (
-        <p class="text-sm text-forge-muted">{t('ws.settings.templates_none')}</p>
-      ) : (
-        <ul class="space-y-2">
-          {plantillas.map((p) => (
-            <li class="flex items-center justify-between gap-3 border border-forge-border rounded-lg px-3 py-2">
-              <span class="text-sm text-forge-text truncate">{p.name}</span>
-              <button type="button" class="borrar-plantilla text-xs font-bold text-forge-muted hover:text-forge-error px-2 py-1" data-id={p.id}
-                aria-label={t('ws.settings.template_delete').replace('{nombre}', p.name)}>×</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <PlantillasTareas sysTag={sys_tag!} plantillas={plantillas} etiquetas={etiquetas}
+      tipos={tiposTicket.map((ti) => ({ key: ti.key, nombre: nombreVisible(ti, t) }))} />
 
     {/* Solo con las automatizaciones encendidas (funciones del espacio). */}
     {funcionesEspacio.automatizaciones && (
@@ -1463,16 +1449,3 @@ const wsPendingInvites = (db.prepare(`
   })();
 </script>
 
-<script>
-  // Borrar una plantilla del espacio.
-  document.getElementById('plantillas-espacio')?.addEventListener('click', async (e) => {
-    const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('.borrar-plantilla');
-    const raiz = document.getElementById('plantillas-espacio');
-    if (!boton || !raiz) return;
-    const res = await fetch(`/api/w/${raiz.dataset.sysTag}/templates`, {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: boton.dataset.id }),
-    }).catch(() => null);
-    if (res?.ok) boton.closest('li')?.remove();
-    else window.showToast?.(window.forgeMsg?.errGenerico || '', true);
-  });
-</script>

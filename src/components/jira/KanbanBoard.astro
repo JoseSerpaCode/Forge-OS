@@ -7,6 +7,7 @@ import { claveConteo, cursorDe } from '../../lib/tablero';
 import type { Funciones } from '../../lib/funcionesEspacio';
 import { sumarDiasIso } from '../../lib/fechas';
 import type { Grupo } from '../../lib/tablero';
+import { ESTADOS, info as infoEstado } from '../../lib/status';
 
 interface Props {
   issues: any[];
@@ -88,9 +89,12 @@ const columns = [
  *
  * `todo` y no «el primero que tenga algo»: el tablero tiene que abrirse
  * siempre en el mismo sitio, o el conmutador salta solo entre visitas y deja
- * de servir como punto de referencia.
+ * de servir como punto de referencia. La excepción es `?estado=`, que el propio
+ * conmutador escribe en la dirección: recargar (o volver de una tarea) deja la
+ * pestaña donde estaba.
  */
-const ESTADO_INICIAL = 'todo';
+const estadoPedido = Astro.url.searchParams.get('estado') ?? '';
+const ESTADO_INICIAL = (ESTADOS as readonly string[]).includes(estadoPedido) ? estadoPedido : 'todo';
 
 /**
  * Los carriles.
@@ -126,21 +130,28 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     cada una lleva su cuenta. En un teléfono no cabe ninguna de las dos cosas,
     así que la información se traslada aquí: qué estados hay, cuál se está
     mirando y cuánto hay en cada uno, en una fila.
+
+    Las pestañas son también donde se suelta una tarjeta que se arrastra con el
+    dedo: siempre están a la vista, encima de la columna que se desplaza.
   */}
   {vista === 'tablero' && (
-  <div class="segmentado grid grid-cols-4 sm:hidden shrink-0 mb-3 w-full" role="tablist" aria-label={t('board.status_filter')}>
+  <div class="pestanas-fijas sm:hidden shrink-0">
+  <div class="pestanas-estado segmentado grid grid-cols-4 w-full" role="tablist" aria-label={t('board.status_filter')}>
     {columns.map((col) => (
       <button
         type="button"
         role="tab"
         class="filtro-estado !px-1 gap-1 min-w-0 text-xs"
+        style={`--c:${infoEstado(col.id).color}`}
         data-estado={col.id}
+        data-titulo={col.title}
         aria-selected={col.id === ESTADO_INICIAL ? 'true' : 'false'}
       >
         <span class="truncate">{col.corto}</span>
         <span class="wide shrink-0">{totalEstado(col.id)}</span>
       </button>
     ))}
+  </div>
   </div>
   )}
 
@@ -189,6 +200,9 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     data-t-next-created={t('repeat.next_created')}
     data-t-undo={t('board.undo')}
     data-t-lane-only={t('board.lane_drop_only')}
+    data-t-moved={t('card.moved_to')}
+    data-t-see={t('quick.see')}
+    data-t-move-sprint-error={t('card.move_sprint_error')}
   >
     {/* «Hoy»: vencidas y de hoy. «Próximos»: un bloque por día. Las tarjetas
         son las mismas del tablero, así que abrirlas y completarlas funciona
@@ -274,12 +288,40 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     tarjeta serían cien menús iguales en el HTML. */}
 {funciones.sprints && canEdit && (
   <div id="menu-sprint-tarjeta" role="menu" aria-label={t('card.move_sprint')}
-    data-t-moved={t('card.moved_to')} data-t-error={t('card.move_sprint_error')} data-t-see={t('quick.see')}
     class="hidden menu fixed z-[60] min-w-[12rem]">
     {[{ name: t('board.backlog'), id: 'backlog' }, ...sprints.filter((s: any) => s.status !== 'completed')].map((s: any) => (
       <button type="button" role="menuitem" class="sprint-destino menu-item" data-sprint={s.id} data-nombre={s.name}>{s.name}</button>
     ))}
   </div>
+)}
+
+{/* Mover una tarea en el teléfono: estados grandes para el pulgar y, si el
+    espacio usa sprints, a qué sprint. Una sola hoja para todas las tarjetas. */}
+{vista === 'tablero' && canEdit && (
+  <dialog id="hoja-mover" class="hoja" aria-labelledby="hoja-mover-titulo"
+    data-t-moved={t('card.moved_to')} data-t-undo={t('board.undo')}>
+    <div class="hoja-asa" aria-hidden="true"></div>
+    <h2 id="hoja-mover-titulo" class="text-base font-bold text-forge-text mb-4 line-clamp-2"></h2>
+    <p class="field-label mb-2">{t('board.move_status')}</p>
+    <div class="grid grid-cols-2 gap-2">
+      {columns.map((col) => (
+        <button type="button" class="estado-destino btn btn-secondary !justify-start !h-12" data-estado={col.id} data-titulo={col.title} style={`--c:${infoEstado(col.id).color}`}>
+          <span class="sw" aria-hidden="true"></span>{col.title}
+        </button>
+      ))}
+    </div>
+    {funciones.sprints && (
+      <>
+        <p class="field-label mt-5 mb-2">{t('modal.sprint')}</p>
+        <div class="flex flex-col gap-1">
+          {[{ name: t('board.backlog'), id: 'backlog' }, ...sprints.filter((s: any) => s.status !== 'completed')].map((s: any) => (
+            <button type="button" class="sprint-destino-hoja btn btn-ghost !justify-start !h-11" data-sprint={s.id} data-nombre={s.name}>{s.name}</button>
+          ))}
+        </div>
+      </>
+    )}
+    <p class="hint mt-5">{t('board.move_hint')}</p>
+  </dialog>
 )}
 
 <IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} contactos={contactos} labels={labels} issueTypes={issueTypes} sysTag={sysTag} canManageTypes={userRole === 'owner'} funciones={funciones} />
@@ -311,12 +353,30 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
    * inicial: lo que hace el JavaScript es exactamente lo que ya venía en el HTML.
    */
   const filtros = Array.from(document.querySelectorAll<HTMLButtonElement>('.filtro-estado'));
+  const pestanas = document.querySelector<HTMLElement>('.pestanas-estado');
+  const estadoVisible = () => filtros.find((f) => f.getAttribute('aria-selected') === 'true')?.dataset.estado || 'todo';
+  function mostrarEstado(estado: string) {
+    filtros.forEach((otro) => otro.setAttribute('aria-selected', String(otro.dataset.estado === estado)));
+    columnas().forEach((columna) => columna.classList.toggle('max-sm:hidden', columna.dataset.status !== estado));
+    // Si se había bajado por la columna anterior, la nueva empieza justo bajo
+    // las pestañas fijas y no a media altura.
+    const visible = columnas().find((c) => c.dataset.status === estado && c.getClientRects().length);
+    const fijas = pestanas?.parentElement;
+    const main = document.querySelector('main');
+    if (visible && fijas && main) {
+      const sobra = visible.getBoundingClientRect().top - fijas.getBoundingClientRect().bottom;
+      if (sobra < 0) main.scrollTop += sobra;
+    }
+    // La pestaña viaja en la dirección: recargar, o volver de otra página, la
+    // deja donde estaba (el servidor la lee de `?estado=`).
+    const url = new URL(window.location.href);
+    if (estado === 'todo') url.searchParams.delete('estado');
+    else url.searchParams.set('estado', estado);
+    window.history.replaceState(window.history.state, '', url);
+  }
   filtros.forEach((boton) => {
     boton.addEventListener('click', () => {
-      const estado = boton.dataset.estado;
-      if (!estado) return;
-      filtros.forEach((otro) => otro.setAttribute('aria-selected', String(otro === boton)));
-      columnas().forEach((columna) => columna.classList.toggle('max-sm:hidden', columna.dataset.status !== estado));
+      if (boton.dataset.estado) mostrarEstado(boton.dataset.estado);
     });
   });
 
@@ -335,6 +395,14 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       const badge = col.querySelector('.issue-count');
       if (badge) badge.textContent = String(total - shownAtLoad + shownNow);
     });
+    // Las pestañas del teléfono suman su estado en todos los carriles.
+    filtros.forEach((f) => {
+      const n = columnas()
+        .filter((c) => c.dataset.status === f.dataset.estado)
+        .reduce((suma, c) => suma + Number(c.querySelector('.issue-count')?.textContent || 0), 0);
+      const cifra = f.querySelector('.wide');
+      if (cifra) cifra.textContent = String(n);
+    });
   };
   updateCounts();
 
@@ -348,37 +416,84 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     return res.json().catch(() => ({})) as Promise<{ recurrencia?: { creada?: { id: string; due_date: string } } }>;
   }
 
+  /** El sitio donde poner una tarjeta en una columna: antes del pie, nunca debajo. */
+  const pieDe = (contenido: Element) => contenido.querySelector(':scope > .ver-mas, :scope > p:not(.empty-state)');
+
   /**
-   * Mover una tarea desde el desplegable de su tarjeta (móvil).
-   *
-   * La posición es la del final de la columna destino: colocarla en un punto
-   * exacto es lo que hace el arrastre, y en móvil no hay forma de expresar
-   * «entre estas dos».
+   * La posición de una tarjeta según sus vecinas, después de colocarla.
+   * Mitad entre las de al lado; arriba, la mitad de la primera; abajo, cien
+   * mil más que la última.
    */
-  document.addEventListener('change', async (e) => {
-    const select = (e.target as HTMLElement)?.closest?.<HTMLSelectElement>('.mover-issue');
-    if (!select) return;
-    const issueId = select.dataset.issueId;
-    const nuevo = select.value;
-    if (!issueId || !nuevo) return;
+  function posicionEntre(contenido: Element, card: HTMLElement) {
+    const hermanas = [...contenido.querySelectorAll<HTMLElement>('.issue-card')];
+    const i = hermanas.indexOf(card);
+    const pos = (el?: HTMLElement) => parseFloat(el?.dataset.position || '0');
+    if (hermanas.length === 1) return 100000;
+    if (i === 0) return (pos(hermanas[1]) || 100000) / 2;
+    if (i === hermanas.length - 1) return pos(hermanas[i - 1]) + 100000;
+    return (pos(hermanas[i - 1]) + pos(hermanas[i + 1])) / 2;
+  }
 
-    const carril = columnaDe(select)?.dataset.carril;
-    const destino = columnas().find((c) => c.dataset.status === nuevo && c.dataset.carril === carril);
-    const ultimas = destino?.querySelectorAll<HTMLElement>('.issue-card');
-    const ultima = ultimas?.[ultimas.length - 1];
-    const posicion = ultima ? Number(ultima.dataset.position || 0) + 100000 : 100000;
+  /**
+   * Mover una tarea a otro estado sin arrastrarla por el tablero: desde la hoja
+   * de mover o soltándola en una pestaña, en el teléfono.
+   *
+   * Va arriba de la columna destino: es lo que se acaba de mover y lo primero
+   * que se ve al ir a mirarla. No recarga —la columna que se mira se queda
+   * igual—, salvo cuando el servidor tiene que repintar la tarjeta: al salir
+   * de Hecho vuelve el círculo de completar, y un cronómetro en marcha puede
+   * pararse. A Hecho va por `completar()`, que ya sabe de repeticiones.
+   */
+  async function moverA(card: HTMLElement, estado: string) {
+    const issueId = card.dataset.issueId!;
+    const origen = columnaDe(card);
+    const estadoAntes = origen?.dataset.status || card.dataset.status || 'todo';
+    if (estado === estadoAntes) return;
+    if (estado === 'done') { await completar(card); return; }
 
-    select.disabled = true;
+    const posicionAntes = Number(card.dataset.position || 0);
+    const destinoDe = (copia: HTMLElement) =>
+      columnas().find((c) => c.dataset.status === estado && c.dataset.carril === columnaDe(copia)?.dataset.carril);
+    const primera = destinoDe(card)?.querySelector<HTMLElement>('.column-content .issue-card');
+    const posicion = primera ? (Number(primera.dataset.position) || 100000) / 2 : 100000;
+
     try {
-      await mover(issueId, nuevo, posicion);
-      // Recargar: las cuentas, el total y la barra de tiempo cambian con ella.
-      window.location.reload();
+      await mover(issueId, estado, posicion);
     } catch (err) {
-      console.error('mover issue:', err);
+      console.error('mover:', err);
       window.showToast?.(window.forgeMsg?.errGenerico || '', true);
-      select.disabled = false;
+      return;
     }
-  });
+    if (estadoAntes === 'done' || card.querySelector('.active-timer-display')) {
+      window.location.reload();
+      return;
+    }
+
+    document.querySelectorAll<HTMLElement>(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`).forEach((copia) => {
+      const contenido = destinoDe(copia)?.querySelector('.column-content');
+      if (!contenido) { copia.remove(); return; }
+      copia.dataset.status = estado;
+      copia.dataset.position = String(posicion);
+      const arriba = contenido.querySelector('.issue-card') ?? pieDe(contenido);
+      if (arriba) contenido.insertBefore(copia, arriba);
+      else contenido.appendChild(copia);
+    });
+    updateCounts();
+
+    const nombre = filtros.find((f) => f.dataset.estado === estado)?.dataset.titulo || estado;
+    window.showToast?.(texto('moved').replace('{destino}', nombre), false, {
+      accion: texto('undo'),
+      alPulsar: async () => {
+        try {
+          await mover(issueId, estadoAntes, posicionAntes);
+          window.location.reload();
+        } catch (err) {
+          console.error('deshacer mover:', err);
+          window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+        }
+      },
+    });
+  }
 
   /**
    * Completar con un clic.
@@ -409,8 +524,6 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       copia.dataset.status = 'done';
       copia.querySelector('.btn-completar')?.remove();
       copia.querySelector('.card-timer')?.remove();
-      const sel = copia.querySelector<HTMLSelectElement>('.mover-issue');
-      if (sel) sel.value = 'done';
       const carril = columnaDe(copia)?.dataset.carril;
       const hecho = columnas().find((c) => c.dataset.status === 'done' && c.dataset.carril === carril);
       const contenido = hecho?.querySelector('.column-content');
@@ -583,11 +696,11 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     const card = tarjetaDe(objetivo);
     if (!card) return;
     if (objetivo.closest('.btn-completar')) { completar(card); return; }
-    // El desplegable de mover y los botones del cronómetro tienen su propio
-    // trabajo: pulsarlos no abre la tarea (en móvil, el desplegable no llegaba
-    // a desplegarse porque el panel se abría encima).
+    // Mover y los botones del cronómetro tienen su propio trabajo: pulsarlos
+    // no abre la tarea.
     if (objetivo.closest('.btn-mover-sprint')) { abrirMenuSprint(card, objetivo.closest<HTMLElement>('.btn-mover-sprint')!); return; }
-    if (objetivo.closest('.mover-issue, .btn-start-timer, .btn-stop-timer')) return;
+    if (objetivo.closest('.btn-mover-estado')) { abrirHojaMover(card); return; }
+    if (objetivo.closest('.btn-start-timer, .btn-stop-timer')) return;
     try { abrirTarea(card); }
     catch (err) {
       console.error('abrir tarea:', err);
@@ -624,7 +737,11 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     const card = tarjetaMenu;
     if (!destino || !card) return;
     cerrarMenuSprint();
-    const sprint = destino.dataset.sprint!;
+    await moverDeSprint(card, destino.dataset.sprint!, destino.dataset.nombre || '');
+  });
+
+  /** Mandar una tarea a otro sprint (o al backlog). Sale de la vista, con aviso y enlace. */
+  async function moverDeSprint(card: HTMLElement, sprint: string, nombre: string) {
     const issueId = card.dataset.issueId!;
     try {
       const res = await fetch(`/api/issues/${issueId}/move`, {
@@ -641,15 +758,50 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       // Sale de la vista —el tablero enseña un sprint—, con aviso y enlace.
       document.querySelectorAll(`.issue-card[data-issue-id="${CSS.escape(issueId)}"]`).forEach((c) => c.remove());
       updateCounts();
-      const m = menuSprint.dataset;
-      window.showToast?.((m.tMoved || '').replace('{destino}', destino.dataset.nombre || ''), false, {
-        accion: m.tSee || '',
+      window.showToast?.(texto('moved').replace('{destino}', nombre), false, {
+        accion: texto('see'),
         alPulsar: () => { window.location.href = `${window.location.pathname}?sprint=${encodeURIComponent(sprint)}&issue=${encodeURIComponent(issueId)}`; },
       });
     } catch (err) {
       console.error('mover de sprint:', err);
-      window.showToast?.(menuSprint.dataset.tError || '', true);
+      window.showToast?.(texto('move-sprint-error'), true);
     }
+  }
+
+  // ── Hoja de mover (teléfono) ───────────────────────────────────────────────
+  const hoja = document.getElementById('hoja-mover') as HTMLDialogElement | null;
+  let tarjetaHoja: HTMLElement | null = null;
+  function abrirHojaMover(card: HTMLElement) {
+    if (!hoja) return;
+    tarjetaHoja = card;
+    const titulo = hoja.querySelector('#hoja-mover-titulo');
+    if (titulo) titulo.textContent = card.querySelector('h4')?.textContent || '';
+    // Donde ya está, marcado y sin poder pulsarse.
+    const estado = columnaDe(card)?.dataset.status || card.dataset.status || 'todo';
+    hoja.querySelectorAll<HTMLButtonElement>('.estado-destino').forEach((b) => {
+      const aqui = b.dataset.estado === estado;
+      b.setAttribute('aria-pressed', String(aqui));
+      b.disabled = aqui;
+    });
+    const sprint = card.dataset.sprintId || 'backlog';
+    hoja.querySelectorAll<HTMLButtonElement>('.sprint-destino-hoja').forEach((b) => {
+      const aqui = b.dataset.sprint === sprint;
+      b.setAttribute('aria-pressed', String(aqui));
+      b.disabled = aqui;
+    });
+    hoja.showModal();
+  }
+  hoja?.addEventListener('click', async (e) => {
+    // Tocar el velo cierra: el clic llega al propio `<dialog>`.
+    if (e.target === hoja) { hoja.close(); return; }
+    const card = tarjetaHoja;
+    const objetivo = e.target as HTMLElement;
+    const estado = objetivo.closest<HTMLButtonElement>('.estado-destino')?.dataset.estado;
+    const sprint = objetivo.closest<HTMLButtonElement>('.sprint-destino-hoja');
+    if (!card || (!estado && !sprint)) return;
+    hoja.close();
+    if (estado) await moverA(card, estado);
+    else if (sprint?.dataset.sprint) await moverDeSprint(card, sprint.dataset.sprint, sprint.dataset.nombre || '');
   });
   document.addEventListener('click', (e) => {
     if (!menuSprint || menuSprint.classList.contains('hidden')) return;
@@ -676,12 +828,26 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
   let arrastrada: HTMLElement | null = null;
 
   function getDragAfterElement(content: Element, y: number) {
-    const candidatas = [...content.querySelectorAll<HTMLElement>('.issue-card:not(.opacity-50)')];
+    const candidatas = [...content.querySelectorAll<HTMLElement>('.issue-card:not(.opacity-50):not(.hueco)')];
     return candidatas.reduce((closest, child) => {
       const box = child.getBoundingClientRect();
       const offset = y - box.top - box.height / 2;
       return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
     }, { offset: Number.NEGATIVE_INFINITY, element: null as Element | null }).element;
+  }
+
+  /**
+   * Pone la tarjeta en la columna a la altura `y`. Debajo de la última va
+   * antes del pie («ver más»). El pie se buscaba con `:scope > p`, y el primer
+   * `<p>` de la columna es el aviso de vacía, que va **antes** de las
+   * tarjetas: soltar por debajo de la última la mandaba arriba del todo.
+   */
+  function colocar(content: Element, card: HTMLElement, y: number) {
+    const despues = getDragAfterElement(content, y);
+    const pie = pieDe(content);
+    if (despues) content.insertBefore(card, despues);
+    else if (pie) content.insertBefore(card, pie);
+    else content.appendChild(card);
   }
 
   /**
@@ -718,12 +884,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       const content = col.querySelector('.column-content');
       if (!content) return;
       content.classList.add('soltar-aqui');
-      const despues = getDragAfterElement(content, e.clientY);
-      // Por encima del «ver más», nunca debajo.
-      const pie = content.querySelector(':scope > .ver-mas, :scope > p');
-      if (despues) content.insertBefore(arrastrada, despues);
-      else if (pie) content.insertBefore(arrastrada, pie);
-      else content.appendChild(arrastrada);
+      colocar(content, arrastrada, e.clientY);
     });
 
     container.addEventListener('dragleave', (e: DragEvent) => {
@@ -745,14 +906,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       content.classList.remove('soltar-aqui');
       updateCounts();
 
-      const siblings = [...content.querySelectorAll<HTMLElement>('.issue-card')];
-      const i = siblings.indexOf(card);
-      const pos = (el?: HTMLElement) => parseFloat(el?.dataset.position || '0');
-      let newPosition: number;
-      if (siblings.length === 1) newPosition = 100000;
-      else if (i === 0) newPosition = (pos(siblings[1]) || 100000) / 2;
-      else if (i === siblings.length - 1) newPosition = pos(siblings[i - 1]) + 100000;
-      else newPosition = (pos(siblings[i - 1]) + pos(siblings[i + 1])) / 2;
+      const newPosition = posicionEntre(content, card);
       card.dataset.position = String(newPosition);
 
       try {
@@ -765,6 +919,192 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
         window.showToast?.(window.forgeMsg?.errGenerico || '', true);
       }
     });
+  }
+
+  /**
+   * Arrastrar con el dedo, en el teléfono.
+   *
+   * El arrastre de arriba es HTML5 y no sirve con el dedo. Aquí: mantener
+   * pulsada una tarjeta la levanta (una copia sigue al dedo y la original
+   * queda como hueco). Soltarla en una pestaña de estado la mueve a ese estado;
+   * soltarla dentro de su columna la reordena. Cerca del borde de arriba o de
+   * abajo, la columna se desplaza sola.
+   *
+   * La espera es lo que separa levantar de desplazar: si el dedo se mueve
+   * antes de que pase, es que se estaba desplazando la lista y no pasa nada.
+   *
+   * Y con la lista quieta, deslizar a los lados cambia de pestaña.
+   */
+  if (container && pestanas) {
+    const ESPERA_MS = 380;
+    const TOLERANCIA_PX = 10;
+    let pulsada: { card: HTMLElement; x: number; y: number; temporizador: number } | null = null;
+    let arrastre: {
+      card: HTMLElement; fantasma: HTMLElement; columna: HTMLElement | null; dx: number; dy: number;
+      estado: string; padre: Node; siguiente: Node | null; destino: string | null; desplazable: HTMLElement | null;
+    } | null = null;
+    let toque = { x: 0, y: 0 };
+    let inicio: { x: number; y: number; t: number } | null = null;
+    let huboArrastre = false;
+    let animacion = 0;
+
+    const pestanasVisibles = () => pestanas.getClientRects().length > 0;
+    const desplazableDe = (el: HTMLElement) => {
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        const oy = getComputedStyle(p).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight) return p;
+      }
+      return null;
+    };
+    const restaurarArrastrable = (card: HTMLElement) => card.setAttribute('draggable', canEdit ? 'true' : 'false');
+    const cancelarPulsacion = () => {
+      if (!pulsada) return;
+      window.clearTimeout(pulsada.temporizador);
+      restaurarArrastrable(pulsada.card);
+      pulsada = null;
+    };
+
+    function levantar() {
+      if (!pulsada) return;
+      const card = pulsada.card;
+      pulsada = null;
+      const caja = card.getBoundingClientRect();
+      const fantasma = card.cloneNode(true) as HTMLElement;
+      fantasma.removeAttribute('id');
+      fantasma.classList.remove('issue-card');
+      fantasma.classList.add('tarjeta-fantasma', 'is-dragging');
+      fantasma.setAttribute('aria-hidden', 'true');
+      // Más estrecha que la tarjeta y **debajo** del dedo: si la copia
+      // conservara el punto de agarre, taparía la pestaña sobre la que se
+      // está soltando y no se vería cuál es.
+      const ancho = Math.min(caja.width, 260);
+      fantasma.style.width = `${ancho}px`;
+      document.body.appendChild(fantasma);
+      card.classList.add('hueco');
+      arrastre = {
+        card, fantasma, columna: columnaDe(card), dx: Math.min(40, ancho / 4), dy: -24,
+        estado: columnaDe(card)?.dataset.status || 'todo', padre: card.parentNode!, siguiente: card.nextSibling,
+        destino: null, desplazable: desplazableDe(card),
+      };
+      huboArrastre = true;
+      seguirDedo();
+      pestanas!.classList.add('arrastrando');
+      navigator.vibrate?.(12);
+      animacion = requestAnimationFrame(desplazarSolo);
+    }
+
+    function seguirDedo() {
+      const a = arrastre;
+      if (!a) return;
+      const ancho = a.fantasma.offsetWidth;
+      a.fantasma.style.left = `${Math.max(8, Math.min(toque.x - a.dx, window.innerWidth - ancho - 8))}px`;
+      a.fantasma.style.top = `${toque.y - a.dy}px`;
+      // La copia no recibe el puntero, así que debajo está lo que hay de verdad.
+      const debajo = document.elementFromPoint(toque.x, toque.y) as HTMLElement | null;
+      const pestana = debajo?.closest<HTMLElement>('.filtro-estado') ?? null;
+      a.destino = pestana && pestana.dataset.estado !== a.estado ? pestana.dataset.estado ?? null : null;
+      filtros.forEach((f) => f.classList.toggle('destino', f.dataset.estado === a.destino));
+      // Reordenar solo dentro de su columna, y no en Hecho, que va por fecha.
+      const contenido = a.columna?.querySelector('.column-content');
+      if (!pestana && contenido && a.estado !== 'done' && debajo && a.columna?.contains(debajo)) {
+        colocar(contenido, a.card, toque.y);
+      }
+    }
+
+    function desplazarSolo() {
+      const a = arrastre;
+      if (!a) return;
+      const caja = a.desplazable?.getBoundingClientRect();
+      if (a.desplazable && caja) {
+        const MARGEN = 72;
+        // La franja de arriba empieza **debajo** de las pestañas: encima de
+        // ellas se está eligiendo dónde soltar, no pidiendo que se desplace.
+        const arriba = Math.max(caja.top, pestanas!.getBoundingClientRect().bottom);
+        let v = 0;
+        if (toque.y >= arriba && toque.y < arriba + MARGEN) v = -(arriba + MARGEN - toque.y) / 4;
+        else if (toque.y > caja.bottom - MARGEN) v = (toque.y - (caja.bottom - MARGEN)) / 4;
+        if (v) { a.desplazable.scrollTop += v; seguirDedo(); }
+      }
+      animacion = requestAnimationFrame(desplazarSolo);
+    }
+
+    async function soltar(cancelado: boolean) {
+      cancelAnimationFrame(animacion);
+      const a = arrastre;
+      arrastre = null;
+      if (!a) return;
+      a.fantasma.remove();
+      a.card.classList.remove('hueco');
+      restaurarArrastrable(a.card);
+      pestanas!.classList.remove('arrastrando');
+      filtros.forEach((f) => f.classList.remove('destino'));
+      const devolver = () => a.padre.insertBefore(a.card, a.siguiente);
+
+      if (cancelado) { devolver(); return; }
+      if (a.destino) { devolver(); await moverA(a.card, a.destino); return; }
+      if (a.card.parentNode === a.padre && a.card.nextSibling === a.siguiente) return;
+      const contenido = a.card.parentElement;
+      if (!contenido) return;
+      const posicion = posicionEntre(contenido, a.card);
+      try {
+        await mover(a.card.dataset.issueId!, a.estado, posicion);
+        a.card.dataset.position = String(posicion);
+      } catch (err) {
+        console.error('reordenar:', err);
+        devolver();
+        window.showToast?.(window.forgeMsg?.errGenerico || '', true);
+      }
+    }
+
+    container.addEventListener('touchstart', (e: TouchEvent) => {
+      huboArrastre = false;
+      const dedo = e.touches[0];
+      if (e.touches.length !== 1 || !dedo || !pestanasVisibles()) { cancelarPulsacion(); inicio = null; return; }
+      toque = { x: dedo.clientX, y: dedo.clientY };
+      inicio = { x: dedo.clientX, y: dedo.clientY, t: Date.now() };
+      const objetivo = e.target as HTMLElement;
+      const card = canEdit && container.dataset.vista === 'tablero' ? tarjetaDe(objetivo) : null;
+      if (!card || objetivo.closest('button, a, select, input, textarea')) return;
+      // El arrastre nativo también arranca con el dedo en Chrome para Android
+      // y competiría con este.
+      card.setAttribute('draggable', 'false');
+      pulsada = { card, x: dedo.clientX, y: dedo.clientY, temporizador: window.setTimeout(levantar, ESPERA_MS) };
+    }, { passive: true });
+
+    // No pasivo: con una tarjeta levantada, el dedo no desplaza la página.
+    container.addEventListener('touchmove', (e: TouchEvent) => {
+      const dedo = e.touches[0];
+      if (!dedo) return;
+      toque = { x: dedo.clientX, y: dedo.clientY };
+      if (arrastre) { e.preventDefault(); seguirDedo(); return; }
+      if (pulsada && Math.hypot(dedo.clientX - pulsada.x, dedo.clientY - pulsada.y) > TOLERANCIA_PX) cancelarPulsacion();
+    }, { passive: false });
+
+    container.addEventListener('touchend', (e: TouchEvent) => {
+      cancelarPulsacion();
+      if (arrastre) {
+        // Sin esto, soltar dispararía el clic que abre la tarea.
+        e.preventDefault();
+        soltar(false);
+        return;
+      }
+      // Deslizar a los lados: la pestaña siguiente o la anterior.
+      const dedo = e.changedTouches[0];
+      if (!inicio || !dedo || huboArrastre || container.dataset.vista !== 'tablero') return;
+      const dx = dedo.clientX - inicio.x;
+      const dy = dedo.clientY - inicio.y;
+      if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.5 || Date.now() - inicio.t > 700) return;
+      const orden = filtros.map((f) => f.dataset.estado!);
+      const siguiente = orden[orden.indexOf(estadoVisible()) + (dx < 0 ? 1 : -1)];
+      if (siguiente) mostrarEstado(siguiente);
+    }, { passive: false });
+
+    container.addEventListener('touchcancel', () => {
+      cancelarPulsacion();
+      if (arrastre) soltar(true);
+    });
+    // Mantener pulsado no abre el menú del sistema.
+    container.addEventListener('contextmenu', (e) => { if (pulsada || arrastre) e.preventDefault(); });
   }
 
   /**

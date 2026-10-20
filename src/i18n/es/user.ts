@@ -11,12 +11,12 @@
  */
 
 export const es = {
-  'user.settings.title': 'Ajustes de usuario',
+  'user.settings.title': 'Perfil y cuenta',
   'user.settings.profile': 'Perfil',
   'user.settings.account': 'Cuenta',
   'user.settings.workspaces': 'Workspaces',
   'user.settings.language': 'Idioma',
-  'user.settings.desc': 'Gestiona tu perfil público, seguridad y servicios conectados.',
+  'user.settings.desc': 'Cómo te ven los demás, tu cuenta, tus avisos y tus espacios.',
   'user.settings.signout_all': 'Cerrar sesión en todas partes',
   'user.settings.signout_all_confirm': 'Esto cierra todas las sesiones en todos los dispositivos, incluido este. Tendrás que volver a entrar.',
   'user.settings.signout': 'Cerrar sesión',
@@ -36,8 +36,7 @@ export const es = {
   'profile.member_since': 'Miembro desde',
   'profile.bio_placeholder': 'Escribe algo sobre ti…',
   'profile.save_bio': 'Guardar biografía',
-  'user.menu.profile': 'Mi perfil',
-  'user.menu.account': 'Ajustes de la cuenta',
+  'user.menu.account': 'Perfil y cuenta',
   'user.menu.guest': 'Invitado',
   'user.menu.unregistered': 'Sin registrar',
   'user.menu.register': 'Entrar o crear una cuenta',
@@ -178,4 +177,6 @@ export const es = {
   'push.denied': 'El navegador tiene bloqueados los avisos de este sitio. Se cambia en los permisos del navegador.',
   'push.unsupported': 'Este navegador no admite avisos Web Push.',
   'push.error': 'No se han podido activar los avisos.',
+  'user.settings.view_public': 'Ver tu perfil público',
+  'profile.edit': 'Editar perfil y cuenta',
 } as const;

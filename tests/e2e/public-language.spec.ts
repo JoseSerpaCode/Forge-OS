@@ -64,3 +64,49 @@ test('/api/lang funciona sin sesión', async ({ request, baseURL }) => {
   });
   expect(res.status()).toBeLessThan(400);
 });
+
+/*
+ * La portada en español tiene dirección propia. `/` negocia el idioma con la
+ * cookie o el navegador, y un buscador no manda ninguno de los dos: Google solo
+ * conocía la versión en inglés.
+ */
+test('/es es la portada en español, para cualquiera, enlazada con hreflang', async ({ browser }) => {
+  const en = await browser.newContext({ locale: 'en-US' });
+  const p = await en.newPage();
+  await p.goto('/es');
+  await expect(p.locator('html')).toHaveAttribute('lang', 'es');
+  await expect(p.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/es$/);
+  for (const idioma of ['en', 'es', 'x-default']) {
+    await expect(p.locator(`link[rel="alternate"][hreflang="${idioma}"]`)).toHaveCount(1);
+  }
+
+  // Y la de `/` enlaza a la española.
+  await p.goto('/');
+  await expect(p.locator('link[rel="alternate"][hreflang="es"]')).toHaveAttribute('href', /\/es$/);
+  await en.close();
+});
+
+test('el sitemap lleva las dos portadas con sus alternativas', async ({ request }) => {
+  const xml = await (await request.get('/sitemap.xml')).text();
+  expect(xml).toContain('/es</loc>');
+  expect(xml).toContain('hreflang="es"');
+  expect(xml, 'un lastmod de «hoy» en cada petición no es cierto').not.toContain('<lastmod>');
+});
+
+test('cambiar de idioma no redirige fuera del sitio, y en la portada cambia de dirección', async ({ request, baseURL }) => {
+  const pedir = (current_path: string, lang: string) => request.post('/api/lang', {
+    form: { lang, current_path }, headers: { Origin: baseURL! }, maxRedirects: 0,
+  });
+  for (const fuera of ['//otro-sitio.example/x', '/\\otro-sitio.example', 'https://otro-sitio.example']) {
+    expect((await pedir(fuera, 'es')).headers().location, fuera).toBe('/es');
+  }
+  expect((await pedir('/es', 'en')).headers().location).toBe('/');
+  expect((await pedir('/register?reason=x', 'es')).headers().location).toBe('/register?reason=x');
+});
+
+test('las páginas piden que nadie las reescriba por el camino', async ({ request }) => {
+  // `no-transform`: sin él, Cloudflare inyectaba su analítica en cada página
+  // y la CSP la bloqueaba con un error en la consola.
+  const res = await request.get('/');
+  expect(res.headers()['cache-control']).toContain('no-transform');
+});

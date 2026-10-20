@@ -288,3 +288,13 @@ export function textosPortada(lang: string) {
   const l = lang === 'es' ? 'es' : 'en';
   return { ...(l === 'es' ? es : en), tarjetas: tarjetas(l), etiquetaApi: (l === 'es' ? E : EN_E).api };
 }
+
+/**
+ * La portada en cada idioma, para `hreflang` y el sitemap. `/` va en inglés
+ * para quien no dice idioma (los buscadores no lo dicen), y `/es` en español.
+ */
+export const ALTERNATIVAS_PORTADA = [
+  { hreflang: 'en', path: '/' },
+  { hreflang: 'es', path: '/es' },
+  { hreflang: 'x-default', path: '/' },
+];

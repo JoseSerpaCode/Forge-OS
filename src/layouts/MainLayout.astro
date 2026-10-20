@@ -151,7 +151,7 @@ Astro.response.headers.set('Pragma', 'no-cache');
     </script>
   </head>
   <body tabindex="-1" class="bg-forge-bg text-forge-text flex h-dvh overflow-hidden selection:bg-forge-primary selection:text-forge-on-accent" data-user-role={user?.is_sysadmin ? 'sysadmin' : 'user'} data-is-sysadmin={user?.is_sysadmin} data-tz={user ? (user.timezone ?? '') : undefined}>
-    <Sidebar workspaceId={workspaceId} workspaceName={workspaceName} />
+    <Sidebar workspaceId={workspaceId} />
     {/* El alta de tareas, en toda página de un espacio: `C` funciona también
         desde los apuntes. Solo se pinta para quien puede crear. */}
     {workspaceId && <NuevaTarea workspaceId={workspaceId} />}
@@ -171,7 +171,7 @@ Astro.response.headers.set('Pragma', 'no-cache');
         </div>
         {!hideFooter && <Footer />}
       </main>
-      <BottomNav workspaceId={workspaceId} workspaceName={workspaceName} />
+      <BottomNav />
     </div>
     
     <!-- Global UI Components -->

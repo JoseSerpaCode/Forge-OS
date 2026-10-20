@@ -48,6 +48,22 @@ app.get('/healthz', (_req, res) => {
   }
 });
 
+// Una sola dirección para cada página. `www.` servía la misma web con un 200 y
+// Google la contaba como una copia («página alternativa con etiqueta canónica»)
+// en vez de como la misma. Se redirige a la de `PUBLIC_SITE_URL`.
+const SITIO = (() => {
+  try { return process.env.PUBLIC_SITE_URL ? new URL(process.env.PUBLIC_SITE_URL) : null; } catch { return null; }
+})();
+if (SITIO) {
+  app.use((req, res, next) => {
+    if (req.hostname === `www.${SITIO.hostname}`) {
+      res.redirect(301, `${SITIO.origin}${req.originalUrl}`);
+      return;
+    }
+    next();
+  });
+}
+
 // Servir estáticos de Astro (CSS, JS, assets)
 app.use(
   express.static(path.join(process.cwd(), 'dist/client'), {
@@ -57,6 +73,16 @@ app.use(
       // siempre y dejan de consumir egress en cada visita.
       if (filePath.includes(`${path.sep}_astro${path.sep}`)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (filePath.includes(`${path.sep}fonts${path.sep}`)) {
+        // Sin hash en el nombre, pero una fuente no cambia: si algún día
+        // cambia, se cambia también el nombre del archivo. Sin esta cabecera,
+        // Cloudflare ponía sus cuatro horas y cada visita al día siguiente
+        // volvía a bajar 90 KB de letra.
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/\.(png|svg|ico|webp)$/.test(filePath)) {
+        // Iconos, logo e imagen para redes: pueden cambiar de diseño, así que
+        // una semana y no un año.
+        res.setHeader('Cache-Control', 'public, max-age=604800');
       }
     },
   })
