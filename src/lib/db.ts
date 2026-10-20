@@ -1279,7 +1279,7 @@ const MIGRATIONS: Migration[] = [
     run: () => {
       // Personales: cada vista es de una persona en un espacio. `CASCADE` en las
       // dos claves: si fueran `NO ACTION`, borrar una cuenta reventaría en
-      // `accountDeletion.ts`, que es justo el fallo que describe CLAUDE.md.
+      // `accountDeletion.ts`, que es justo el fallo que describe docs/desarrollo.md.
       // No se reutiliza `dynamic_views`: está reservada para las bases dinámicas.
       db.exec(`
         CREATE TABLE IF NOT EXISTS saved_views (

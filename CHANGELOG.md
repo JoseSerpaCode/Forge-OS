@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.0.1] - 2026-10-20
+
+### Fixed
+
+- **En el teléfono, Inicio se iba de lado y dejaba la pantalla casi en blanco**, con solo el borde derecho de los paneles a la vista. La cabecera «Acciones» de la tabla de espacios lleva un texto solo para lectores de pantalla (`sr-only`), que es absoluto; como ni la tabla ni su panel estaban posicionados, ese texto escapaba del desplazamiento de la tabla y ensanchaba el `<main>` a 505 px en una pantalla de 393. Ahora `.tabla` es `relative` y lo que lleva dentro se queda dentro.
+- La prueba de desbordamiento en móvil no podía verlo: medía el documento, y quien se desplaza es el `<main>`. Ahora mide los dos y cubre también Inicio.
+
+### Changed
+
+- El README, en inglés y en español, cuenta lo que hay en la 2.0: tablero con alta rápida, vistas, subtareas, repeticiones y recordatorios; notas en Tiptap; archivos en Drive; contactos; funciones que se encienden por espacio; las integraciones opcionales y sus variables. Corrige además lo que ya no era cierto: los roles son tres (no había «comentarista»), el cronómetro se para también en revisión y la CSP no es solo `'self'`.
+- `.env.example` documenta las variables de Web Push (`VAPID_*`), que solo estaban en la guía de despliegue.
+- **Las notas de desarrollo pasan a `docs/desarrollo.md`**: las reglas que no se ven en el código (accesibilidad, cuentas, diseño, tablero, Drive…), al día y enlazadas desde el README y `CONTRIBUTING.md`. Los comentarios del código que citaban `CLAUDE.md` apuntan ahí.
+- `CONTRIBUTING.md` lista `npm test`, `npm run test:e2e` y `npm run lint`, y la ruta actual de las traducciones.
+
+### Removed
+
+- `CLAUDE.md` deja de estar en el repositorio: es la configuración local del asistente de código, no documentación del proyecto.
+- `rearrange.js`, un script de un solo uso que buscaba en Inicio un banner que ya no existe.
+
 ## [2.0.0] - 2026-10-19
 
 **Forge OS 2.0: el diseño «Taller».** Cierra el rediseño que empezó en la 1.36.0: todas las pantallas usan las mismas piezas (botones, campos, paneles, ventanas, tablas, tablero) y los mismos tokens, en claro y en oscuro, con la tipografía y la marca nuevas. La 2.0 no cambia datos ni rutas: es la versión mayor porque cambia toda la cara de la aplicación.
@@ -332,7 +351,7 @@ Un tablero que también sirve para usarlo a solas.
   - `astro` ≤ 7.2.7 (crítico): pasa a 7.4.0.
   - `engine.io` (a través de `socket.io`), `devalue`, `proxy-addr`, `undici` y otros transitivos.
 
-  Todo se queda dentro de la misma versión mayor. Quedan 6 avisos moderados sin arreglo real, en `drizzle-kit` y `@tailwindcss/typography`; ver CLAUDE.md.
+  Todo se queda dentro de la misma versión mayor. Quedan 6 avisos moderados sin arreglo real, en `drizzle-kit` y `@tailwindcss/typography`; ver `docs/desarrollo.md`.
 - Astro 7.4 deja de rechazar los POST que no traen ni `Origin` ni `Sec-Fetch-Site`. Son peticiones de clientes que no son un navegador (`curl`), que no llevan las cookies de nadie y por tanto no son un vector de CSRF. Un POST hecho desde otro sitio con un navegador sigue recibiendo 403. El test que daba por hecho lo primero ahora simula el ataque real.
 
 ## [1.28.0] - 2026-10-18

@@ -21,7 +21,7 @@ const PATRONES: Record<string, RegExp> = {
   // Color fuera de los tokens.
   paleta_tailwind: /\b(?:text|bg|border|ring|from|via|to|fill|stroke|outline|divide|shadow)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g,
   cian_viejo: /#00E5FF/gi,
-  // Accesibilidad (CLAUDE.md): opacidad sobre texto, letra de menos de 12 px.
+  // Accesibilidad (docs/desarrollo.md): opacidad sobre texto, letra de menos de 12 px.
   texto_con_opacidad: /\btext-forge-[a-z-]+\/\d{1,3}\b/g,
   texto_minusculo: /\btext-\[(?:8|9|10|11)px\]/g,
   bg_opacity: /\bbg-opacity-\d+/g,

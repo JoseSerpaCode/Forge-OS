@@ -41,6 +41,11 @@ cookies.txt
 *.tmp.mjs
 *.tmp.ts
 
+# Configuración local y worktrees de Claude Code: son de esta máquina. Lo que
+# vale para cualquiera que trabaje en el proyecto va en docs/desarrollo.md.
+.claude/
+/CLAUDE.md
+
 # Cachés que npm crea en el HOME del usuario de servicio, que en la VM es el
 # propio directorio de la aplicación. No son del proyecto, pero ensucian
 # `git status` justo cuando se está desplegando y hay que mirarlo.
