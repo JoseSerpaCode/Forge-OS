@@ -96,6 +96,6 @@ test.describe('Social Phase 2 - Profile Visibility & Anti-Enumeration', () => {
         const pageContent = await page.content();
 
         // The UI must contain the Unblock button
-        expect(pageContent).toContain('Unblock User');
+        expect(pageContent).toContain('Unblock user');
     });
 });

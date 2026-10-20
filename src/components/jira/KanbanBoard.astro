@@ -144,9 +144,31 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
   </div>
   )}
 
+  {/*
+    Tablero vacío: una línea encima de las columnas, no un aviso flotando
+    sobre ellas. Flotando se pisaba con el «Nada por aquí» de cada columna,
+    que en este caso tampoco se pinta (ver `data-vacio`).
+  */}
+  {vista === 'tablero' && issues.length === 0 && (
+    <div class="tablero-vacio panel shrink-0 mb-3 px-4 py-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h3 class="text-base font-bold text-forge-text">{t('about.kanban.empty_title')}</h3>
+      <p class="text-sm text-forge-muted">{t('about.kanban.empty_desc')}</p>
+      {canEdit && (
+        <>
+          {/* El atajo de teclado solo donde hay teclado. */}
+          <p class="hidden sm:block text-sm text-forge-muted">
+            {t('about.kanban.empty_cta_1')} <kbd class="kbd mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
+          </p>
+          <p class="sm:hidden text-sm text-forge-muted">{t('about.kanban.empty_cta_movil')}</p>
+        </>
+      )}
+    </div>
+  )}
+
   <div
     class:list={['kanban-container h-full pb-4', agrupar || vista !== 'tablero' ? 'flex flex-col gap-4 overflow-y-auto' : 'overflow-auto']}
     data-vista={vista}
+    data-vacio={vista === 'tablero' && issues.length === 0 ? 'true' : undefined}
     data-t-moved-day={t('view.moved_day')}
     data-t-move-day-error={t('view.move_error')}
     data-workspace={workspaceId}
@@ -246,23 +268,6 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       );
     })}
   </div>
-
-  {/* Tablero vacío: tipográfico, sin iconos en cajas ni desenfoque. */}
-  {vista === 'tablero' && issues.length === 0 && (
-    <div class="tablero-vacio absolute inset-x-0 top-24 z-10 mx-auto max-w-md text-center px-6 pointer-events-none">
-      <h3 class="section-title mb-2">{t('about.kanban.empty_title')}</h3>
-      <p class="text-forge-muted text-sm mb-5">{t('about.kanban.empty_desc')}</p>
-      {canEdit && (
-        <>
-          {/* El atajo de teclado solo donde hay teclado. */}
-          <p class="hidden sm:block text-sm text-forge-muted">
-            {t('about.kanban.empty_cta_1')} <kbd class="kbd mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
-          </p>
-          <p class="sm:hidden text-sm text-forge-muted">{t('about.kanban.empty_cta_movil')}</p>
-        </>
-      )}
-    </div>
-  )}
 </div>
 
 {/* Un solo menú de «mover a sprint» para todas las tarjetas: pintar uno por
