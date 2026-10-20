@@ -100,7 +100,7 @@ const captcha = isRegister ? createChallenge() : null;
     </div>
   )}
 
-  <button type="submit" class="af-submit">
+  <button type="submit" class="af-submit btn btn-primary">
     <span data-label>{isRegister ? t('auth.signup') : t('auth.submit')}</span>
   </button>
 
@@ -110,11 +110,11 @@ const captcha = isRegister ? createChallenge() : null;
 
 {
   guestWorkspaces.length > 0 && (
-    <dialog id="guest-ws-modal" class="af-dialog">
+    <dialog id="guest-ws-modal" class="af-dialog ventana">
       {/* Este diálogo estaba en inglés fijo en las dos páginas, en una
           aplicación con dos idiomas. Y decide qué se borra para siempre, que
           es lo peor que se puede dejar sin traducir. */}
-      <h2>{t('auth.transfer.title')}</h2>
+      <h2 class="ventana-titulo">{t('auth.transfer.title')}</h2>
       <p>{isRegister ? t('auth.transfer.body.register') : t('auth.transfer.body.login')}</p>
       <div class="af-ws-list">
         {guestWorkspaces.map((ws) => (
@@ -125,10 +125,10 @@ const captcha = isRegister ? createChallenge() : null;
         ))}
       </div>
       <div class="af-dialog-actions">
-        <button type="button" id="btn-discard-all" class="af-discard">
+        <button type="button" id="btn-discard-all" class="btn btn-ghost">
           {t('auth.transfer.discard')}
         </button>
-        <button type="button" id="btn-confirm-transfer" class="af-submit af-inline">
+        <button type="button" id="btn-confirm-transfer" class="btn btn-primary">
           {t('auth.transfer.continue')}
         </button>
       </div>
@@ -142,27 +142,25 @@ const captcha = isRegister ? createChallenge() : null;
   .af-field { display: flex; flex-direction: column; gap: 0.4rem; }
 
   .af-field label {
-    font-family: var(--forge-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--forge-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--forge-text);
   }
 
   .af-field input {
     width: 100%;
-    padding: 0.65rem 0.8rem;
-    font-size: 0.95rem;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
     color: var(--forge-text);
     background: var(--forge-panel);
-    border: 1px solid var(--forge-border);
-    border-radius: 0.5rem;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    border: 1px solid var(--forge-border-strong);
+    border-radius: 10px;
   }
-  .af-field input:focus {
-    outline: none;
-    border-color: var(--forge-accent-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--forge-accent-primary) 22%, transparent);
+  /* El foco del sistema: contorno en tinta, no halo naranja. */
+  .af-field input:focus-visible {
+    outline: 2px solid var(--forge-focus);
+    outline-offset: 2px;
   }
   /* El estado inválido solo aparece tras un intento de envío: marcar en rojo un
      campo que aún se está escribiendo regaña al usuario por no haber terminado. */
@@ -171,32 +169,16 @@ const captcha = isRegister ? createChallenge() : null;
   /* Estrecho a propósito: es una suma de un dígito, y un campo de ancho
      completo sugiere que se espera una frase. */
   .af-captcha input { max-width: 7rem; }
-  .af-sum {
-    color: var(--forge-text);
-    font-size: 0.85rem;
-    letter-spacing: 0.02em;
-  }
+  .af-sum { color: var(--forge-text); }
 
   .af-hint {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     color: var(--forge-muted);
     margin: 0;
   }
 
-  .af-submit {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--forge-on-accent);
-    background: var(--forge-accent-primary);
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: filter 0.15s;
-  }
-  .af-submit:hover { filter: brightness(1.08); }
-  .af-submit[disabled] { cursor: progress; opacity: 0.75; filter: none; }
+  .af-submit { width: 100%; justify-content: center; height: 2.5rem; }
+  .af-submit[disabled] { cursor: progress; }
 
   .af-error {
     margin: 0;
@@ -211,27 +193,8 @@ const captcha = isRegister ? createChallenge() : null;
   }
 
   /* ── Diálogo de traspaso ──────────────────────────────────────────────── */
-  .af-dialog {
-    width: min(26rem, calc(100vw - 2rem));
-    padding: 1.5rem;
-    color: var(--forge-text);
-    background: var(--forge-panel);
-    border: 1px solid var(--forge-border);
-    border-radius: 0.75rem;
-  }
-  .af-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
-  .af-dialog h2 {
-    margin: 0 0 0.5rem;
-    font-size: 1.15rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-  .af-dialog > p {
-    margin: 0 0 1.1rem;
-    font-size: 0.87rem;
-    line-height: 1.55;
-    color: var(--forge-muted);
-  }
+  .af-dialog { width: min(26rem, calc(100vw - 2rem)); }
+  .af-dialog > p { margin: 0 0 1.1rem; font-size: 0.875rem; line-height: 1.55; color: var(--forge-muted); }
   .af-ws-list { display: flex; flex-direction: column; gap: 0.4rem; }
   .af-ws {
     display: flex;
@@ -253,16 +216,6 @@ const captcha = isRegister ? createChallenge() : null;
     gap: 0.75rem;
     margin-top: 1.25rem;
   }
-  .af-inline { width: auto; padding: 0.55rem 1rem; font-size: 0.87rem; }
-  .af-discard {
-    padding: 0.55rem 0.5rem;
-    font-size: 0.87rem;
-    color: var(--forge-muted);
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-  .af-discard:hover { color: var(--forge-error); }
 </style>
 
 <script

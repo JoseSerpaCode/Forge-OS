@@ -26,7 +26,7 @@ test('la portada respeta el idioma del navegador', async ({ browser }) => {
   await expect(pEn.locator('html')).toHaveAttribute('lang', 'en');
 
   // Y que el contenido cambia de verdad, no solo el atributo.
-  const cta = (p: typeof pEs) => p.locator('.lp-btn-primary').first().textContent();
+  const cta = (p: typeof pEs) => p.locator('.hero-cta .btn-primary').first().textContent();
   expect(await cta(pEs)).not.toBe(await cta(pEn));
 
   await es.close();

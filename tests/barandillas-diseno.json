@@ -6,13 +6,6 @@
     "src/pages/w/[sys_tag]/board.astro": 1,
     "src/pages/w/[sys_tag]/settings.astro": 1
   },
-  "gradiente_radial": {
-    "src/components/landing/Landing.astro": 1
-  },
-  "halo": {
-    "src/components/landing/Landing.astro": 1,
-    "src/pages/404.astro": 2
-  },
   "paleta_tailwind": {
     "src/layouts/MainLayout.astro": 2,
     "src/pages/w/[sys_tag]/db/index.astro": 2,
@@ -28,8 +21,7 @@
     "src/pages/w/[sys_tag]/db/index.astro": 1
   },
   "eleva_al_pasar": {
-    "src/layouts/MainLayout.astro": 1,
-    "src/pages/404.astro": 1
+    "src/layouts/MainLayout.astro": 1
   },
   "animacion_perpetua": {
     "src/pages/settings.astro": 1

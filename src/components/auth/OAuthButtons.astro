@@ -43,12 +43,12 @@ const anyPending = providers.some((p) => !p.enabled);
   {
     providers.map((p) =>
       p.enabled ? (
-        <a class="oa-btn" href={`/api/auth/oauth/${p.id}`} rel="nofollow">
+        <a class="oa-btn btn btn-secondary" href={`/api/auth/oauth/${p.id}`} rel="nofollow">
           <span class="oa-ico" data-p={p.id} aria-hidden="true" />
           {p.label}
         </a>
       ) : (
-        <button class="oa-btn" type="button" disabled aria-describedby="oa-pending">
+        <button class="oa-btn btn btn-secondary" type="button" disabled aria-describedby="oa-pending">
           <span class="oa-ico" data-p={p.id} aria-hidden="true" />
           {p.label}
         </button>
@@ -69,31 +69,7 @@ const anyPending = providers.some((p) => !p.enabled);
     .oa { grid-template-columns: 1fr; }
   }
 
-  .oa-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.65rem 0.75rem;
-    font-family: inherit;
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--forge-text);
-    text-decoration: none;
-    background: var(--forge-panel);
-    border: 1px solid var(--forge-border);
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .oa-btn:hover:not([disabled]) {
-    border-color: var(--forge-muted);
-  }
-  .oa-btn[disabled] {
-    cursor: not-allowed;
-    color: var(--forge-muted);
-    background: transparent;
-  }
+  .oa-btn { justify-content: center; }
 
   /* Los logotipos van como máscara sobre `currentColor` en vez de como SVG a
      color: así se apagan junto al texto cuando el botón está deshabilitado, y
@@ -123,9 +99,8 @@ const anyPending = providers.some((p) => !p.enabled);
 
   .oa-pending {
     margin: 0.6rem 0 0;
-    font-family: var(--forge-mono);
-    font-size: 0.66rem;
-    line-height: 1.6;
+    font-size: 0.75rem;
+    line-height: 1.55;
     color: var(--forge-muted);
   }
 </style>

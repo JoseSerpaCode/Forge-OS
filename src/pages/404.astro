@@ -1,30 +1,51 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
+/**
+ * 404 de «Taller» (docs/rediseno/404.html): la boca de la fragua, apagada.
+ *
+ * Va en el layout público y no en el de la aplicación: a esta página se llega
+ * también sin sesión —un enlace a algo privado responde así a quien no ha
+ * entrado—, y la barra lateral no tiene nada que enseñar.
+ */
+import '../styles/portada.css';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import ThemeSwitch from '../components/i18n/ThemeSwitch.astro';
+import LangSwitch from '../components/i18n/LangSwitch.astro';
 import { useTranslations } from '../i18n/ui';
 
 const lang = Astro.locals?.lang || 'en';
 const t = useTranslations(lang);
+const user = Astro.locals?.user;
+Astro.response.status = 404;
+const LOGO = '<svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/><path fill="var(--brand-orange)" d="M21 53V45A11 8 0 0 1 43 45V53Z"/></svg>';
 ---
 
-<MainLayout title="Page Not Found">
-  <div class="flex-1 flex flex-col items-center justify-center h-full text-center px-4">
-    <div class="w-32 h-32 mb-8 relative">
-      <div class="absolute inset-0 bg-forge-primary/20 blur-2xl rounded-full"></div>
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-full h-full text-forge-primary relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-        <path d="M12 9v4"/>
-        <path d="M12 17h.01"/>
-      </svg>
-    </div>
-    
-    <h1 class="text-6xl font-black text-forge-text mb-4 tracking-tighter drop-shadow-[0_0_15px_rgba(255,93,0,0.3)]">404</h1>
-    <h2 class="text-2xl font-bold text-forge-text mb-4">{t('404.title')}</h2>
-    <p class="text-forge-muted max-w-md mb-8">
-      {t('404.desc')}
-    </p>
-    
-    <a href="/" class="px-6 py-3 bg-forge-primary hover:bg-forge-accent-hover text-forge-on-accent font-bold rounded-lg shadow-[0_0_15px_var(--forge-accent-primary)] transition-all transform hover:-translate-y-1">
-      {t('404.back')}
-    </a>
+<PublicLayout title={`404 | Forge OS`} noindex>
+  <div class="portada">
+  <div class="sheet-page">
+    <header class="site-head">
+      <a href="/" aria-label="Forge OS"><span class="brand"><Fragment set:html={LOGO} /><span class="brand-word">Forge OS</span></span></a>
+      <nav><LangSwitch /><ThemeSwitch /></nav>
+    </header>
+    <main class="lost">
+      <div>
+        <h1><span aria-hidden="true">404</span><span class="sr-only">{t('404.sr')}</span></h1>
+        <p class="lost-line">{t('404.title')}</p>
+        <p class="muted lost-desc">{t('404.desc')}</p>
+        <div class="toolbar-group">
+          <a class="btn btn-primary" href="/">{t('404.back')}</a>
+          {!user && <a class="btn btn-secondary" href="/login">{t('404.signin')}</a>}
+        </div>
+        <p class="hint mono lost-ruta">{Astro.url.pathname}</p>
+      </div>
+      <div class="lost-forge" aria-hidden="true"><div class="mouth"><div class="ash"></div></div></div>
+    </main>
   </div>
-</MainLayout>
+  </div>
+</PublicLayout>
+
+<style>
+  .portada :global(.lost) { min-height: calc(100dvh - 140px); }
+  .lost-line { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; font-stretch: 64%; line-height: 1; margin-top: 8px; }
+  .lost-desc { max-width: 46ch; line-height: 1.6; margin: 14px 0 24px; }
+  .lost-ruta { margin-top: 28px; word-break: break-all; }
+</style>

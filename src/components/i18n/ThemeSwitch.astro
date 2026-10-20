@@ -23,7 +23,7 @@ const t = useTranslations(Astro.locals.lang || 'en');
 
 <button
   type="button"
-  class:list={['ts', className]}
+  class:list={['ts btn btn-ghost btn-icon', className]}
   id="public-theme-toggle"
   title={t('a11y.toggle_theme')}
   aria-label={t('a11y.toggle_theme')}
@@ -41,30 +41,10 @@ const t = useTranslations(Astro.locals.lang || 'en');
 </button>
 
 <style>
-  .ts {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    /* 44px de zona pulsable: por debajo de eso falla el dedo en móvil. */
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    padding: 0.5rem;
-    border: 1px solid var(--forge-border);
-    border-radius: 0.5rem;
-    background: transparent;
-    color: var(--forge-muted);
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .ts:hover {
-    color: var(--forge-text);
-    border-color: var(--forge-muted);
-  }
-
   /* En claro se ofrece la luna (lo que vas a activar); en oscuro, el sol. */
-  .ts-moon { display: none; }
-  :global([data-theme='dark']) .ts-moon { display: block; }
-  :global([data-theme='dark']) .ts-sun { display: none; }
+  .ts-sun { display: none; }
+  :global([data-theme='dark']) .ts-sun { display: block; }
+  :global([data-theme='dark']) .ts-moon { display: none; }
 </style>
 
 <script>

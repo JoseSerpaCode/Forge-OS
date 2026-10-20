@@ -10,7 +10,9 @@
  */
 import { useTranslations } from '../../i18n/ui';
 import OAuthButtons from './OAuthButtons.astro';
-import Logo from '../brand/Logo.astro';
+import ThemeSwitch from '../i18n/ThemeSwitch.astro';
+import { FIGURAS } from '../landing/figuras';
+import '../../styles/portada.css';
 import LangSwitch from '../i18n/LangSwitch.astro';
 
 interface Props {
@@ -18,280 +20,95 @@ interface Props {
   heading: string;
   /** Frase bajo el título. */
   sub: string;
+  /** Cambia el lema y la escena del panel de marca. */
+  modo?: 'login' | 'register';
 }
 
-const { heading, sub } = Astro.props;
+const { heading, sub, modo = 'login' } = Astro.props;
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
+const reg = modo === 'register';
+const LOGO = '<svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/><path fill="var(--brand-orange)" d="M21 53V45A11 8 0 0 1 43 45V53Z"/></svg>';
 ---
 
-<div class="au">
-  {/*
-    Panel de marca. Repite el choque tipográfico de la landing —el nombre del
-    archivo en mono, dentro de una ficha— para que quien llega desde ahí
-    reconozca dónde está. En móvil se esconde entero: en 390px robaría la
-    pantalla al formulario, que es a lo que se viene.
-  */}
-  <aside class="au-brand" aria-hidden="true">
-    <div class="au-glow"></div>
-    <Logo size="md" class="au-logo" />
-    <p class="au-claim">
-      {t('auth.side.claim')}
-      <span class="au-chip">forge.db</span>
-    </p>
-    <ul class="au-points">
-      <li>{t('auth.side.p1')}</li>
-      <li>{t('auth.side.p2')}</li>
-      <li>{t('auth.side.p3')}</li>
-    </ul>
+{/*
+  Acceso y registro de «Taller» (docs/rediseno/acceso.html y registro.html):
+  panel de marca en tinta con la escena de la fragua, y el formulario en
+  columna. En móvil el panel se esconde entero: en 390 px le robaría la
+  pantalla al formulario, que es a lo que se viene.
+*/}
+<div class="portada">
+<div class="auth">
+  <aside class="auth-brand" aria-hidden="true">
+    <a href="/" class="brand" style="color:var(--brand-paper)" tabindex="-1"><Fragment set:html={LOGO} /><span class="brand-word">Forge OS</span></a>
+    <div class="auth-copy">
+      <p class="claim">{reg ? t('auth.side.reg_claim') : t('auth.side.claim')} <span class="claim-wide">{reg ? t('auth.side.reg_claim_wide') : t('auth.side.claim_wide')}</span></p>
+      <ul class="auth-facts">
+        <li>{reg ? t('auth.side.reg_p1') : t('auth.side.p1')}</li>
+        <li>{reg ? t('auth.side.reg_p2') : t('auth.side.p2')}</li>
+        <li>{reg ? t('auth.side.reg_p3') : t('auth.side.p3')}</li>
+      </ul>
+    </div>
+    <div class="auth-scene"><Fragment set:html={reg ? FIGURAS.escena_registro : FIGURAS.escena_acceso} /></div>
   </aside>
 
-  <main class="au-main">
-    <a href="/" class="au-back">{t('auth.back')}</a>
-
-    <div class="au-card">
-      <h1 class="au-title">{heading}</h1>
-      <p class="au-sub">{sub}</p>
+  <main class="auth-form">
+    <div class="au-col">
+      <a href="/" class="link au-back">← {t('auth.back')}</a>
+      <div>
+        <h1 class="page-title">{heading}</h1>
+        <p class="page-sub">{sub}</p>
+      </div>
 
       {/* Para explicar por qué se ha llegado aquí, cuando no ha sido por
           voluntad propia — el caso del límite de invitados. */}
       <slot name="notice" />
 
       {/* Los proveedores van primero: para quien ya tiene cuenta de Google o de
-          GitHub es un clic frente a recordar una contraseña. El formulario
-          queda debajo, como la alternativa que es. */}
+          GitHub es un clic frente a recordar una contraseña. */}
       <OAuthButtons />
 
-      <div class="au-sep"><span>{t('auth.email')}</span></div>
+      <div class="divider">{t('auth.email')}</div>
 
       <slot />
 
-      <div class="au-sep"><span>{t('auth.or')}</span></div>
+      <div class="divider">{t('auth.or')}</div>
 
       {/*
-        La tercera salida, la misma que ofrece la landing. Es un `form` y no un
+        La tercera salida, la misma que ofrece la portada. Es un `form` y no un
         enlace porque `/api/auth/guest` crea una cuenta: eso es un POST, no una
         navegación que un prefetch del navegador pueda disparar sola.
       */}
-      <form method="POST" action="/api/auth/guest">
-        <button type="submit" class="au-ghost">{t('auth.try')}</button>
+      <form method="POST" action="/api/auth/guest" class="au-invitado">
+        <button type="submit" class="btn btn-secondary au-ancho">{t('auth.try')}</button>
       </form>
-      <p class="au-caveat">{t('auth.try.caveat')}</p>
+      <p class="hint">{t('auth.try.caveat')}</p>
 
       <p class="au-swap"><slot name="swap" /></p>
     </div>
 
     {/*
-      El conmutador va **después** del formulario en el DOM, aunque se vea
-      arriba a la derecha (está posicionado en absoluto).
-
-      Esta página ya tenía dos formularios —credenciales e invitado— y el de
-      credenciales era el primero. Poner aquí un tercero, por delante de los
-      otros, convertía el primer `button[type="submit"]` de la página en el de
-      cambiar de idioma: pulsar «entrar» enviaba /api/lang y se quedaba en el
-      login. Rompió 34 pruebas de una vez, y a una persona le habría hecho lo
-      mismo si pulsaba Enter en el campo equivocado.
-
-      Va **envuelto en un div** y no con `class` sobre el componente. Los
-      estilos de este archivo tienen ámbito de componente: se compilan a
-      `.au-lang[data-astro-cid-…]`, y ese atributo no llega al elemento raíz de
-      LangSwitch, que lleva el suyo propio. Con la clase puesta directamente
-      sobre el componente, la regla no casaba con nada y el conmutador salía
-      abajo del todo, en el flujo, debajo del enlace de registro — se veía en
-      pantalla, pero no donde dice el diseño.
+      Idioma y tema van **después** del formulario en el DOM, aunque se vean
+      arriba a la derecha. Si el de idioma fuera el primer formulario de la
+      página, su botón sería el primer `submit`: pulsar Enter en un campo
+      enviaba /api/lang en vez de entrar. Rompió 34 pruebas de una vez.
     */}
-    <div class="au-lang"><LangSwitch /></div>
+    <div class="au-ajustes"><LangSwitch /><ThemeSwitch /></div>
   </main>
+</div>
 </div>
 
 <style>
-  .au {
-    min-height: 100dvh;
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-  @media (min-width: 60rem) {
-    .au { grid-template-columns: 1fr 1fr; }
-  }
-
-  /* ── Panel de marca ───────────────────────────────────────────────────── */
-  .au-brand {
-    display: none;
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    flex-direction: column;
-    justify-content: center;
-    gap: 1.75rem;
-    padding: clamp(2.5rem, 5vw, 4.5rem);
-    border-right: 1px solid var(--forge-border);
-    background: var(--forge-panel);
-  }
-  @media (min-width: 60rem) {
-    .au-brand { display: flex; }
-  }
-
-  .au-glow {
-    position: absolute;
-    z-index: -1;
-    inset: auto auto -20% -20%;
-    width: 70%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--forge-accent-primary);
-    opacity: 0.2;
-    filter: blur(90px);
-  }
-
-  .au-claim {
-    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    color: var(--forge-text);
-    margin: 0;
-    max-width: 18ch;
-  }
-  .au-chip {
-    display: inline-block;
-    font-family: var(--forge-mono);
-    font-size: 0.78em;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    color: var(--forge-accent-text);
-    background: color-mix(in srgb, var(--forge-accent-primary) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--forge-accent-primary) 30%, transparent);
-    border-radius: 0.5rem;
-    padding: 0.05em 0.35em;
-  }
-
-  .au-points {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.7rem;
-    max-width: 34ch;
-  }
-  .au-points li {
-    position: relative;
-    padding-left: 1.4rem;
-    font-size: 0.9rem;
-    line-height: 1.55;
-    color: var(--forge-muted);
-  }
-  .au-points li::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0.55em;
-    width: 0.4rem;
-    height: 0.4rem;
-    border-radius: 50%;
-    background: var(--forge-accent-primary);
-  }
-
-  /* ── Columna del formulario ───────────────────────────────────────────── */
-  .au-main {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    /* `min-height` y no `height`: en móvil, con el teclado abierto, una altura
-       fija recorta el formulario en lugar de dejar desplazarlo. */
-    min-height: 100dvh;
-    padding: 4.5rem 1.25rem 3rem;
-  }
-
-  .au-back {
-    position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
-    font-family: var(--forge-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    color: var(--forge-muted);
-    text-decoration: none;
-  }
-  .au-back::before { content: '← '; }
-  .au-back:hover { color: var(--forge-text); }
-
-  /* Arriba a la derecha, en espejo con el enlace de volver. */
-  .au-lang {
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-  }
-
-  .au-card { width: 100%; max-width: 23rem; }
-
-  .au-title {
-    font-size: clamp(1.6rem, 4vw, 2rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
-    color: var(--forge-text);
-    margin: 0 0 0.5rem;
-  }
-  .au-sub {
-    font-size: 0.9rem;
-    line-height: 1.55;
-    color: var(--forge-muted);
-    margin: 0 0 1.75rem;
-  }
-
-  .au-sep {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 1.5rem 0;
-  }
-  .au-sep::before,
-  .au-sep::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--forge-border);
-  }
-  .au-sep span {
-    font-family: var(--forge-mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--forge-muted);
-  }
-
-  .au-ghost {
-    width: 100%;
-    padding: 0.7rem 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--forge-text);
-    background: transparent;
-    border: 1px solid var(--forge-border);
-    border-radius: 0.5rem;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .au-ghost:hover {
-    border-color: var(--forge-muted);
-    background: var(--forge-panel);
-  }
-
-  .au-caveat {
-    font-family: var(--forge-mono);
-    font-size: 0.68rem;
-    line-height: 1.6;
-    color: var(--forge-muted);
-    margin: 0.6rem 0 0;
-  }
-
-  .au-swap {
-    margin: 1.75rem 0 0;
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--forge-muted);
+  .auth-form { position: relative; }
+  .au-col { width: min(380px, 100%); display: flex; flex-direction: column; gap: 16px; }
+  .au-back { align-self: flex-start; font-size: var(--forge-t-13, 0.8125rem); }
+  .au-ajustes { position: absolute; top: 24px; right: 24px; display: flex; gap: 6px; align-items: center; }
+  .au-invitado { display: contents; }
+  .au-ancho { justify-content: center; width: 100%; }
+  .au-swap { font-size: 0.8125rem; }
+  @media (max-width: 52rem) {
+    .portada :global(.auth) { grid-template-columns: minmax(0, 1fr); }
+    .portada :global(.auth-brand) { display: none; }
+    .auth-form { padding-top: 72px; }
   }
 </style>

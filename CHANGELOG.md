@@ -6,6 +6,27 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.44.0] - 2026-10-19
+
+Fase 8 del rediseño «Taller»: portada, acceso, registro, pie y 404.
+
+### Changed
+
+- **Portada nueva**, la de la maqueta: el titular enseña el producto con sus propias piezas, un tablero de muestra bajo el arco de la fragua, «Qué hace» en cuatro bloques (tablero, notas, archivos, métricas) con cifras comprobables, ficha técnica y los últimos cambios sacados del CHANGELOG.
+- **Acceso y registro**: panel de marca en tinta con la escena de la fragua, y el formulario con los campos y botones del sistema. Etiquetas en tipo oración, no en mono y mayúsculas.
+- **404**: «La fragua está apagada», con la ruta que se pidió y, sin sesión, la salida para entrar.
+- **El pie de la aplicación** es una línea: licencia, cuatro enlaces y la versión. Antes eran tres columnas con títulos en mayúsculas y un degradado debajo de cada pantalla.
+- Los textos de la maqueta se corrigieron donde prometían más de lo que hay: el reloj de una tarea se para al pasar a revisión o a «Hecho» (no solo en «Hecho»), los sprints son opcionales, y una nota no «aparece en la tarea» —ese enlace no existe en la interfaz—; lo que sí comparten es la etiqueta.
+
+### Removed
+
+- Los cuatro componentes de la portada anterior (vitrina de capturas, rejilla de funciones, demostración tecleada y novedades) y 118 textos que solo usaban ellos.
+
+### Fixed
+
+- El conmutador de tema de las páginas públicas enseñaba la luna en oscuro y el sol en claro, al revés que el de la aplicación.
+- El conmutador de idioma llevaba una bandera para un idioma.
+
 ## [1.43.0] - 2026-10-19
 
 Fase 7 del rediseño «Taller»: ajustes, actividad, perfil y personas.
