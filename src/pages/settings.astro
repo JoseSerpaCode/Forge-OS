@@ -114,9 +114,9 @@ const oauthNotice =
                 {userProfile.banner_url ? (
                   <img src={userProfile.banner_url} class="w-full h-full object-cover" id="banner-preview-img" alt="" loading="lazy" />
                 ) : (
-                  <div class="w-full h-full bg-gradient-to-r from-forge-secondary/30 via-forge-primary/20 to-forge-bg" id="banner-preview-empty"></div>
+                  <div class="w-full h-full bg-forge-surface-2" id="banner-preview-empty"></div>
                 )}
-                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold z-10">
+                <div class="absolute inset-0 bg-forge-text/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-forge-bg text-xs font-semibold z-10">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   {t('user.settings.banner_change')}
                 </div>
@@ -136,7 +136,7 @@ const oauthNotice =
                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-forge-muted" id="avatar-preview-default"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 )}
                 <!-- Hover Edit Overlay -->
-                <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all z-10 text-white">
+                <div class="absolute inset-0 bg-forge-text/80 hidden group-hover:flex items-center justify-center z-10 text-forge-bg">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 </div>
                 <input type="file" id="avatar-file-input" accept="image/*" aria-label={t('user.settings.upload_avatar')} class="absolute inset-0 opacity-0 cursor-pointer z-20" title={t('user.settings.upload_avatar')} />
@@ -218,7 +218,7 @@ const oauthNotice =
                   <label class="relative inline-flex items-center cursor-pointer shrink-0">
                     <input type="checkbox" id="profile-social" class="sr-only peer" checked={userProfile.social_enabled === 1}
                       aria-labelledby="profile-social-nombre" aria-describedby="profile-social-desc" />
-                    <div class="w-11 h-6 bg-forge-bg peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-forge-muted after:border-forge-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-forge-primary peer-checked:after:bg-white border border-forge-border/60 peer-focus-visible:ring-2 peer-focus-visible:ring-forge-secondary"></div>
+                    <div class="w-11 h-6 bg-forge-bg peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-forge-muted after:border-forge-muted after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-forge-primary peer-checked:after:bg-white border border-forge-border/60 peer-focus-visible:ring-2 peer-focus-visible:ring-forge-focus"></div>
                   </label>
                 </div>
               )}
@@ -486,7 +486,7 @@ const oauthNotice =
             </div>
             <button type="button" id="cal-crear" class="btn btn-primary">{t('cal.create')}</button>
           </div>
-          <div id="cal-nuevo" class="hidden border border-forge-secondary/50 rounded-md p-3 space-y-2">
+          <div id="cal-nuevo" class="hidden border border-forge-primary/50 rounded-md p-3 space-y-2">
             <p class="text-xs text-forge-muted">{t('cal.once')}</p>
             <div class="flex gap-2">
               <label class="sr-only" for="cal-url">URL</label>
@@ -589,7 +589,7 @@ const oauthNotice =
           <p class="text-sm text-forge-muted mt-1">{t('friends.desc')}</p>
         </div>
         <div class="md:col-span-2">
-          <a href="/people" class="flex items-center justify-between gap-4 bg-forge-panel border border-forge-border/60 rounded-xl px-5 py-4 hover:border-forge-secondary/50 transition-colors group">
+          <a href="/people" class="flex items-center justify-between gap-4 bg-forge-panel border border-forge-border/60 rounded-xl px-5 py-4 hover:border-forge-text transition-colors group">
             <span class="flex items-center gap-3 min-w-0">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text shrink-0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span class="text-sm font-semibold text-forge-text group-hover:text-forge-accent-text transition-colors">{t('friends.open')}</span>
@@ -815,7 +815,7 @@ const oauthNotice =
     if (contenedor && !document.getElementById('banner-preview-empty')) {
       const vacio = document.createElement('div');
       vacio.id = 'banner-preview-empty';
-      vacio.className = 'w-full h-full bg-gradient-to-r from-forge-secondary/30 via-forge-primary/20 to-forge-bg';
+      vacio.className = 'w-full h-full bg-forge-surface-2';
       contenedor.insertBefore(vacio, contenedor.firstChild);
     }
     document.getElementById('btn-remove-banner')?.classList.add('hidden');
@@ -831,7 +831,7 @@ const oauthNotice =
     const msg = document.createElement('span');
     // Start with opacity-0 and transform
     msg.className = 'inline-success-msg text-forge-success font-bold text-sm flex items-center gap-1.5 opacity-0 transition-all duration-300 transform translate-x-2 pointer-events-none';
-    msg.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce"><polyline points="20 6 9 17 4 12"></polyline></svg> ${i18nSaved}`;
+    msg.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> ${i18nSaved}`;
     
     btn.parentNode.insertBefore(msg, btn.nextSibling);
 

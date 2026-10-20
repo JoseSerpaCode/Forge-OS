@@ -15,7 +15,7 @@ const t = useTranslations(Astro.locals.lang || 'en');
 const datos = ficha(user.id, Astro.params.id ?? '');
 if (!datos) return new Response(null, { status: 404 });
 const { contacto, tareas, notas } = datos;
-const campo = 'bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm font-normal text-forge-text focus:border-forge-secondary outline-none';
+const campo = 'bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm font-normal text-forge-text focus:border-forge-focus outline-none';
 ---
 
 <MainLayout title={contacto.name}>

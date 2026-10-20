@@ -161,7 +161,7 @@ const currentUrl = Astro.url.pathname;
   <div class="flex flex-col sm:flex-row max-h-[70vh] sm:max-h-[60vh]">
     <div class="w-full sm:w-1/3 border-b sm:border-b-0 sm:border-r border-forge-border bg-forge-bg shrink-0">
       <div class="flex flex-row overflow-x-auto sm:flex-col">
-        <button class="about-tab-btn active p-3 text-left text-sm border-b-2 sm:border-b-0 sm:border-l-2 border-forge-secondary bg-forge-panel font-bold whitespace-nowrap shrink-0" data-target="about-guide">{t('about.guide') || 'User Guide'}</button>
+        <button class="about-tab-btn active p-3 text-left text-sm border-b-2 sm:border-b-0 sm:border-l-2 border-forge-primary bg-forge-panel font-bold whitespace-nowrap shrink-0" data-target="about-guide">{t('about.guide') || 'User Guide'}</button>
         {/* Los atajos de teclado no se enseñan en un teléfono.
 
             La pestaña listaba «⌘/Ctrl + K», «C» y «Esc» a quien no tiene ni una
@@ -644,7 +644,7 @@ const currentUrl = Astro.url.pathname;
       await fetch('/api/notifications/read', { method: 'POST' });
       document.getElementById('notif-badge')?.classList.add('hidden');
       document.querySelectorAll('#notif-list li').forEach(li => {
-        li.classList.remove('bg-forge-secondary/5');
+        li.classList.remove('bg-forge-primary/5');
         li.classList.add('opacity-70', 'bg-forge-bg/20');
       });
     } catch(e) {
@@ -719,14 +719,14 @@ const currentUrl = Astro.url.pathname;
     btn.addEventListener('click', (e) => {
       // 1. Remove active state from all buttons
       document.querySelectorAll('.about-tab-btn').forEach(b => {
-        b.classList.remove('active', 'border-forge-secondary', 'font-bold');
+        b.classList.remove('active', 'border-forge-primary', 'font-bold');
         b.classList.add('border-transparent', 'text-forge-muted');
       });
       
       // 2. Add active state to clicked button
       const targetBtn = e.currentTarget as HTMLElement;
       targetBtn.classList.remove('border-transparent', 'text-forge-muted');
-      targetBtn.classList.add('active', 'border-forge-secondary', 'font-bold');
+      targetBtn.classList.add('active', 'border-forge-primary', 'font-bold');
       
       // 3. Hide all content
       document.querySelectorAll('.about-tab-content').forEach(content => {

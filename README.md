@@ -70,8 +70,9 @@ running two commands gives you a working instance.
   tables, code blocks and bidirectional links between pages and issues.
 - **Dynamic databases** — build Airtable-style tables from the UI, without
   touching a schema file.
-- **Sprint metrics** — velocity, burndown, distribution and precision charts
-  rendered with Chart.js from real work logs.
+- **Metrics** — workload per person, sprint progress, tasks closed per sprint
+  and estimated versus logged time, from real work logs. Every chart has a
+  table view with the same data.
 - **Forge Hub** — public profiles with banner, avatar and bio, inline editing,
   friendships and user blocking.
 - **Guest accounts** — restricted, isolated sessions that can be promoted to a
@@ -87,8 +88,8 @@ running two commands gives you a working instance.
 Every image below comes from `npm run seed` — regenerate them all with
 `npm run screenshots`.
 
-**Sprint metrics** — velocity, burndown, workload distribution and estimation
-precision, drawn from real work logs.
+**Metrics** — workload, sprint progress, tasks closed per sprint and estimated
+versus logged time, drawn from real work logs.
 
 <img src="./public/screenshots/metrics-dark.png#gh-dark-mode-only" alt="Sprint metrics dashboard" width="900" />
 <img src="./public/screenshots/metrics-light.png#gh-light-mode-only" alt="Sprint metrics dashboard" width="900" />

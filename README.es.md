@@ -71,8 +71,9 @@ repositorio y ejecutar dos comandos te deja una instancia funcionando.
   tablas, bloques de código y enlaces bidireccionales entre páginas e issues.
 - **Bases de datos dinámicas**: crea tablas tipo Airtable desde la interfaz, sin
   tocar ningún archivo de esquema.
-- **Métricas de sprint**: gráficas de velocity, burndown, distribución y
-  precisión renderizadas con Chart.js a partir de registros de trabajo reales.
+- **Métricas**: carga por persona, avance del sprint, tareas cerradas por
+  sprint y tiempo estimado frente a registrado, a partir de las horas reales.
+  Cada gráfica tiene su vista en tabla con los mismos datos.
 - **Forge Hub**: perfiles públicos con banner, avatar y biografía, edición en
   línea, sistema de amistades y bloqueo de usuarios.
 - **Cuentas de invitado**: sesiones restringidas y aisladas que luego pueden
@@ -88,8 +89,8 @@ repositorio y ejecutar dos comandos te deja una instancia funcionando.
 Todas las imágenes salen de `npm run seed` — puedes regenerarlas con
 `npm run screenshots`.
 
-**Métricas de sprint**: velocity, burndown, distribución de carga y precisión de
-estimación, calculadas a partir de registros de trabajo reales.
+**Métricas**: carga, avance del sprint, tareas cerradas por sprint y tiempo
+estimado frente a registrado, calculadas a partir de las horas reales.
 
 <img src="./public/screenshots/metrics-dark.png#gh-dark-mode-only" alt="Panel de métricas de sprint" width="900" />
 <img src="./public/screenshots/metrics-light.png#gh-light-mode-only" alt="Panel de métricas de sprint" width="900" />

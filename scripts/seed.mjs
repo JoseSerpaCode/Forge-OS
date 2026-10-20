@@ -178,8 +178,12 @@ function seed() {
     for (const u of users) insertUser.run(u.id, u.username, pwHash, u.sysadmin, u.bio, u.pronouns);
 
     db.prepare(
-      `INSERT INTO workspaces (id, name, sys_tag, icon, description, created_by, is_public)
-       VALUES (?, ?, ?, ?, ?, ?, 1)`
+      // Sprints, tiempo y puntos encendidos: la semilla crea sprints y horas
+      // registradas, y con las funciones apagadas (su valor por defecto) el
+      // tablero y las métricas los esconden.
+      `INSERT INTO workspaces (id, name, sys_tag, icon, description, created_by, is_public,
+         feat_sprints, feat_time, feat_points)
+       VALUES (?, ?, ?, ?, ?, ?, 1, 1, 1, 1)`
     ).run(WS.id, WS.name, WS.tag, '🛰️', 'Core platform team: billing, search and the public API.', users[0].id);
 
     const insertMember = db.prepare(

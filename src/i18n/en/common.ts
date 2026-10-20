@@ -203,7 +203,7 @@ export const en = {
   'modal.work_desc_placeholder': 'What did you work on?',
   'cmd.placeholder': 'Search workspaces, tasks, pages, people…',
   'cmd.quick': 'Quick actions',
-  'cmd.go_hub': 'Go to my hub',
+  'cmd.go_hub': 'Go home',
   'cmd.go_settings': 'Account settings',
   'cmd.searching': 'Searching…',
   'cmd.none': 'Nothing matches that.',

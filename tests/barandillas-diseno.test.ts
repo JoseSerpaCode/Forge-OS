@@ -6,21 +6,16 @@ import path from 'node:path';
  * Barandillas del rediseño («Taller», docs/rediseno-diagnostico.md, 1.4).
  *
  * Cada patrón es una huella de interfaz generada o un fallo de accesibilidad
- * que ya costó una auditoría. Hoy quedan muchos: el rediseño va por fases. Así
- * que la prueba no exige cero, exige **no ir a peor**: cuenta cada patrón por
- * archivo y lo compara con `tests/barandillas-diseno.json`.
+ * que ya costó una auditoría.
  *
- * - Si un archivo **sube**, falla: es una huella nueva.
- * - Si **baja**, también falla, para que la lista se ajuste y no deje hueco a
- *   que vuelva a subir. Se regenera con:
- *
- *     ACTUALIZAR_BARANDILLAS=1 npx vitest run tests/barandillas-diseno.test.ts
- *
- * Al final del rediseño (fase 9) la lista tiene que quedar vacía.
+ * Durante el rediseño la prueba exigía «no ir a peor» contra una lista de
+ * excepciones por archivo, que cada fase iba bajando. En la fase 9 (2.0) la
+ * lista llegó a cero y desapareció: ahora **no se admite ninguna**. Si una
+ * hace falta de verdad, el sitio para justificarla es aquí, en un patrón más
+ * fino, no una lista de excepciones que vuelva a crecer.
  */
 const RAIZ = path.resolve(__dirname, '..');
 const DIRS = ['src/components', 'src/layouts', 'src/pages'];
-const BASE = path.join(__dirname, 'barandillas-diseno.json');
 
 const PATRONES: Record<string, RegExp> = {
   // Color fuera de los tokens.
@@ -64,24 +59,10 @@ function contar(): Record<string, Record<string, number>> {
 describe('barandillas del rediseño', () => {
   const ahora = contar();
 
-  if (process.env.ACTUALIZAR_BARANDILLAS) {
-    fs.writeFileSync(BASE, JSON.stringify(ahora, null, 2) + '\n');
-  }
-  const base: Record<string, Record<string, number>> = JSON.parse(fs.readFileSync(BASE, 'utf8'));
-
   for (const nombre of Object.keys(PATRONES)) {
-    it(`${nombre}: no aparece en archivos nuevos ni sube en los que ya lo tienen`, () => {
-      const subidas = Object.entries(ahora[nombre] ?? {})
-        .filter(([f, n]) => n > (base[nombre]?.[f] ?? 0))
-        .map(([f, n]) => `${f}: ${base[nombre]?.[f] ?? 0} → ${n}`);
-      expect(subidas, 'Huella nueva. Usa los tokens y componentes del rediseño.').toEqual([]);
-    });
-
-    it(`${nombre}: la lista de excepciones está al día`, () => {
-      const bajadas = Object.entries(base[nombre] ?? {})
-        .filter(([f, n]) => (ahora[nombre]?.[f] ?? 0) < n)
-        .map(([f, n]) => `${f}: ${n} → ${ahora[nombre]?.[f] ?? 0}`);
-      expect(bajadas, 'Bien: hay menos. Regenera la lista con ACTUALIZAR_BARANDILLAS=1.').toEqual([]);
+    it(`${nombre}: no aparece`, () => {
+      const hallazgos = Object.entries(ahora[nombre] ?? {}).map(([f, n]) => `${f}: ${n}`);
+      expect(hallazgos, 'Huella del diseño anterior. Usa los tokens y componentes de «Taller».').toEqual([]);
     });
   }
 });
