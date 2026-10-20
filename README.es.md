@@ -77,8 +77,14 @@ servidor de base de datos, ni colas, ni capa de caché que mantener.
   Se abre con `C` desde cualquier página del espacio.
 - Vistas **Hoy** y **Próximos**, fecha de trabajo aparte de la de entrega,
   subtareas, tareas que se repiten («cada lunes», «el día 15 de cada mes»),
-  vistas guardadas, plantillas de tareas y tipos de tarea propios de cada
-  espacio.
+  vistas guardadas y tipos de tarea propios de cada espacio.
+- **Plantillas de tareas**, escritas en los ajustes del espacio (con seis de
+  serie para empezar) o guardadas desde cualquier tarea, y usadas desde el
+  alta o escribiendo `/nombre` en el alta rápida.
+- **En el teléfono**, una columna cada vez con las pestañas de estado fijas
+  arriba: mantener pulsada una tarjeta y soltarla en una pestaña la mueve,
+  deslizar a los lados cambia de pestaña, y cada tarjeta tiene su hoja de
+  «mover».
 - **Recordatorios** antes de una entrega, en la zona horaria de cada persona,
   como notificación dentro de la app y —si está configurado— por Web Push, para
   que lleguen con Forge cerrado.
@@ -132,7 +138,8 @@ servidor de base de datos, ni colas, ni capa de caché que mantener.
   espacio y con las vencidas contadas aparte.
 - `Cmd/Ctrl+K` para saltar a cualquier espacio, persona, nota o tarea por su
   título.
-- Inglés y español, detectados automáticamente.
+- Inglés y español, detectados automáticamente. La portada tiene además una
+  dirección en español (`/es`), para que los buscadores indexen las dos.
 - Tema claro y oscuro, una disposición propia para el teléfono con navegación
   inferior, e instalable como aplicación.
 

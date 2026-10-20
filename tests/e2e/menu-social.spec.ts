@@ -18,7 +18,12 @@ async function entrar(page: any, quien = 'jose') {
   await page.waitForURL('**/');
 }
 
-test('el menú de la cuenta lleva al perfil propio', async ({ page }) => {
+/*
+ * Perfil y ajustes de la cuenta son una sola página: el menú lleva una entrada
+ * y no dos, y desde ella se llega al perfil tal como lo ven los demás (y de
+ * vuelta).
+ */
+test('el menú de la cuenta lleva a perfil y cuenta, y de ahí al perfil público', async ({ page }) => {
   await entrar(page);
 
   const menu = page.locator('#user-menu');
@@ -27,12 +32,15 @@ test('el menú de la cuenta lleva al perfil propio', async ({ page }) => {
   await page.click('#btn-user-menu');
   await expect(menu).toBeVisible();
   await expect(page.locator('#btn-user-menu')).toHaveAttribute('aria-expanded', 'true');
+  await expect(menu.locator('a[href^="/u/"]')).toHaveCount(0);
 
-  // El enlace que no existía en ninguna parte.
-  const perfil = menu.locator('a[href="/u/jose"]');
-  await expect(perfil).toBeVisible();
-  await perfil.click();
+  await menu.locator('a[href="/settings"]').click();
+  await page.waitForURL('**/settings');
+  await expect(page.locator('h1')).toContainText('@jose');
+
+  await page.locator('#settings-wrapper a[href="/u/jose"]').click();
   await page.waitForURL('**/u/jose');
+  await expect(page.locator('a[href="/settings"].btn')).toBeVisible();
 });
 
 test('Escape cierra el menú y devuelve el foco', async ({ page }) => {

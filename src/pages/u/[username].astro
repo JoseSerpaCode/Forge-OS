@@ -165,6 +165,9 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
                 {!currentUser && (
                     <a href="/login" class="btn btn-primary">{t('profile.login_to_interact')}</a>
                 )}
+                {isOwnProfile && (
+                    <a href="/settings" class="btn btn-secondary">{t('profile.edit')}</a>
+                )}
             </div>
         </div>
 

@@ -1,0 +1,18 @@
+---
+// La portada en español, con dirección propia.
+//
+// `/` sirve el idioma de la cookie o del navegador, y un buscador no manda
+// ninguno de los dos: Google solo conocía la portada en inglés. Aquí el idioma
+// es siempre español (lo fija el middleware) y las dos se enlazan con
+// `hreflang`. Con sesión no hay portada: se va a Inicio.
+import Landing from '../components/landing/Landing.astro';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { textosPortada, ALTERNATIVAS_PORTADA } from '../components/landing/textosPortada';
+
+if (Astro.locals.user) return Astro.redirect('/');
+const meta = textosPortada('es').meta;
+---
+
+<PublicLayout title={meta.title} description={meta.desc} canonicalPath="/es" alternates={ALTERNATIVAS_PORTADA}>
+  <Landing />
+</PublicLayout>

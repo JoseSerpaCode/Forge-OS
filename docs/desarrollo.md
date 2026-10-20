@@ -199,6 +199,63 @@ fases (1.36.0 a 2.0.0). Lo que no se ve en el código:
 - **Las fuentes se sirven desde `public/fonts`** (Archivo variable y Plex
   Mono). No vuelvas a Google Fonts: la CSP ya no lo permite.
 
+## Navegación: lo mismo en todas las páginas
+
+- **La sección del espacio de la barra lateral sale siempre**, también en
+  Inicio, Actividad o los ajustes de la cuenta (con el último espacio
+  visitado). La resuelve **una** función, `espacioDeNavegacion()` en
+  `src/lib/consultas.ts`, que usan la barra lateral y la inferior. Si un
+  componente decide por su cuenta qué enseñar fuera de un espacio, pasar de
+  Inicio al tablero vuelve a mover la barra. Lo fija
+  `tests/e2e/navegacion-estable.spec.ts`, que compara la posición de cada
+  enlace en las dos páginas.
+- **Perfil y ajustes de la cuenta son una página** (`/settings`). El perfil
+  público (`/u/<usuario>`) es la vista de los demás y enlaza de vuelta.
+
+## Tablero en el teléfono
+
+- **Las pestañas de estado son `sticky`**, y para eso los contenedores del
+  tablero van con `overflow-clip`, **no** `overflow-hidden`: este último crea
+  un contenedor de desplazamiento y el `sticky` deja de pegarse al `<main>`,
+  que es quien se desplaza. Sin pestañas fijas, al bajar por una columna larga
+  desaparecían por arriba, y son el destino del arrastre.
+- **El arrastre con el dedo es propio** (`touchstart/move/end` en
+  `KanbanBoard.astro`), porque el de HTML5 no funciona con el dedo. La espera
+  (380 ms) separa levantar de desplazar. Al tocar una tarjeta se le quita
+  `draggable` mientras dura el toque: Chrome para Android arranca también su
+  arrastre nativo y competirían.
+- **Mover de estado no recarga**, salvo al salir de Hecho o con un cronómetro en
+  marcha, porque esas tarjetas las tiene que repintar el servidor. A Hecho va
+  siempre por `completar()`, que sabe de repeticiones.
+- **La pestaña va en `?estado=`**, que el servidor lee al pintar.
+- **El sprint que se recuerda es el que se está viendo** (`selector.value`), no
+  el de la dirección: sin `?sprint=` se guardaba «backlog» y desde la segunda
+  visita el tablero abría vacío. Lo fija `tests/e2e/sprint-recordado.spec.ts`.
+
+## Buscadores
+
+- **`/` y `/es` son la portada en cada idioma**, enlazadas con `hreflang`
+  (`ALTERNATIVAS_PORTADA` en `textosPortada.ts`, que usan la página y el
+  sitemap). `/` negocia el idioma; `/es` no, porque un buscador no manda cookie
+  ni idioma y sin ella Google solo veía el inglés. `/api/lang` cambia de una a
+  otra y solo redirige a rutas del propio sitio.
+- **Las páginas salen con `Cache-Control: private, no-cache, no-transform`**
+  (`src/middleware.ts`). `no-transform` impide que Cloudflare inyecte su
+  analítica, que la CSP bloqueaba con un error en la consola. No lo quites
+  pensando que es solo caché.
+- **`www.` redirige** al dominio de `PUBLIC_SITE_URL` desde `server.mjs`.
+- **El sitemap no lleva `lastmod`**: ponía la fecha de hoy en cada petición, y
+  Google deja de fiarse de un `lastmod` que nunca es cierto.
+
+## Plantillas de tareas
+
+Se crean desde una tarea (`desdeTarea`) o escritas en los ajustes (`crear`,
+`actualizar`), y las dos pasan por `limpiarContenido()`: una plantilla no puede
+llevar nada que el alta no admita. Las de serie (`plantillasDeSerie.ts`) van
+en los dos idiomas dentro del propio archivo porque, como las de las tablas,
+se convierten en datos al guardarse; una prueba comprueba que pasan la lista
+blanca sin perder nada.
+
 ## La marca va en un solo componente
 
 `src/components/brand/Logo.astro`, logo «Fragua»: la boca de una fragua con

@@ -194,6 +194,9 @@ if (funcs.tiempo) {
 }
 const metaDescription = `${workspace.name} board on Forge OS. Track issues, sprints, and tasks efficiently.`;
 const puedeEditar = acceso.rol === 'owner' || acceso.rol === 'editor';
+// Cuántos filtros o ajustes de vista hay puestos, para el botón que los
+// guarda en el teléfono: escondidos, tienen que seguir diciendo que están.
+const opcionesActivas = [etiquetaFiltro, filtroPrioridad, filtroVence, responsablePedido, agrupar].filter(Boolean).length;
 
 
 // El sprint que se mira, para la línea de datos bajo el título.
@@ -205,7 +208,11 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
   workspaceId={workspace.id}
   description={metaDescription}
 >
-  <div class="h-full flex flex-col pt-4 overflow-hidden">
+  {/* `overflow-clip` y no `-hidden` (aquí y en el contenedor del tablero):
+      recorta igual, pero no crea un contenedor de desplazamiento, y así las
+      pestañas de estado del teléfono pueden quedarse fijas arriba (`sticky`)
+      mientras se desplaza la columna. */}
+  <div class="h-full flex flex-col pt-4 overflow-clip">
     {/*
       Cabecera del tablero (fase 1 del rediseño, docs/rediseno/tablero.html).
 
@@ -219,8 +226,8 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
       sprint, etiqueta, filtros, carriles); a la derecha lo que **hace** algo
       (ordenar, acciones del sprint, nueva tarea).
     */}
-    <header class="page-head !mb-3">
-      <div class="min-w-0 max-sm:hidden">
+    <header class="page-head !mb-3 max-sm:hidden">
+      <div class="min-w-0">
         <h1 class="page-title">{workspace.name}</h1>
         {(sprintActual || funcs.tiempo) && (
           <div class="page-meta">
@@ -252,7 +259,7 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
         </nav>
 
         {vista === 'tablero' && funcs.sprints && (
-          <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="campo campo-inline max-w-[16rem]">
+          <select id="sprint-selector" aria-label={t('a11y.sprint_selector')} class="campo campo-inline max-w-[16rem] max-sm:flex-1 max-sm:min-w-0 max-sm:max-w-none">
             <option value="backlog" selected={!activeSprintId}>{t('board.backlog')}</option>
             {sprints.map(s => (
               <option value={s.id} selected={activeSprintId === s.id}>{s.name} {s.status === 'active' ? t('board.sprint_active_suffix') : s.status === 'completed' ? t('board.sprint_completed_suffix') : ''}</option>
@@ -260,10 +267,25 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
           </select>
         )}
 
+        {/* En el teléfono, lo que se toca poco va detrás de este botón: la
+            barra entera ocupaba cinco filas y dejaba media pantalla para las
+            tarjetas. Lo de cada visita —la vista, el sprint, nueva tarea— se
+            queda fuera. */}
+        <button type="button" id="btn-opciones-tablero" class="btn btn-secondary btn-icon relative sm:!hidden" aria-expanded="false"
+          aria-label={opcionesActivas ? t('board.options_count').replace('{n}', String(opcionesActivas)) : t('board.options')}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>
+          {opcionesActivas > 0 && (
+            <span class="absolute -top-1 -right-1 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-forge-primary text-forge-on-accent text-xs font-bold flex items-center justify-center" aria-hidden="true">{opcionesActivas}</span>
+          )}
+        </button>
+        {/* Abierto, lo secundario empieza en una fila propia: sin el salto, el
+            primero se colaba en la fila principal y aplastaba el selector. */}
+        <span class="salto-opciones sm:hidden" aria-hidden="true"></span>
+
         {/* Filtro por etiqueta. Solo aparece si hay etiquetas: un desplegable
             con una única opción vacía es ruido. */}
         {etiquetasDelEspacio.length > 0 && (
-          <select id="label-filter" aria-label={t('labels.filter')} class="campo campo-inline max-w-[14rem]">
+          <select id="label-filter" aria-label={t('labels.filter')} class="ctl-secundario campo campo-inline max-w-[14rem]">
             <option value="">{t('labels.filter_all')}</option>
             {etiquetasDelEspacio.map((e: any) => (
               <option value={e.id} selected={etiquetaFiltro?.id === e.id}>{e.name}</option>
@@ -272,7 +294,7 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
         )}
 
         {/* Más filtros y guardar la vista, en un desplegable. */}
-        <details class="relative" id="filtros-tablero" data-sys-tag={sys_tag}
+        <details class="ctl-secundario relative" id="filtros-tablero" data-sys-tag={sys_tag}
           data-t-saved={t('views.saved')} data-t-error={t('views.error')}>
           <summary class="btn btn-secondary list-none [&::-webkit-details-marker]:hidden" aria-pressed={(filtroPrioridad || filtroVence || responsablePedido) ? 'true' : 'false'}>
             {t('filters.button')}
@@ -320,7 +342,7 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
         {/* Un carril por etiqueta: con una etiqueta por asignatura, cada
             asignatura con sus cuatro columnas. */}
         {vista === 'tablero' && etiquetasDelEspacio.length > 0 && (
-          <button type="button" id="btn-group-label" aria-pressed={agrupar ? 'true' : 'false'} class="btn btn-secondary">
+          <button type="button" id="btn-group-label" aria-pressed={agrupar ? 'true' : 'false'} class="ctl-secundario btn btn-secondary">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg>
             {t('board.group_label')}
           </button>
@@ -334,7 +356,7 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
           partir de ahí. «Hecho» no se toca: va siempre por cuándo se terminó.
         */}
         {vista === 'tablero' && puedeEditar && (
-          <div class="relative" id="sort-menu-root">
+          <div class="ctl-secundario relative" id="sort-menu-root">
             <button id="btn-sort-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sort-menu" class="btn btn-secondary">
               {t('board.sort_action')}
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -360,7 +382,7 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
         {/* Las acciones del sprint, en un menú: se usan una vez cada mucho, no
             en cada visita. Lo que se usa a diario se queda fuera. */}
         {vista === 'tablero' && funcs.sprints && acceso.rol !== 'viewer' && (
-          <div class="relative" id="sprint-menu-root">
+          <div class="ctl-secundario relative" id="sprint-menu-root">
             <button id="btn-sprint-menu" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sprint-menu" class="btn btn-secondary">
               {t('board.sprint_actions')}
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -422,7 +444,7 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
       </div>
     </div>
 
-    <div class="flex-1 overflow-hidden">
+    <div class="flex-1 overflow-clip">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
       <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} contactos={contactos} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} filtrosUrl={new URLSearchParams(Object.entries({ prioridad: filtroPrioridad ?? '', vence: filtroVence ? String(filtroVence) : '', responsable: responsablePedido && filtroResponsable ? responsablePedido : '' }).filter(([, v]) => v)).toString()} vista={vista} grupos={grupos} hoy={hoy} dias={dias} />
     </div>
@@ -540,12 +562,23 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
   <script>
     const workspaceId = document.querySelector('.kanban-container')?.getAttribute('data-workspace') || 'default';
 
+    // «Filtros y orden», en el teléfono: despliega lo secundario de la barra.
+    const botonOpciones = document.getElementById('btn-opciones-tablero');
+    botonOpciones?.addEventListener('click', () => {
+      const abiertas = botonOpciones.closest('.barra-herramientas')?.classList.toggle('opciones-abiertas') ?? false;
+      botonOpciones.setAttribute('aria-expanded', String(abiertas));
+    });
+
     // Recordar el sprint elegido, solo si el espacio usa sprints: sin selector
     // no hay nada que recordar, y una cookie de sprint en un espacio sin
     // sprints redirigiría a un `?sprint=` que ya no significa nada.
     const selector = document.getElementById('sprint-selector') as HTMLSelectElement | null;
     if (selector) {
-      const sprintToSave = new URLSearchParams(window.location.search).get('sprint') || 'backlog';
+      // Lo que se está **viendo**, que es lo que eligió el servidor. Aquí se
+      // leía `?sprint=` y, sin él, se guardaba «backlog»: la primera visita
+      // enseñaba el sprint activo y apuntaba el backlog, así que todas las
+      // siguientes abrían un backlog vacío.
+      const sprintToSave = selector.value || 'backlog';
       try { localStorage.setItem(`forge_last_sprint_${workspaceId}`, sprintToSave); } catch { /* sin almacenamiento */ }
       document.cookie = `forge_last_sprint_${workspaceId}=${sprintToSave}; path=/; max-age=31536000`;
     }
@@ -1089,6 +1122,15 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
     `absolute` es «justo debajo del botón» y en `fixed` es «el borde de abajo
     de la pantalla».
   */
+  /* Teléfono: lo secundario se pliega detrás de «Filtros y orden» y, abierto,
+     va debajo de la fila principal (vista, sprint, nueva tarea). */
+  @media (width < 40rem) {
+    .ctl-secundario { order: 2; }
+    .salto-opciones { order: 1; flex-basis: 100%; height: 0; margin-top: -0.75rem; }
+    .barra-herramientas:not(.opciones-abiertas) .ctl-secundario,
+    .barra-herramientas:not(.opciones-abiertas) .salto-opciones { display: none; }
+  }
+
   @media (max-width: 40rem) {
     .menu-sprint {
       position: fixed;

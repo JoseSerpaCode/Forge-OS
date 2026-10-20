@@ -12,7 +12,7 @@
 import Hub from '../components/dashboard/Hub.astro';
 import Landing from '../components/landing/Landing.astro';
 import PublicLayout from '../layouts/PublicLayout.astro';
-import { textosPortada } from '../components/landing/textosPortada';
+import { textosPortada, ALTERNATIVAS_PORTADA } from '../components/landing/textosPortada';
 
 const user = Astro.locals.user;
 const lang = Astro.locals.lang || 'en';
@@ -23,7 +23,7 @@ const meta = textosPortada(lang).meta;
   user ? (
     <Hub />
   ) : (
-    <PublicLayout title={meta.title} description={meta.desc}>
+    <PublicLayout title={meta.title} description={meta.desc} canonicalPath="/" alternates={ALTERNATIVAS_PORTADA}>
       <Landing />
     </PublicLayout>
   )

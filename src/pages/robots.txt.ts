@@ -20,6 +20,7 @@ export const GET: APIRoute = ({ site, url }) => {
   const body = `# Forge OS
 User-agent: *
 Allow: /$
+Allow: /es$
 Allow: /login$
 Allow: /register$
 

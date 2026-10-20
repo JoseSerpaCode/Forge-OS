@@ -3,24 +3,24 @@ import Logo from '../brand/Logo.astro';
 // src/components/layout/Sidebar.astro — Redesigned with submenus
 interface Props {
   workspaceId?: string;
-  workspaceName?: string;
 }
-const { workspaceId, workspaceName } = Astro.props;
+const { workspaceId } = Astro.props;
 const user = Astro.locals.user!;
 import db from '../../lib/db';
 import { useTranslations } from '../../i18n/ui';
 import { nombreDeRol } from '../../lib/roles';
-import { solicitudesPendientes as contarSolicitudes, rolEnEspacio, sysTagDeEspacio } from '../../lib/consultas';
+import { solicitudesPendientes as contarSolicitudes, espacioDeNavegacion, espaciosParaCambiar, rolEnEspacio } from '../../lib/consultas';
 import { listar as listarVistas } from '../../lib/vistasGuardadas';
 import { tonoDe, esFotoReal } from '../../lib/tonos';
 import { iniciales } from '../../lib/responsables';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
-let sys_tag = Astro.params.sys_tag;
-if (!sys_tag && user?.last_workspace_id) {
-  sys_tag = sysTagDeEspacio(user.last_workspace_id) ?? sys_tag;
-}
+// La sección del espacio es la misma en todas las páginas, también en Inicio:
+// ver `espacioDeNavegacion()`.
+const espacio = espacioDeNavegacion(Astro.params.sys_tag ?? user?.last_workspace_id, user?.id ?? '', user?.is_sysadmin === 1);
+const sys_tag = espacio?.sysTag;
+const espacios = espacio && !user?.is_guest ? espaciosParaCambiar(user.id) : [];
 
 const currentPath = Astro.url.pathname;
 
@@ -37,7 +37,7 @@ const currentPath = Astro.url.pathname;
 const pendientes = contarSolicitudes(user?.id ?? '', !!user?.is_guest);
 
 // Las vistas guardadas del tablero, de quien mira y en este espacio.
-const vistasGuardadas = user && workspaceId && sys_tag ? listarVistas(user.id, workspaceId, sys_tag) : [];
+const vistasGuardadas = user && espacio ? listarVistas(user.id, espacio.id, espacio.sysTag) : [];
 const urlActual = `${Astro.url.pathname}${Astro.url.search}`;
 
 
@@ -54,23 +54,24 @@ const isSettings = sys_tag && currentPath.match(/\/w\/[^\/]+\/settings/);
 const isHub      = currentPath === '/';
 const isActivity = currentPath.startsWith('/activity');
 
-// El rol es **del espacio**: fuera de uno —el Hub, Actividad, Ajustes de la
-// cuenta— no hay rol que enseñar. Antes caía a 'viewer' por defecto y el Hub
-// le decía «Lector» al dueño de todos sus espacios.
+// El rol que se enseña bajo el nombre es **el de la página**: fuera de un
+// espacio —Inicio, Actividad, Ajustes de la cuenta— no hay rol que enseñar.
+// Antes caía a 'viewer' por defecto e Inicio le decía «Lector» al dueño de
+// todos sus espacios.
 let userRole: string | null = user?.is_sysadmin === 1 ? 'sysadmin' : null;
 if (workspaceId && user?.is_sysadmin !== 1) {
   userRole = rolEnEspacio(workspaceId, user?.id ?? '') ?? 'viewer';
 }
-const isOwner = userRole === 'owner' || userRole === 'sysadmin';
+const isOwner = espacio?.rol === 'owner' || espacio?.rol === 'sysadmin';
 // Amigos y solicitudes, solo si la cuenta los tiene encendidos (migración 52).
 const socialOn = !user?.is_guest && user?.social_enabled === 1;
 
 // Cuántas tareas quedan por hacer y cuántas notas hay: un dato que ayuda a
 // decidir adónde ir, no adorno. Las subtareas no cuentan (no son tarjetas).
-const abiertas = workspaceId
-  ? (db.prepare("SELECT COUNT(*) AS n FROM issues WHERE workspace_id = ? AND status != 'done' AND parent_issue_id IS NULL").get(workspaceId) as any).n as number
+const abiertas = espacio
+  ? (db.prepare("SELECT COUNT(*) AS n FROM issues WHERE workspace_id = ? AND status != 'done' AND parent_issue_id IS NULL").get(espacio.id) as any).n as number
   : 0;
-const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE workspace_id = ?').get(workspaceId) as any).n as number : 0;
+const notas = espacio ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE workspace_id = ?').get(espacio.id) as any).n as number : 0;
 ---
 
 {/* Fuera del DOM en móvil, no solo fuera de la pantalla: desde que la barra
@@ -86,23 +87,36 @@ const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE w
     <Logo href="/" size="sm" />
   </div>
 
-  {workspaceName && (
-    <a href="/" class="ws-switch" title={t('sidebar.switch_ws')} aria-label={`${t('sidebar.switch_ws')}: ${workspaceName}`}>
-      <span class="min-w-0">
-        <strong class="block truncate">{workspaceName}</strong>
-        {sys_tag && <span class="block truncate text-xs text-forge-muted">#{sys_tag}</span>}
-      </span>
-    </a>
-  )}
-
   <nav class="nav-lateral flex-1 overflow-y-auto" aria-label={t('a11y.main_nav')}>
     {/* Navegación global, siempre visible: no depende de que haya un espacio. */}
     <a href="/" class:list={['sidebar-link', isHub && 'active']} aria-current={isHub ? 'page' : undefined}><span>{t('sidebar.hub')}</span></a>
     <a href="/activity" class:list={['sidebar-link', isActivity && 'active']} aria-current={isActivity ? 'page' : undefined}><span>{t('sidebar.activity')}</span></a>
 
-    {sys_tag ? (
+    {espacio ? (
       <>
-        {workspaceName && <p class="nav-rotulo">{workspaceName}</p>}
+        {/* El nombre del espacio es el rótulo de su sección y, con más de un
+            espacio, el que lo cambia. Ocupa lo mismo en todas las páginas: una
+            tarjeta que solo salía dentro de un espacio movía la barra entera. */}
+        {espacios.length > 1 ? (
+          <div class="relative" id="cambio-espacio">
+            <button type="button" id="btn-cambio-espacio" class="nav-rotulo nav-rotulo-boton" aria-haspopup="true" aria-expanded="false" aria-controls="menu-cambio-espacio"
+              aria-label={`${t('sidebar.switch_ws')}: ${espacio.nombre}`}>
+              <span class="truncate">{espacio.nombre}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="menu-cambio-espacio" role="menu" aria-labelledby="btn-cambio-espacio" class="menu hidden absolute left-0 right-0 top-full z-50 max-h-[50vh] overflow-y-auto">
+              {espacios.map((e) => (
+                <a href={`/w/${e.sysTag}`} role="menuitem" class:list={['menu-item', e.sysTag === espacio.sysTag && 'font-semibold']} aria-current={e.sysTag === espacio.sysTag ? 'true' : undefined}>
+                  <span class="truncate">{e.nombre}</span>
+                </a>
+              ))}
+              <div class="menu-sep"></div>
+              <a href="/" role="menuitem" class="menu-item">{t('sidebar.browse_ws')}</a>
+            </div>
+          </div>
+        ) : (
+          <p class="nav-rotulo">{espacio.nombre}</p>
+        )}
         <a href={`/w/${sys_tag}`} class:list={['sidebar-link', isDash && 'active']} aria-current={isDash ? 'page' : undefined}><span>{t('sidebar.dashboard')}</span></a>
         <a href={`/w/${sys_tag}/board`} class:list={['sidebar-link', isBoard && 'active']} aria-current={isBoard ? 'page' : undefined}>
           <span>{t('sidebar.kanban')}</span>
@@ -179,7 +193,6 @@ const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE w
           <a href="/register" role="menuitem" class="menu-item">{t('user.menu.register')}</a>
         ) : (
           <>
-            <a href={`/u/${user?.username}`} role="menuitem" class="menu-item">{t('user.menu.profile')}</a>
             {socialOn && (
               <a href="/people" role="menuitem" class="menu-item">
                 <span class="flex-1">{t('friends.title')}</span>
@@ -187,6 +200,7 @@ const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE w
               </a>
             )}
             <a href="/contacts" role="menuitem" class="menu-item">{t('contacts.title')}</a>
+            {/* Perfil y ajustes de la cuenta son una sola página. */}
             <a href="/settings" role="menuitem" class="menu-item">{t('user.menu.account')}</a>
             <div class="menu-sep"></div>
             <button type="button" role="menuitem" id="btn-user-menu-logout" class="menu-item !text-forge-error">{t('user.settings.signout')}</button>
@@ -220,33 +234,39 @@ const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE w
    * Esto lo posiciona hacia arriba, que es donde hay sitio.
    */
   (function () {
-    const boton = document.getElementById('btn-user-menu');
-    const menu = document.getElementById('user-menu');
-    if (!boton || !menu) return;
+    // El mismo comportamiento para el selector de espacio, que se abre hacia abajo.
+    function menuDesplegable(idBoton, idMenu) {
+      const boton = document.getElementById(idBoton);
+      const menu = document.getElementById(idMenu);
+      if (!boton || !menu) return;
 
-    const cerrar = () => {
-      menu.classList.add('hidden');
-      boton.setAttribute('aria-expanded', 'false');
-    };
+      const cerrar = () => {
+        menu.classList.add('hidden');
+        boton.setAttribute('aria-expanded', 'false');
+      };
 
-    boton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const abierto = !menu.classList.contains('hidden');
-      menu.classList.toggle('hidden', abierto);
-      boton.setAttribute('aria-expanded', String(!abierto));
-    });
+      boton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const abierto = !menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', abierto);
+        boton.setAttribute('aria-expanded', String(!abierto));
+      });
 
-    // Pulsar fuera y Escape cierran. Sin lo segundo, quien navega con teclado
-    // se queda dentro del menú sin salida.
-    document.addEventListener('click', (e) => {
-      if (!menu.contains(e.target)) cerrar();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !menu.classList.contains('hidden')) {
-        cerrar();
-        boton.focus();
-      }
-    });
+      // Pulsar fuera y Escape cierran. Sin lo segundo, quien navega con teclado
+      // se queda dentro del menú sin salida.
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target)) cerrar();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !menu.classList.contains('hidden')) {
+          cerrar();
+          boton.focus();
+        }
+      });
+    }
+
+    menuDesplegable('btn-user-menu', 'user-menu');
+    menuDesplegable('btn-cambio-espacio', 'menu-cambio-espacio');
 
     document.getElementById('btn-user-menu-logout')?.addEventListener('click', async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -256,29 +276,6 @@ const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE w
 </script>
 
 <style>
-  .ws-switch {
-    margin: 0.75rem 0.75rem 0.25rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5625rem 0.875rem;
-    border: 1px solid var(--forge-border);
-    border-radius: 16px;
-    background: var(--forge-panel);
-    font-size: 0.8125rem;
-    color: var(--forge-text);
-  }
-  .ws-switch:hover { border-color: var(--forge-border-strong); }
-  .ws-switch::after {
-    content: '';
-    width: 7px;
-    height: 7px;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: translateY(-2px) rotate(45deg);
-    flex: none;
-  }
   .nav-lateral { padding: 0.5rem 0.75rem; display: flex; flex-direction: column; gap: 1px; }
   .nav-rotulo {
     padding: 0.875rem 0.625rem 0.375rem;
@@ -289,6 +286,14 @@ const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE w
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .nav-rotulo-boton {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-rotulo-boton:hover, .nav-rotulo-boton[aria-expanded='true'] { color: var(--forge-text); }
   /* Píldora; la activa en tinta, con el punto naranja de la marca. Nada se
      desplaza ni se agranda al pasar el ratón. */
   .sidebar-link {

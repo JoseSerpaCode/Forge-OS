@@ -161,7 +161,18 @@ aunque una cabecera se rompiera, el CDN nunca guardaría un archivo privado.
 
 Los assets de `/_astro/*` llevan hash en el nombre y se sirven con
 `max-age=31536000, immutable`: Cloudflare los cachea y dejan de contar como
-egress de Google.
+egress de Google. Las fuentes de `/fonts/` también van a un año, y los iconos a
+una semana (`server.mjs`); sin cabecera, Cloudflare pone sus cuatro horas.
+
+**Web Analytics no hace falta apagarlo, pero tampoco sirve.** En modo automático
+Cloudflare inyecta su script de medición en cada página. Las páginas salen con
+`Cache-Control: no-transform` (`src/middleware.ts`), que le impide tocarlas, y
+aunque lo hiciera la CSP lo bloquearía. Apagarlo en el panel (Analytics → Web
+Analytics) deja las cosas claras.
+
+**`www.` redirige al dominio sin `www`** con un 301, desde `server.mjs` y según
+`PUBLIC_SITE_URL`: no hace falta ninguna regla en Cloudflare ni en Caddy. Antes
+servía la misma web con un 200 y Google la contaba como copia.
 
 ## 7. Cerrar el paso directo a la VM
 

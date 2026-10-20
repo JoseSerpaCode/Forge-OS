@@ -79,6 +79,8 @@ test('el menú del sprint no se sale de la pantalla', async ({ page }) => {
   await entrar(page);
   conEspacio();
   await page.goto(`/w/${ESPACIO}/board`);
+  // En el teléfono, las acciones del sprint van detrás de «Filtros y orden».
+  await page.locator('#btn-opciones-tablero').click();
 
   const boton = page.locator('#btn-sprint-menu');
   await expect(boton).toBeVisible();
@@ -114,6 +116,7 @@ test('el menú del sprint tampoco se sale con el filtro de etiquetas puesto', as
     .run(crypto.randomUUID(), wsId, 'Parcial 2', '#FF5D00');
 
   await page.goto(`/w/${ESPACIO}/board`);
+  await page.locator('#btn-opciones-tablero').click();
   await expect(page.locator('#label-filter, [id*="label"]').first()).toBeVisible();
 
   await page.locator('#btn-sprint-menu').click();

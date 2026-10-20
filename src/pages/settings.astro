@@ -1,5 +1,7 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
+import { tonoDe, esFotoReal } from '../lib/tonos';
+import { iniciales } from '../lib/responsables';
 import db from '../lib/db';
 
 const user = Astro.locals.user!;
@@ -58,17 +60,44 @@ const oauthNotice =
 <MainLayout title={t('user.settings.title')}>
   <div id="settings-wrapper" data-i18n-saved={t('user.settings.saved_short') || 'Saved'} class="max-w-5xl mx-auto mt-4 sm:mt-8 p-0 sm:p-6 pb-20">
     
-    <div class="border-b border-forge-border/40 pb-5 mb-8 flex flex-wrap gap-4 justify-between items-start sm:items-end">
-      <div>
-        <h1 class="page-title">{t('user.settings.title')}</h1>
-        <p class="text-forge-muted text-sm mt-1">{t('user.settings.desc')}</p>
+    {/*
+      Perfil y cuenta en una sola página. Arriba, el perfil como lo ven los
+      demás —la banda, la foto y el nombre de «perfil.html»— y desde ahí mismo se
+      cambian la foto y el banner. Antes había dos entradas en el menú, «Mi
+      perfil» y «Ajustes de la cuenta», y la mitad de lo que hacía una lo hacía
+      también la otra.
+    */}
+    <div class="perfil-banda" style={`--c:${tonoDe(user.username)}`} id="banner-preview-container">
+      {userProfile.banner_url && (
+        <img src={userProfile.banner_url} class="w-full h-full object-cover relative z-[1]" id="banner-preview-img" alt="" loading="lazy" />
+      )}
+      <div class="absolute right-3 top-3 z-[2] flex gap-2">
+        <button type="button" id="btn-remove-banner" class:list={['btn btn-secondary btn-sm', !userProfile.banner_url && 'hidden']}>{t('user.settings.banner_remove')}</button>
+        <label class="btn btn-secondary btn-sm cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          {t('user.settings.banner_change')}
+          <input type="file" id="banner-file-input" accept="image/*" class="sr-only" />
+        </label>
+      </div>
+    </div>
+
+    <div class="perfil-cabeza mb-8">
+      <label class="avatar avatar-xl cursor-pointer" style={`--c:${tonoDe(user.username)}`} id="avatar-preview-container" data-user-id={user.id} title={t('user.settings.upload_avatar')}>
+        {esFotoReal(user.avatar_url)
+          ? <img src={user.avatar_url} alt="" id="avatar-preview-img" />
+          : <span id="avatar-preview-default" aria-hidden="true">{iniciales(user.username)}</span>}
+        <input type="file" id="avatar-file-input" accept="image/*" class="sr-only" aria-label={t('user.settings.upload_avatar')} />
+      </label>
+      <div class="perfil-nombre pb-1.5">
+        <h1 class="page-title break-all">@{user.username}</h1>
+        <p class="page-sub">{t('user.settings.desc')} <a href={`/u/${user.username}`} class="enlace">{t('user.settings.view_public')}</a></p>
       </div>
       {/* Los dos juntos, y el de «en todas partes» detrás: es el menos
           frecuente y el de consecuencias más amplias, así que no compite de
           igual a igual con el de cerrar esta sesión. */}
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2 pb-2">
       <button id="btn-logout" class="btn btn-secondary hover:!text-forge-error">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         {t('user.settings.signout')}
       </button>
       {/*
@@ -96,59 +125,6 @@ const oauthNotice =
         
         <div class="panel md:col-span-2 overflow-hidden flex flex-col">
           <div class="p-6 space-y-7 flex-1">
-            {/*
-              El banner solo se podía cambiar desde el propio perfil público,
-              pasando el ratón por encima de la imagen. Nada lo anunciaba, y a
-              tu perfil no llevaba ningún enlace: era una función que había que
-              descubrir por accidente. Aquí está donde se buscan las cosas del
-              perfil, junto al resto.
-            */}
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <h3 class="font-semibold text-forge-text text-sm">{t('user.settings.banner')}</h3>
-                {userProfile.banner_url && (
-                  <button id="btn-remove-banner" class="text-xs font-semibold text-forge-muted hover:text-forge-error transition-colors">{t('user.settings.banner_remove')}</button>
-                )}
-              </div>
-              <div class="relative group cursor-pointer w-full h-32 rounded-lg border border-forge-border/40 bg-forge-bg overflow-hidden" id="banner-preview-container">
-                {userProfile.banner_url ? (
-                  <img src={userProfile.banner_url} class="w-full h-full object-cover" id="banner-preview-img" alt="" loading="lazy" />
-                ) : (
-                  <div class="w-full h-full bg-forge-surface-2" id="banner-preview-empty"></div>
-                )}
-                <div class="absolute inset-0 bg-forge-text/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-forge-bg text-xs font-semibold z-10">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  {t('user.settings.banner_change')}
-                </div>
-                <input type="file" id="banner-file-input" accept="image/*" aria-label={t('user.settings.banner_change')} class="absolute inset-0 opacity-0 cursor-pointer z-20" title={t('user.settings.banner_change')} />
-              </div>
-              <p class="text-xs text-forge-muted mt-2">{t('user.settings.banner_desc')}</p>
-            </div>
-
-            <div class="w-full h-px bg-forge-border/40"></div>
-
-            <!-- Avatar -->
-            <div class="flex items-center gap-6">
-              <div class="relative group cursor-pointer w-24 h-24 rounded-full border border-forge-border/40 bg-forge-bg flex items-center justify-center overflow-hidden shrink-0" id="avatar-preview-container" data-user-id={user.id}>
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} class="w-full h-full object-cover" id="avatar-preview-img" alt="User Avatar" loading="lazy" />
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-forge-muted" id="avatar-preview-default"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                )}
-                <!-- Hover Edit Overlay -->
-                <div class="absolute inset-0 bg-forge-text/80 hidden group-hover:flex items-center justify-center z-10 text-forge-bg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </div>
-                <input type="file" id="avatar-file-input" accept="image/*" aria-label={t('user.settings.upload_avatar')} class="absolute inset-0 opacity-0 cursor-pointer z-20" title={t('user.settings.upload_avatar')} />
-              </div>
-              <div>
-                <h3 class="font-semibold text-forge-text text-sm mb-1">{t('user.settings.picture')}</h3>
-                <p class="text-xs text-forge-muted">{t('user.settings.picture_desc')}</p>
-              </div>
-            </div>
-
-            <div class="w-full h-px bg-forge-border/40"></div>
-
             <!-- Form -->
             <div class="space-y-4">
               <div>
@@ -749,7 +725,8 @@ const oauthNotice =
     return null;
   }
 
-  let newAvatarUrl = null;
+  // La foto se guarda al soltarla, como el banner: las dos están en la
+  // cabecera, lejos de «Guardar perfil», y nadie las asocia con ese botón.
   document.getElementById('avatar-file-input')?.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -757,16 +734,21 @@ const oauthNotice =
     // cubre las pantallas de densidad alta.
     const url = await subirImagen(file, window.forgeImagen.ANCHOS.avatar, 'avatar.webp');
     if (!url) return;
-    newAvatarUrl = url;
+    const res = await fetch('/api/user/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatar_url: url }),
+    });
+    if (!res.ok) { window.showToast?.(msgGenerico, true); return; }
 
     const preview = document.getElementById('avatar-preview-img');
     if (preview) { preview.src = url; return; }
     const container = document.getElementById('avatar-preview-container');
-    document.getElementById('avatar-preview-default')?.style.setProperty('display', 'none');
+    document.getElementById('avatar-preview-default')?.remove();
     const img = document.createElement('img');
     img.src = url;
+    img.alt = '';
     img.id = 'avatar-preview-img';
-    img.className = 'w-full h-full object-cover z-0';
     container?.insertBefore(img, container.firstChild);
   });
 
@@ -797,10 +779,9 @@ const oauthNotice =
     const contenedor = document.getElementById('banner-preview-container');
     let img = document.getElementById('banner-preview-img');
     if (!img) {
-      document.getElementById('banner-preview-empty')?.remove();
       img = document.createElement('img');
       img.id = 'banner-preview-img';
-      img.className = 'w-full h-full object-cover';
+      img.className = 'w-full h-full object-cover relative z-[1]';
       img.alt = '';
       contenedor?.insertBefore(img, contenedor.firstChild);
     }
@@ -810,14 +791,8 @@ const oauthNotice =
 
   document.getElementById('btn-remove-banner')?.addEventListener('click', async () => {
     if (!(await guardarBanner(null))) return;
+    // Sin banner queda la banda del color de la persona, como en el perfil.
     document.getElementById('banner-preview-img')?.remove();
-    const contenedor = document.getElementById('banner-preview-container');
-    if (contenedor && !document.getElementById('banner-preview-empty')) {
-      const vacio = document.createElement('div');
-      vacio.id = 'banner-preview-empty';
-      vacio.className = 'w-full h-full bg-forge-surface-2';
-      contenedor.insertBefore(vacio, contenedor.firstChild);
-    }
     document.getElementById('btn-remove-banner')?.classList.add('hidden');
   });
 
@@ -899,16 +874,6 @@ const oauthNotice =
       if (social) payload.social_enabled = social.checked;
       const socialCambia = social && social.checked !== social.defaultChecked;
 
-      // El avatar solo viaja si se ha elegido uno nuevo.
-      //
-      // Antes se mandaba siempre, y valía `null` cuando no se había tocado la
-      // foto. El servidor distingue tres cosas —ausente = no tocar, `''` =
-      // borrar, una cadena = ponerla— y `null` no es ninguna: `validateImageUrl`
-      // lo rechazaba con «Invalid Avatar format». Es decir, **guardar el perfil
-      // fallaba siempre** salvo que subieras una foto nueva en ese mismo
-      // momento. La biografía, los pronombres y el correo no se guardaban nunca.
-      if (newAvatarUrl) payload.avatar_url = newAvatarUrl;
-
       // Encender o apagar lo social cambia la navegación: se recarga para verla.
       await handleSave(btnSaveProfile, '/api/user/settings', payload, msgGuardado, socialCambia ? () => window.location.reload() : undefined);
     });
@@ -951,9 +916,6 @@ const oauthNotice =
     }
 
     const payload = { username: newUsername, theme_preference };
-    if (newAvatarUrl) {
-      payload.avatar_url = newAvatarUrl;
-    }
     // `current_password` va solo si se ha escrito. Quien entró por un
     // proveedor no tiene ninguna que dar, y exigirla aquí dejaba el campo
     // nuevo sin enviar: el servidor distingue los dos casos.

@@ -13,6 +13,9 @@ iniciarRecordatorios();
  * caminos**, y antes estaba solo en uno.
  */
 function resolveLang(context: Parameters<Parameters<typeof defineMiddleware>[0]>[0]): 'es' | 'en' {
+  // La portada en español tiene dirección propia, para que un buscador (que no
+  // manda cookie ni idioma) pueda indexarla: ahí no se negocia.
+  if (context.url.pathname === '/es') return 'es';
   const cookie = context.cookies.get('forge_lang')?.value;
   if (cookie === 'es' || cookie === 'en') return cookie;
   const accept = context.request.headers.get('accept-language') || '';
@@ -36,6 +39,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // mismo — cuatro filas por visita anónima.
   const PUBLIC_ROUTES = new Set([
     '/',
+    '/es',
     '/welcome',
     // Los dos archivos que un buscador pide antes que ninguna página. Sin
     // ellos aquí, el middleware los redirigía y Google recibía un 302 en vez
@@ -219,6 +223,18 @@ function applySecurityHeaders(response: Response): Response {
   ].join('; ');
   
   response.headers.set('Content-Security-Policy', csp);
-  
+
+  /*
+   * Las páginas no se guardan en ninguna caché compartida (llevan la sesión) y
+   * el navegador las revalida siempre. `no-transform` es lo que impide a
+   * Cloudflare reescribirlas: con Web Analytics en modo automático inyectaba su
+   * script de medición en cada página, la CSP lo bloqueaba y cada visita
+   * dejaba un error en la consola (PageSpeed lo cobraba en «Prácticas
+   * recomendadas»). Además, la portada promete que no hay analítica.
+   */
+  if (response.headers.get('Content-Type')?.includes('text/html') && !response.headers.has('Cache-Control')) {
+    response.headers.set('Cache-Control', 'private, no-cache, no-transform');
+  }
+
   return response;
 }

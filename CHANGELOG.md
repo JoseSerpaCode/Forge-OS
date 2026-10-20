@@ -6,6 +6,35 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.1.0] - 2026-10-20
+
+### Added
+
+- **Arrastrar tareas con el dedo en el teléfono.** Mantener pulsada una tarjeta la levanta; soltarla en una pestaña de estado la mueve a ese estado, y soltarla en su columna la reordena. Cerca del borde, la columna se desplaza sola. Deslizar a los lados cambia de pestaña.
+- **Hoja de «mover» en cada tarjeta del teléfono**, con los cuatro estados en botones grandes y, si el espacio usa sprints, a qué sprint. Sustituye al desplegable que ocupaba una fila en cada tarjeta. Mover no recarga la página y ofrece «Deshacer».
+- **Plantillas de tareas desde los ajustes del espacio**: «Nueva plantilla» con título, descripción, prioridad, tipo, etiquetas, entrega a N días, hora, repetición y pasos; editar las que hay; y seis de serie para empezar (entrega, parcial, informe de laboratorio, exposición, reunión semanal y reporte de fallo). Antes solo se podían crear desde el panel de una tarea, y en los ajustes no había nada que pulsar.
+- **La portada en español tiene dirección propia, `/es`**, enlazada con `hreflang` desde `/` y en el sitemap. `/` negocia el idioma con la cookie o el navegador, y un buscador no manda ninguno de los dos: Google solo conocía la portada en inglés.
+
+### Changed
+
+- **La barra lateral es la misma en todas las páginas.** En Inicio, Actividad o los ajustes de la cuenta enseña la sección del último espacio con su rótulo, sus contadores y «Ajustes del espacio», igual que dentro de él; pasar de Inicio al tablero ya no mueve nada. La tarjeta con el nombre del espacio desaparece: con más de un espacio, el propio rótulo abre la lista para cambiar.
+- **Perfil y ajustes de la cuenta son una sola página** («Perfil y cuenta»), con la cabecera del perfil arriba —banda, foto y nombre, como lo ven los demás— desde donde se cambian la foto y el banner. El menú de la cuenta tiene una entrada en vez de dos, y el perfil público enlaza de vuelta. La foto se guarda al elegirla, como el banner.
+- **La barra del tablero en el teléfono ocupa dos filas, no cinco**: la vista, el sprint y «Nueva tarea» a la vista; filtros, etiqueta, carriles, ordenar y acciones del sprint detrás de «Filtros y orden», que dice cuántos hay puestos.
+- **Las pestañas de estado del teléfono se quedan fijas arriba** al bajar por una columna, y la pestaña elegida va en la dirección (`?estado=`): recargar o volver deja la misma.
+- **Elegir etiquetas al crear una tarea**: la elegida va rellena de su color y con una marca ✓, la otra con borde discontinuo. Antes la única diferencia era un contorno fino.
+- Fuentes e iconos con caché larga, y el sitemap sin `lastmod` (ponía la fecha de hoy en cada petición).
+
+### Fixed
+
+- **El tablero olvidaba el sprint activo a partir de la segunda visita** y abría el backlog vacío: al cargar, el navegador apuntaba «backlog» cuando la dirección no traía `?sprint=`, aunque el servidor estuviera enseñando el sprint activo.
+- **Arrastrar una tarjeta por debajo de la última de su columna la mandaba arriba del todo** (escritorio). El pie de la columna se buscaba con `:scope > p`, y el primer `<p>` es el aviso de columna vacía.
+- **`www.forge-os.online` servía la web con un 200** y Google la contaba como copia; ahora redirige con un 301.
+- **Cloudflare inyectaba su script de analítica** en cada página, la CSP lo bloqueaba y quedaba un error en la consola (PageSpeed lo restaba en «Prácticas recomendadas»). Las páginas salen con `Cache-Control: no-transform`.
+
+### Security
+
+- **El cambio de idioma era una redirección abierta**: volvía a la `current_path` que llegara en el formulario, y `//otro-sitio.com` también empieza por «/». Ahora solo vuelve a rutas del propio sitio.
+
 ## [2.0.1] - 2026-10-20
 
 ### Fixed

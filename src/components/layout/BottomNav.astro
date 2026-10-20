@@ -17,33 +17,21 @@
  * componentes preguntando lo mismo con dos SQL distintos es cómo se acaba
  * enseñando un rol en un sitio y otro en el otro.
  */
-interface Props {
-  workspaceId?: string;
-  workspaceName?: string;
-}
-const { workspaceId } = Astro.props;
-
 import { useTranslations } from '../../i18n/ui';
-import { solicitudesPendientes, rolEnEspacio, sysTagDeEspacio } from '../../lib/consultas';
+import { solicitudesPendientes, espacioDeNavegacion } from '../../lib/consultas';
 
 const user = Astro.locals.user!;
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
-let sysTag = Astro.params.sys_tag;
-if (!sysTag && user?.last_workspace_id) {
-  sysTag = sysTagDeEspacio(user.last_workspace_id) ?? sysTag;
-}
+// El mismo espacio que la barra lateral, en todas las páginas.
+const espacio = espacioDeNavegacion(Astro.params.sys_tag ?? user?.last_workspace_id, user?.id ?? '', user?.is_sysadmin === 1);
+const sysTag = espacio?.sysTag;
 
 const ruta = Astro.url.pathname;
 const pendientes = solicitudesPendientes(user?.id ?? '', !!user?.is_guest);
 
-// Fuera de un espacio no hay rol (ver Sidebar.astro).
-let rol: string | null = user?.is_sysadmin === 1 ? 'sysadmin' : null;
-if (workspaceId && user?.is_sysadmin !== 1) {
-  rol = rolEnEspacio(workspaceId, user?.id ?? '') ?? rol;
-}
-const esPropietario = rol === 'owner' || rol === 'sysadmin';
+const esPropietario = espacio?.rol === 'owner' || espacio?.rol === 'sysadmin';
 // Amigos y solicitudes, solo si la cuenta los tiene encendidos (migración 52).
 const socialOn = !user?.is_guest && user?.social_enabled === 1;
 
@@ -154,10 +142,6 @@ const pestanas = enEspacio
       </a>
     ) : (
       <>
-        <a href={`/u/${user?.username}`} class="fila-hoja">
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-          <span class="flex-1">{t('user.menu.profile')}</span>
-        </a>
         {socialOn && (
         <a href="/people" class="fila-hoja">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>

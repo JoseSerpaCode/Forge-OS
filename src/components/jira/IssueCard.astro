@@ -14,7 +14,6 @@ import { prioridadVisible } from '../../lib/prioridad';
 import { describir } from '../../lib/recurrencia';
 import { deFila as responsableDe, iniciales, valorDeContacto } from '../../lib/responsables';
 import type { Funciones } from '../../lib/funcionesEspacio';
-import { ESTADOS, INFO } from '../../lib/status';
 import { tonoDe, esFotoReal } from '../../lib/tonos';
 
 interface Props {
@@ -100,12 +99,22 @@ const vence = issue.due_date && !hecha && vencida(issue.due_date, new Date(), is
         title={t('card.complete').replace('{titulo}', issue.title)}></button>
     )}
     <h4 class="tarjeta-titulo min-w-0 flex-1">{issue.title}</h4>
-    {/* Mover a otro sprint, desde la propia tarjeta. Aparece al acercarse; en
-        táctil, siempre (reglas móviles de themes.css). */}
+    {/* Mover a otro sprint, desde la propia tarjeta. Aparece al acercarse. En
+        el teléfono no: allí lo hace la hoja de mover, que lleva también los
+        sprints. */}
     {funciones.sprints && canEdit && (
-      <button type="button" class="btn-mover-sprint btn btn-ghost btn-icon btn-sm -mt-1 -mr-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+      <button type="button" class="btn-mover-sprint btn btn-ghost btn-icon btn-sm -mt-1 -mr-2 max-sm:!hidden opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         aria-haspopup="menu" aria-label={t('card.move_sprint')} title={t('card.move_sprint')}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button>
+    )}
+    {/* Mover, en el teléfono: abre una hoja con los estados (y los sprints).
+        Lo mismo se hace manteniendo pulsada la tarjeta y soltándola en una
+        pestaña; el botón es lo que se ve y lo que alcanza un lector de pantalla. */}
+    {canEdit && (
+      <button type="button" class="btn-mover-estado btn btn-ghost btn-icon btn-sm -mt-1 -mr-2 sm:!hidden" aria-haspopup="dialog"
+        aria-label={`${t('card.move_to')}… «${issue.title}»`}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/></svg>
       </button>
     )}
   </div>
@@ -193,22 +202,6 @@ const vence = issue.due_date && !hecha && vencida(issue.due_date, new Date(), is
       </span>
     </span>
   </div>
-
-  {/*
-    Mover una tarea, en móvil. El arrastrar y soltar del tablero es HTML5 y no
-    dispara con eventos táctiles; un desplegable en la tarjeta sí.
-  */}
-  {canEdit && (
-    <select
-      class="mover-issue campo sm:hidden mt-3 text-xs"
-      data-issue-id={issue.id}
-      aria-label={t('card.move_to')}
-    >
-      {ESTADOS.map((e) => (
-        <option value={e} selected={issue.status === e}>{t(INFO[e].i18n)}</option>
-      ))}
-    </select>
-  )}
 
   {/* El cronómetro, solo si el espacio mide el tiempo. En marcha se ve
       siempre, porque es estado; para arrancarlo, el botón aparece al

@@ -44,6 +44,49 @@ export function sysTagDeEspacio(sysTag: string | null | undefined): string | nul
   return fila?.sys_tag ?? null;
 }
 
+export interface EspacioDeNavegacion {
+  id: string;
+  nombre: string;
+  sysTag: string;
+  rol: string;
+}
+
+/**
+ * El espacio cuya sección enseña la navegación: el de la página o, fuera de
+ * uno (Inicio, Actividad, ajustes de la cuenta), el último visitado.
+ *
+ * Es el mismo en todas las páginas a propósito. Si fuera de un espacio la
+ * sección perdía el rótulo, los contadores y «Ajustes del espacio», pasar de
+ * Inicio al tablero movía la barra entera. Solo cuenta si quien mira sigue
+ * siendo miembro: el último visitado puede ser uno del que ya lo sacaron.
+ */
+export function espacioDeNavegacion(
+  sysTag: string | null | undefined,
+  userId: string,
+  esSysadmin: boolean
+): EspacioDeNavegacion | null {
+  if (!sysTag) return null;
+  const ws = db
+    .prepare('SELECT id, name, sys_tag FROM workspaces WHERE sys_tag = ?')
+    .get(sysTag) as { id: string; name: string; sys_tag: string } | undefined;
+  if (!ws) return null;
+  const rol = esSysadmin ? 'sysadmin' : rolEnEspacio(ws.id, userId);
+  if (!rol) return null;
+  return { id: ws.id, nombre: ws.name, sysTag: ws.sys_tag, rol };
+}
+
+/** Los espacios de alguien, por nombre, para cambiar de uno a otro. */
+export function espaciosParaCambiar(userId: string): Array<{ nombre: string; sysTag: string }> {
+  return db
+    .prepare(`
+      SELECT w.name AS nombre, w.sys_tag AS sysTag
+      FROM workspaces w JOIN workspace_members wm ON wm.workspace_id = w.id
+      WHERE wm.user_id = ?
+      ORDER BY w.name COLLATE NOCASE
+    `)
+    .all(userId) as Array<{ nombre: string; sysTag: string }>;
+}
+
 export interface PaginaDelArbol {
   id: string;
   parent_page_id: string | null;

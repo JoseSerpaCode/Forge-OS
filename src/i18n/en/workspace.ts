@@ -201,7 +201,7 @@ export const en = {
   'dashboard.upcoming': 'Upcoming deadlines',
   'dashboard.no_upcoming': 'Nothing due soon.',
   'ws.settings.templates': 'Task templates',
-  'ws.settings.templates_desc': 'Create them from a task panel (“Save as template”) and use them when creating a new one.',
+  'ws.settings.templates_desc': 'A task kept ready: title, description, labels, steps and a due date some days ahead. Use them when creating a task («From template» or typing /name). You can also save any task as a template from its panel.',
   'ws.settings.templates_none': 'No templates.',
   'ws.settings.template_delete': 'Delete the “{nombre}” template',
   'dashboard.people_count': '{n} people',

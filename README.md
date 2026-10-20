@@ -77,7 +77,13 @@ database server, no queue and no cache tier to operate.
   `C` anywhere in a workspace.
 - **Today** and **Upcoming** views, a work date separate from the due date,
   subtasks, repeating tasks («every monday», «on the 15th of each month»),
-  saved views, task templates and custom issue types per workspace.
+  saved views and custom issue types per workspace.
+- **Task templates**, written in the workspace settings (six built-in ones to
+  start from) or saved from any task, and used from the new-task form or by
+  typing `/name` in quick add.
+- **On a phone**, one column at a time with the status tabs pinned on top:
+  press and hold a card and drop it on a tab to move it, swipe sideways to
+  change tab, or use the card's move sheet.
 - **Reminders** before a due date, in each person's own time zone, as in-app
   notifications and — if configured — Web Push, so they arrive with Forge
   closed.
@@ -128,7 +134,8 @@ database server, no queue and no cache tier to operate.
 - **Home**: what is pending for you across every workspace, grouped by
   workspace, with overdue tasks counted apart.
 - `Cmd/Ctrl+K` to jump to any workspace, person, note or task by title.
-- English and Spanish, detected automatically.
+- English and Spanish, detected automatically. The landing page also has a
+  Spanish address of its own (`/es`), so search engines index both.
 - Light and dark themes, a dedicated phone layout with bottom navigation, and
   installable as an app.
 

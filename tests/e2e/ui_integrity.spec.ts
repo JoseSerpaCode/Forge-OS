@@ -1,16 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { getTestDb } from './test-utils';
+import { registerViaForm } from './helpers/register';
 
 test.describe('UI Integrity & DB Sync', () => {
   test('Debe permitir cambiar el username en Settings y reflejarse en SQLite', async ({ page }) => {
-    // 1. Iniciar sesión
-    await page.goto('/login');
-    await page.fill('input[name="username"]', 'jose');
-    await page.fill('input[name="password"]', (process.env.TEST_PASSWORD || 'LocalDevPass123!'));
-    await page.click('button[type="submit"]');
-    
-    // 2. Navegar a Dashboard y luego a Settings
-    await page.waitForURL('**/');
+    // 1. Una cuenta propia. Renombraba a `jose`, y durante esos segundos las
+    // pruebas que corren en paralelo y lo buscan por nombre no lo encontraban.
+    const nombre = `integ_${Date.now()}`;
+    const nuevo = `${nombre}_mod`;
+    await registerViaForm(page, { username: nombre });
     
     // Configurar listener de diálogos porque tiramos 'alert()' en JS
     page.on('dialog', dialog => dialog.accept());
@@ -23,7 +21,7 @@ test.describe('UI Integrity & DB Sync', () => {
     await page.waitForURL('**/settings');
     
     // 3. Cambiar username
-    await page.fill('#username-input', 'jose_modificado');
+    await page.fill('#username-input', nuevo);
     
     const requestPromise = page.waitForRequest(req => req.url().includes('/user/settings') && req.method() === 'POST');
     await page.click('#btn-save-settings');
@@ -34,13 +32,9 @@ test.describe('UI Integrity & DB Sync', () => {
     
     // 4. Validar en Base de Datos directamente
     const db = getTestDb();
-    const user = db.prepare('SELECT username FROM users WHERE username = ?').get('jose_modificado') as any;
-    
+    const user = db.prepare('SELECT username FROM users WHERE username = ?').get(nuevo) as any;
+
     expect(user).toBeDefined();
-    expect(user.username).toBe('jose_modificado');
-    
-    // Rollback para no romper siguientes pruebas
-    db.prepare('UPDATE users SET username = ? WHERE username = ?').run('jose', 'jose_modificado');
-    db.close();
+    expect(user.username).toBe(nuevo);
   });
 });
