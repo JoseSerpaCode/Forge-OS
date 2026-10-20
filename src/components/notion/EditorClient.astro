@@ -494,7 +494,7 @@ function formatDate(dateStr: string | undefined) {
     border-radius: 4px;
     font-size: 0.9em;
     font-weight: 400;
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
   }
   .note-content pre {
     background: var(--forge-bg);
@@ -502,7 +502,7 @@ function formatDate(dateStr: string | undefined) {
     border: 1px solid var(--forge-border);
     border-radius: 8px;
     padding: 0.75em 1em;
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-family: var(--forge-mono);
   }
   .note-content pre code { background: none; border: 0; padding: 0; color: inherit; }
 
@@ -644,7 +644,7 @@ function formatDate(dateStr: string | undefined) {
   }
   .note-slash-item[aria-selected='true'],
   .note-slash-item:hover { background: var(--forge-bg); }
-  .note-slash-item kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: var(--forge-muted); }
+  .note-slash-item kbd { font-family: var(--forge-mono); font-size: 11px; color: var(--forge-muted); }
   .note-slash-empty { padding: 6px 8px; font-size: 14px; color: var(--forge-muted); }
 
   /* El asa vive en el margen izquierdo del editor; en escritorio se le hace

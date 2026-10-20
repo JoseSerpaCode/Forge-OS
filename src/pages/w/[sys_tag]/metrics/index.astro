@@ -136,16 +136,14 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
 
   <script>
     import Chart from 'chart.js/auto';
+    import { aplicarDefectos, alCambiarTema } from '../../../../lib/client/temaGraficas';
     
     // @ts-ignore
     const sysTag = window.location.pathname.split('/')[2];
     let distChart: any = null;
 
-    // Set chart defaults to match theme
-    // @ts-ignore
-    Chart.defaults.color = '#8b949e'; // forge-muted
-    // @ts-ignore
-    Chart.defaults.borderColor = 'rgba(48, 54, 61, 0.5)'; // forge-border with opacity
+    // Colores del tema, no hexadecimales: ver `lib/client/temaGraficas.ts`.
+    let tema = aplicarDefectos(Chart);
 
     const sprintSelector = document.getElementById('global-sprint-selector') as HTMLSelectElement;
 
@@ -187,9 +185,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       const statuses = ['todo', 'in_progress', 'done'];
       
       const datasets = statuses.map(status => {
-        let color = '#3b82f6'; // blue
-        if (status === 'todo') color = '#6b7280'; // gray
-        if (status === 'done') color = '#10b981'; // green
+        const color = tema.estado[status];
 
         return {
           label: (window as any).metricsLabels[status] || status.replace('_', ' ').toUpperCase(),
@@ -235,6 +231,16 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
     loadBurndown(initialSprintId);
     loadVelocity(); // Velocity is always historical
     loadPrecision(initialSprintId);
+
+    // Al cambiar de tema, las gráficas se vuelven a pintar con los colores nuevos.
+    alCambiarTema(() => {
+      tema = aplicarDefectos(Chart);
+      const sprintId = sprintSelector.value || 'all';
+      loadDistribution(sprintId);
+      loadBurndown(sprintId);
+      loadVelocity();
+      loadPrecision(sprintId);
+    });
 
     let burnChart: any = null;
 
@@ -284,7 +290,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
           labels: ['Completed', 'Remaining'],
           datasets: [{
             data: [data.completed_issues, remaining],
-            backgroundColor: ['#10b981', '#374151'],
+            backgroundColor: [tema.estado.done, tema.borde],
             borderWidth: 0,
             hoverOffset: 4
           }]
@@ -297,7 +303,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
             title: {
               display: true,
               text: `${data.completed_issues} of ${data.total_issues} Done`,
-              color: '#c9d1d9',
+              color: tema.texto,
               font: { size: 16 }
             }
           }
@@ -340,8 +346,8 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
           datasets: [{
             label: 'Completed Issues',
             data: data.map((d: any) => d.velocity),
-            borderColor: '#8b5cf6', // purple
-            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+            borderColor: tema.estado.in_progress,
+            backgroundColor: 'transparent',
             borderWidth: 2,
             fill: true,
             tension: 0.3
@@ -402,12 +408,12 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
             {
               label: (window as any).metricsLabels.estimated,
               data: data.map((d: any) => d.estimated_hours),
-              backgroundColor: '#6b7280', // gray
+              backgroundColor: tema.tenue,
             },
             {
               label: (window as any).metricsLabels.logged,
               data: data.map((d: any) => d.logged_hours),
-              backgroundColor: '#f59e0b', // amber/orange
+              backgroundColor: tema.acento,
             }
           ]
         },

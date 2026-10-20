@@ -167,7 +167,7 @@ const t = useTranslations(lang);
         </span>
       </label>
       <div class="relative group">
-        <textarea id="modal-issue-desc" rows="6" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-xl p-4 text-[13px] leading-relaxed text-forge-text/90 focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all placeholder:text-forge-muted resize-y shadow-inner" placeholder={t('modal.desc_placeholder') as string}></textarea>
+        <textarea id="modal-issue-desc" rows="6" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-xl p-4 text-[13px] leading-relaxed text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all placeholder:text-forge-muted resize-y shadow-inner" placeholder={t('modal.desc_placeholder') as string}></textarea>
         <button id="btn-save-desc"
           data-t-save={t('modal.save')}
           data-t-saving={t('modal.saving')}
@@ -1180,7 +1180,7 @@ const t = useTranslations(lang);
             <span class="text-xs font-bold text-forge-text">${escaparHtml(log.username)}</span>
             <span class="text-[10px] font-mono text-forge-muted">${date}</span>
           </div>
-          <div class="text-xs text-forge-text/80 mt-1">${escaparHtml(descripcion) || `<i class="opacity-50">${TXT.sinDescripcion}</i>`}</div>
+          <div class="text-xs text-forge-text mt-1">${escaparHtml(descripcion) || `<i class="opacity-50">${TXT.sinDescripcion}</i>`}</div>
         </div>
         <div class="flex flex-col items-end gap-2 shrink-0">
           <span class="text-xs font-mono font-bold text-forge-accent-text bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${parseFloat(Number(log.hours_spent).toFixed(2))}h</span>

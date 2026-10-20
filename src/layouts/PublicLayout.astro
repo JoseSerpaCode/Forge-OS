@@ -22,8 +22,8 @@ const canonicalUrl = Astro.site
   ? new URL(canonicalPath ?? Astro.url.pathname, Astro.site).href
   : new URL(canonicalPath ?? Astro.url.pathname, Astro.url).href;
 const ogImage = Astro.site
-  ? new URL('/screenshots/board-dark.png', Astro.site).href
-  : new URL('/screenshots/board-dark.png', Astro.url).href;
+  ? new URL('/og.png', Astro.site).href
+  : new URL('/og.png', Astro.url).href;
 
 /**
  * Datos estructurados.
@@ -56,6 +56,7 @@ const structuredData = {
   softwareHelp: 'https://github.com/JoseSerpaCode/Forge-OS#readme',
   codeRepository: 'https://github.com/JoseSerpaCode/Forge-OS',
 };
+import HeadMarca from '../components/brand/HeadMarca.astro';
 ---
 
 <!doctype html>
@@ -77,7 +78,7 @@ const structuredData = {
     <meta name="description" content={metaDesc} />
     {/* El color de la barra del navegador móvil. Lo ajusta el script junto con
         el tema; este es el valor de partida. */}
-    <meta name="theme-color" content="#F8F6F0" />
+    <meta name="theme-color" content="#EEECE7" />
 
     {/*
       Antes de pintar nada: si hay una elección guardada, mandarla.
@@ -94,7 +95,7 @@ const structuredData = {
           if (t === 'light' || t === 'dark') {
             document.documentElement.setAttribute('data-theme', t);
             var m = document.querySelector('meta[name="theme-color"]');
-            if (m) m.setAttribute('content', t === 'dark' ? '#0D0B0A' : '#F8F6F0');
+            if (m) m.setAttribute('content', t === 'dark' ? '#1B1A18' : '#EEECE7');
           }
         } catch (e) {
           /* Navegador con el almacenamiento bloqueado: se queda el del servidor. */
@@ -105,7 +106,7 @@ const structuredData = {
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />
     {noindex && <meta name="robots" content="noindex, follow" />}
-    <link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
+    <HeadMarca />
 
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
@@ -118,18 +119,12 @@ const structuredData = {
     <meta name="twitter:image" content={ogImage} />
     <meta property="og:site_name" content="Forge OS" />
     <meta property="og:locale" content={Astro.locals.lang === 'es' ? 'es_ES' : 'en_US'} />
-    <meta name="twitter:image:alt" content="Forge OS kanban board" />
+    <meta name="twitter:image:alt" content="Forge OS" />
 
     {/* `set:html` con JSON.stringify: el contenido es un objeto que construimos
         nosotros, no entrada del usuario, y Astro escaparía las comillas. */}
     <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <slot />
@@ -141,7 +136,7 @@ const structuredData = {
     margin: 0;
     background: var(--forge-bg);
     color: var(--forge-text);
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
 
@@ -150,7 +145,7 @@ const structuredData = {
      capas de Tailwind lo pisara en una página sin las utilidades cargadas. */
   a:focus-visible,
   button:focus-visible {
-    outline: 2px solid var(--forge-accent-secondary);
+    outline: 2px solid var(--forge-focus);
     outline-offset: 3px;
     border-radius: 4px;
   }

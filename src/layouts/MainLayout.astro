@@ -7,6 +7,7 @@ import Footer from '../components/layout/Footer.astro';
 import GuestBanner from '../components/layout/GuestBanner.astro';
 import NuevaTarea from '../components/jira/NuevaTarea.astro';
 import ContactoRapido from '../components/jira/ContactoRapido.astro';
+import HeadMarca from '../components/brand/HeadMarca.astro';
 import { useTranslations } from '../i18n/ui';
 
 interface Props {
@@ -31,7 +32,7 @@ if (workspaceId) {
 }
 
 const metaDesc = description || "Forge OS - Advanced workspace management and task tracking application for professional teams.";
-const metaImg = ogImage || "/forge-icon.svg";
+const metaImg = ogImage || "/og.png";
 
 // La URL canónica se construye sobre `Astro.site` (configurada con
 // PUBLIC_SITE_URL), no sobre `Astro.url`.
@@ -67,7 +68,6 @@ Astro.response.headers.set('Pragma', 'no-cache');
     <meta name="description" content={metaDesc} />
     <meta name="keywords" content="workspace, kanban, knowledge base, forge os, team collaboration, productivity" />
     <meta name="author" content="Forge OS" />
-    <meta name="theme-color" content="#FF5D00" />
     
     <!-- Open Graph / Social -->
     <meta property="og:title" content={`${title} | Forge OS`} />
@@ -83,13 +83,8 @@ Astro.response.headers.set('Pragma', 'no-cache');
     
     <link rel="canonical" href={canonicalUrl} />
     
-    <!-- Preconnect & Preload for Performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-    
-    <link rel="icon" type="image/svg+xml" href="/forge-icon.svg" />
+    <HeadMarca />
+    <meta name="theme-color" content={user?.theme_preference === 'dark' ? '#1B1A18' : '#EEECE7'} />
     {/* Para instalarla en la pantalla de inicio: en iPhone es la única forma de
         recibir avisos Web Push. */}
     <link rel="manifest" href="/manifest.webmanifest" />
