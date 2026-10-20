@@ -74,5 +74,10 @@ const truncated = typeof total === 'number' && typeof shown === 'number' && tota
   .column-content:not(:has(.issue-card)) .empty-state {
     display: block;
   }
+  /* Con el tablero entero vacío ya lo dice la línea de arriba: repetirlo en
+     las cuatro columnas es ruido. */
+  :global(.kanban-container[data-vacio='true']) .column-content .empty-state {
+    display: none;
+  }
 
 </style>

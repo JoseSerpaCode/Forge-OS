@@ -47,10 +47,10 @@ test.describe('Phase 4: Notifications, Invites, and Recent Activity', () => {
         const html = await res.text();
         
         // Assert UI components exist
-        expect(html).toContain('Activity &amp; Notifications');
-        expect(html).toContain('Recent Activity');
-        expect(html).toContain('Workspace Invitations');
-        expect(html).toContain('My Join Requests');
+        expect(html).toContain('Activity and notifications');
+        expect(html).toContain('Recent activity');
+        expect(html).toContain('Workspace invitations');
+        expect(html).toContain('My join requests');
     });
 
     test('invitations flow works end-to-end', async ({ request }) => {

@@ -99,53 +99,53 @@ const wsPendingInvites = (db.prepare(`
     {/* Mismo caso que la cabecera del panel: en una fila, el enlace de vuelta
         se lleva su ancho y el título se parte en dos líneas de dos palabras. */}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
-      <h1 class="text-2xl sm:text-3xl font-bold text-forge-text">{t('ws.settings.title')}</h1>
+      <h1 class="page-title">{t('ws.settings.title')}</h1>
       <a href={`/w/${sys_tag}`} class="text-forge-muted hover:text-forge-text text-sm hover:underline shrink-0">{t('ws.settings.back')}</a>
     </div>
 
     <!-- General Settings -->
-    <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
-      <h2 class="text-xl font-bold text-forge-text mb-6 border-b border-forge-border pb-2">{t('ws.settings.general')}</h2>
+    <div class="panel p-6">
+      <h2 class="text-lg font-bold text-forge-text mb-6">{t('ws.settings.general')}</h2>
       <div class="flex flex-col md:flex-row items-start gap-6">
         <div class="relative w-32 h-32 rounded-xl border-2 border-dashed border-forge-border hover:border-forge-secondary flex items-center justify-center bg-forge-bg overflow-hidden group cursor-pointer shrink-0" id="ws-icon-preview-container">
           <WorkspaceIcon icon={ws.icon} name={ws.name} class="text-4xl" imgId="ws-icon-preview-img" textId="ws-icon-preview-text" />
           <div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center transition-all z-10 flex-col">
-            <span class="text-[10px] font-bold text-white uppercase tracking-widest text-center px-2">{t('ws.settings.upload')}</span>
+            <span class="text-xs font-bold text-white text-center px-2">{t('ws.settings.upload')}</span>
           </div>
-          <input type="file" id="ws-icon-file-input" aria-label={t('a11y.ws_icon')} accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-20" title="Upload image icon" />
+          <input type="file" id="ws-icon-file-input" aria-label={t('a11y.ws_icon')} accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-20" title={t('ws.settings.upload')} />
         </div>
         
         <div class="flex-1 space-y-4">
           <div>
-            <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-name-input">{t('ws.settings.name')}</label>
-            <input type="text" id="ws-name-input" value={ws.name} class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" />
+            <label class="block field-label mb-1" for="ws-name-input">{t('ws.settings.name')}</label>
+            <input type="text" id="ws-name-input" value={ws.name} class="campo w-full" />
           </div>
           <div>
-            <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-tag-input">{t('ws.settings.tag')}</label>
-            <input type="text" id="ws-tag-input" value={ws.sys_tag} class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary" />
+            <label class="block field-label mb-1" for="ws-tag-input">{t('ws.settings.tag')}</label>
+            <input type="text" id="ws-tag-input" value={ws.sys_tag} class="campo w-full" />
           </div>
           <div>
-            <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-desc-input">{t('ws.settings.desc')}</label>
-            <textarea id="ws-desc-input" rows="2" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary">{ws.description || ''}</textarea>
+            <label class="block field-label mb-1" for="ws-desc-input">{t('ws.settings.desc')}</label>
+            <textarea id="ws-desc-input" rows="2" class="campo w-full">{ws.description || ''}</textarea>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-public-input">{t('ws.settings.visibility')}</label>
-              <select id="ws-public-input" class={`w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg="Create an account to change project visibility.">
+              <label class="block field-label mb-1" for="ws-public-input">{t('ws.settings.visibility')}</label>
+              <select id="ws-public-input" class={`w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg={t('ws.settings.guest_visibility')}>
                 <option value="0" selected={ws.is_public === 0}>{t('ws.settings.private')}</option>
                 <option value="1" selected={ws.is_public === 1}>{t('ws.settings.public')}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-bold text-forge-muted uppercase mb-1" for="ws-join-policy-input">{t('ws.settings.join_policy')}</label>
-              <select id="ws-join-policy-input" class={`w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg="Create an account to change join policy.">
+              <label class="block field-label mb-1" for="ws-join-policy-input">{t('ws.settings.join_policy')}</label>
+              <select id="ws-join-policy-input" class={`w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:outline-none focus:border-forge-secondary ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg={t('ws.settings.guest_join')}>
                 <option value="disabled" selected={ws.join_policy === 'disabled'}>{t('ws.settings.policy_disabled')}</option>
                 <option value="friends_only" selected={ws.join_policy === 'friends_only'}>{t('ws.settings.policy_friends')}</option>
                 <option value="open" selected={ws.join_policy === 'open'}>{t('ws.settings.policy_open')}</option>
               </select>
             </div>
           </div>
-          <button id="btn-save-general" class={`bg-forge-primary text-forge-on-accent font-bold py-2 px-6 rounded hover:bg-forge-primary/90 transition-colors mt-2 ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-ws-id={ws.id} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg="Create an account to save workspace settings.">
+          <button id="btn-save-general" class={`bg-forge-primary text-forge-on-accent font-bold py-2 px-6 rounded hover:bg-forge-primary/90 transition-colors mt-2 ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-ws-id={ws.id} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg={t('ws.settings.guest_save')}>
             {t('ws.settings.save')}
           </button>
         </div>
@@ -153,10 +153,10 @@ const wsPendingInvites = (db.prepare(`
     </div>
 
     <!-- Members -->
-    <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
+    <div class="panel p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-forge-text">{t('ws.settings.members')}</h2>
-        <button id="btn-add-member" class={`bg-forge-bg border border-forge-border text-forge-text px-3 py-1.5 text-sm rounded hover:border-forge-secondary transition-colors ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg="Create an account to invite users.">
+        <h2 class="text-lg font-bold text-forge-text">{t('ws.settings.members')}</h2>
+        <button id="btn-add-member" class={`btn btn-secondary btn-sm ${user.is_guest ? 'guest-restricted-action opacity-50' : ''}`} data-guest={user.is_guest ? 'true' : 'false'} data-guest-msg={t('ws.settings.guest_invite')}>
           {t('ws.settings.invite')}
         </button>
       </div>
@@ -176,14 +176,14 @@ const wsPendingInvites = (db.prepare(`
             </div>
             
             <div class="flex items-center gap-3">
-              <select aria-label={t('a11y.member_role')} class="role-select bg-forge-panel border border-forge-border text-forge-muted text-sm rounded p-1 focus:outline-none focus:border-forge-secondary" data-user-id={m.id} data-ws-id={ws.id}>
+              <select aria-label={t('a11y.member_role')} class="campo role-select" data-user-id={m.id} data-ws-id={ws.id}>
                 <option value="owner" selected={m.ws_role === 'owner'}>{t('ws.settings.role_owner')}</option>
                 <option value="editor" selected={m.ws_role === 'editor'}>{t('ws.settings.role_editor')}</option>
 
                 <option value="viewer" selected={m.ws_role === 'viewer'}>{t('ws.settings.role_viewer')}</option>
               </select>
               
-              <button class="btn-remove-member text-forge-muted hover:text-forge-error p-1 rounded hover:bg-red-500/10 transition-colors" data-user-id={m.id} data-ws-id={ws.id} title="Remove User">
+              <button class="btn-remove-member text-forge-muted hover:text-forge-error p-1 rounded hover:bg-forge-error/10 transition-colors" data-user-id={m.id} data-ws-id={ws.id} title={t('ws.settings.remove_member')} aria-label={t('ws.settings.remove_member')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -201,9 +201,9 @@ const wsPendingInvites = (db.prepare(`
               )}
               <span class="font-bold text-forge-text">{m.username}</span>
               {m.isExpired ? (
-                <span class="text-[10px] font-bold text-forge-error bg-red-400/10 px-2 py-0.5 rounded uppercase tracking-wider" title="This invitation has expired">Expired</span>
+                <span class="text-xs font-bold text-forge-error bg-forge-error/10 px-2 py-0.5 rounded" title={t('ws.settings.expired_title')}>{t('ws.settings.expired')}</span>
               ) : (
-                <span class="text-[10px] font-bold text-forge-warning bg-orange-400/10 px-2 py-0.5 rounded uppercase tracking-wider">Pending</span>
+                <span class="text-xs font-bold text-forge-warning bg-forge-accent/10 px-2 py-0.5 rounded">Pending</span>
               )}
             </div>
             
@@ -216,12 +216,10 @@ const wsPendingInvites = (db.prepare(`
     </div>
     
     <!-- Join Requests -->
-    <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
+    <div class="panel p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-forge-text">{t('ws.settings.join_requests')}</h2>
-        <span class="text-xs text-forge-accent-text font-medium px-3 py-1 bg-forge-secondary/10 rounded border border-forge-secondary/20">
-          {joinRequests.length} pending
-        </span>
+        <h2 class="text-lg font-bold text-forge-text">{t('ws.settings.join_requests')}</h2>
+        <span class="hint">{t('ws.settings.pending_n').replace('{n}', String(joinRequests.length))}</span>
       </div>
 
       <div class="space-y-3">
@@ -240,12 +238,12 @@ const wsPendingInvites = (db.prepare(`
                 )}
                 <div>
                   <span class="font-bold text-forge-text block">@{req.username}</span>
-                  <span class="text-[10px] text-forge-muted">{new Date(req.created_at).toLocaleDateString()}</span>
+                  <span class="text-xs text-forge-muted">{new Date(req.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button class="btn-req-accept px-3 py-1 bg-green-600/20 text-forge-success hover:bg-green-600/30 rounded border border-green-500/30 transition-colors text-sm font-medium" data-req-id={req.id}>{t('ws.settings.accept')}</button>
-                <button class="btn-req-reject px-3 py-1 bg-red-600/20 text-forge-error hover:bg-red-600/30 rounded border border-red-500/30 transition-colors text-sm font-medium" data-req-id={req.id}>{t('ws.settings.reject')}</button>
+                <button class="btn-req-accept px-3 py-1 bg-forge-success/20 text-forge-success hover:bg-forge-success/30 rounded border border-forge-success/30 transition-colors text-sm font-medium" data-req-id={req.id}>{t('ws.settings.accept')}</button>
+                <button class="btn-req-reject px-3 py-1 bg-forge-error/20 text-forge-error hover:bg-forge-error/30 rounded border border-forge-error/30 transition-colors text-sm font-medium" data-req-id={req.id}>{t('ws.settings.reject')}</button>
               </div>
             </div>
           ))
@@ -254,22 +252,20 @@ const wsPendingInvites = (db.prepare(`
     </div>
     
     <!-- Etiquetas del espacio -->
-    <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
+    <div class="panel p-6">
       <div class="flex items-center justify-between mb-2 gap-4">
-        <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4Z"/><path d="M7.5 7.5h.01"/></svg>
-          {t('labels.title')}
+        <h2 class="text-lg font-bold text-forge-text">{t('labels.title')}
         </h2>
       </div>
       <p class="text-sm text-forge-muted mb-6 max-w-2xl leading-relaxed">{t('labels.desc')}</p>
 
       <form id="form-nueva-etiqueta" class="flex flex-col sm:flex-row gap-3 sm:items-end mb-6">
         <div class="flex-1 min-w-0">
-          <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5" for="etiqueta-nombre">{t('labels.name')}</label>
-          <input type="text" id="etiqueta-nombre" maxlength="40" autocomplete="off" placeholder={t('labels.name_ph')} class="w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all">
+          <label class="block field-label mb-1.5" for="etiqueta-nombre">{t('labels.name')}</label>
+          <input type="text" id="etiqueta-nombre" maxlength="40" autocomplete="off" placeholder={t('labels.name_ph')} class="campo w-full">
         </div>
         <fieldset class="shrink-0">
-          <legend class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5">{t('labels.color')}</legend>
+          <legend class="block field-label mb-1.5">{t('labels.color')}</legend>
           <div id="etiqueta-colores" class="flex flex-wrap gap-1.5">
             {COLORES.map((c, i) => (
               <button
@@ -283,7 +279,7 @@ const wsPendingInvites = (db.prepare(`
             ))}
           </div>
         </fieldset>
-        <button type="submit" class="shrink-0 bg-forge-primary text-forge-on-accent font-bold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
+        <button type="submit" class="btn btn-primary shrink-0">
           {t('labels.create')}
         </button>
       </form>
@@ -299,7 +295,7 @@ const wsPendingInvites = (db.prepare(`
             </div>
             <div class="flex items-center gap-1 shrink-0">
               <button class="btn-renombrar-etiqueta text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors">{t('labels.rename')}</button>
-              <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-red-500/10 transition-colors" aria-label={t('labels.delete')} title={t('labels.delete')}>
+              <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-forge-error/10 transition-colors" aria-label={t('labels.delete')} title={t('labels.delete')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -312,7 +308,7 @@ const wsPendingInvites = (db.prepare(`
     </div>
 
     <!-- Tipos de ticket -->
-    <div id="tipos-ticket" class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6"
+    <div id="tipos-ticket" class="panel p-6"
       data-sys-tag={sys_tag}
       data-t-error={t('types.error')}
       data-t-in-use={t('types.in_use_confirm')}
@@ -325,20 +321,18 @@ const wsPendingInvites = (db.prepare(`
       data-t-errnombre_largo={t('types.err_nombre_largo')}
       data-t-errdemasiados={t('types.err_demasiados')}>
       <div class="flex items-center justify-between mb-2 gap-4">
-        <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-          {t('types.title')}
+        <h2 class="text-lg font-bold text-forge-text">{t('types.title')}
         </h2>
       </div>
       <p class="text-sm text-forge-muted mb-6 max-w-2xl leading-relaxed">{t('types.desc')}</p>
 
       <form id="form-nuevo-tipo" class="flex flex-col sm:flex-row gap-3 sm:items-end mb-6">
         <div class="flex-1 min-w-0">
-          <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5" for="tipo-nombre">{t('types.name')}</label>
-          <input type="text" id="tipo-nombre" maxlength="30" autocomplete="off" placeholder={t('types.name_ph')} class="w-full bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all">
+          <label class="block field-label mb-1.5" for="tipo-nombre">{t('types.name')}</label>
+          <input type="text" id="tipo-nombre" maxlength="30" autocomplete="off" placeholder={t('types.name_ph')} class="campo w-full">
         </div>
         <fieldset class="shrink-0">
-          <legend class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5">{t('types.color')}</legend>
+          <legend class="block field-label mb-1.5">{t('types.color')}</legend>
           <div id="tipo-colores" class="flex flex-wrap gap-1.5">
             {COLORES.map((c, i) => (
               <button
@@ -352,7 +346,7 @@ const wsPendingInvites = (db.prepare(`
             ))}
           </div>
         </fieldset>
-        <button type="submit" class="shrink-0 bg-forge-primary text-forge-on-accent font-bold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-opacity">
+        <button type="submit" class="btn btn-primary shrink-0">
           {t('types.create')}
         </button>
       </form>
@@ -379,7 +373,7 @@ const wsPendingInvites = (db.prepare(`
             </div>
             <div class="flex items-center gap-1 shrink-0 self-end sm:self-auto">
               <button class="btn-renombrar-tipo text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors">{t('types.rename')}</button>
-              <button class="btn-borrar-tipo text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-red-500/10 transition-colors" aria-label={t('types.delete')} title={t('types.delete')}>
+              <button class="btn-borrar-tipo text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-forge-error/10 transition-colors" aria-label={t('types.delete')} title={t('types.delete')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -394,14 +388,14 @@ const wsPendingInvites = (db.prepare(`
       pueden pasar. Esto es esa pregunta, con el número delante: «afecta a
       algunos tickets» no permite decidir nada.
     */}
-    <dialog id="tipo-borrar-modal" class="bg-forge-panel border border-forge-border rounded-2xl p-6 w-full max-w-[440px] text-forge-text shadow-xl backdrop:bg-black/60">
+    <dialog id="tipo-borrar-modal" class="ventana">
       <h2 class="text-lg font-bold mb-1">{t('types.delete')}</h2>
       <p id="tipo-borrar-lead" class="text-sm text-forge-muted mb-5"></p>
-      <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-1.5" for="tipo-sustituto">{t('types.replacement')}</label>
-      <select id="tipo-sustituto" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary focus:outline-none"></select>
+      <label class="block field-label mb-1.5" for="tipo-sustituto">{t('types.replacement')}</label>
+      <select id="tipo-sustituto" class="campo w-full"></select>
       <div class="flex justify-end gap-3 mt-6">
         <button type="button" id="tipo-borrar-cancelar" class="px-4 py-2 text-sm font-bold text-forge-muted hover:text-forge-text">{t('modal.cancel')}</button>
-        <button type="button" id="tipo-borrar-confirmar" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-opacity">{t('types.delete_move')}</button>
+        <button type="button" id="tipo-borrar-confirmar" class="btn btn-primary">{t('types.delete_move')}</button>
       </div>
     </dialog>
 
@@ -409,11 +403,11 @@ const wsPendingInvites = (db.prepare(`
         Un `<label>` que **envuelve** cada casilla y sin `for`: envolver ya la
         asocia, y un `for` que apuntara a otro sitio haría que el navegador
         ignorara la que envuelve (CLAUDE.md, «Accesibilidad»). */}
-    <div id="funciones-tablero" class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6"
+    <div id="funciones-tablero" class="panel p-6"
       data-sys-tag={sys_tag}
       data-t-saved={t('ws.settings.feat_saved')}
       data-t-error={t('ws.settings.feat_error')}>
-      <h2 class="text-xl font-bold text-forge-text mb-1">{t('ws.settings.board')}</h2>
+      <h2 class="text-lg font-bold text-forge-text mb-1">{t('ws.settings.board')}</h2>
       <p class="text-sm text-forge-muted mb-5">{t('ws.settings.board_desc')}</p>
       <div class="space-y-4">
         {([
@@ -456,8 +450,8 @@ const wsPendingInvites = (db.prepare(`
       </div>
     </div>
 
-    <div id="plantillas-espacio" class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6" data-sys-tag={sys_tag}>
-      <h2 class="text-xl font-bold text-forge-text mb-1">{t('ws.settings.templates')}</h2>
+    <div id="plantillas-espacio" class="panel p-6" data-sys-tag={sys_tag}>
+      <h2 class="text-lg font-bold text-forge-text mb-1">{t('ws.settings.templates')}</h2>
       <p class="text-sm text-forge-muted mb-4">{t('ws.settings.templates_desc')}</p>
       {plantillas.length === 0 ? (
         <p class="text-sm text-forge-muted">{t('ws.settings.templates_none')}</p>
@@ -476,13 +470,11 @@ const wsPendingInvites = (db.prepare(`
 
     {/* Solo con las automatizaciones encendidas (funciones del espacio). */}
     {funcionesEspacio.automatizaciones && (
-    <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6">
+    <div class="panel p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          {t('ws.settings.automations')}
+        <h2 class="text-lg font-bold text-forge-text">{t('ws.settings.automations')}
         </h2>
-        <button id="btn-add-automation" class="bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 text-sm rounded hover:opacity-90 transition-opacity">
+        <button id="btn-add-automation" class="btn btn-primary">
           {t('ws.settings.new_rule')}
         </button>
       </div>
@@ -492,7 +484,7 @@ const wsPendingInvites = (db.prepare(`
           <div class="flex items-center justify-between bg-forge-bg/50 border border-forge-border p-4 rounded-lg">
             <div class="flex flex-col">
               <span class="font-bold text-forge-text text-sm">{auto.name}</span>
-              <span class="text-[10px] font-mono text-forge-muted mt-1 uppercase">IF {auto.trigger_type} THEN {auto.action_type}</span>
+              <span class="text-xs font-mono text-forge-muted mt-1 uppercase">IF {auto.trigger_type} THEN {auto.action_type}</span>
             </div>
             <div class="flex items-center gap-4">
               <label class="flex items-center cursor-pointer">
@@ -502,7 +494,7 @@ const wsPendingInvites = (db.prepare(`
                   <div class="dot absolute left-1 top-1 bg-forge-muted w-3 h-3 rounded-full transition-transform"></div>
                 </div>
               </label>
-              <button class="btn-delete-automation text-forge-muted hover:text-forge-error p-1 rounded hover:bg-red-500/10 transition-colors" data-id={auto.id} title="Delete Rule">
+              <button class="btn-delete-automation text-forge-muted hover:text-forge-error p-1 rounded hover:bg-forge-error/10 transition-colors" data-id={auto.id} title={t('ws.settings.delete_rule')} aria-label={t('ws.settings.delete_rule')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -519,24 +511,22 @@ const wsPendingInvites = (db.prepare(`
     
     {/* Solo con la auditoría encendida (funciones del espacio). */}
     {funcionesEspacio.auditoria && (
-    <div class="bg-forge-panel border border-forge-border rounded-lg shadow-lg p-6 overflow-hidden flex flex-col max-h-[600px]">
+    <div class="panel p-6 overflow-hidden flex flex-col max-h-[600px]">
       <div class="flex items-center justify-between mb-6 shrink-0">
-        <h2 class="text-xl font-bold text-forge-text flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-          {t('ws.settings.audit')}
+        <h2 class="text-lg font-bold text-forge-text">{t('ws.settings.audit')}
         </h2>
-        <span class="text-xs text-forge-muted font-mono bg-forge-bg px-2 py-1 rounded">{t('ws.settings.last_events')}</span>
+        <span class="hint">{t('ws.settings.last_events')}</span>
       </div>
       
       <div class="mb-4 flex flex-wrap gap-3 p-3 bg-forge-bg rounded-lg border border-forge-border">
-        <input type="text" id="audit-filter-user" aria-label={t('a11y.filter_user')} placeholder={t('ws.audit.filter_user')} class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
-        <select id="audit-filter-action" aria-label={t('a11y.filter_action')} class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary">
+        <input type="text" id="audit-filter-user" aria-label={t('a11y.filter_user')} placeholder={t('ws.audit.filter_user')} class="campo" />
+        <select id="audit-filter-action" aria-label={t('a11y.filter_action')} class="campo">
           <option value="">{t('ws.audit.all_actions')}</option>
           {[...new Set(auditLogs.map((l: any) => l.action))].map(action => (
             <option value={action}>{action}</option>
           ))}
         </select>
-        <input type="date" id="audit-filter-date" aria-label={t('a11y.filter_date')} class="bg-forge-panel border border-forge-border rounded p-1.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary" />
+        <input type="date" id="audit-filter-date" aria-label={t('a11y.filter_date')} class="campo" />
       </div>
 
       <div class="overflow-y-auto pr-2 -mr-2 space-y-2 flex-1" id="audit-logs-container">
@@ -566,9 +556,9 @@ const wsPendingInvites = (db.prepare(`
                     <img src={log.avatar_url || '/default-avatar.svg'} alt={log.username} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                   </div>
                   <span class="text-sm font-bold text-forge-text">{log.username || 'System'}</span>
-                  <span class="text-xs text-forge-muted uppercase tracking-wider bg-forge-panel px-1.5 py-0.5 rounded border border-forge-border/50">{log.action}</span>
+                  <span class="text-xs text-forge-muted bg-forge-panel px-1.5 py-0.5 rounded border border-forge-border/50">{log.action}</span>
                 </div>
-                <span class="text-[10px] text-forge-muted font-mono">{date}</span>
+                <span class="text-xs text-forge-muted font-mono">{date}</span>
               </div>
               <div class="text-xs text-forge-text pl-8">
                 <span class="font-bold text-forge-accent-text">{log.entity_type}</span>: <span class="font-mono text-forge-muted">{log.entity_id.substring(0,8)}</span>
@@ -587,32 +577,32 @@ const wsPendingInvites = (db.prepare(`
     )}
     
     <!-- Danger Zone -->
-    <div class="bg-red-500/5 border border-red-500/20 rounded-lg shadow-lg p-6">
-      <h2 class="text-xl font-bold text-forge-error mb-2">{t('ws.settings.danger')}</h2>
+    <div class="panel !border-forge-error p-6">
+      <h2 class="text-lg font-bold text-forge-error mb-2">{t('ws.settings.danger')}</h2>
       <p class="text-forge-muted text-sm mb-4">{t('ws.settings.danger_desc')}</p>
-      <button id="btn-delete-workspace-prompt" class="bg-red-500/10 text-forge-error border border-red-500/30 px-4 py-2 rounded font-bold hover:bg-red-500 hover:text-white transition-colors" data-ws-id={ws.id}>
+      <button id="btn-delete-workspace-prompt" class="btn btn-danger" data-ws-id={ws.id}>
         {t('ws.settings.delete')}
       </button>
     </div>
 
   </div>
 
-  <dialog id="delete-workspace-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 class="text-xl font-bold mb-4 text-forge-error">Delete Workspace</h2>
-    <p class="mb-4 text-sm text-forge-muted">This action cannot be undone. Please type <span class="font-bold text-forge-text">{ws.name}</span> to confirm.</p>
+  <dialog id="delete-workspace-modal" class="ventana">
+    <h2 class="ventana-titulo text-forge-error">{t('ws.settings.delete_title')}</h2>
+    <p class="mb-4 text-sm text-forge-muted">{t('ws.settings.delete_confirm_1')} <span class="font-bold text-forge-text">{ws.name}</span> {t('ws.settings.delete_confirm_2')}</p>
     <div class="mb-4">
-      <input type="text" id="delete-workspace-confirm-input" aria-label={t('a11y.confirm_ws_name')} class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-red-500 focus:outline-none" placeholder={ws.name}>
+      <input type="text" id="delete-workspace-confirm-input" aria-label={t('a11y.confirm_ws_name')} class="campo w-full" placeholder={ws.name}>
     </div>
     <div class="flex justify-end gap-3 mt-6">
-      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('delete-workspace-modal').close()">Cancel</button>
-      <button type="button" id="btn-delete-workspace" class="bg-red-500/50 text-white px-4 py-2 rounded font-bold cursor-not-allowed transition-colors" data-ws-id={ws.id} data-ws-name={ws.name} disabled>Delete Workspace</button>
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('delete-workspace-modal').close()">{t('ws.settings.modal_cancel')}</button>
+      <button type="button" id="btn-delete-workspace" class="btn btn-danger" data-ws-id={ws.id} data-ws-name={ws.name} disabled>{t('ws.settings.delete_title')}</button>
     </div>
   </dialog>
 
-  <dialog id="add-member-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 class="text-xl font-bold mb-4">{t('ws.settings.modal_add_member')}</h2>
+  <dialog id="add-member-modal" class="ventana">
+    <h2 class="ventana-titulo">{t('ws.settings.modal_add_member')}</h2>
     <div class="mb-4">
-      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="add-member-username">{t('ws.settings.modal_username')}</label>
+      <label class="block field-label mb-1" for="add-member-username">{t('ws.settings.modal_username')}</label>
       {/*
         El campo y la lista van juntos y en posición relativa: la lista se
         superpone al resto del diálogo en vez de empujarlo, que con un `dialog`
@@ -627,7 +617,7 @@ const wsPendingInvites = (db.prepare(`
           aria-autocomplete="list"
           aria-expanded="false"
           aria-controls="add-member-results"
-          class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none"
+          class="campo w-full"
           placeholder={t('ws.settings.modal_username_ph')}
         >
         {/*
@@ -636,12 +626,12 @@ const wsPendingInvites = (db.prepare(`
           sin un solo error, así que el campo se comportaba exactamente igual
           que antes de tener buscador.
         */}
-        <div id="add-member-results" role="listbox" class="hidden absolute left-0 right-0 top-full mt-1 z-10 max-h-56 overflow-y-auto bg-forge-panel border border-forge-border rounded-lg shadow-xl p-1"></div>
+        <div id="add-member-results" role="listbox" class="panel hidden absolute left-0 right-0 top-full mt-1 z-10 max-h-56 overflow-y-auto p-1"></div>
       </div>
     </div>
     <div class="mb-4">
-      <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="add-member-role">{t('ws.settings.modal_role')}</label>
-      <select id="add-member-role" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
+      <label class="block field-label mb-1" for="add-member-role">{t('ws.settings.modal_role')}</label>
+      <select id="add-member-role" class="campo w-full">
         <option value="viewer">{t('ws.settings.role_viewer')}</option>
 
         <option value="editor">{t('ws.settings.role_editor')}</option>
@@ -649,14 +639,14 @@ const wsPendingInvites = (db.prepare(`
       </select>
     </div>
     <div class="flex justify-end gap-3 mt-6">
-      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('add-member-modal').close()">{t('ws.settings.modal_cancel')}</button>
-      <button type="button" id="btn-confirm-add" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity" data-ws-id={ws.id}>{t('ws.settings.modal_send_invite')}</button>
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-member-modal').close()">{t('ws.settings.modal_cancel')}</button>
+      <button type="button" id="btn-confirm-add" class="btn btn-primary" data-ws-id={ws.id}>{t('ws.settings.modal_send_invite')}</button>
     </div>
   </dialog>
 
   <!-- Add Automation Modal -->
-  <dialog id="add-automation-modal" class="bg-forge-panel border border-forge-border rounded-lg p-6 w-full max-w-[500px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+  <dialog id="add-automation-modal" class="ventana">
+    <h2 class="ventana-titulo flex items-center gap-2">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
       {t('ws.settings.modal_create_rule')}
     </h2>
@@ -666,8 +656,8 @@ const wsPendingInvites = (db.prepare(`
             espacio, que es otro campo de esta misma pantalla. Con la etiqueta
             ya asociada al campo, un lector de pantalla lo anunciaba así con
             toda seguridad. */}
-        <label class="block text-xs uppercase tracking-wider text-forge-muted mb-1" for="auto-name">{t('ws.settings.rule_name')}</label>
-        <input type="text" id="auto-name" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder={t('ws.settings.rule_name_ph')}>
+        <label class="block field-label mb-1" for="auto-name">{t('ws.settings.rule_name')}</label>
+        <input type="text" id="auto-name" class="campo w-full" placeholder={t('ws.settings.rule_name_ph')}>
       </div>
       
       {/*
@@ -684,31 +674,31 @@ const wsPendingInvites = (db.prepare(`
         pregunta lo que de verdad hace falta y el JSON lo compone el cliente.
       */}
       <div class="p-4 rounded border border-forge-border bg-forge-bg/30">
-        <p class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_trigger')}</p>
+        <p class="block text-sm font-bold text-forge-accent-text mb-2">{t('ws.settings.modal_trigger')}</p>
         <p class="text-sm text-forge-text mb-3">{t('ws.settings.trigger_desc')}</p>
 
-        <label for="auto-trigger-cond" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('ws.settings.target_status')}</label>
-        <select id="auto-trigger-cond" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none">
-          <option value="todo">{t('metrics.todo')}</option>
-          <option value="in_progress">{t('metrics.in_progress')}</option>
-          <option value="review">{t('ws.settings.status_review')}</option>
-          <option value="done" selected>{t('metrics.done')}</option>
+        <label for="auto-trigger-cond" class="block field-label mb-1">{t('ws.settings.target_status')}</label>
+        <select id="auto-trigger-cond" class="campo w-full">
+          <option value="todo">{t('status.todo')}</option>
+          <option value="in_progress">{t('status.in_progress')}</option>
+          <option value="review">{t('status.review')}</option>
+          <option value="done" selected>{t('status.done')}</option>
         </select>
       </div>
 
       <div class="p-4 rounded border border-forge-border bg-forge-bg/30">
-        <p class="block text-sm font-bold text-forge-accent-text mb-2 uppercase tracking-wider">{t('ws.settings.modal_action')}</p>
+        <p class="block text-sm font-bold text-forge-accent-text mb-2">{t('ws.settings.modal_action')}</p>
         <p class="text-sm text-forge-text mb-3">{t('ws.settings.action_desc')}</p>
 
-        <label for="auto-action-payload" class="block text-xs uppercase tracking-wider text-forge-muted mb-1">{t('ws.settings.webhook_url')}</label>
-        <input type="url" id="auto-action-payload" class="w-full bg-forge-bg border border-forge-border rounded p-2 text-forge-text focus:border-forge-secondary focus:outline-none" placeholder="https://ejemplo.com/hook" />
+        <label for="auto-action-payload" class="block field-label mb-1">{t('ws.settings.webhook_url')}</label>
+        <input type="url" id="auto-action-payload" class="campo w-full" placeholder="https://ejemplo.com/hook" />
         <p class="text-xs text-forge-muted mt-1">{t('ws.settings.webhook_hint')}</p>
       </div>
     </div>
     
     <div class="flex justify-end gap-3 mt-6">
-      <button type="button" class="px-4 py-2 text-forge-muted hover:text-forge-text" onclick="document.getElementById('add-automation-modal').close()">{t('ws.settings.modal_cancel')}</button>
-      <button type="button" id="btn-save-automation" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded font-bold hover:opacity-90 transition-opacity" data-ws-id={ws.id}>{t('ws.settings.modal_save_rule')}</button>
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-automation-modal').close()">{t('ws.settings.modal_cancel')}</button>
+      <button type="button" id="btn-save-automation" class="btn btn-primary" data-ws-id={ws.id}>{t('ws.settings.modal_save_rule')}</button>
     </div>
   </dialog>
 
@@ -874,7 +864,7 @@ const wsPendingInvites = (db.prepare(`
         </div>
         <div class="flex items-center gap-1 shrink-0 self-end sm:self-auto">
           <button class="btn-renombrar-etiqueta text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors"></button>
-          <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-red-500/10 transition-colors">
+          <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-forge-error/10 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           </button>
         </div>
@@ -942,10 +932,10 @@ const wsPendingInvites = (db.prepare(`
       const caja = document.createElement('div');
       caja.className = 'edicion-etiqueta flex flex-col sm:flex-row sm:items-center gap-3 w-full';
       caja.innerHTML = `
-        <input type="text" maxlength="40" class="editar-nombre flex-1 min-w-0 bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none">
+        <input type="text" maxlength="40" class="campo editar-nombre flex-1 min-w-0">
         <div class="editar-colores flex flex-wrap gap-1.5"></div>
         <div class="flex gap-2 shrink-0">
-          <button class="editar-guardar bg-forge-primary text-forge-on-accent font-bold px-3 py-1.5 rounded-lg text-xs"></button>
+          <button class="btn btn-primary editar-guardar"></button>
           <button class="editar-cancelar text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5"></button>
         </div>
       `;
@@ -1200,12 +1190,8 @@ const wsPendingInvites = (db.prepare(`
   deleteInput?.addEventListener('input', (e) => {
     if (e.target.value === deleteBtn.getAttribute('data-ws-name')) {
       deleteBtn.disabled = false;
-      deleteBtn.classList.remove('bg-red-500/50', 'cursor-not-allowed');
-      deleteBtn.classList.add('bg-red-500', 'hover:bg-red-600');
     } else {
       deleteBtn.disabled = true;
-      deleteBtn.classList.add('bg-red-500/50', 'cursor-not-allowed');
-      deleteBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
     }
   });
 

@@ -3,11 +3,13 @@ import MainLayout from '../layouts/MainLayout.astro';
 import db from '../lib/db';
 import { useTranslations } from '../i18n/ui';
 import { colorDeNotificacion } from '../lib/notificaciones';
+import { fecha, relativo } from '../lib/fechas';
 
 const user = Astro.locals.user!;
 if (!user) return Astro.redirect('/login');
 
-const t = useTranslations(Astro.locals.lang || 'en');
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
 
 // Fetch unread notifications
 const notifications = db.prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').all(user.id) as any[];
@@ -52,205 +54,129 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
 ---
 
 <MainLayout title={t('activity.title')}>
-  <div class="max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
-    <!-- Header -->
-    <div class="flex items-end justify-between border-b border-forge-border pb-6">
+  <div class="max-w-4xl mx-auto pb-12">
+    <div class="page-head">
       <div>
-        <h1 class="text-3xl font-extrabold text-forge-text mb-2 flex items-center gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          {t('activity.title')}
-        </h1>
-        <p class="text-forge-muted font-medium">{t('activity.desc')}</p>
+        <h1 class="page-title">{t('activity.title')}</h1>
+        <p class="page-sub">{t('activity.desc')}</p>
       </div>
-      
-      <!-- Tabs Navigation -->
-      <div class="flex items-center gap-1 bg-forge-panel border border-forge-border p-1 rounded-xl shadow-sm">
-        <button class="activity-tab-btn active px-5 py-2 rounded-lg text-sm font-bold transition-all" data-target="notifications">
+      {/* Pestañas: `.segmentado` con `aria-selected`, y el número va en tinta
+          detrás del nombre, no en una píldora de color. */}
+      <div class="segmentado" role="tablist" aria-label={t('activity.title')}>
+        <button type="button" role="tab" class="activity-tab-btn" data-target="notifications" aria-selected="true">
           {t('activity.notifications')}
-          {unreadCount > 0 && <span class="ml-2 bg-forge-primary text-forge-on-accent px-2 py-0.5 rounded-full text-[10px]">{unreadCount}</span>}
+          {unreadCount > 0 && <span class="wide ml-1.5">{unreadCount}</span>}
         </button>
-        <button class="activity-tab-btn px-5 py-2 rounded-lg text-sm font-bold transition-all text-forge-muted hover:text-forge-text" data-target="invites">
+        <button type="button" role="tab" class="activity-tab-btn" data-target="invites" aria-selected="false">
           {t('activity.invitations')}
-          {(parsedInvites.length > 0 || pendingRequests.length > 0) && <span class="ml-2 bg-orange-500 text-white px-2 py-0.5 rounded-full text-[10px]">{parsedInvites.length + pendingRequests.length}</span>}
+          {(parsedInvites.length > 0 || pendingRequests.length > 0) && <span class="wide ml-1.5">{parsedInvites.length + pendingRequests.length}</span>}
         </button>
       </div>
     </div>
 
-    <!-- Tab Contents -->
-    <div class="relative">
-      <!-- Notifications Tab -->
-      <div id="tab-notifications" class="activity-tab-content space-y-6">
-        <div class="bg-forge-panel border border-forge-border rounded-2xl shadow-xl overflow-hidden relative">
-          <div class="flex items-center justify-between p-6 border-b border-forge-border bg-forge-bg/30">
-            <h2 class="text-lg font-bold text-forge-text flex items-center gap-2">
-              Recent Notifications
-            </h2>
-            {unreadCount > 0 && (
-              <button id="btn-activity-mark-read" class="text-xs font-bold text-forge-accent-text hover:underline px-3 py-1.5 rounded-lg bg-forge-secondary/10 hover:bg-forge-secondary/20 transition-colors">
-                {t('activity.mark_all_read')}
-              </button>
-            )}
-          </div>
-          
-          <div class="divide-y divide-forge-border/40">
-            {notifications.length === 0 ? (
-              <div class="text-center py-16 text-forge-muted flex flex-col items-center justify-center gap-3">
-                <div class="w-16 h-16 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                </div>
-                <p class="font-medium">{t('activity.caught_up')}</p>
-              </div>
-            ) : (
-              notifications.map((n) => (
-                <div class={`flex items-start gap-4 p-5 transition-all group ${n.is_read ? 'bg-forge-bg/10 hover:bg-forge-bg/30' : 'bg-forge-panel hover:bg-forge-bg/40'}`}>
-                  <div class={`mt-1 w-3 h-3 rounded-full shrink-0 shadow-sm ${colorDeNotificacion(n.type, !!n.is_read)}`}></div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between gap-4 mb-1.5">
-                      <h3 class={`font-bold text-[15px] ${n.is_read ? 'text-forge-muted' : 'text-forge-text'}`}>{n.title}</h3>
-                      <span class="text-[11px] text-forge-muted font-mono whitespace-nowrap shrink-0 bg-forge-bg px-2 py-0.5 rounded border border-forge-border/60">{new Date(n.created_at + 'Z').toLocaleString()}</span>
-                    </div>
-                    <p class={`text-sm leading-relaxed ${n.is_read ? 'text-forge-muted' : 'text-forge-muted'}`}>{n.message}</p>
-                    {n.link_url && !n.link_url.startsWith('{') && (
-                      <a href={n.link_url} class="inline-flex items-center gap-1 mt-3 text-xs font-bold text-forge-accent-text hover:text-forge-primary transition-colors">
-                        {t('activity.view_details')} <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                      </a>
-                    )}
+    <div id="tab-notifications" class="activity-tab-content">
+      <section class="panel">
+        <div class="panel-cabeza">
+          <h2 class="text-base font-bold">{t('activity.recent_notifications')}</h2>
+          {unreadCount > 0 && (
+            <button id="btn-activity-mark-read" class="btn btn-ghost btn-sm">{t('activity.mark_all_read')}</button>
+          )}
+        </div>
+        {notifications.length === 0 ? (
+          <p class="panel-cuerpo hint">{t('activity.caught_up')}</p>
+        ) : (
+          <ul class="divide-y divide-forge-border">
+            {notifications.map((n) => (
+              <li class="flex items-start gap-3 px-4 py-3.5 group">
+                <span class={`sw mt-1.5 ${colorDeNotificacion(n.type, !!n.is_read)}`} aria-hidden="true"></span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline justify-between gap-4">
+                    <h3 class={`text-sm ${n.is_read ? 'font-medium text-forge-muted' : 'font-bold text-forge-text'}`}>{n.title}</h3>
+                    <time class="text-xs text-forge-muted whitespace-nowrap shrink-0">{relativo(n.created_at, lang)}</time>
                   </div>
-                  {!n.is_read && (
-                    <button class="btn-mark-single-read text-forge-muted hover:text-forge-accent-text p-2 rounded-lg hover:bg-forge-secondary/10 transition-colors opacity-0 group-hover:opacity-100" data-id={n.id} title="Mark as read">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </button>
+                  <p class="text-sm text-forge-muted leading-relaxed mt-0.5">{n.message}</p>
+                  {n.link_url && !n.link_url.startsWith('{') && (
+                    <a href={n.link_url} class="enlace text-sm inline-block mt-1.5">{t('activity.view_details')}</a>
                   )}
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
+                {!n.is_read && (
+                  <button class="btn-mark-single-read btn btn-ghost btn-icon btn-sm shrink-0" data-id={n.id} title={t('activity.mark_read')} aria-label={t('activity.mark_read')}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
 
-      <!-- Invites Tab -->
-      <div id="tab-invites" class="activity-tab-content hidden space-y-8">
-        
-        <!-- Pending Invitations -->
-        <div class="bg-forge-panel border border-forge-border rounded-2xl shadow-xl overflow-hidden">
-          <div class="p-6 border-b border-forge-border bg-forge-bg/30">
-            <h2 class="text-lg font-bold text-forge-text flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-warning"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-              {t('activity.invitations')}
-            </h2>
-          </div>
-          <div class="p-6">
-            {parsedInvites.length === 0 ? (
-              <div class="text-center py-10 border border-dashed border-forge-border/60 rounded-xl bg-forge-bg/20">
-                <p class="text-sm font-medium text-forge-muted">{t('activity.no_invites')}</p>
-              </div>
-            ) : (
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {parsedInvites.map(inv => (
-                  <div class="flex flex-col p-5 bg-forge-bg rounded-xl border border-forge-border hover:border-orange-500/30 transition-colors shadow-sm group">
-                    <div class="flex items-start justify-between mb-4">
-                      <div>
-                        <span class="text-sm font-bold text-forge-text block mb-1">{t('activity.ws_invite')}</span>
-                        <span class="text-xs font-medium text-forge-muted bg-forge-panel px-2 py-1 rounded border border-forge-border/60">
-                          {t('activity.role')}: <span class="font-bold text-forge-warning capitalize">{inv.payload?.role || 'viewer'}</span>
-                        </span>
-                      </div>
-                      <div class="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center text-forge-warning group-hover:scale-110 transition-transform">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-3 mt-auto pt-4 border-t border-forge-border/40">
-                      <button class="btn-invite-accept flex-1 bg-green-500/10 text-forge-success hover:bg-green-500 hover:text-white border border-green-500/20 py-2 rounded-lg transition-all font-bold text-sm" data-id={inv.id}>
-                        {t('ws.settings.accept')}
-                      </button>
-                      <button class="btn-invite-reject flex-1 bg-red-500/10 text-forge-error hover:bg-red-500 hover:text-white border border-red-500/20 py-2 rounded-lg transition-all font-bold text-sm" data-id={inv.id}>
-                        {t('ws.settings.reject')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+    <div id="tab-invites" class="activity-tab-content hidden flex flex-col gap-6">
+      <section class="panel">
+        <div class="panel-cabeza"><h2 class="text-base font-bold">{t('activity.invitations')}</h2></div>
+        {parsedInvites.length === 0 ? (
+          <p class="panel-cuerpo hint">{t('activity.no_invites')}</p>
+        ) : (
+          <ul class="divide-y divide-forge-border">
+            {parsedInvites.map(inv => (
+              <li class="flex flex-wrap items-center gap-3 px-4 py-3.5">
+                <div class="min-w-0">
+                  <b class="text-sm font-semibold text-forge-text">{t('activity.ws_invite')}</b>
+                  <p class="hint">{t('activity.role')}: {t(`ws.settings.role_${inv.payload?.role || 'viewer'}` as any)}</p>
+                </div>
+                <span class="ml-auto flex gap-2">
+                  <button class="btn-invite-accept btn btn-primary btn-sm" data-id={inv.id}>{t('ws.settings.accept')}</button>
+                  <button class="btn-invite-reject btn btn-secondary btn-sm" data-id={inv.id}>{t('ws.settings.reject')}</button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
-        <!-- Join Requests Status -->
-        <div class="bg-forge-panel border border-forge-border rounded-2xl shadow-xl overflow-hidden">
-          <div class="p-6 border-b border-forge-border bg-forge-bg/30">
-            <h2 class="text-lg font-bold text-forge-text flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-info"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-              {t('activity.my_requests')}
-            </h2>
-          </div>
-          <div class="p-6">
-            {sentRequests.length === 0 ? (
-              <div class="text-center py-10 border border-dashed border-forge-border/60 rounded-xl bg-forge-bg/20">
-                <p class="text-sm font-medium text-forge-muted">{t('activity.no_requests')}</p>
-              </div>
-            ) : (
-              <div class="grid grid-cols-1 gap-3">
-                {sentRequests.map(r => (
-                  <div class="flex items-center justify-between p-4 bg-forge-bg rounded-xl border border-forge-border hover:border-forge-border/80 transition-colors shadow-sm">
-                    <div class="flex items-center gap-4">
-                      <div class="w-10 h-10 rounded-lg bg-forge-panel border border-forge-border flex items-center justify-center font-bold text-forge-text">
-                        {r.workspace_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <a href={`/w/${r.sys_tag}`} class="text-base font-bold text-forge-text hover:text-forge-accent-text transition-colors">{r.workspace_name}</a>
-                        <div class="text-xs font-mono text-forge-muted mt-0.5">{new Date(r.created_at + 'Z').toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <span class={`text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest
-                        ${r.status === 'pending' ? 'bg-orange-400/10 text-forge-warning border border-orange-400/20' : 
-                          r.status === 'approved' ? 'bg-green-400/10 text-forge-success border border-green-400/20' : 
-                          r.status === 'rejected' ? 'bg-red-400/10 text-forge-error border border-red-400/20' : 
-                          'bg-forge-muted/10 text-forge-muted border border-forge-border'}`}>
-                        {r.status}
-                      </span>
-                      {r.status === 'pending' && (
-                        <button class="btn-cancel-request text-forge-muted hover:text-forge-error p-2 rounded-lg hover:bg-red-500/10 transition-colors" data-req-id={r.id} data-ws-id={r.workspace_id} title={t('activity.cancel_request')}>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      <section class="panel">
+        <div class="panel-cabeza"><h2 class="text-base font-bold">{t('activity.my_requests')}</h2></div>
+        {sentRequests.length === 0 ? (
+          <p class="panel-cuerpo hint">{t('activity.no_requests')}</p>
+        ) : (
+          <ul class="divide-y divide-forge-border">
+            {sentRequests.map(r => (
+              <li class="flex flex-wrap items-center gap-3 px-4 py-3.5">
+                <div class="min-w-0">
+                  <a href={`/w/${r.sys_tag}`} class="text-sm font-semibold text-forge-text hover:underline">{r.workspace_name}</a>
+                  <p class="hint">{fecha(r.created_at, lang)}</p>
+                </div>
+                <span class="ml-auto flex items-center gap-2">
+                  <span class="estado-chip" style={`--c:var(${r.status === 'approved' ? '--forge-success' : r.status === 'rejected' ? '--forge-error' : r.status === 'pending' ? '--forge-warning' : '--forge-muted'})`}>
+                    <span class="sw" aria-hidden="true"></span>{t(`activity.req.${r.status}` as any)}
+                  </span>
+                  {r.status === 'pending' && (
+                    <button class="btn-cancel-request btn btn-ghost btn-icon btn-sm" data-req-id={r.id} data-ws-id={r.workspace_id} title={t('activity.cancel_request')} aria-label={t('activity.cancel_request')}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
-        <!-- Recent Activity -->
-        <div class="bg-forge-panel border border-forge-border rounded-2xl shadow-xl overflow-hidden">
-          <div class="p-6 border-b border-forge-border bg-forge-bg/30">
-            <h2 class="text-lg font-bold text-forge-text flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted"><path d="M12 22v-4"/><path d="M12 8V2"/><path d="M22 12h-4"/><path d="M8 12H2"/><path d="M19.07 4.93l-2.83 2.83"/><path d="M7.76 16.24l-2.83 2.83"/><path d="M19.07 19.07l-2.83-2.83"/><path d="M7.76 7.76l-2.83-2.83"/></svg>
-              {t('activity.recent')}
-            </h2>
-          </div>
-          <div class="p-6">
-            {recentActivity.length === 0 ? (
-              <p class="text-xs text-forge-muted italic text-center py-6">{t('activity.no_recent')}</p>
-            ) : (
-              <div class="space-y-4 relative before:absolute before:inset-0 before:ml-1.5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-forge-border before:to-transparent">
-                {recentActivity.slice(0, 10).map((act: any) => (
-                  <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                    <div class="flex items-center justify-center w-4 h-4 rounded-full border-2 border-forge-bg bg-forge-secondary shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2"></div>
-                    <div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] bg-forge-bg p-3 rounded-xl border border-forge-border shadow-sm">
-                      <div class="flex items-center justify-between mb-1">
-                        <span class="text-xs font-bold text-forge-text">{act.action}</span>
-                        <span class="text-[9px] font-mono text-forge-muted">{new Date(act.timestamp.replace(' ', 'T') + 'Z').toLocaleString()}</span>
-                      </div>
-                      <p class="text-[10px] text-forge-muted">in <span class="font-bold">{act.workspace_name || 'System'}</span></p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <section class="panel">
+        <div class="panel-cabeza"><h2 class="text-base font-bold">{t('activity.recent')}</h2></div>
+        {recentActivity.length === 0 ? (
+          <p class="panel-cuerpo hint">{t('activity.no_recent')}</p>
+        ) : (
+          <ul class="divide-y divide-forge-border">
+            {recentActivity.slice(0, 10).map((act: any) => (
+              <li class="flex items-baseline justify-between gap-4 px-4 py-3 text-sm">
+                <span class="min-w-0"><b class="font-semibold text-forge-text">{act.action}</b> <span class="text-forge-muted">· {act.workspace_name || 'Forge OS'}</span></span>
+                <time class="text-xs text-forge-muted whitespace-nowrap">{relativo(act.timestamp, lang)}</time>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   </div>
 </MainLayout>
@@ -266,26 +192,14 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
     
     function switchTab(targetId: string) {
       tabBtns.forEach(btn => {
-        if (btn.dataset.target === targetId) {
-          btn.classList.add('bg-forge-secondary', 'text-forge-bg', 'active');
-          btn.classList.remove('text-forge-muted', 'hover:text-forge-text');
-          const pill = btn.querySelector('span');
-          if(pill) { pill.classList.replace('bg-forge-secondary', 'bg-white/20'); pill.classList.replace('text-forge-bg', 'text-white'); }
-        } else {
-          btn.classList.remove('bg-forge-secondary', 'text-forge-bg', 'active');
-          btn.classList.add('text-forge-muted', 'hover:text-forge-text');
-          const pill = btn.querySelector('span');
-          if(pill) { pill.classList.replace('bg-white/20', 'bg-forge-secondary'); pill.classList.replace('text-white', 'text-forge-bg'); }
-        }
+        btn.setAttribute('aria-selected', String(btn.dataset.target === targetId));
       });
       
       tabContents.forEach(content => {
         if (content.id === `tab-${targetId}`) {
           content.classList.remove('hidden');
-          content.classList.add('animate-fade-in');
         } else {
           content.classList.add('hidden');
-          content.classList.remove('animate-fade-in');
         }
       });
       

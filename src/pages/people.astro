@@ -29,10 +29,10 @@ const socialOn = user.social_enabled === 1;
 
 <MainLayout title={t('friends.title')}>
   {!socialOn ? (
-    <div class="max-w-xl mx-auto mt-10 p-6 bg-forge-panel border border-forge-border rounded-lg">
+    <div class="panel max-w-xl mx-auto mt-10 p-6">
       <h1 class="text-xl font-bold text-forge-text mb-2">{t('friends.title')}</h1>
       <p class="text-sm text-forge-muted mb-4">{t('friends.off')}</p>
-      <a href="/settings" class="inline-block bg-forge-primary text-forge-on-accent font-bold px-4 py-2 rounded text-sm">{t('friends.off_cta')}</a>
+      <a href="/settings" class="btn btn-primary">{t('friends.off_cta')}</a>
     </div>
   ) : (
   <>
@@ -46,7 +46,7 @@ const socialOn = user.social_enabled === 1;
     data-t-none={t('friends.search_none')}
   >
     <div class="border-b border-forge-border/40 pb-5 mb-8">
-      <h1 class="text-2xl font-semibold text-forge-text">{t('friends.title')}</h1>
+      <h1 class="page-title">{t('friends.title')}</h1>
       <p class="text-forge-muted text-sm mt-1">{t('friends.page_desc')}</p>
     </div>
 
@@ -57,7 +57,7 @@ const socialOn = user.social_enabled === 1;
       pantalla que no ofrece nada.
     */}
     <section class="mb-8">
-      <label class="block text-[10px] font-bold uppercase tracking-widest text-forge-muted mb-2" for="people-search">
+      <label class="block field-label mb-2" for="people-search">
         {t('friends.search')}
       </label>
       <div class="relative">
@@ -67,7 +67,7 @@ const socialOn = user.social_enabled === 1;
           id="people-search"
           autocomplete="off"
           placeholder={t('friends.search_ph')}
-          class="w-full bg-forge-panel border border-forge-border rounded-xl pl-10 pr-3 py-2.5 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none transition-all"
+          class="campo w-full pl-10 pr-3"
         />
       </div>
       <p class="text-xs text-forge-muted mt-2">{t('friends.search_hint')}</p>
@@ -78,17 +78,17 @@ const socialOn = user.social_enabled === 1;
     <div id="people-loading" class="text-sm text-forge-muted">{t('friends.loading')}</div>
 
     <section id="people-incoming" class="hidden mb-8">
-      <h2 class="text-[11px] font-bold uppercase tracking-widest text-forge-accent-text mb-3">{t('friends.incoming')}</h2>
+      <h2 class="text-xs font-bold text-forge-accent-text mb-3">{t('friends.incoming')}</h2>
       <ul id="people-incoming-list" class="space-y-2"></ul>
     </section>
 
     <section id="people-friends" class="hidden mb-8">
-      <h2 class="text-[11px] font-bold uppercase tracking-widest text-forge-muted mb-3">{t('friends.yours')}</h2>
+      <h2 class="block field-label mb-3">{t('friends.yours')}</h2>
       <ul id="people-friends-list" class="space-y-2"></ul>
     </section>
 
     <section id="people-outgoing" class="hidden mb-8">
-      <h2 class="text-[11px] font-bold uppercase tracking-widest text-forge-muted mb-3">{t('friends.outgoing')}</h2>
+      <h2 class="block field-label mb-3">{t('friends.outgoing')}</h2>
       <ul id="people-outgoing-list" class="space-y-2"></ul>
     </section>
 

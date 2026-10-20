@@ -5,10 +5,15 @@ import db from '../../lib/db';
 import { useTranslations, defaultLang } from '../../i18n/ui';
 import { canInteractSocially, socialBlockReason } from '../../lib/social';
 import { fecha } from '../../lib/fechas';
+import { tonoDe, esFotoReal } from '../../lib/tonos';
+import { iniciales } from '../../lib/responsables';
 
 const { username } = Astro.params;
 const currentUser = Astro.locals.user;
-const lang = Astro.cookies.get('lang')?.value || defaultLang;
+// El idioma lo resuelve el middleware (cookie `forge_lang` o el navegador);
+// esta página leía una cookie `lang` que no existe y salía siempre en el
+// idioma por defecto.
+const lang = Astro.locals.lang || defaultLang;
 const t = useTranslations(lang as any);
 
 // Get user profile
@@ -62,186 +67,146 @@ if (!profile || isBlockedByProfile) {
 const publicWorkspaces = db.prepare('SELECT id, name, description, icon, join_policy FROM workspaces WHERE created_by = ? AND is_public = 1').all(profile.id) as any[];
 
 const isOwnProfile = currentUser?.id === profile.id;
+const tono = tonoDe(profile.username);
 const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${profile.username}'s public profile and workspaces on Forge OS.`;
 ---
 
 <MainLayout 
-    title={`${profile.username}'s Profile`}
+    title={t('profile.page_title').replace('{user}', profile.username)}
     description={metaDescription}
     ogImage={profile.avatar_url || '/default-avatar.svg'}
 >
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-0">
-        <!-- Profile Header Card -->
-        <div class="bg-forge-panel border border-forge-border rounded-2xl shadow-xl mb-12 flex flex-col">
-            <!-- Banner Background (gradient or image) -->
-            <div class="h-48 w-full rounded-t-2xl relative border-b border-forge-border overflow-hidden group/banner">
-                {profile.banner_url ? (
-                    <img src={profile.banner_url} alt="Banner" class="w-full h-full object-cover" id="profile-banner-img" loading="lazy" decoding="async" />
-                ) : (
-                    <div class="w-full h-full bg-gradient-to-r from-forge-secondary/30 via-forge-primary/20 to-forge-bg relative" id="profile-banner-fallback">
-                        <div class="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/20 via-transparent to-transparent"></div>
-                    </div>
-                )}
-                {isOwnProfile && (
-                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover/banner:opacity-100 transition-opacity flex items-center justify-center">
-                        <label class="cursor-pointer bg-forge-bg text-forge-text px-4 py-2 rounded-lg font-bold border border-forge-border/60 hover:border-forge-secondary shadow-lg flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            Change Banner
-                            <input type="file" class="hidden" id="banner-upload" accept="image/*" />
-                        </label>
-                    </div>
-                )}
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* Cabecera de «perfil.html»: una banda del tono de la persona con el
+            arco de la fragua, y el avatar montado encima. Sin degradados. */}
+        <div class="perfil-banda group/banner" style={`--c:${tono}`}>
+            {profile.banner_url && (
+                <img src={profile.banner_url} alt="" class="w-full h-full object-cover relative z-[1]" id="profile-banner-img" loading="lazy" decoding="async" />
+            )}
+            {isOwnProfile && (
+                <label class="btn btn-secondary btn-sm absolute right-3 top-3 z-[2]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    {t('user.settings.banner_change')}
+                    <input type="file" class="sr-only" id="banner-upload" accept="image/*" />
+                </label>
+            )}
+        </div>
+
+        <div class="perfil-cabeza">
+            {isOwnProfile ? (
+                <label class="avatar avatar-xl cursor-pointer" style={`--c:${tono}`} title={t('user.settings.upload_avatar')}>
+                    {esFotoReal(profile.avatar_url)
+                        ? <img src={profile.avatar_url} alt="" id="profile-avatar-img" />
+                        : iniciales(profile.username)}
+                    <input type="file" class="sr-only" id="avatar-upload" aria-label={t('user.settings.upload_avatar')} accept="image/*" />
+                </label>
+            ) : (
+                <span class="avatar avatar-xl" style={`--c:${tono}`} aria-hidden="true">
+                    {esFotoReal(profile.avatar_url)
+                        ? <img src={profile.avatar_url} alt="" id="profile-avatar-img" />
+                        : iniciales(profile.username)}
+                </span>
+            )}
+            <div class="perfil-nombre pb-1.5">
+                {/* `break-all`: un nombre de usuario no tiene espacios por
+                    donde partir, y a 360 px se salía de la pantalla. */}
+                <h1 class="page-title break-all">@{profile.username}</h1>
+                <p class="page-sub">{t('profile.member_since')} {fecha(profile.created_at, lang)}</p>
             </div>
-            
-            <!-- Avatar and Info Section -->
-            <div class="px-8 pb-8 relative">
-                <!-- Avatar overlapping banner -->
-                <div class="absolute -top-16 left-8 group/avatar">
-                    <img src={profile.avatar_url || '/default-avatar.svg'} alt={profile.username} id="profile-avatar-img" class="w-32 h-32 rounded-2xl border-4 border-forge-panel bg-forge-bg shadow-xl object-cover" loading="lazy" decoding="async" />
-                    <div class="absolute inset-0 rounded-2xl ring-1 ring-inset ring-forge-border pointer-events-none"></div>
-                    {isOwnProfile && (
-                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity rounded-2xl flex items-center justify-center cursor-pointer" onclick="document.getElementById('avatar-upload').click()">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            <input type="file" class="hidden" id="avatar-upload" aria-label={t('user.settings.upload_avatar')} accept="image/*" />
-                        </div>
-                    )}
-                </div>
 
-                <!-- Actions (Top Right) -->
-                <div class="flex justify-end pt-4 h-16">
-                    <div class="flex items-center gap-3">
-                        {!isOwnProfile && currentUser && !canInteract && (
-                            <p class="text-sm text-forge-muted max-w-xs text-right leading-relaxed">
-                                {noInteractReason === 'actor_is_guest' ? (
-                                    <>
-                                        {t('profile.guest_self')}{' '}
-                                        <a href="/register" class="text-forge-accent-text font-semibold hover:underline">{t('profile.guest_self_cta')}</a>
-                                    </>
-                                ) : (
-                                    t('profile.guest_target')
-                                )}
-                            </p>
-                        )}
-                        {!isOwnProfile && currentUser && canInteract && (
-                            <div class="flex items-center gap-2">
-                                {isProfileBlockedByMe ? (
-                                    <button id="unblock-btn" class="px-5 py-2.5 bg-red-500/10 text-forge-error border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-red-500/10">
-                                        {t('profile.unblock_user')}
-                                    </button>
-                                ) : (
-                                    <>
-                                        {(!friendshipStatus || friendshipStatus.status === 'ended' || friendshipStatus.status === 'rejected') && (
-                                            <button id="add-friend-btn" class={`px-5 py-2.5 bg-forge-primary text-forge-on-accent hover:opacity-90 rounded-xl transition-all font-bold text-sm shadow-lg hover:shadow-forge-primary/30 flex items-center gap-2 hover:-translate-y-0.5`}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                                                {t('profile.add_friend')}
-                                            </button>
-                                        )}
-                                        {friendshipStatus?.status === 'pending' && friendshipStatus.isSender && (
-                                            <button id="cancel-request-btn" class="px-5 py-2.5 bg-forge-bg text-forge-muted border border-forge-border hover:text-forge-text hover:bg-forge-border/40 hover:border-forge-muted/30 rounded-xl transition-all font-bold text-sm shadow-sm">
-                                                {t('profile.cancel_request')}
-                                            </button>
-                                        )}
-                                        {friendshipStatus?.status === 'pending' && !friendshipStatus.isSender && (
-                                            <div class="flex gap-2">
-                                                <button id="accept-btn" class="px-5 py-2.5 bg-green-500/20 text-forge-success border border-green-500/30 hover:bg-green-500/30 rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-green-500/10">{t('profile.accept_request')}</button>
-                                                <button id="reject-btn" class="px-5 py-2.5 bg-red-500/10 text-forge-error border border-red-500/20 hover:bg-red-500/20 rounded-xl transition-all font-bold text-sm shadow-sm">{t('profile.reject_request')}</button>
-                                            </div>
-                                        )}
-                                        {friendshipStatus?.status === 'accepted' && (
-                                            <button id="unfriend-btn" class="px-5 py-2.5 bg-forge-bg text-forge-muted border border-forge-border hover:border-red-500/50 hover:text-forge-error hover:bg-red-500/10 rounded-xl transition-all font-bold text-sm group flex items-center gap-2 shadow-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:hidden text-forge-success"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                                                <span class="group-hover:hidden">Friends</span>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden group-hover:block"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/></svg>
-                                                <span class="hidden group-hover:inline">{t('profile.unfriend')}</span>
-                                            </button>
-                                        )}
-                                        <button id="block-btn" class="text-forge-muted hover:text-forge-error transition-colors p-2.5 rounded-xl hover:bg-red-500/10 ml-1" title={t('profile.block_user')}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                        {!currentUser && (
-                            <a href="/login" class="px-5 py-2.5 bg-forge-primary text-forge-on-accent rounded-xl hover:opacity-90 transition-all font-bold text-sm shadow-lg hover:shadow-forge-primary/30 hover:-translate-y-0.5">Log in to interact</a>
-                        )}
-                    </div>
-                </div>
-
-                <!-- User Details -->
-                <div class="mt-4">
-                    {/* `break-all`: un nombre de usuario no tiene espacios por
-                        donde partir, así que a 4xl sobre 360 px se salía de la
-                        tarjeta y quedaba «@JoseSerpaCod» cortado a media letra. */}
-                    <h1 class="text-3xl sm:text-4xl font-extrabold text-forge-text tracking-tight leading-tight mb-1 break-all">@{profile.username}</h1>
-                    <p class="text-forge-accent-text text-sm font-bold flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                        {t('profile.member_since')} {fecha(profile.created_at, lang)}
-                    </p>
-                </div>
-                
-                <!-- Bio Section -->
-                <div class="mt-6 relative group/bio">
-                    <div class="bg-forge-bg/50 border border-forge-border/40 rounded-xl p-5 shadow-inner min-h-[80px]">
-                        {isOwnProfile ? (
-                            <textarea id="profile-bio-input" aria-label={t('a11y.bio')} class="w-full bg-transparent text-forge-text resize-y focus:outline-none placeholder:text-forge-muted" placeholder={t('profile.bio_placeholder') as string}>{profile.bio || ''}</textarea>
+            <div class="flex flex-wrap items-center gap-2 pb-2">
+                {!isOwnProfile && currentUser && !canInteract && (
+                    <p class="hint max-w-xs">
+                        {noInteractReason === 'actor_is_guest' ? (
+                            <>
+                                {t('profile.guest_self')}{' '}
+                                <a href="/register" class="enlace">{t('profile.guest_self_cta')}</a>
+                            </>
                         ) : (
-                            <p class="text-forge-text leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+                            t('profile.guest_target')
                         )}
-                    </div>
-                    {isOwnProfile && (
-                        <div class="flex justify-end mt-2">
-                            <button id="save-bio-btn" data-t-save={t('profile.save_bio')} class="px-4 py-1.5 bg-forge-primary text-forge-on-accent text-xs font-bold rounded shadow hover:opacity-90 hidden">{t('profile.save_bio')}</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-
-        <!-- Workspaces Section -->
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-forge-text flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                {t('profile.public_workspaces')}
-            </h2>
-            <span class="text-sm font-medium text-forge-muted bg-forge-panel px-3 py-1 rounded-full border border-forge-border/60">{publicWorkspaces.length}</span>
-        </div>
-        
-        {publicWorkspaces.length === 0 ? (
-            <div class="text-center py-16 bg-forge-panel rounded-2xl border border-forge-border border-dashed flex flex-col items-center justify-center gap-3">
-                <div class="w-16 h-16 rounded-full bg-forge-bg flex items-center justify-center border border-forge-border/60 text-forge-muted">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                </div>
-                <p class="text-forge-muted font-medium">{t('profile.no_workspaces')}</p>
-            </div>
-        ) : (
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {publicWorkspaces.map(ws => (
-                    <div class="bg-forge-panel rounded-xl p-6 border border-forge-border hover:border-forge-secondary hover:shadow-md transition-all group flex flex-col h-full relative overflow-hidden">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center text-lg shadow-sm shrink-0 overflow-hidden">
-                                    <WorkspaceIcon icon={ws.icon} name={ws.name} />
-                                </div>
-                                <h3 class="text-lg font-bold text-forge-text group-hover:text-forge-accent-text transition-colors line-clamp-1">{ws.name}</h3>
-                            </div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-forge-bg text-forge-muted border border-forge-border/60 rounded shrink-0">
-                                {ws.join_policy === 'open' ? t('ws.settings.policy_open') : ws.join_policy === 'friends_only' ? t('ws.settings.policy_friends') : t('ws.settings.policy_disabled')}
-                            </span>
-                        </div>
-                        {ws.description && <p class="text-forge-muted text-sm mb-6 line-clamp-2 leading-relaxed">{ws.description}</p>}
-                        
-                        <div class="mt-auto pt-4 border-t border-forge-border/40">
-                            {!isOwnProfile && currentUser && !isProfileBlockedByMe && ws.join_policy !== 'disabled' && (
-                                <button data-ws-id={ws.id} class="join-ws-btn w-full px-4 py-2 bg-forge-bg hover:bg-forge-secondary hover:text-forge-bg text-forge-text border border-forge-border/60 hover:border-forge-secondary rounded-lg transition-colors text-sm font-bold shadow-sm">
-                                    {t('profile.request_join')}
+                    </p>
+                )}
+                {!isOwnProfile && currentUser && canInteract && (
+                    isProfileBlockedByMe ? (
+                        <button id="unblock-btn" class="btn btn-danger">{t('profile.unblock_user')}</button>
+                    ) : (
+                        <>
+                            {(!friendshipStatus || friendshipStatus.status === 'ended' || friendshipStatus.status === 'rejected') && (
+                                <button id="add-friend-btn" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                                    {t('profile.add_friend')}
                                 </button>
                             )}
-                        </div>
-                    </div>
-                ))}
+                            {friendshipStatus?.status === 'pending' && friendshipStatus.isSender && (
+                                <button id="cancel-request-btn" class="btn btn-secondary">{t('profile.cancel_request')}</button>
+                            )}
+                            {friendshipStatus?.status === 'pending' && !friendshipStatus.isSender && (
+                                <>
+                                    <button id="accept-btn" class="btn btn-primary">{t('profile.accept_request')}</button>
+                                    <button id="reject-btn" class="btn btn-secondary">{t('profile.reject_request')}</button>
+                                </>
+                            )}
+                            {friendshipStatus?.status === 'accepted' && (
+                                <>
+                                    <span class="hint flex items-center gap-1.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                                        {t('profile.friends')}
+                                    </span>
+                                    <button id="unfriend-btn" class="btn btn-secondary">{t('profile.unfriend')}</button>
+                                </>
+                            )}
+                            <button id="block-btn" class="btn btn-ghost btn-icon" title={t('profile.block_user')} aria-label={t('profile.block_user')}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                            </button>
+                        </>
+                    )
+                )}
+                {!currentUser && (
+                    <a href="/login" class="btn btn-primary">{t('profile.login_to_interact')}</a>
+                )}
             </div>
-        )}
+        </div>
+
+        <div class="mt-7 flex flex-col gap-8">
+            {isOwnProfile ? (
+                <div>
+                    <textarea id="profile-bio-input" aria-label={t('a11y.bio')} rows="3" class="campo w-full resize-y" placeholder={t('profile.bio_placeholder') as string}>{profile.bio || ''}</textarea>
+                    <div class="flex justify-end mt-2">
+                        <button id="save-bio-btn" data-t-save={t('profile.save_bio')} class="btn btn-primary hidden">{t('profile.save_bio')}</button>
+                    </div>
+                </div>
+            ) : profile.bio && (
+                <p class="perfil-bio whitespace-pre-wrap">{profile.bio}</p>
+            )}
+
+            <section>
+                <h2 class="section-title mb-3">{t('profile.public_workspaces')} <span class="wide text-forge-muted text-base font-semibold ml-1">{publicWorkspaces.length}</span></h2>
+                {publicWorkspaces.length === 0 ? (
+                    <p class="hint">{t('profile.no_workspaces')}</p>
+                ) : (
+                    <ul class="panel divide-y divide-forge-border">
+                        {publicWorkspaces.map(ws => (
+                            <li class="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+                                <span class="w-6 h-6 shrink-0 overflow-hidden rounded"><WorkspaceIcon icon={ws.icon} name={ws.name} /></span>
+                                <div class="min-w-0">
+                                    <b class="font-semibold text-forge-text">{ws.name}</b>
+                                    {ws.description && <p class="hint line-clamp-1">{ws.description}</p>}
+                                </div>
+                                <span class="ml-auto flex items-center gap-3">
+                                    <span class="hint">
+                                        {ws.join_policy === 'open' ? t('ws.settings.policy_open') : ws.join_policy === 'friends_only' ? t('ws.settings.policy_friends') : t('ws.settings.policy_disabled')}
+                                    </span>
+                                    {!isOwnProfile && currentUser && !isProfileBlockedByMe && ws.join_policy !== 'disabled' && (
+                                        <button data-ws-id={ws.id} class="join-ws-btn btn btn-secondary btn-sm">{t('profile.request_join')}</button>
+                                    )}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
+        </div>
     </main>
 
     <script is:inline define:vars={{
@@ -327,7 +292,9 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
             if (!file) return;
             const url = await uploadFile(file);
             if (url && await updateProfile({ avatar_url: url })) {
-                document.getElementById('profile-avatar-img').src = url;
+                // Sin foto previa lo que hay son iniciales: más simple recargar.
+                const img = document.getElementById('profile-avatar-img');
+                if (img) img.src = url; else window.location.reload();
             }
         });
 
@@ -338,17 +305,14 @@ const metaDescription = profile.bio ? profile.bio.substring(0, 160) : `View ${pr
             const url = await uploadFile(file, window.forgeImagen.ANCHOS.banner);
             if (url && await updateProfile({ banner_url: url })) {
                 let img = document.getElementById('profile-banner-img');
-                if (img) img.src = url;
-                else {
-                    const fallback = document.getElementById('profile-banner-fallback');
-                    if (fallback) {
-                        img = document.createElement('img');
-                        img.src = url;
-                        img.className = 'w-full h-full object-cover';
-                        img.id = 'profile-banner-img';
-                        fallback.replaceWith(img);
-                    }
+                if (!img) {
+                    img = document.createElement('img');
+                    img.alt = '';
+                    img.className = 'w-full h-full object-cover relative z-[1]';
+                    img.id = 'profile-banner-img';
+                    document.querySelector('.perfil-banda')?.prepend(img);
                 }
+                img.src = url;
             }
         });
 

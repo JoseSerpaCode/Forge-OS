@@ -2,14 +2,12 @@
   "texto_blanco": {
     "src/components/auth/AuthShell.astro": 1,
     "src/layouts/MainLayout.astro": 1,
-    "src/pages/activity.astro": 5,
-    "src/pages/settings.astro": 3,
+    "src/pages/settings.astro": 2,
     "src/pages/w/[sys_tag]/board.astro": 1,
-    "src/pages/w/[sys_tag]/settings.astro": 3
+    "src/pages/w/[sys_tag]/settings.astro": 1
   },
   "gradiente_radial": {
-    "src/components/landing/Landing.astro": 1,
-    "src/pages/u/[username].astro": 1
+    "src/components/landing/Landing.astro": 1
   },
   "halo": {
     "src/components/landing/Landing.astro": 1,
@@ -17,22 +15,13 @@
   },
   "paleta_tailwind": {
     "src/layouts/MainLayout.astro": 2,
-    "src/pages/activity.astro": 16,
-    "src/pages/settings.astro": 25,
-    "src/pages/u/[username].astro": 15,
     "src/pages/w/[sys_tag]/db/index.astro": 2,
-    "src/pages/w/[sys_tag]/files.astro": 1,
-    "src/pages/w/[sys_tag]/settings.astro": 26
+    "src/pages/w/[sys_tag]/files.astro": 1
   },
   "texto_minusculo": {
     "src/layouts/MainLayout.astro": 3,
-    "src/pages/activity.astro": 6,
-    "src/pages/people.astro": 4,
-    "src/pages/settings.astro": 4,
-    "src/pages/u/[username].astro": 1,
     "src/pages/w/[sys_tag]/db/[id].astro": 3,
-    "src/pages/w/[sys_tag]/db/index.astro": 2,
-    "src/pages/w/[sys_tag]/settings.astro": 11
+    "src/pages/w/[sys_tag]/db/index.astro": 2
   },
   "desenfoque": {
     "src/layouts/MainLayout.astro": 12,
@@ -40,9 +29,7 @@
   },
   "eleva_al_pasar": {
     "src/layouts/MainLayout.astro": 1,
-    "src/pages/404.astro": 1,
-    "src/pages/activity.astro": 1,
-    "src/pages/u/[username].astro": 2
+    "src/pages/404.astro": 1
   },
   "animacion_perpetua": {
     "src/pages/settings.astro": 1

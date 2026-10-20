@@ -6,6 +6,25 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [1.43.0] - 2026-10-19
+
+Fase 7 del rediseño «Taller»: ajustes, actividad, perfil y personas.
+
+### Changed
+
+- **Perfil** como en la maqueta: una banda del tono de la persona con el arco de la fragua, el avatar con sus iniciales montado encima y la biografía en grande. Sin degradados, sin iconos dentro de cajas; los espacios públicos, en una lista.
+- **Actividad**: cabecera de página, pestañas segmentadas y listas sin tarjetas. Las fechas, relativas («hace 5 minutos»), y el estado de cada solicitud con su nombre en vez de la clave (`pending`).
+- **Ajustes de la cuenta y del espacio**: botones, campos y paneles del sistema. La zona de borrado va en un panel con borde de error, y los títulos de sección sin icono.
+- Textos en tipo oración en ajustes, perfil y actividad («Guardar perfil público», «Ajustes del espacio», «Zona de peligro»…). En español, «espacio» en lugar de «workspace».
+
+### Fixed
+
+- **El aviso del tablero vacío se montaba sobre las columnas** y se pisaba con su «Nada por aquí». Ahora va en una línea encima, y las columnas no repiten el mensaje cuando todo el tablero está vacío (llegó con la fase 1).
+- **El perfil salía siempre en el idioma por defecto**: leía una cookie `lang` que no existe en vez del idioma que resuelve el middleware.
+- La pestaña y la miga del tablero decían «Board» con la interfaz en español.
+- El diálogo de borrar un espacio, los avisos para invitados y varias etiquetas de ajustes del espacio («Remove User», «Delete Rule», «Expired»…) estaban en inglés fijo.
+- El selector de estado de las automatizaciones usaba las claves de Métricas en mayúsculas: ahora usa los nombres de estado.
+
 ## [1.42.0] - 2026-10-19
 
 Fase 6 del rediseño «Taller»: Métricas.
