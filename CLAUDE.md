@@ -83,10 +83,10 @@ fallos). Tres reglas que se rompen con facilidad:
 - **No apliques opacidad al texto** (`text-forge-muted/70` y similares). Los
   tokens ya están al filo del umbral; bajarles la opacidad los saca de AA. Fue
   la causa de 6 de los 24 fallos originales.
-- **`--forge-accent-secondary` es color de marca** (logos, gradientes, adornos).
-  Para texto naranja usa **`--forge-accent-text`**, que sí cumple. Están
-  separados justo porque unificarlos obliga a elegir entre marca apagada o texto
-  ilegible.
+- **El naranja de relleno (`forge-primary`) no es para texto.** Para texto
+  naranja usa **`--forge-accent-text`**, que sí cumple; sobre tinta (un aviso
+  emergente), `--forge-accent-inverse`. Están separados justo porque
+  unificarlos obliga a elegir entre marca apagada o texto ilegible.
 - **Texto sobre fondo naranja va con `text-forge-on-accent`**, nunca
   `text-forge-bg`: ese se invierte con el tema y el naranja no.
 
@@ -148,25 +148,45 @@ pero deja pasar la coincidencia **exacta**, para que dos invitados del mismo
 espacio puedan llegar a su perfil. Si tocas ese SQL, mira
 `tests/guest-search.test.ts`.
 
-## Rediseño «Taller» (en curso, hacia la 2.0)
+## Diseño «Taller» (2.0)
 
-El diseño aprobado está en `docs/rediseno/` (maquetas estáticas, `index.html`
-las enlaza) y las razones en `docs/rediseno-diagnostico.md`. Se aplica por
-fases, una PR cada una. Lo que no se ve en el código:
+El diseño está en `docs/rediseno/` (maquetas estáticas, `index.html` las
+enlaza) y las razones en `docs/rediseno-diagnostico.md`. Se aplicó en diez
+fases (1.36.0 a 2.0.0). Lo que no se ve en el código:
 
-- **Los tokens viejos se quedan como alias.** `--forge-panel`,
-  `--forge-accent-primary`… tienen ahora los valores de «Taller». Cambiar de
-  identidad fue cambiar sus valores, no las pantallas.
+- **Las piezas viven en `src/styles/taller.css`**: `.btn`, `.campo`,
+  `.panel`, `.chip`, `.avatar`, `.segmentado`, `.menu`, `.ventana`, `.aviso`,
+  `.tabla`, `.columna`/`.tarjeta`… Una pantalla nueva se arma con ellas; si
+  falta una, se añade ahí, no como cadena de utilidades en la página.
+- **Tokens en `src/styles/themes.css`.** El foco va en tinta
+  (`forge-focus`), no en naranja; el realce al pasar, en `forge-text` o
+  `forge-surface-2`. No hay color «secundario»: en la 2.0 se retiraron
+  `forge-secondary`, `forge-accent` y `forge-danger`, que duplicaban otros.
+- **Las páginas públicas** (portada, acceso, registro, 404) usan el CSS de la
+  maqueta casi tal cual, en `src/styles/portada.css` con alcance `.portada`:
+  `/` sirve también el Hub, y sin alcance sus `.card` o `.btn` pisarían los de
+  la app. Ese archivo repite el orden de capas de Tailwind a propósito; sin
+  él, si llega antes que Tailwind, el reset gana y los títulos salen a 14 px.
+- **Los textos de la portada** están en `textosPortada.ts`, no en `i18n/`, y
+  **todo lo que afirman tiene que existir**. La maqueta prometía que una nota
+  enlazada aparece en su tarea; no existe, así que no se dice.
 - **Los estados salen de `src/lib/status.ts`** (nombre en i18n, color
   `--forge-st-*`). Su color es marca gráfica —punto, cinta, barra, serie—,
   nunca color de texto; el texto va en tinta (`.estado-chip`).
 - **Las gráficas leen los colores del tema** (`src/lib/client/temaGraficas.ts`)
   y se repintan al cambiarlo. Nada de hexadecimales en Chart.js.
-- **`tests/barandillas-diseno.test.ts`** cuenta por archivo las huellas de
-  interfaz generada (paleta de Tailwind, letra de menos de 12 px, desenfoque,
-  halos, gradientes radiales, elevar al pasar el ratón…) y falla si alguna
-  sube. Si bajan, regenera la lista con `ACTUALIZAR_BARANDILLAS=1`. Al acabar
-  el rediseño tiene que quedar vacía.
+- **`tests/barandillas-diseno.test.ts` no admite ninguna huella** del diseño
+  anterior: paleta de Tailwind, letra de menos de 12 px, texto en blanco fijo,
+  desenfoque, halos, gradientes radiales, elevar al pasar el ratón, rebotes.
+  Durante el rediseño había una lista de excepciones que fue bajando; llegó a
+  cero y se borró. No la vuelvas a crear: si algo lo necesita, afina el patrón.
+- **Nada de letra por debajo de 12 px**, tampoco en móvil. Había un bloque en
+  `themes.css` que subía `text-[10px]` y similares en pantallas pequeñas; se
+  retiró con la 2.0 porque ya no quedan.
+- **Las capturas del README** salen de `npm run screenshots` contra una
+  compilación de producción (`node server.mjs`), no contra `astro dev`: en
+  desarrollo las gráficas y el editor a veces no llegan a pintarse. La semilla
+  enciende sprints, tiempo y puntos en el espacio de demo.
 - **Las fuentes se sirven desde `public/fonts`** (Archivo variable y Plex
   Mono). No vuelvas a Google Fonts: la CSP ya no lo permite.
 

@@ -6,6 +6,30 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.0.0] - 2026-10-19
+
+**Forge OS 2.0: el diseño «Taller».** Cierra el rediseño que empezó en la 1.36.0: todas las pantallas usan las mismas piezas (botones, campos, paneles, ventanas, tablas, tablero) y los mismos tokens, en claro y en oscuro, con la tipografía y la marca nuevas. La 2.0 no cambia datos ni rutas: es la versión mayor porque cambia toda la cara de la aplicación.
+
+### Changed
+
+- **Aviso emergente, confirmación y paleta de órdenes** con las piezas del sistema: el aviso va en tinta sobre fondo y un error lo invierte; la confirmación es una ventana normal; la paleta, un menú. Fuera desenfoques, halos y botones que se levantaban al pasar el ratón.
+- **El foco va en tinta** en toda la aplicación, no en naranja, y el realce al pasar en el color del texto.
+- Las capturas del README son las de la 2.0, y su descripción de Métricas cuenta las gráficas que hay de verdad.
+- «Ir a mi hub» en la paleta pasa a «Ir al inicio».
+
+### Removed
+
+- Los alias de color que duplicaban otros (`forge-secondary`, `forge-accent`, `forge-danger`) y el token de marca que ya no usaba nadie.
+- El bloque que subía en móvil la letra de 8 a 11 px: ya no queda ninguna.
+- La lista de excepciones de las barandillas de diseño. Llegó a cero, y la prueba ya no admite ninguna huella del diseño anterior.
+
+### Fixed
+
+- **Los interruptores de las funciones del espacio no cambiaban de color al encenderlos**: usaban `var(--forge-secondary)`, una variable que no existía.
+- **La semilla de demostración dejaba apagados sprints, tiempo y puntos** aunque sembraba sprints y horas, así que el tablero y Métricas de la demo los escondían.
+- `npm run screenshots` no encontraba las notas, sacaba el tablero de una URL inválida y, en la segunda pasada, de un sprint cerrado.
+- Un «Pending» en inglés fijo en las invitaciones de ajustes del espacio, y el «Guardado» de ajustes rebotaba sin fin.
+
 ## [1.44.0] - 2026-10-19
 
 Fase 8 del rediseño «Taller»: portada, acceso, registro, pie y 404.

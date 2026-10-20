@@ -118,16 +118,15 @@ const filasPorTabla = new Map(
   <!-- New DB Modal -->
   {canEdit && (
     <dialog id="new-db-modal" class="ventana !max-w-[44rem] !p-0">
-      <div class="px-8 py-6 border-b border-forge-border/40 flex justify-between items-start sticky top-0 bg-forge-panel/95 backdrop-blur z-20 rounded-t-3xl">
+      <div class="px-6 py-5 border-b border-forge-border flex justify-between items-start sticky top-0 bg-forge-panel z-20">
         <div>
-          <h2 class="text-2xl font-bold text-forge-text flex items-center gap-3">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <h2 class="ventana-titulo !mb-0">
             {t('db.new_db')}
           </h2>
           {/* Describe el formulario, no la galería: se oculta en el primer paso.
               En móvil, además, cuatro líneas de subtítulo empujaban las
               plantillas fuera de la pantalla. */}
-          <p id="modal-sub" class="hidden text-sm text-forge-muted mt-2 ml-13">{t('db.new_db_desc')}</p>
+          <p id="modal-sub" class="hidden text-sm text-forge-muted mt-2">{t('db.new_db_desc')}</p>
         </div>
         <button type="button" aria-label={t('common.close')} class="text-forge-muted hover:text-forge-text p-2 hover:bg-forge-border/50 rounded-full transition-all" onclick="document.getElementById('new-db-modal').close()">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -142,7 +141,7 @@ const filasPorTabla = new Map(
             rejilla quedaba por debajo del borde y había que adivinar que
             estaba: quien ya sabe qué columnas quiere no debería tener que
             buscar la salida. */}
-        <button type="button" data-tpl="__blank__" class="tpl-card w-full text-left flex items-center gap-4 bg-forge-panel border border-dashed border-forge-border rounded-2xl px-4 py-3 mb-6 hover:border-forge-secondary/50 transition-all focus:outline-none focus:ring-2 focus:ring-forge-secondary/40">
+        <button type="button" data-tpl="__blank__" class="tpl-card w-full text-left flex items-center gap-4 bg-forge-panel border border-dashed border-forge-border rounded-2xl px-4 py-3 mb-6 hover:border-forge-text transition-all focus:outline-none focus:ring-2 focus:ring-forge-focus">
           <span class="w-9 h-9 shrink-0 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center text-forge-muted">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </span>
@@ -157,14 +156,14 @@ const filasPorTabla = new Map(
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {plantillas.map(p => (
-            <button type="button" data-tpl={p.id} class="tpl-card text-left flex gap-4 bg-forge-panel border border-forge-border rounded-2xl p-4 hover:border-forge-secondary/50 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-forge-secondary/40">
+            <button type="button" data-tpl={p.id} class="tpl-card text-left flex gap-4 bg-forge-panel border border-forge-border rounded-2xl p-4 hover:border-forge-text hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-forge-focus">
               <span class="w-11 h-11 shrink-0 rounded-xl bg-forge-bg border border-forge-border/60 flex items-center justify-center text-forge-accent-text">
                 <Icon name={p.icono} size={20} />
               </span>
               <span class="min-w-0">
                 <span class="block text-sm font-bold text-forge-text">{p.nombre}</span>
                 <span class="block text-xs text-forge-muted mt-1 leading-relaxed">{p.descripcion}</span>
-                <span class="inline-block text-[10px] uppercase font-bold tracking-wider text-forge-muted bg-forge-bg border border-forge-border/50 rounded-md px-2 py-0.5 mt-2">
+                <span class="inline-block text-xs text-forge-muted mt-2">
                   {p.columnas.length} {t('db.columns')}
                 </span>
               </span>
@@ -205,7 +204,7 @@ const filasPorTabla = new Map(
                 {ICONOS_ELEGIBLES.map(nombre => (
                   <button
                     type="button"
-                    class="icon-opt w-10 h-10 rounded-xl border border-forge-border bg-forge-panel text-forge-muted flex items-center justify-center transition-all hover:text-forge-text hover:border-forge-muted focus:outline-none focus:ring-2 focus:ring-forge-secondary/40 aria-pressed:border-forge-secondary aria-pressed:text-forge-accent-text aria-pressed:bg-forge-secondary/10"
+                    class="icon-opt w-10 h-10 rounded-xl border border-forge-border bg-forge-panel text-forge-muted flex items-center justify-center transition-all hover:text-forge-text hover:border-forge-muted focus:outline-none focus:ring-2 focus:ring-forge-focus aria-pressed:border-forge-primary aria-pressed:text-forge-accent-text aria-pressed:bg-forge-primary/10"
                     data-icon={nombre}
                     aria-pressed={nombre === ICONO_POR_DEFECTO ? 'true' : 'false'}
                     aria-label={nombre}
@@ -224,7 +223,7 @@ const filasPorTabla = new Map(
               <h3 class="text-base font-bold text-forge-text">{t('db.columns_schema')}</h3>
               <p class="text-xs text-forge-muted mt-1">{t('db.columns_schema_desc')}</p>
             </div>
-            <button type="button" id="btn-add-col" class="text-xs font-bold text-forge-accent-text bg-forge-secondary/10 hover:bg-forge-secondary hover:text-forge-bg px-4 py-2 rounded-xl transition-all border border-forge-secondary/20 flex items-center gap-2 shadow-sm">
+            <button type="button" id="btn-add-col" class="text-xs font-bold text-forge-accent-text bg-forge-primary/10 hover:bg-forge-primary hover:text-forge-bg px-4 py-2 rounded-xl transition-all border border-forge-primary/20 flex items-center gap-2 shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               {t('db.add_column')}
             </button>
@@ -370,7 +369,7 @@ const filasPorTabla = new Map(
         div.className = 'col-def flex flex-wrap gap-4 items-start bg-forge-panel border border-forge-border p-4 rounded-2xl shadow-sm relative overflow-hidden group hover:border-forge-border/80 transition-colors';
 
         div.innerHTML = `
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-forge-border/40 group-hover:bg-forge-secondary/50 transition-colors"></div>
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-forge-border/40 group-hover:bg-forge-primary/50 transition-colors"></div>
           <div class="flex-1 min-w-[200px]">
             <span class="block field-label mb-1.5 ml-1"></span>
             <input type="text" class="col-name campo">
@@ -385,12 +384,12 @@ const filasPorTabla = new Map(
             </select>
           </div>
           <div class="shrink-0 pt-6">
-            <button type="button" class="btn-rm-col text-forge-muted hover:text-forge-error hover:bg-red-500/10 p-2 rounded-xl transition-all border border-transparent hover:border-red-500/20">
+            <button type="button" class="btn-rm-col btn btn-ghost btn-icon hover:!text-forge-error">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <div class="col-options-container hidden w-full mt-2 basis-full p-3 bg-forge-bg/50 rounded-xl border border-forge-border/40">
-            <span class="block text-[9px] font-bold uppercase tracking-widest text-forge-accent-text mb-1.5 ml-1"></span>
+            <span class="block field-label mb-1.5"></span>
             <input type="text" class="col-options campo">
           </div>
         `;

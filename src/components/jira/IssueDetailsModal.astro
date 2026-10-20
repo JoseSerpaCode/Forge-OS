@@ -1313,7 +1313,7 @@ const t = useTranslations(lang);
           if (pct) pct.textContent = '0%';
           if (bar) {
             bar.style.width = '0%';
-            bar.className = 'h-full bg-forge-secondary transition-all';
+            bar.className = 'h-full bg-forge-primary transition-all';
           }
         }
 
@@ -2032,7 +2032,7 @@ const t = useTranslations(lang);
         titulo.readOnly = ro;
         titulo.maxLength = 200;
         titulo.setAttribute('aria-label', (textos.tTitle || '').replace('{titulo}', f.title));
-        titulo.className = 'flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-forge-border/50 focus:border-forge-secondary outline-none text-sm text-forge-text py-0.5';
+        titulo.className = 'flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-forge-border/50 focus:border-forge-focus outline-none text-sm text-forge-text py-0.5';
         if (f.status === 'done') titulo.classList.add('line-through');
         titulo.addEventListener('change', async () => {
           const limpio = titulo.value.trim();

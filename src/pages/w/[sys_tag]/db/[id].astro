@@ -256,9 +256,9 @@ import CeldaValor from '../../../../components/db/CeldaValor.astro';
           <div>
             <label for={`row-field-${col.id}`} class="block field-label mb-2 flex items-center gap-1.5">
               {col.name}
-              {col.type === 'number' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">{t('db.badge_number')}</span>}
-              {col.type === 'select' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">{t('db.badge_select')}</span>}
-              {col.type === 'file' && <span class="bg-forge-bg border border-forge-border px-1.5 py-0.5 rounded text-[8px] font-mono text-forge-accent-text">{t('db.badge_file')}</span>}
+              {col.type === 'number' && <span class="text-xs font-normal text-forge-muted">{t('db.badge_number')}</span>}
+              {col.type === 'select' && <span class="text-xs font-normal text-forge-muted">{t('db.badge_select')}</span>}
+              {col.type === 'file' && <span class="text-xs font-normal text-forge-muted">{t('db.badge_file')}</span>}
             </label>
             
             {col.type === 'file' ? (
@@ -266,7 +266,7 @@ import CeldaValor from '../../../../components/db/CeldaValor.astro';
                  archivos viven en un solo sitio y la tabla los referencia. */
               <div class="campo-archivo relative" data-col={col.id}>
                 <input type="hidden" id={`row-field-${col.id}`} name={col.id}>
-                <button type="button" class="archivo-abrir w-full text-left bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-muted hover:border-forge-secondary transition-colors">
+                <button type="button" class="archivo-abrir w-full text-left bg-forge-bg border border-forge-border rounded-xl p-3 text-sm text-forge-muted hover:border-forge-text transition-colors">
                   {t('db.pick_file')}
                 </button>
                 <div class="archivo-panel hidden absolute z-30 mt-2 w-full bg-forge-panel border border-forge-border rounded-xl shadow-xl p-2">

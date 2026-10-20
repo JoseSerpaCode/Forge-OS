@@ -46,17 +46,13 @@
   /* Acción: el naranja de relleno. El texto encima va en tinta
      (`text-forge-on-accent`), nunca en blanco ni en `text-forge-bg`. */
   --color-forge-primary: var(--forge-accent-primary);
-  --color-forge-accent: var(--forge-accent-primary);
   --color-forge-accent-hover: var(--forge-accent-primary-hover);
   --color-forge-on-accent: var(--forge-on-accent);
   /* Naranja para TEXTO: el de relleno no llega a 4,5:1 sobre el fondo. */
   --color-forge-accent-text: var(--forge-accent-text);
-  /* Color de marca (logo, adornos). No es para texto. */
-  --color-forge-secondary: var(--forge-accent-secondary);
 
   --color-forge-success: var(--forge-success);
   --color-forge-error: var(--forge-error);
-  --color-forge-danger: var(--forge-error);
   --color-forge-warning: var(--forge-warning);
   --color-forge-info: var(--forge-info);
 
@@ -90,9 +86,11 @@
      además la validación de paleta para daltonismo, por eso las gráficas usan
      estos mismos cuatro.
 
-     Los nombres viejos (`--forge-panel`, `--forge-accent-primary`…) se quedan
-     como están: los usa toda la aplicación y el cambio de identidad es cambiar
-     sus valores, no las pantallas. */
+     Durante el rediseño los nombres viejos se quedaron como alias con los
+     valores nuevos. En la 2.0 se retiraron los que duplicaban otro token
+     (`forge-accent`, `forge-danger`) y el «secundario», que la interfaz usaba
+     como acento: el foco va en `forge-focus` y el naranja, en `forge-primary`.
+     El naranja de marca no es un token: va fijo (#E8590C) en el logo. */
   :root,
   [data-theme="light"] {
     color-scheme: light;
@@ -107,9 +105,9 @@
 
     --forge-accent-primary: #E8590C;
     --forge-accent-primary-hover: #D14F0A;
-    /* La marca es fija: no cambia con el tema. */
-    --forge-accent-secondary: #E8590C;
     --forge-accent-text: #A63C00;
+    /* Naranja legible sobre tinta: la acción de un aviso emergente. */
+    --forge-accent-inverse: #FF9452;
     --forge-on-accent: #171614;
 
     --forge-success: #266B2A;
@@ -141,8 +139,8 @@
 
     --forge-accent-primary: #F06A1F;
     --forge-accent-primary-hover: #F47E3C;
-    --forge-accent-secondary: #E8590C;
     --forge-accent-text: #FF9452;
+    --forge-accent-inverse: #A63C00;
     --forge-on-accent: #171614;
 
     --forge-success: #3FA86A;
@@ -271,34 +269,15 @@
    Móvil: suelos de legibilidad y de área táctil
    ═══════════════════════════════════════════════════════════════════════════
 
-   La interfaz está diseñada para escritorio, donde una etiqueta de 10px junto
-   a un icono se lee sin esfuerzo. En un teléfono no: medido sobre las diez
-   pantallas de la aplicación a 390px hay 164 elementos con `text-[10px]`, 37
-   con `text-[11px]`, 15 con `text-[9px]` y uno con 8px.
-
-   Cambiarlos uno a uno serían 216 ediciones y perdería la densidad en
-   escritorio, que es donde esta aplicación se usa de verdad. Así que el ajuste
-   va aquí, en un solo bloque y **solo por debajo de 48rem**: en pantalla grande
-   nada cambia.
+   Aquí había también un suelo de 12 px para las letras de 8 a 11 px, que la
+   interfaz anterior usaba por cientos. «Taller» no baja de 12 px en ningún
+   tamaño, y la prueba de barandillas lo impide, así que en la 2.0 se retiró.
 
    `@layer utilities` es lo que hace que esto gane a las utilidades de Tailwind
    sin recurrir a `!important` ni a selectores inflados: dentro de la misma
    capa, gana el que llega después, y este archivo se importa tras Tailwind. */
 @layer utilities {
   @media (max-width: 48rem) {
-    /* 12px es el suelo por debajo del cual el texto de interfaz deja de leerse
-       cómodamente en un móvil sostenido a distancia normal. */
-    .text-\[8px\],
-    .text-\[9px\],
-    .text-\[10px\] {
-      font-size: 0.75rem;
-      line-height: 1.4;
-    }
-    .text-\[11px\] {
-      font-size: 0.8125rem;
-      line-height: 1.45;
-    }
-
     /* ── Lo que solo aparece al pasar el ratón, en un móvil no existe ────────
      *
      * En táctil no hay hover. Diecinueve controles del producto se pintaban con

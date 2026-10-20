@@ -940,10 +940,8 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
         resumen.textContent = (t.tSummary || '').replace('{mover}', String(sels.length - borrar)).replace('{borrar}', String(borrar));
         confirmar.textContent = borrar > 0 ? (t.tConfirmDanger || '').replace('{n}', String(borrar)) : (t.tConfirm || '');
         // Rojo solo cuando de verdad se va a perder algo.
-        confirmar.classList.toggle('bg-forge-error', borrar > 0);
-        confirmar.classList.toggle('text-white', borrar > 0);
-        confirmar.classList.toggle('bg-forge-primary', borrar === 0);
-        confirmar.classList.toggle('text-forge-on-accent', borrar === 0);
+        confirmar.classList.toggle('btn-danger', borrar > 0);
+        confirmar.classList.toggle('btn-primary', borrar === 0);
       };
       lista.onchange = actualizar;
       todas.onchange = () => {

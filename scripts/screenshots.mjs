@@ -33,7 +33,15 @@ const VIEWPORT = { width: 1440, height: 900 };
 // column headers and nav labels render fine on an empty board, so they prove
 // nothing.
 const PAGES = [
-  { name: 'board',          url: null,               expect: 'Invoice PDF generation' },
+  {
+    name: 'board',
+    url: null,
+    expect: 'Invoice PDF generation',
+    // El tablero recuerda el último sprint en una cookie, y la captura de
+    // métricas de la pasada anterior elige uno cerrado: sin borrarla, la
+    // segunda pasada saca un tablero vacío.
+    before: () => context.clearCookies({ name: /^forge_last_sprint_/ }),
+  },
   { name: 'knowledge-base', url: null,               expect: 'Architecture' },
   { name: 'dashboard',      url: '/',                expect: 'Atlas Platform' },
   {
@@ -65,9 +73,9 @@ const PAGES = [
 // Empty states. If any of these show up the page rendered, but with nothing in
 // it — which is exactly the screenshot we must not ship.
 const EMPTY_MARKERS = [
-  'Welcome to your new board',
-  'currently empty',
-  'No issues',
+  'No tasks yet.',
+  'Aún no hay tareas.',
+  'Nothing here. Drag a card in.',
   'No pages yet',
 ];
 
@@ -98,27 +106,24 @@ async function signIn() {
  */
 async function findKbPage() {
   await page.goto(`${BASE}/w/${WS}/p/`, { waitUntil: 'networkidle' });
-  const href = await page
-    .locator(`a[href*="/w/${WS}/p/"]`)
-    .first()
-    .getAttribute('href')
-    .catch(() => null);
-  return href && !href.endsWith('/p/') ? href : null;
+  // El primer enlace a /p/ es el de la barra lateral («Notas»), que apunta al
+  // propio índice: se busca el primero que lleve a una nota.
+  return page.evaluate((ws) => {
+    const a = Array.from(document.querySelectorAll(`a[href*="/w/${ws}/p/"]`))
+      .map((el) => el.getAttribute('href'))
+      .find((h) => h && !/\/p\/?$/.test(h));
+    return a ?? null;
+  }, WS);
 }
 
 /**
- * The board defaults to the Backlog view, and seeded issues all belong to a
- * sprint — so the default URL renders an empty board. Resolve the first real
- * sprint from the selector rather than hardcoding the seed's id.
+ * El tablero abre en el sprint en curso, que es el que interesa. Antes abría
+ * en la pila y había que buscar un sprint en el primer `<select>` de la
+ * página; con los filtros nuevos ese `<select>` ya no es el de sprints, y la
+ * captura salía de una URL inválida.
  */
 async function findBoardUrl() {
-  await page.goto(`${BASE}/w/${WS}/board`, { waitUntil: 'networkidle' });
-  const sprintId = await page.evaluate(() => {
-    const opts = Array.from(document.querySelectorAll('select option'));
-    const real = opts.find((o) => o.value && o.value !== 'backlog');
-    return real ? real.value : null;
-  });
-  return sprintId ? `/w/${WS}/board?sprint=${sprintId}` : `/w/${WS}/board`;
+  return `/w/${WS}/board`;
 }
 
 await signIn();
@@ -144,6 +149,7 @@ for (const theme of ['dark', 'light']) {
 
   for (const p of PAGES) {
     const file = path.join(OUT, `${p.name}-${theme}.png`);
+    if (p.before) await p.before();
     await page.goto(BASE + p.url, { waitUntil: 'networkidle' });
 
     // Let chart.js animations and the note editor settle.

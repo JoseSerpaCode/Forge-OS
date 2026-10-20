@@ -470,6 +470,28 @@
     .tarjeta.dragging, .tarjeta.is-dragging { transform: none; }
   }
 
+  /* ── Aviso emergente (componentes.html) ──────────────────────────────
+     Tinta sobre fondo, en los dos temas: se distingue de cualquier panel sin
+     sombras de colores. El error invierte: panel con borde de error. */
+  .aviso {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px 12px 16px; border-radius: 14px;
+    background: var(--forge-text); color: var(--forge-bg);
+    box-shadow: var(--forge-shadow-float);
+    font-size: 0.875rem; font-weight: 550;
+    min-width: min(300px, calc(100vw - 2rem)); max-width: calc(100vw - 2rem);
+  }
+  .aviso-accion { margin-left: auto; font-weight: 750; color: var(--forge-accent-inverse); }
+  .aviso-accion:hover { text-decoration: underline; }
+  .aviso.aviso-error { background: var(--forge-panel); color: var(--forge-text); border: 1px solid var(--forge-error); }
+  .aviso.aviso-error .aviso-icono { color: var(--forge-error); }
+  .aviso.aviso-error .aviso-accion { color: var(--forge-accent-text); }
+
+  /* ── Paleta de órdenes ─────────────────────────────────────────────── */
+  .paleta { width: min(100% - 2rem, 620px); max-width: none; padding: 0; margin: 15vh auto auto; overflow: hidden; }
+  .paleta-entrada { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--forge-border); }
+  .menu-titulo { padding: 8px 10px 4px; font-size: 0.75rem; font-weight: 600; color: var(--forge-muted); }
+
   /* ── Perfil (perfil.html) ───────────────────────────────────────────── */
   .avatar-xl { width: 6.5rem; height: 7.375rem; font-size: 2.6rem; border: 4px solid var(--forge-bg); font-stretch: 75%; font-weight: 800; }
   /* La banda va en el tono de la persona, entero: no lleva texto encima. El
