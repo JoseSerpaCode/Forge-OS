@@ -14,7 +14,7 @@ test.describe('Dynamic Databases Module', () => {
     expect(res?.status()).toBe(200);
 
     // 3. Verify page renders without 500 error
-    await expect(page.locator('h1')).toContainText('Databases & Tables');
+    await expect(page.locator('h1')).toContainText(/^(Tables|Tablas)$/);
 
     // 4. Click Create New Table
     await page.click('#btn-new-db');

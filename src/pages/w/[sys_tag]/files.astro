@@ -86,26 +86,29 @@ const TXT = {
   disconnect: t('drive.disconnect'),
   error: t('drive.result_google_error'),
 };
+
+// La extensión, para la etiqueta de formato de cada fila.
+const formatoDe = (nombre: string) => {
+  const ext = /\.([a-z0-9]{1,5})$/i.exec(nombre)?.[1] ?? '';
+  return ext ? ext.toUpperCase() : '—';
+};
 ---
 
 <MainLayout hideFooter={true} title={`${t('drive.title')} — ${workspace.name}`} workspaceId={workspace.id}>
-  <div class="max-w-[900px] mx-auto space-y-6">
-    <header class="bg-gradient-to-r from-forge-panel to-forge-panel/50 p-6 rounded-2xl border border-forge-border/40 shadow-sm">
-      <h1 class="text-2xl font-bold text-forge-text flex items-center gap-2.5">
-        <span class="w-10 h-10 rounded-xl bg-forge-bg flex items-center justify-center border border-forge-border/60 shadow-sm text-forge-accent-text">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-        </span>
-        {t('drive.title')}
-      </h1>
-      <p class="text-sm text-forge-muted mt-2 max-w-xl leading-relaxed">{t('drive.subtitle')}</p>
+  {/* Archivos (docs/rediseno/archivos.html): dónde viven de verdad —el Drive
+      de quien conectó el espacio— dicho arriba, y el explorador debajo. */}
+  <div class="max-w-[60rem] space-y-5 pb-12">
+    <header class="page-head !mb-2">
+      <div class="min-w-0">
+        <h1 class="page-title">{t('drive.title')}</h1>
+        <p class="page-sub max-w-2xl">{t('drive.subtitle')}</p>
+      </div>
     </header>
 
     {resultado && (
       <div id="drive-result" class:list={[
-        'rounded-2xl border px-5 py-4 text-sm',
-        resultado.mal
-          ? 'border-forge-error/40 bg-forge-error/10 text-forge-text'
-          : 'border-forge-secondary/40 bg-forge-secondary/10 text-forge-text',
+        'panel px-5 py-4 text-sm text-forge-text',
+        resultado.mal ? '!border-forge-error' : '!border-forge-border-strong',
       ]}>
         {t(resultado.clave as any)}
       </div>
@@ -118,57 +121,57 @@ const TXT = {
         nada más. Una lista que desaparece parece pérdida de datos, y no lo es:
         los archivos siguen en su Drive y sus nombres siguen aquí. */}
     {!disponible && (
-      <div class="rounded-2xl border border-forge-border bg-forge-panel px-5 py-4 text-sm text-forge-muted">
+      <div class="panel px-5 py-4 text-sm text-forge-muted">
         {t('drive.unavailable')}
       </div>
     )}
 
     {!conexion ? (
       disponible ? (
-      <div class="bg-forge-panel border border-dashed border-forge-border rounded-2xl p-8">
-        <h2 class="text-lg font-bold text-forge-text">{t('drive.not_connected')}</h2>
+      <div class="panel p-6">
+        <h2 class="section-title !text-xl">{t('drive.not_connected')}</h2>
         <p class="text-sm text-forge-muted mt-2 max-w-xl leading-relaxed">{t('drive.not_connected_desc')}</p>
 
         {/* Los dos avisos van **antes** del botón, no escondidos detrás. Quien
             conecta decide por todo el equipo y pone su propio almacenamiento. */}
         <ul class="mt-5 space-y-3 text-sm text-forge-muted max-w-xl">
           <li class="flex gap-3">
-            <svg class="shrink-0 mt-0.5 text-forge-accent-text" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <svg class="shrink-0 mt-0.5 text-forge-muted" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             <span>{t('drive.warn_link')}</span>
           </li>
           <li class="flex gap-3">
-            <svg class="shrink-0 mt-0.5 text-forge-accent-text" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <svg class="shrink-0 mt-0.5 text-forge-muted" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
             <span>{t('drive.warn_owner')}</span>
           </li>
         </ul>
 
         {esPropietario ? (
-          <button id="btn-drive-connect" class="mt-6 bg-forge-primary text-forge-on-accent px-6 py-2.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-sm">
+          <button id="btn-drive-connect" class="btn btn-primary mt-6">
             {t('drive.connect')}
           </button>
         ) : (
-          <p class="mt-6 text-sm text-forge-muted italic">{t('drive.only_owner')}</p>
+          <p class="mt-6 text-sm text-forge-muted">{t('drive.only_owner')}</p>
         )}
       </div>
       ) : null
     ) : (
       <div class="space-y-6">
         {conexion.status === 'revoked' && (
-          <div class="rounded-2xl border border-forge-error/40 bg-forge-error/10 px-5 py-4">
+          <div class="panel !border-forge-error px-5 py-4">
             <h2 class="text-sm font-bold text-forge-text">{t('drive.revoked')}</h2>
             <p class="text-sm text-forge-muted mt-1 leading-relaxed">{t('drive.revoked_desc')}</p>
             {esPropietario && (
-              <button id="btn-drive-reconnect" class="mt-4 bg-forge-primary text-forge-on-accent px-5 py-2 rounded-xl text-sm font-bold hover:opacity-90 transition-all">
+              <button id="btn-drive-reconnect" class="btn btn-primary mt-4">
                 {t('drive.reconnect')}
               </button>
             )}
           </div>
         )}
 
-        <div class="bg-forge-panel border border-forge-border rounded-2xl p-6">
+        <div class="panel p-5">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="min-w-0">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-forge-muted">{t('drive.connected_as')}</p>
+              <p class="block field-label">{t('drive.connected_as')}</p>
               <p class="text-base font-bold text-forge-text truncate">{conexion.googleEmail || '—'}</p>
               {conexion.connectedAt && (
                 <p class="text-xs text-forge-muted mt-1">{t('drive.connected_on')} {conexion.connectedAt.slice(0, 10)}</p>
@@ -176,36 +179,36 @@ const TXT = {
             </div>
             <div class="flex items-center gap-3 shrink-0">
               {conexion.folderLink && (
-                <a href={conexion.folderLink} target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-forge-accent-text hover:underline">
+                <a href={conexion.folderLink} target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
                   {t('drive.open_folder')}
                 </a>
               )}
               {esPropietario && (
-                <button id="btn-drive-disconnect" class="text-sm font-bold text-forge-muted hover:text-forge-error transition-colors px-3 py-2 rounded-xl">
+                <button id="btn-drive-disconnect" class="btn btn-ghost hover:!text-forge-error">
                   {t('drive.disconnect')}
                 </button>
               )}
             </div>
           </div>
 
-          <p class="mt-5 pt-5 border-t border-forge-border/40 text-xs text-forge-muted leading-relaxed">{t('drive.warn_link')}</p>
+          <p class="mt-4 pt-4 border-t border-forge-border hint leading-relaxed">{t('drive.warn_link')}</p>
         </div>
 
         {/* El explorador. Carpetas primero y archivos después, como en
             cualquier gestor de archivos: mezclarlos obliga a leer el icono de
             cada fila para saber en qué se puede entrar. */}
-        <div class="bg-forge-panel border border-forge-border rounded-2xl overflow-hidden">
-          <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-forge-border/40">
+        <div class="panel overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-forge-border">
             <nav class="flex items-center gap-1.5 text-sm min-w-0" aria-label={t('drive.files_title')}>
-              <a href={`/w/${sys_tag}/files`} class:list={['truncate hover:underline', camino.length ? 'text-forge-muted' : 'text-forge-text font-bold']}>
+              <a href={`/w/${sys_tag}/files`} class:list={['truncate hover:underline', camino.length ? 'text-forge-muted' : 'text-forge-text font-semibold']}>
                 {t('drive.root')}
               </a>
               {camino.map((c, i) => (
                 <>
-                  <span class="text-forge-border">/</span>
+                  <span class="text-forge-border-strong" aria-hidden="true">/</span>
                   <a
                     href={`/w/${sys_tag}/files?folder=${c.id}`}
-                    class:list={['truncate hover:underline', i === camino.length - 1 ? 'text-forge-text font-bold' : 'text-forge-muted']}
+                    class:list={['truncate hover:underline', i === camino.length - 1 ? 'text-forge-text font-semibold' : 'text-forge-muted']}
                   >{c.name}</a>
                 </>
               ))}
@@ -213,11 +216,11 @@ const TXT = {
 
             {puedeEditar && disponible && conexion.status === 'ok' && (
               <div class="flex items-center gap-2 shrink-0">
-                <button id="btn-nueva-carpeta" class="text-xs font-bold text-forge-muted hover:text-forge-text border border-forge-border rounded-lg px-3 py-2 transition-colors flex items-center gap-1.5">
+                <button id="btn-nueva-carpeta" class="btn btn-secondary">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M12 10v6"/><path d="M9 13h6"/></svg>
                   {t('drive.new_folder')}
                 </button>
-                <button id="btn-subir" class="bg-forge-primary text-forge-on-accent text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-all flex items-center gap-1.5">
+                <button id="btn-subir" class="btn btn-primary">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
                   {t('drive.upload')}
                 </button>
@@ -229,59 +232,59 @@ const TXT = {
           {/* Buscador. Busca en **todo el espacio**, no en la carpeta abierta:
               quien busca «laboratorio» no sabe en qué carpeta lo dejó, y por
               eso lo busca. */}
-          <div class="px-5 py-3 border-b border-forge-border/40 relative">
+          <div class="px-4 py-2.5 border-b border-forge-border relative">
             <div class="flex items-center gap-2">
               <svg class="text-forge-muted shrink-0" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
               <input type="search" id="buscador-archivos" autocomplete="off" placeholder={t('drive.search')} aria-label={t('drive.search')} class="flex-1 bg-transparent text-sm text-forge-text placeholder:text-forge-muted outline-none py-1">
-              <a id="volver-archivos" href={`/w/${sys_tag}/files`} class="hidden text-xs font-bold text-forge-muted hover:text-forge-text shrink-0">{t('drive.back_to_files')}</a>
+              <a id="volver-archivos" href={`/w/${sys_tag}/files`} class="hidden btn btn-ghost btn-sm shrink-0">{t('drive.back_to_files')}</a>
             </div>
 
-            <div id="historial-busqueda" class="hidden absolute left-5 right-5 top-full z-20 bg-forge-panel border border-forge-border rounded-xl shadow-xl p-2 mt-1">
+            <div id="historial-busqueda" class="menu hidden absolute left-4 right-4 top-full z-20 mt-1 !p-2">
               <div class="flex items-center justify-between px-2 pb-1.5">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-forge-muted">{t('drive.search_recent')}</span>
-                <button type="button" id="btn-olvidar-busquedas" class="text-[10px] font-bold text-forge-muted hover:text-forge-error transition-colors">{t('drive.search_clear')}</button>
+                <span class="block field-label">{t('drive.search_recent')}</span>
+                <button type="button" id="btn-olvidar-busquedas" class="btn btn-ghost btn-sm hover:!text-forge-error">{t('drive.search_clear')}</button>
               </div>
               <div id="lista-historial" class="space-y-0.5"></div>
             </div>
           </div>
 
           {/* Progreso. Aparece solo mientras hay algo subiendo. */}
-          <div id="zona-progreso" class="hidden px-5 py-3 border-b border-forge-border/40 space-y-2"></div>
+          <div id="zona-progreso" class="hidden px-4 py-3 border-b border-forge-border space-y-2"></div>
 
           {/* Nombre de la carpeta nueva, en línea.
               Con `prompt()` pasaría lo mismo que pasaba con `confirm()`: tras
               el primero, el navegador ofrece bloquear los diálogos y a partir
               de ahí el botón se queda mudo sin decir por qué. */}
-          <form id="form-carpeta" class="hidden px-5 py-3 border-b border-forge-border/40 flex flex-wrap items-center gap-2">
-            <input type="text" id="nombre-carpeta" maxlength="200" autocomplete="off" placeholder={t('drive.folder_name')} aria-label={t('drive.folder_name')} class="flex-1 min-w-[12rem] bg-forge-bg border border-forge-border rounded-lg px-3 py-2 text-sm text-forge-text focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 outline-none">
-            <button type="submit" class="bg-forge-primary text-forge-on-accent text-xs font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-all">{t('drive.new_folder')}</button>
-            <button type="button" id="btn-cancelar-carpeta" class="text-xs font-bold text-forge-muted hover:text-forge-text px-3 py-2">{t('labels.cancel')}</button>
+          <form id="form-carpeta" class="hidden px-4 py-3 border-b border-forge-border flex flex-wrap items-center gap-2">
+            <input type="text" id="nombre-carpeta" maxlength="200" autocomplete="off" placeholder={t('drive.folder_name')} aria-label={t('drive.folder_name')} class="campo flex-1">
+            <button type="submit" class="btn btn-primary">{t('drive.new_folder')}</button>
+            <button type="button" id="btn-cancelar-carpeta" class="btn btn-ghost">{t('labels.cancel')}</button>
           </form>
 
-          <ul id="lista-archivos" class="divide-y divide-forge-border/40">
+          <ul id="lista-archivos" class="divide-y divide-forge-border">
             {carpetas.map(c => (
-              <li class="flex items-center gap-3 px-5 py-3 hover:bg-forge-bg/50 transition-colors">
-                <span class="text-forge-accent-text shrink-0">
+              <li class="flex items-center gap-3 px-4 py-2.5 hover:bg-forge-surface-2">
+                <span class="text-forge-muted shrink-0">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
                 </span>
-                <a href={`/w/${sys_tag}/files?folder=${c.id}`} class="flex-1 min-w-0 text-sm font-bold text-forge-text truncate hover:underline">{c.name}</a>
-                {!c.driveId && <span class="text-[10px] text-forge-muted italic shrink-0">{t('drive.folder_not_synced')}</span>}
+                <a href={`/w/${sys_tag}/files?folder=${c.id}`} class="flex-1 min-w-0 text-sm font-semibold text-forge-text truncate hover:underline">{c.name}</a>
+                {!c.driveId && <span class="text-xs text-forge-muted shrink-0">{t('drive.folder_not_synced')}</span>}
               </li>
             ))}
 
             {archivos.map(f => (
-              <li class="archivo-fila flex items-center gap-3 px-5 py-3 hover:bg-forge-bg/50 transition-colors" data-id={f.id}>
-                <span class:list={['shrink-0', f.status === 'missing' ? 'text-forge-error' : 'text-forge-muted']}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>
-                </span>
+              <li class="archivo-fila flex items-center gap-3 px-4 py-2.5 hover:bg-forge-surface-2" data-id={f.id}>
+                {/* El formato a la vista (PDF, PNG…): dice más que un icono de
+                    documento igual para todos. */}
+                <span class="formato-archivo shrink-0" aria-hidden="true">{formatoDe(f.name)}</span>
                 <div class="flex-1 min-w-0">
                   {f.webViewLink && f.status === 'ok' ? (
-                    <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" class="block text-sm font-bold text-forge-text truncate hover:underline">{f.name}</a>
+                    <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" class="block text-sm font-semibold text-forge-text truncate hover:underline">{f.name}</a>
                   ) : (
-                    <span class="block text-sm font-bold text-forge-text truncate">{f.name}</span>
+                    <span class="block text-sm font-semibold text-forge-text truncate">{f.name}</span>
                   )}
-                  <p class="text-[11px] text-forge-muted mt-0.5 truncate">
-                    {f.status === 'missing' && <span class="text-forge-error font-bold">{t('drive.missing')} · </span>}
+                  <p class="text-xs text-forge-muted mt-0.5 truncate">
+                    {f.status === 'missing' && <span class="text-forge-error font-semibold">{t('drive.missing')} · </span>}
                     {f.sizeBytes ? `${(f.sizeBytes / 1024 / 1024).toFixed(1)} MB · ` : ''}
                     {f.uploaderName ? `${t('drive.uploaded_by')} ${f.uploaderName} · ` : ''}
                     {f.createdAt?.slice(0, 10)}
@@ -370,14 +373,14 @@ const TXT = {
       izq.className = 'truncate';
       izq.textContent = nombre;
       const der = document.createElement('span');
-      der.className = 'shrink-0 font-mono';
+      der.className = 'shrink-0 wide';
       der.textContent = '0%';
       texto.append(izq, der);
 
       const canal = document.createElement('div');
-      canal.className = 'h-1.5 bg-forge-bg rounded-full overflow-hidden border border-forge-border';
+      canal.className = 'barra';
       const barra = document.createElement('div');
-      barra.className = 'h-full bg-forge-secondary transition-all';
+      barra.className = 'h-full rounded-full bg-forge-text transition-all';
       barra.style.width = '0%';
       canal.appendChild(barra);
 
@@ -510,7 +513,7 @@ const TXT = {
       for (const q of consultas) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'w-full text-left px-2 py-1.5 rounded-lg text-xs text-forge-text hover:bg-forge-bg transition-colors truncate';
+        b.className = 'menu-item truncate';
         b.textContent = q;
         b.addEventListener('mousedown', (e) => {
           // `mousedown` y no `click`: el `blur` del campo esconde el panel
@@ -527,17 +530,19 @@ const TXT = {
 
     function filaDeResultado(f) {
       const li = document.createElement('li');
-      li.className = 'archivo-fila flex items-center gap-3 px-5 py-3 hover:bg-forge-bg/50 transition-colors';
+      li.className = 'archivo-fila flex items-center gap-3 px-4 py-2.5 hover:bg-forge-surface-2';
       li.dataset.id = f.id;
 
+      // La misma etiqueta de formato que las filas del servidor.
       const icono = document.createElement('span');
-      icono.className = f.status === 'missing' ? 'shrink-0 text-forge-error' : 'shrink-0 text-forge-muted';
-      icono.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>';
+      icono.className = 'formato-archivo shrink-0';
+      icono.setAttribute('aria-hidden', 'true');
+      icono.textContent = (/\.([a-z0-9]{1,5})$/i.exec(f.name)?.[1] ?? '—').toUpperCase();
 
       const centro = document.createElement('div');
       centro.className = 'flex-1 min-w-0';
       const titulo = f.webViewLink && f.status === 'ok' ? document.createElement('a') : document.createElement('span');
-      titulo.className = 'block text-sm font-bold text-forge-text truncate';
+      titulo.className = 'block text-sm font-semibold text-forge-text truncate';
       if (titulo instanceof HTMLAnchorElement) {
         titulo.href = f.webViewLink;
         titulo.target = '_blank';
@@ -547,7 +552,7 @@ const TXT = {
       titulo.textContent = f.name;
 
       const meta = document.createElement('p');
-      meta.className = 'text-[11px] text-forge-muted mt-0.5 truncate';
+      meta.className = 'text-xs text-forge-muted mt-0.5 truncate';
       const trozos = [];
       if (f.sizeBytes) trozos.push(`${(f.sizeBytes / 1024 / 1024).toFixed(1)} MB`);
       if (f.uploaderName) trozos.push(f.uploaderName);
@@ -561,10 +566,11 @@ const TXT = {
         chips.className = 'flex flex-wrap gap-1 mt-1.5';
         for (const e of f.labels) {
           const chip = document.createElement('span');
-          chip.className = 'inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text px-2 py-1 text-xs max-w-full';
+          chip.className = 'chip chip-sm max-w-full';
+          chip.style.setProperty('--c', e.color);
           const punto = document.createElement('span');
-          punto.className = 'rounded-full shrink-0 w-2 h-2';
-          punto.style.backgroundColor = e.color;
+          punto.className = 'sw';
+          punto.setAttribute('aria-hidden', 'true');
           const nombre = document.createElement('span');
           nombre.className = 'truncate';
           nombre.textContent = e.name;
