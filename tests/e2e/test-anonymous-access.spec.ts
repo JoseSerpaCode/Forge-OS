@@ -25,7 +25,8 @@ test('la landing se sirve sin sesión y ofrece las tres salidas', async ({ page 
   const res = await page.goto('/');
 
   expect(res?.status()).toBe(200);
-  await expect(page.locator('h1')).toContainText('forge.db');
+  // El titular dice qué es: tablero, notas y archivos en un servidor propio.
+  await expect(page.locator('h1.hero-title')).toBeVisible();
 
   // Probar sin cuenta, iniciar sesión y registrarse: las tres visibles sin
   // tener que buscarlas.

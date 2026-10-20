@@ -31,7 +31,7 @@ const notice = reason === 'guest_limit' ? t('auth.reason.guest_limit') : null;
 ---
 
 <PublicLayout title={`${t('auth.register.title')} | Forge OS`} description={t('auth.register.sub')}>
-  <AuthShell heading={t('auth.register.title')} sub={t('auth.register.sub')}>
+  <AuthShell heading={t('auth.register.title')} sub={t('auth.register.sub')} modo="register">
     {notice && <p slot="notice" class="au-notice">{notice}</p>}
     <AuthForm mode="register" guestWorkspaces={guestWorkspaces} />
     <Fragment slot="swap">

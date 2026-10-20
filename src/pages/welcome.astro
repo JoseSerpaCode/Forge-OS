@@ -14,15 +14,15 @@
  */
 import Landing from '../components/landing/Landing.astro';
 import PublicLayout from '../layouts/PublicLayout.astro';
-import { useTranslations } from '../i18n/ui';
+import { textosPortada } from '../components/landing/textosPortada';
 
 const lang = Astro.locals.lang || 'en';
-const t = useTranslations(lang);
+const meta = textosPortada(lang).meta;
 ---
 
 <PublicLayout
-  title={t('landing.meta.title')}
-  description={t('landing.meta.desc')}
+  title={meta.title}
+  description={meta.desc}
   canonicalPath="/"
   noindex
 >

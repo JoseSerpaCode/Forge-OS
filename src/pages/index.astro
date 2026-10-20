@@ -12,18 +12,18 @@
 import Hub from '../components/dashboard/Hub.astro';
 import Landing from '../components/landing/Landing.astro';
 import PublicLayout from '../layouts/PublicLayout.astro';
-import { useTranslations } from '../i18n/ui';
+import { textosPortada } from '../components/landing/textosPortada';
 
 const user = Astro.locals.user;
 const lang = Astro.locals.lang || 'en';
-const t = useTranslations(lang);
+const meta = textosPortada(lang).meta;
 ---
 
 {
   user ? (
     <Hub />
   ) : (
-    <PublicLayout title={t('landing.meta.title')} description={t('landing.meta.desc')}>
+    <PublicLayout title={meta.title} description={meta.desc}>
       <Landing />
     </PublicLayout>
   )

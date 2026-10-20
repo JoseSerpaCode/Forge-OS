@@ -1,781 +1,331 @@
 ---
-import { useTranslations } from '../../i18n/ui';
+/**
+ * Portada «Taller» (docs/rediseno/portada.html).
+ *
+ * El marcado y las clases son los de la maqueta; los estilos, en
+ * `styles/portada.css` con alcance `.portada`. Los textos están en
+ * `textosPortada.ts` y las figuras en `figuras.ts`.
+ *
+ * La portada también se ve **con sesión iniciada**, desde /welcome. A quien ya
+ * está dentro no se le ofrece «Crear cuenta» ni «Probar sin cuenta»: en el
+ * peor caso, ese botón le crearía una cuenta de invitado y le sacaría de la
+ * suya.
+ */
+import '../../styles/portada.css';
+import raw from '../../../CHANGELOG.md?raw';
 import pkg from '../../../package.json';
-import Bento from './Bento.astro';
-import Logo from '../brand/Logo.astro';
+import { parseChangelog } from '../../lib/changelog';
+import { fecha } from '../../lib/fechas';
 import LangSwitch from '../i18n/LangSwitch.astro';
 import ThemeSwitch from '../i18n/ThemeSwitch.astro';
-import TypeDemo from './TypeDemo.astro';
-import Showcase from './Showcase.astro';
-import Changelog from './Changelog.astro';
+import { textosPortada } from './textosPortada';
+import { FIGURAS } from './figuras';
 
 const lang = Astro.locals.lang || 'en';
-const t = useTranslations(lang);
-const version = pkg.version;
-
-// La portada también se ve **con sesión iniciada**, desde /welcome. Ofrecerle
-// «Crear cuenta» y «Probar sin cuenta» a alguien que ya está dentro es, en el
-// mejor caso, ruido; en el peor, un botón que le crea una cuenta de invitado y
-// le tira de la suya.
+const x = textosPortada(lang);
 const user = Astro.locals.user;
 const signedIn = Boolean(user);
 const isGuest = user?.is_guest === 1;
 
-// Las tres ideas del producto. Ya no llevan captura propia —las cuatro
-// capturas están juntas en el carrusel de arriba, donde se comparan mejor y no
-// obligan a bajar cuatro pantallas para verlas—, sino un dibujo de línea que
-// resume la idea sin competir con el texto.
-const sections = [
-  {
-    eyebrow: t('landing.f1.eyebrow'),
-    title: t('landing.f1.title'),
-    body: t('landing.f1.body'),
-    art: 'board',
-  },
-  {
-    eyebrow: t('landing.f2.eyebrow'),
-    title: t('landing.f2.title'),
-    body: t('landing.f2.body'),
-    art: 'links',
-  },
-  {
-    eyebrow: t('landing.f3.eyebrow'),
-    title: t('landing.f3.title'),
-    body: t('landing.f3.body'),
-    art: 'files',
-  },
-  {
-    eyebrow: t('landing.f4.eyebrow'),
-    title: t('landing.f4.title'),
-    body: t('landing.f4.body'),
-    art: 'chart',
-  },
-];
+const REPO = 'https://github.com/JoseSerpaCode/Forge-OS';
+const INSTALAR = `${REPO}/blob/main/deploy/README.md`;
+
+// Las novedades salen del CHANGELOG de verdad, incrustado al compilar.
+const cambios = parseChangelog(raw, 3);
+// El título de una entrada suele ser una etiqueta («Perfil»); sola no dice
+// nada. Con la primera frase del cuerpo se entiende sin abrir el CHANGELOG.
+const primeraFrase = (t: string) => t.split(/(?<=[.!?])\s/)[0];
+
+const COLUMNAS = [
+  ['todo', 's-todo', x.columnas.todo],
+  ['progreso', 's-progress', x.columnas.progreso],
+  ['revision', 's-review', x.columnas.revision],
+  ['hecho', 's-done', x.columnas.hecho],
+] as const;
+
+const LOGO = '<svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M6 59V53H10V27A22 22 0 0 1 54 27V53H58V59ZM21 53V32A11 11 0 0 1 43 32V53Z"/><path fill="var(--brand-orange)" d="M21 53V45A11 8 0 0 1 43 45V53Z"/></svg>';
+const ICONO_HECHO = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
 ---
 
-<header class="lp-nav">
-  <Logo href="/" size="md" />
-  <nav class="lp-nav-actions">
-    <ThemeSwitch />
-    <LangSwitch />
-    <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">GitHub</a>
-    {signedIn ? (
-      <a href="/" class="lp-btn lp-btn-primary">{t('landing.open')}</a>
-    ) : (
-      <>
-        <a href="/login" class="lp-link">{t('landing.signin')}</a>
-        <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
-      </>
-    )}
-  </nav>
-</header>
+<div class="portada">
+<div class="site">
+  <header class="site-head">
+    <a href="/" aria-label="Forge OS"><span class="brand"><Fragment set:html={LOGO} /><span class="brand-word">Forge OS</span></span></a>
+    <nav>
+      <a class="btn btn-ghost hide-sm" href="#cambios">{x.nav.cambios}</a>
+      <a class="btn btn-ghost hide-sm" href={REPO} target="_blank" rel="noopener noreferrer">{x.nav.codigo}</a>
+      <LangSwitch />
+      <ThemeSwitch />
+      {signedIn ? (
+        <a class="btn btn-primary" href="/">{x.nav.abrir}</a>
+      ) : (
+        <>
+          <a class="btn btn-ghost" href="/login">{x.nav.entrar}</a>
+          <a class="btn btn-primary" href="/register">{x.nav.crear}</a>
+        </>
+      )}
+    </nav>
+  </header>
 
-<main class="lp">
-  <section class="lp-hero">
-   <div class="lp-hero-text">
-    <p class="lp-eyebrow">{t('landing.eyebrow')}</p>
-
-    {/*
-      El elemento memorable de la página: el titular no describe el producto,
-      LO ES. La tesis de Forge OS es que todo el trabajo cabe en un archivo que
-      controlas tú, así que el archivo aparece dentro del titular, en mono,
-      chocando con la Inter enorme. Notion resalta una palabra con una píldora
-      azul; aquí es un artefacto monoespaciado sobre casi negro.
-    */}
-    <h1 class="lp-h1">
-      {t('landing.h1.before')}
-      <span class="lp-file">forge.db</span>
+  <main>
+  <section class="hero-x">
+    <h1 class="hero-title">
+      <span class="ln"><span class="w">{x.hero.l1}</span><span class="inl inl-col" aria-hidden="true"><i></i>{x.hero.col}<b>3</b></span></span>
+      <span class="ln"><span class="w">{x.hero.l2}</span><span class="inl inl-note" aria-hidden="true"><i></i>{x.hero.nota}</span></span>
+      <span class="ln"><span class="w">{x.hero.l3}</span><span class="inl inl-file" aria-hidden="true"><em>PDF</em>{x.hero.archivo}<Fragment set:html={FIGURAS.sit} /></span></span>
+      <span class="ln ln-wide">{x.hero.l4}</span>
     </h1>
-
-    <p class="lp-sub">{t('landing.sub')}</p>
-
-    <div class="lp-cta">
-      {signedIn ? (
-        <>
-          <a href="/" class="lp-btn lp-btn-primary">{t('landing.open')}</a>
-          {isGuest && <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.keep')}</a>}
-        </>
-      ) : (
-        <>
-          <form method="POST" action="/api/auth/guest">
-            <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
-          </form>
-          <a href="/login" class="lp-btn lp-btn-ghost">{t('landing.signin')}</a>
-        </>
-      )}
-    </div>
-
-    {/*
-      La advertencia va pegada al botón, no escondida tras el registro: una
-      cuenta temporal que caduca sin avisar y se lleva el trabajo por delante
-      es una trampa, por barata que salga la conversión.
-    */}
-    {!signedIn && <p class="lp-caveat">{t('landing.try.caveat')}</p>}
-    {isGuest && <p class="lp-caveat">{t('landing.guest.caveat')}</p>}
-   </div>
-
-   {/*
-     La captura gigante que había aquí enseñaba el producto quieto. Esto lo
-     enseña funcionando, pesa unos KB en vez de cientos, y se lee nítido en
-     cualquier pantalla porque es HTML y no una imagen escalada.
-   */}
-   <div class="lp-hero-demo"><TypeDemo /></div>
-  </section>
-
-  <Showcase />
-
-  <Bento />
-
-  <section class="lp-facts">
-    <dl>
-      <div><dt>{t('landing.fact1.k')}</dt><dd>{t('landing.fact1.v')}</dd></div>
-      <div><dt>{t('landing.fact2.k')}</dt><dd>{t('landing.fact2.v')}</dd></div>
-      <div><dt>{t('landing.fact3.k')}</dt><dd>{t('landing.fact3.v')}</dd></div>
-      <div><dt>{t('landing.fact4.k')}</dt><dd>MIT</dd></div>
-    </dl>
-  </section>
-
-  <div class="lp-cards">
-    {sections.map((s) => (
-      <section class="lp-card">
-        {/*
-          Dibujos de línea, no ilustraciones a todo color. Se hacen con cuatro
-          trazos, pesan nada, heredan el color de marca y —al no representar
-          personas ni escenas— no envejecen ni chocan con el tono del producto.
-          Son decorativos: lo que dicen ya está escrito debajo.
-        */}
-        <div class="lp-art" aria-hidden="true">
-          {s.art === 'board' && (
-            <svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="14" width="30" height="58" rx="4" opacity="0.5" />
-              <rect x="45" y="14" width="30" height="58" rx="4" opacity="0.5" />
-              <rect x="86" y="14" width="30" height="58" rx="4" opacity="0.5" />
-              <rect x="9" y="22" width="20" height="9" rx="2.5" />
-              <rect x="9" y="36" width="20" height="9" rx="2.5" opacity="0.55" />
-              <rect x="91" y="22" width="20" height="9" rx="2.5" opacity="0.55" />
-              <rect x="50" y="49" width="20" height="9" rx="2.5" class="lp-art-hot" />
-              <path d="M32 27c8 3 10 12 17 20" stroke-dasharray="3 4" opacity="0.8" />
-              <path d="M46 44l4 3-4 3" />
-            </svg>
-          )}
-          {s.art === 'links' && (
-            <svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="6" y="12" width="38" height="50" rx="4" opacity="0.5" />
-              <path d="M13 24h24M13 32h20M13 40h24M13 48h14" opacity="0.7" />
-              <rect x="76" y="20" width="38" height="42" rx="4" opacity="0.5" />
-              <path d="M83 32h24M83 40h16" opacity="0.7" />
-              <path d="M47 30h24" class="lp-art-hot" />
-              <path d="M67 26l5 4-5 4" class="lp-art-hot" />
-              <path d="M73 48H49" class="lp-art-hot" />
-              <path d="M53 44l-5 4 5 4" class="lp-art-hot" />
-            </svg>
-          )}
-          {s.art === 'files' && (
-            <svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              {/* Una carpeta abajo, una nube arriba y la flecha que va de una a
-                  otra sin tocar el servidor. Es literalmente lo que hace. */}
-              <path d="M6 62V22a4 4 0 014-4h16l6 7h20a4 4 0 014 4v33a4 4 0 01-4 4H10a4 4 0 01-4-4z" opacity="0.5" />
-              <path d="M86 30a13 13 0 00-25 3 10 10 0 00.5 20h25a12 12 0 000-23z" opacity="0.5" transform="translate(16 4)" />
-              <path d="M62 40h22" class="lp-art-hot" stroke-dasharray="3 4" />
-              <path d="M80 36l5 4-5 4" class="lp-art-hot" />
-              <path d="M18 34h18M18 44h12" opacity="0.7" />
-            </svg>
-          )}
-          {s.art === 'chart' && (
-            <svg viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 8v58h96" opacity="0.5" />
-              <rect x="24" y="44" width="13" height="22" rx="2" opacity="0.6" />
-              <rect x="45" y="34" width="13" height="32" rx="2" opacity="0.6" />
-              <rect x="66" y="48" width="13" height="18" rx="2" opacity="0.6" />
-              <rect x="87" y="24" width="13" height="42" rx="2" class="lp-art-hot" />
-              <path d="M26 36c14-4 22 6 34-6s20-6 34-14" stroke-dasharray="3 4" class="lp-art-hot" />
-            </svg>
-          )}
-        </div>
-        <p class="lp-eyebrow">{s.eyebrow}</p>
-        <h2 class="lp-h3">{s.title}</h2>
-        <p class="lp-body">{s.body}</p>
-      </section>
-    ))}
-  </div>
-
-  {/*
-    La etiqueta cruzando las tres cosas.
-
-    Es la diferencia real con tener Trello, Notion y Drive por separado, y era
-    lo único de lo que la página hablaba sin enseñarlo. Va en HTML y CSS, sin
-    JavaScript ni imágenes: pesa poco más que el texto que contiene, y el
-    lector de pantalla lee las tres tarjetas como lo que son.
-  */}
-  <section class="lp-cross">
-    <h2 class="lp-h2">{t('landing.cross.title')}</h2>
-    <p class="lp-body lp-cross-lead">{t('landing.cross.body')}</p>
-
-    <div class="lp-cross-row">
-      {[
-        { k: 'task', icon: 'M9 11l3 3L22 4', box: true },
-        { k: 'note', icon: 'M15 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7z' },
-        { k: 'file', icon: 'M20 20a2 2 0 002-2V8a2 2 0 00-2-2h-7.9a2 2 0 01-1.69-.9L9.6 3.9A2 2 0 007.93 3H4a2 2 0 00-2 2v13a2 2 0 002 2z' },
-      ].map((c) => (
-        <article class="lp-cross-card">
-          <span class="lp-cross-kind">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d={c.icon} />
-            </svg>
-            {t(`landing.cross.${c.k}.kind` as any)}
-          </span>
-          <p class="lp-cross-name">{t(`landing.cross.${c.k}.name` as any)}</p>
-          <span class="lp-chip"><span class="lp-chip-dot"></span>{t('landing.cross.label')}</span>
-        </article>
-      ))}
-    </div>
-  </section>
-
-  {/*
-    Por qué esto y no otra cosa.
-    
-    Quien llega de un buscador no está comparando arquitecturas: está decidiendo
-    si le compensa mudarse de donde ya está. Las tres razones van con su
-    contrapartida dicha —hace falta un sitio donde correrlo—, porque una lista
-    de ventajas sin ningún «pero» se lee como publicidad y se descarta entera.
-  */}
-  <section class="lp-why">
-    <h2 class="lp-h2">{t('landing.why.title')}</h2>
-    <div class="lp-why-grid">
-      {[1, 2, 3].map((n) => (
-        <div class="lp-why-item">
-          <h3>{t(`landing.why.${n}.t` as any)}</h3>
-          <p>{t(`landing.why.${n}.b` as any)}</p>
-        </div>
-      ))}
-    </div>
-  </section>
-
-  <Changelog />
-
-  <section class="lp-end">
-    <h2 class="lp-h2">{t('landing.end.title')}</h2>
-    <p class="lp-body">{t('landing.end.body')}</p>
-    <div class="lp-cta">
-      {signedIn ? (
-        <a href="/" class="lp-btn lp-btn-primary">{t('landing.open')}</a>
-      ) : (
-        <>
-          <form method="POST" action="/api/auth/guest">
-            <button type="submit" class="lp-btn lp-btn-primary">{t('landing.try')}</button>
-          </form>
-          <a href="/register" class="lp-btn lp-btn-ghost">{t('landing.signup')}</a>
-        </>
-      )}
-    </div>
-    {!signedIn && <p class="lp-caveat">{t('landing.try.caveat')}</p>}
-  </section>
-
-  {/*
-    El pie era una sola línea con la versión y dos enlaces: cerraba la página
-    de golpe, sin darle fondo a nada. Este reparte lo que hay en cuatro
-    columnas —producto, código, legal— y **solo enlaza a sitios que existen**:
-    nada de un «Precios» o un «Blog» de adorno que lleve a un 404.
-  */}
-  <footer class="lp-foot">
-    <div class="lp-foot-top">
-      <div class="lp-foot-brand">
-        <Logo href="/" size="md" />
-        <p class="lp-foot-pitch">{t('foot.pitch')}</p>
-        {signedIn ? (
-          <a href="/" class="lp-btn lp-btn-ghost lp-foot-cta">{t('landing.open')}</a>
-        ) : (
-          <form method="POST" action="/api/auth/guest">
-            <button type="submit" class="lp-btn lp-btn-ghost lp-foot-cta">{t('landing.try')}</button>
-          </form>
-        )}
-      </div>
-
-      <nav class="lp-foot-cols" aria-label={t('foot.nav')}>
-        <div class="lp-foot-col">
-          <h2>{t('foot.product')}</h2>
+    <div class="hero-stickers" aria-hidden="true"><span class="inl inl-col"><i></i>{x.hero.col}<b>3</b></span><span class="inl inl-note"><i></i>{x.hero.nota}</span><span class="inl inl-file"><em>PDF</em>{x.hero.archivo}<Fragment set:html={FIGURAS.sit} /></span></div>
+    <div class="hero-foot">
+      <p>{x.hero.texto}</p>
+      <div class="hero-cta">
+        <div class="actions">
           {signedIn ? (
-            <a href="/" class="lp-link">{t('landing.open')}</a>
+            <>
+              <a class="btn btn-primary btn-lg" href="/">{x.nav.abrir}</a>
+              {isGuest && <a class="btn btn-secondary btn-lg" href="/register">{x.hero.conservar}</a>}
+            </>
           ) : (
             <>
-              <a href="/register" class="lp-link">{t('landing.signup')}</a>
-              <a href="/login" class="lp-link">{t('landing.signin')}</a>
+              <form method="POST" action="/api/auth/guest"><button type="submit" class="btn btn-primary btn-lg">{x.hero.probar}</button></form>
+              <a class="btn btn-secondary btn-lg" href={INSTALAR} target="_blank" rel="noopener noreferrer">{x.hero.instalar}</a>
             </>
           )}
-          <a href="#sc-title" class="lp-link">{t('foot.screens')}</a>
         </div>
-        <div class="lp-foot-col">
-          <h2>{t('foot.code')}</h2>
-          <a href="https://github.com/JoseSerpaCode/Forge-OS" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.repo')}</a>
-          <a href="https://github.com/JoseSerpaCode/Forge-OS/issues" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.issues')}</a>
-          <a href="https://github.com/JoseSerpaCode/Forge-OS/blob/main/deploy/README.md" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.deploy')}</a>
-        </div>
-        <div class="lp-foot-col">
-          <h2>{t('foot.legal')}</h2>
-          <a href="https://github.com/JoseSerpaCode/Forge-OS/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="lp-link">{t('foot.license')}</a>
-          <span class="lp-foot-note">{t('foot.privacy')}</span>
-        </div>
-      </nav>
+        {/* El aviso va pegado al botón, antes de decidir: una cuenta temporal
+            que caduca sin avisar es una trampa, por barata que salga. */}
+        {!signedIn && <p class="hint">{x.hero.aviso}</p>}
+        {isGuest && <p class="hint">{x.hero.avisoInvitado}</p>}
+      </div>
     </div>
+  </section>
 
-    <div class="lp-foot-bottom">
-      <span class="lp-foot-ver">Forge OS v{version}</span>
+  <Fragment set:html={FIGURAS.show} />
+  <figure class="showcase">
+    <div class="showcase-sign">
+      <strong>{x.muestra.sprint}</strong>
+      <span class="sign-meta"><span class="bar" aria-hidden="true"><span style="width:26%;--c:var(--brand-ink)"></span></span>{x.muestra.meta}</span>
     </div>
+    <div class="showcase-board"><div class="board">
+      {COLUMNAS.map(([clave, clase, nombre]) => (
+        <section class:list={['column', clase]}>
+          <header class="column-head"><h2>{nombre}</h2><span class="n">{x.tarjetas[clave].length}</span></header>
+          <div class="column-body">
+            {x.tarjetas[clave].map((c, i) => (
+              <>
+                <article data-pin={c.pin} class:list={['card', { dragging: c.arrastrando }]} style={`--type:${c.color}`}>
+                  <h3>{c.titulo}</h3>
+                  <div class="card-foot">
+                    <span class="type"><span class="sw" style={`--c:${c.color}`}></span>{c.tipo} · {c.pts} pts</span>
+                    <span class="chip" style={`--c:${c.etiqueta[1]}`}><span class="sw"></span>{c.etiqueta[0]}</span>
+                    <span class="push">
+                      {c.pie && <span class:list={['due', { late: c.tarde }]}>{c.pie}</span>}
+                      <span class={`avatar p-${c.quien}`} title={c.quien}>{c.quien.slice(0, 2)}</span>
+                    </span>
+                  </div>
+                  {c.reloj && <div class="timer"><span class="live">{x.muestra.enMarcha} <b>00:42:13</b></span><span class="btn btn-secondary btn-sm">{x.muestra.parar}</span></div>}
+                </article>
+                {c.arrastrando && i === 0 && <div class="slot slot-label">{x.muestra.soltar}</div>}
+              </>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div></div>
+  </figure>
+  <ol class="show-notes">
+    {x.muestra.notas.map((n, i) => (
+      <li data-n={i + 1}><span class="pin-n">{i + 1}</span><p>{n}</p></li>
+    ))}
+  </ol>
+
+  <section class="site-section qh" id="que-hace">
+    <header class="qh-head">
+      <h2>{x.queHace.titulo} <Fragment set:html={FIGURAS.throw} /></h2>
+      <p class="qh-lead">{x.queHace.entrada}</p>
+      <nav class="qh-index" aria-label={x.queHace.titulo}>
+        <a href="#qh-tablero"><b>01</b>{x.queHace.tablero.nombre}</a>
+        <a href="#qh-notas"><b>02</b>{x.queHace.notas.nombre}</a>
+        <a href="#qh-archivos"><b>03</b>{x.queHace.archivos.nombre}</a>
+        <a href="#qh-metricas"><b>04</b>{x.queHace.metricas.nombre}</a>
+      </nav>
+    </header>
+
+    <article class="qh-feat" id="qh-tablero">
+      <div class="qh-text">
+        <span class="qh-n">01 / 04</span><h3>{x.queHace.tablero.nombre}</h3><p>{x.queHace.tablero.texto}</p>
+        <dl class="qh-facts">{x.queHace.tablero.cifras.map(([n, d]) => <div><dt>{n}</dt><dd>{d}</dd></div>)}</dl>
+      </div>
+      <div class="qh-stage qh-board" aria-hidden="true">
+        <section class="column s-progress"><header class="column-head"><h2>{x.columnas.progreso}</h2><span class="n">3</span></header>
+          <div class="column-body">
+            {x.tarjetas.progreso.slice(0, 2).map((c) => (
+              <article class="card" style={`--type:${c.color}`}>
+                <h3>{c.titulo}</h3>
+                <div class="card-foot">
+                  <span class="type"><span class="sw" style={`--c:${c.color}`}></span>{c.tipo} · {c.pts} pts</span>
+                  <span class="chip" style={`--c:${c.etiqueta[1]}`}><span class="sw"></span>{c.etiqueta[0]}</span>
+                  <span class="push">{c.pie && <span class:list={['due', { late: c.tarde }]}>{c.pie}</span>}<span class={`avatar p-${c.quien}`}>{c.quien.slice(0, 2)}</span></span>
+                </div>
+                {c.reloj && <div class="timer"><span class="live">{x.muestra.enMarcha} <b>00:42:13</b></span><span class="btn btn-secondary btn-sm">{x.muestra.parar}</span></div>}
+              </article>
+            ))}
+          </div>
+        </section>
+        <div class="qh-drag">
+          {x.tarjetas.hecho.slice(0, 1).map((c) => (
+            <article class="card dragging" style={`--type:${c.color}`}>
+              <h3>{c.titulo}</h3>
+              <div class="card-foot"><span class="type"><span class="sw" style={`--c:${c.color}`}></span>{c.tipo} · {c.pts} pts</span><span class="chip" style={`--c:${c.etiqueta[1]}`}><span class="sw"></span>{c.etiqueta[0]}</span><span class="push"><span class={`avatar p-${c.quien}`}>{c.quien.slice(0, 2)}</span></span></div>
+            </article>
+          ))}
+          <div class="slot slot-label">{x.muestra.soltar}</div>
+        </div>
+        <div class="toast qh-toast"><Fragment set:html={ICONO_HECHO} />{x.queHace.tablero.aviso}<span class="act">{x.queHace.tablero.deshacer}</span></div>
+      </div>
+    </article>
+
+    <article class="qh-feat" id="qh-notas">
+      <div class="qh-text">
+        <span class="qh-n">02 / 04</span><h3>{x.queHace.notas.nombre}</h3><p>{x.queHace.notas.texto}</p>
+        <dl class="qh-facts">{x.queHace.notas.cifras.map(([n, d]) => <div><dt>{n}</dt><dd>{d}</dd></div>)}</dl>
+      </div>
+      <div class="qh-stage qh-notes" aria-hidden="true">
+        <div class="qh-note">
+          <article class="panel qh-doc">
+            <p class="doc-title" style="font-size:2.2rem">{x.queHace.notas.doc}</p>
+            <p class="hint" style="margin:8px 0 16px">{x.queHace.notas.quien} · <span class="chip" style={`--c:${x.etiquetaApi[1]}`}><span class="sw"></span>{x.etiquetaApi[0]}</span></p>
+            <div class="qh-sel">
+              <div class="bubble qh-bubble"><span class="on"><b>B</b></span><span><i>I</i></span><span class="sepv"></span><span>T2</span><span>@</span></div>
+              <p>{x.queHace.notas.p1a} <code class="mono">workspace_id</code>. <span class="sel"><b>{x.queHace.notas.p1b}</b></span>{x.queHace.notas.p1c}</p>
+            </div>
+            <p style="margin-top:14px">{x.queHace.notas.p2} <span class="typing"><b>@Lu</b><span class="caret"></span></span></p>
+          </article>
+          <div class="menu qh-menu"><span class="menu-label">{x.queHace.notas.mencion}</span>
+            <div>
+              {x.queHace.notas.contactos.map(([nombre, tipo], i) => (
+                <span class:list={['menu-item', { on: i === 0 }]}><span class="avatar">{nombre.slice(0, 2)}</span><span>{nombre}</span><span class="push hint">{tipo}</span></span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p class="qh-back"><span class="chip" style={`--c:${x.etiquetaApi[1]}`}><span class="sw"></span>{x.etiquetaApi[0]}</span><span>{x.queHace.notas.vuelta}</span></p>
+      </div>
+    </article>
+
+    <article class="qh-feat" id="qh-archivos">
+      <div class="qh-text">
+        <span class="qh-n">03 / 04</span><h3>{x.queHace.archivos.nombre}</h3><p>{x.queHace.archivos.texto}</p>
+        <dl class="qh-facts">{x.queHace.archivos.cifras.map(([n, d]) => <div><dt>{n}</dt><dd>{d}</dd></div>)}</dl>
+      </div>
+      <div class="qh-stage qh-files">
+        <div class="qh-flow" role="img" aria-label={x.queHace.archivos.flujo}>
+          <div class="node server"><b>{x.queHace.archivos.servidor}</b><small>{x.queHace.archivos.servidorSub}</small></div>
+          <div class="node browser"><b>{x.queHace.archivos.navegador}</b></div>
+          <div class="arrow"><span class="lbl">{x.queHace.archivos.directos}</span></div>
+          <div class="node drive"><b>{x.queHace.archivos.drive}</b><small>{x.queHace.archivos.driveSub}</small></div>
+        </div>
+        <div class="panel qh-archivos" aria-hidden="true">
+          {[['PDF', lang === 'es' ? 'factura-plantilla.pdf' : 'invoice-template.pdf', x.tarjetas.progreso[0].etiqueta],
+            ['PNG', lang === 'es' ? 'avatar-rechazado.png' : 'rejected-avatar.png', x.tarjetas.todo[1].etiqueta],
+            ['CSV', lang === 'es' ? 'consumo-septiembre.csv' : 'usage-september.csv', x.etiquetaApi]].map(([formato, nombre, et]) => (
+            <div class="qh-archivo"><span class="file-kind">{formato}</span><b class="demo-fname">{nombre}</b><span class="chip" style={`--c:${et[1]};margin-left:auto`}><span class="sw"></span>{et[0]}</span></div>
+          ))}
+        </div>
+      </div>
+    </article>
+
+    <article class="qh-feat" id="qh-metricas">
+      <div class="qh-text">
+        <span class="qh-n">04 / 04</span><h3>{x.queHace.metricas.nombre}</h3><p>{x.queHace.metricas.texto}</p>
+        <dl class="qh-facts">{x.queHace.metricas.cifras.map(([n, d]) => <div><dt>{n}</dt><dd>{d}</dd></div>)}</dl>
+      </div>
+      <div class="qh-stage qh-metrics" aria-hidden="true">
+        <div class="qh-top">
+          <div class="figures" style="margin:0">
+            <div><b class="wide fig">14</b><span class="hint">{x.queHace.metricas.sinCerrar}</span></div>
+            <div><b class="wide fig">4</b><span class="hint">{x.queHace.metricas.dias}</span></div>
+            <div><b class="wide fig">{lang === 'es' ? '+5,3' : '+5.3'}</b><span class="hint">{x.queHace.metricas.sobre}</span></div>
+          </div>
+          <p class="qh-sticky"><b class="wide">{x.queHace.metricas.fecha}</b>{x.queHace.metricas.prevision}</p>
+        </div>
+        <div class="panel chart" style="padding:18px 20px">
+          <div class="legend">
+            <span><i class="line" style="--c:var(--text)"></i>{x.queHace.metricas.real}</span>
+            <span><i class="dash" style="--c:var(--border-strong)"></i>{x.queHace.metricas.ideal}</span>
+            <span style="margin-left:auto"><span class="seg"><button type="button" tabindex="-1" aria-pressed="true">{x.queHace.metricas.grafica}</button><button type="button" tabindex="-1" aria-pressed="false">{x.queHace.metricas.tabla}</button></span></span>
+          </div>
+          <svg viewBox="0 0 560 250" role="img" aria-label={x.queHace.metricas.aria}>
+            <g class="grid"><line x1="34" x2="496" y1="224.0" y2="224.0"/><line x1="34" x2="496" y1="170.5" y2="170.5"/><line x1="34" x2="496" y1="117.0" y2="117.0"/><line x1="34" x2="496" y1="63.5" y2="63.5"/><line x1="34" x2="496" y1="10.0" y2="10.0"/></g>
+            <text x="26" y="228.0" text-anchor="end">0</text><text x="26" y="174.5" text-anchor="end">10</text><text x="26" y="121.0" text-anchor="end">20</text><text x="26" y="67.5" text-anchor="end">30</text><text x="26" y="14.0" text-anchor="end">40</text>
+            {x.queHace.metricas.ejes.map((e, i) => <text x={34 + i * 115.5} y="244" text-anchor="middle">{e}</text>)}
+            <line class="axis" x1="34" x2="496" y1="224.0" y2="224.0"/>
+            <line x1="34.0" y1="10.0" x2="496.0" y2="224.0" stroke="var(--border-strong)" stroke-width="2" stroke-dasharray="5 4"/>
+            <polyline points="34.0,10.0 50.5,10.0 67.0,20.7 83.5,20.7 100.0,26.1 116.5,36.8 133.0,36.8 149.5,47.5 166.0,63.5 182.5,63.5 199.0,68.8 215.5,79.5 232.0,79.5 248.5,90.2 265.0,95.6 281.5,106.3 298.0,106.3 314.5,111.7 331.0,122.3 347.5,127.7 364.0,133.1 380.5,133.1 397.0,143.8 413.5,149.1" fill="none" stroke="var(--text)" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="413.5" cy="149.1" r="4.5" fill="var(--text)" stroke="var(--surface-1)" stroke-width="2"/>
+            <line x1="413.5" x2="413.5" y1="10" y2="224.0" stroke="var(--border-strong)" stroke-width="1"/>
+            <text x="421.5" y="22" class="lbl">{x.queHace.metricas.hoy}</text>
+            <text x="423.5" y="153.1" class="lbl">14 pts</text>
+            <text x="502.0" y="218.0">{x.queHace.metricas.ideal}</text>
+            <g class="tip"><line x1="314.5" x2="314.5" y1="10" y2="224.0" stroke="var(--text)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="314.5" cy="111.65" r="5" fill="var(--accent)" stroke="var(--surface-1)" stroke-width="2"/><g transform="translate(164.5 37.65)"><rect width="136" height="56" rx="10" fill="var(--text)"/><text x="12" y="20" style="fill:var(--bg);font-weight:700">{x.queHace.metricas.tip1}</text><text x="12" y="40" style="fill:var(--bg)">{x.queHace.metricas.tip2}</text></g></g>
+          </svg>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="placa">
+    <Fragment set:html={FIGURAS.placa} />
+    <h2>{x.ficha.titulo}</h2>
+    <table class="datasheet">
+      {x.ficha.filas.map(([k, v]) => <tr><th>{k}</th><td>{v}</td></tr>)}
+    </table>
+  </section>
+
+  <section class="site-section" id="cambios">
+    <h2>{x.cambios.titulo}</h2>
+    <ul class="changes">
+      {cambios.map((r) => (
+        <li>
+          <span><span class="v">{r.version}</span><span class="d">{fecha(r.date, lang)}</span></span>
+          <ul>{r.items.slice(0, 2).map((it) => <li><b>{it.title}</b>{it.body && <> {primeraFrase(it.body)}</>}</li>)}</ul>
+        </li>
+      ))}
+    </ul>
+    <p style="margin-top:16px"><a class="link" href={`${REPO}/blob/main/CHANGELOG.md`} target="_blank" rel="noopener noreferrer">{x.cambios.todos}</a></p>
+  </section>
+
+  {!signedIn && (
+    <section class="cta-final">
+      <Fragment set:html={FIGURAS.jump} />
+      <div><h2>{x.final.titulo}</h2><p>{x.final.texto}</p></div>
+      <div class="actions">
+        <form method="POST" action="/api/auth/guest"><button type="submit" class="btn btn-ink">{x.hero.probar}</button></form>
+        <a class="btn btn-ink-outline" href={INSTALAR} target="_blank" rel="noopener noreferrer">{x.hero.instalar}</a>
+      </div>
+    </section>
+  )}
+  </main>
+
+  <footer class="site-foot">
+    <span class="brand"><Fragment set:html={LOGO.replace(/26/g, '20')} /><span class="brand-word">Forge OS</span></span>
+    <span>{x.pie.licencia}</span>
+    <span style="margin-left:auto;display:inline-flex;align-items:flex-end;gap:10px"><Fragment set:html={FIGURAS.foot} />v{pkg.version}</span>
   </footer>
-</main>
+</div>
+</div>
 
 <style>
-  /* Todo sale de los tokens de themes.css. La paleta está calibrada a cero
-     fallos WCAG AA y hay reglas sobre qué token es texto y cuál es marca
-     (ver CLAUDE.md): --forge-accent-text para naranja sobre fondo, y
-     --forge-on-accent para texto encima del naranja. */
-
-  .lp {
-    --lp-max: 1120px;
-    --lp-gap: clamp(5rem, 12vw, 9rem);
-    max-width: var(--lp-max);
-    margin: 0 auto;
-    padding: 0 clamp(1.25rem, 5vw, 2rem);
-  }
-
-  /* ── Navegación ─────────────────────────────────────────────────────── */
-  .lp-nav {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 1.5rem clamp(1.25rem, 5vw, 2rem);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-  .lp-nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    white-space: nowrap;
-  }
-
-  /* En pantallas estrechas no cabe todo sin partir palabras. GitHub sale del
-     encabezado: sigue en el pie y en los datos, así que no se pierde. */
-  @media (max-width: 30rem) {
-    .lp-nav { padding-inline: 1.25rem; gap: 0.75rem; }
-    .lp-nav-actions { gap: 0.9rem; }
-    .lp-nav-actions .lp-link:first-child { display: none; }
-    .lp-btn { padding: 0.7rem 1rem; font-size: 0.9rem; }
-  }
-
-  /* ── Tipografía ─────────────────────────────────────────────────────── */
-  /* La mono no decora: es la voz de los artefactos del producto —rutas,
-     tamaños, licencias—. Por eso lleva los antetítulos y los datos. */
-  .lp-eyebrow {
-    font-family: var(--forge-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--forge-muted);
-    margin: 0 0 1.25rem;
-  }
-
-  /* El 8.5vw venía de cuando el titular ocupaba el ancho entero. Ahora vive en
-     media columna, y con ese tamaño se partía en cinco líneas y estiraba el
-     hero a dos pantallas. El `min()` con `7vw` lo ata al ancho real disponible
-     sin renunciar al tamaño en pantallas pequeñas, donde sigue a una columna. */
-  .lp-h1 {
-    font-size: clamp(2.6rem, 7vw, 4.4rem);
-    line-height: 0.98;
-    letter-spacing: -0.045em;
-    font-weight: 800;
-    color: var(--forge-text);
-    margin: 0;
-    text-wrap: balance;
-  }
-
-  .lp-h2 {
-    font-size: clamp(1.9rem, 4.5vw, 3.1rem);
-    line-height: 1.04;
-    letter-spacing: -0.035em;
-    font-weight: 800;
-    color: var(--forge-text);
-    margin: 0 0 1rem;
-    text-wrap: balance;
-  }
-
-  /* El chip del archivo. Va a 0.62em del titular para que quepa en móvil
-     sin desbordar, y como inline-block para que envuelva entero en vez de
-     partirse por la mitad. */
-  .lp-file {
-    font-family: var(--forge-mono);
-    font-size: 0.62em;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    color: var(--forge-accent-text);
-    background: color-mix(in srgb, var(--forge-accent-primary) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--forge-accent-primary) 35%, transparent);
-    border-radius: 0.5rem;
-    padding: 0.12em 0.4em;
-    box-shadow: 0 0 40px color-mix(in srgb, var(--forge-accent-primary) 22%, transparent);
-    display: inline-block;
-    white-space: nowrap;
-    /* El chip es 0.62em del titular; sin este empuje su caja se cuelga por
-       debajo de la línea base de la Inter y el conjunto parece descolgado. */
-    transform: translateY(-0.06em);
-  }
-
-  .lp-sub, .lp-body {
-    font-size: clamp(1.05rem, 1.6vw, 1.25rem);
-    line-height: 1.6;
-    color: var(--forge-muted);
-    margin: 1.75rem 0 0;
-    max-width: 46ch;
-  }
-  .lp-body { margin-top: 0; }
-
-  /* ── Hero ───────────────────────────────────────────────────────────── */
-  .lp-hero {
-    padding: clamp(3rem, 9vw, 6rem) 0 0;
-    position: relative;
-    isolation: isolate;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: clamp(2.5rem, 5vw, 4rem);
-    align-items: center;
-  }
-  /* A dos columnas solo cuando hay sitio de verdad. Por debajo, la demo se
-     pone bajo el texto: partirla antes deja el titular en cuatro palabras por
-     línea. La proporción 1.05/1 da a la demo casi la mitad sin comerse el
-     titular, que sigue siendo lo primero que hay que leer. */
-  @media (min-width: 64rem) {
-    .lp-hero { grid-template-columns: 1.05fr 1fr; }
-    .lp-h1 { font-size: clamp(2.8rem, 4.2vw, 3.9rem); }
-  }
-  .lp-hero-text { min-width: 0; }
-  .lp-hero-demo { min-width: 0; }
-  /* El calor de la forja, que hasta ahora el nombre prometía y el diseño no
-     daba. Difuso, detrás de todo y anclado al chip del archivo, así que
-     refuerza el elemento protagonista en vez de competir con él. */
-  .lp-hero::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    top: 12%;
-    left: -12%;
-    width: min(680px, 90%);
-    aspect-ratio: 1.6;
-    background: radial-gradient(
-      ellipse at 30% 50%,
-      color-mix(in srgb, var(--forge-accent-primary) 38%, transparent),
-      transparent 68%
-    );
-    filter: blur(70px);
-    pointer-events: none;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .lp-hero::before { animation: heat 9s ease-in-out infinite alternate; }
-  }
-  @keyframes heat {
-    from { opacity: 0.75; transform: scale(1); }
-    to   { opacity: 1; transform: scale(1.08); }
-  }
-
-  .lp-cta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    margin-top: 2.25rem;
-  }
-
-  .lp-caveat {
-    font-family: var(--forge-mono);
-    font-size: 0.78rem;
-    line-height: 1.6;
-    color: var(--forge-muted);
-    margin: 1rem 0 0;
-    max-width: 52ch;
-  }
-
-  /* ── Botones ────────────────────────────────────────────────────────── */
-  .lp-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.8rem 1.4rem;
-    border-radius: 0.6rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-    text-decoration: none;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
-  }
-  /* El naranja aparece exactamente aquí y en el chip del archivo. Nada más.
-     Un acento repartido por toda la página deja de ser un acento. */
-  .lp-btn-primary {
-    background: var(--forge-accent-primary);
-    color: var(--forge-on-accent);
-  }
-  .lp-btn-primary:hover { background: var(--forge-accent-primary-hover); }
-  .lp-btn-ghost {
-    background: transparent;
-    color: var(--forge-text);
-    border-color: var(--forge-border);
-  }
-  .lp-btn-ghost:hover { border-color: var(--forge-muted); }
-  .lp-btn:active { transform: translateY(1px); }
-
-  .lp-link {
-    color: var(--forge-muted);
-    text-decoration: none;
-    font-size: 0.95rem;
-    transition: color 0.15s;
-  }
-  .lp-link:hover { color: var(--forge-text); }
-
-  /* ── Datos ──────────────────────────────────────────────────────────── */
-  /* La banda de cifras se lee de un vistazo, así que no necesita el aire de una
-     sección: con `--lp-gap` arriba quedaba flotando en medio de dos vacíos y no
-     se veía a qué pertenecía. */
-  .lp-facts { margin-top: calc(var(--lp-gap) * 0.55); }
-  .lp-facts dl {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 2rem;
-    margin: 0;
-    padding: 1.75rem 0;
-    border-top: 1px solid var(--forge-border);
-    border-bottom: 1px solid var(--forge-border);
-    /* Centrado dentro de cada columna.
-       Alineado a la izquierda, la última —«MIT», tres letras— dejaba un hueco
-       enorme a su derecha y la fila entera parecía descuadrada hacia un lado,
-       aunque las cuatro columnas midieran lo mismo. */
-    text-align: center;
-  }
-  .lp-facts dt {
-    font-family: var(--forge-mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--forge-muted);
-    margin-bottom: 0.5rem;
-  }
-  .lp-facts dd {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--forge-text);
-  }
-
-  /* ── Secciones ──────────────────────────────────────────────────────── */
-  /* Eran tres bloques de pantalla completa, texto arriba y captura debajo, uno
-     tras otro. Ocupaban cuatro pantallas para decir tres cosas. En rejilla se
-     leen de un vistazo y se comparan entre sí, que es lo que se quiere. */
-  .lp-cross { margin-top: var(--lp-gap); }
-  .lp-cross-lead { max-width: 46ch; margin-top: 0.75rem; }
-  .lp-cross-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-  .lp-cross-card {
-    border: 1px solid var(--forge-border);
-    border-radius: 0.875rem;
-    background: var(--forge-panel);
-    padding: 1rem 1.125rem 1.125rem;
-    /* La misma etiqueta abajo del todo en las tres, alineada: es lo que hace
-       que se lea «esto lo comparten» sin tener que dibujar flechas. */
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .lp-cross-kind {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-family: var(--lp-mono, ui-monospace, monospace);
-    font-size: 0.6875rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--forge-muted);
-  }
-  .lp-cross-name {
-    margin: 0;
-    font-weight: 700;
-    font-size: 0.9375rem;
-    color: var(--forge-text);
-  }
-  .lp-chip {
-    align-self: flex-start;
-    margin-top: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    border: 1px solid var(--forge-border);
-    border-radius: 0.375rem;
-    background: var(--forge-bg);
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    color: var(--forge-text);
-  }
-  .lp-chip-dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 999px;
-    /* El azul de la paleta de etiquetas, el mismo que sale en el producto. */
-    background: #0091FF;
-  }
-
-  .lp-why { margin-top: var(--lp-gap); }
-  .lp-why-grid {
-    display: grid;
-    /* `auto-fit` con un mínimo: tres columnas en escritorio, una en el móvil,
-       sin un solo punto de ruptura escrito a mano. */
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-    gap: 1.5rem;
-    margin-top: 2rem;
-  }
-  .lp-why-item h3 {
-    font-size: 1.0625rem;
-    font-weight: 700;
-    line-height: 1.35;
-    margin: 0 0 0.5rem;
-    color: var(--forge-text);
-  }
-  .lp-why-item p {
-    margin: 0;
-    font-size: 0.9375rem;
-    line-height: 1.65;
-    color: var(--forge-muted);
-  }
-
-  .lp-cards {
-    margin-top: var(--lp-gap);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-    gap: 0.75rem;
-  }
-  .lp-card {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    padding: clamp(1.4rem, 2.5vw, 1.9rem);
-    background: var(--forge-panel);
-    border: 1px solid var(--forge-border);
-    border-radius: 0.9rem;
-    transition: border-color 0.25s, transform 0.25s;
-  }
-  .lp-card:hover {
-    border-color: color-mix(in srgb, var(--forge-muted) 45%, var(--forge-border));
-    transform: translateY(-2px);
-  }
-  .lp-card::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    top: -30%;
-    right: -20%;
-    width: 65%;
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--forge-accent-primary);
-    opacity: 0.12;
-    filter: blur(60px);
-  }
-
-  .lp-art {
-    color: var(--forge-muted);
-    margin-bottom: 1.25rem;
-  }
-  .lp-art svg { width: 100%; max-width: 7.5rem; height: auto; display: block; }
-  /* El trazo que lleva la idea va en naranja; el resto, apagado. Si todo el
-     dibujo fuera de marca no se vería dónde mirar. */
-  .lp-art :global(.lp-art-hot) { color: var(--forge-accent-primary); stroke: currentColor; }
-
-  .lp-h3 {
-    font-size: clamp(1.15rem, 2vw, 1.4rem);
-    font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: -0.025em;
-    color: var(--forge-text);
-    margin: 0.4rem 0 0.6rem;
-  }
-  .lp-card .lp-body { font-size: 0.9rem; max-width: none; }
-
-  .lp-end {
-    margin-top: var(--lp-gap);
-    padding: clamp(3rem, 7vw, 5rem) 0;
-    border-top: 1px solid var(--forge-border);
-  }
-
-  /* ── Pie ────────────────────────────────────────────────────────────── */
-  .lp-foot {
-    margin-top: clamp(3rem, 7vw, 5rem);
-    padding-top: clamp(2.5rem, 5vw, 3.5rem);
-    border-top: 1px solid var(--forge-border);
-    font-size: 0.85rem;
-    color: var(--forge-muted);
-  }
-  .lp-foot-top {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-    padding-bottom: 2.5rem;
-  }
-  @media (min-width: 52rem) {
-    .lp-foot-top { grid-template-columns: 1.2fr 2fr; gap: 4rem; }
-  }
-
-  .lp-foot-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 1rem; }
-  .lp-foot-pitch { margin: 0; line-height: 1.6; max-width: 34ch; }
-  .lp-foot-cta { font-size: 0.85rem; padding: 0.5rem 0.9rem; }
-
-  .lp-foot-cols {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-    gap: 2rem;
-  }
-  .lp-foot-col { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
-  .lp-foot-col h2 {
-    font-family: var(--forge-mono);
-    font-size: 0.66rem;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--forge-muted);
-    margin: 0 0 0.2rem;
-  }
-  .lp-foot-col .lp-link { font-size: 0.88rem; }
-
-  .lp-foot-bottom {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 1.25rem 0 3rem;
-    border-top: 1px solid var(--forge-border);
-  }
-  .lp-foot-ver { font-family: var(--forge-mono); font-size: 0.75rem; }
-  .lp-foot-note { line-height: 1.6; }
-
-  /* ── Movimiento ─────────────────────────────────────────────────────── */
-  /* Una sola secuencia, al cargar el hero. Nada de revelados al hacer scroll:
-     la página es deliberadamente quieta, y el ruido extra la abarataría. */
-  /* Los retardos iban por `:nth-child` del hero, que ahora tiene dos hijos en
-     vez de cinco: la cascada apuntaba a elementos que ya no existen. Va sobre
-     los hijos de la columna de texto, y la demo entra la última. */
-  @media (prefers-reduced-motion: no-preference) {
-    .lp-hero-text > *, .lp-hero-demo {
-      animation: lp-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-    }
-    .lp-hero-text > :nth-child(1) { animation-delay: 0.02s; }
-    .lp-hero-text > :nth-child(2) { animation-delay: 0.08s; }
-    .lp-hero-text > :nth-child(3) { animation-delay: 0.14s; }
-    .lp-hero-text > :nth-child(4) { animation-delay: 0.2s; }
-    .lp-hero-text > :nth-child(5) { animation-delay: 0.26s; }
-    .lp-hero-demo { animation-delay: 0.3s; }
-  }
-  @keyframes lp-rise {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: none; }
+  /* Lo que la maqueta resolvía con atributos `style` en línea. */
+  .qh-archivos { padding: 6px 0; width: 100%; }
+  .qh-archivo { display: flex; gap: 10px; align-items: center; padding: 12px 18px; }
+  .qh-archivo + .qh-archivo { border-top: 1px solid var(--forge-border); }
+  .demo-fname { font-weight: 600; }
+  .portada .actions form { display: contents; }
+  /* A 390 px no caben marca, idioma, tema y las dos entradas: el tema se va
+     (sigue el del sistema), y la marca no se parte en dos líneas. */
+  .portada .brand-word { white-space: nowrap; }
+  @media (max-width: 420px) {
+    .portada .site-head :global(.ts) { display: none; }
   }
 </style>
