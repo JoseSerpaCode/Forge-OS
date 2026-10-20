@@ -54,32 +54,63 @@ const pantallas = [
   { nombre: 'métricas', ruta: '/metrics' },
 ];
 
+/*
+ * Se miden el documento **y** el `<main>`. Solo el documento no basta:
+ * `<body>` es `overflow-hidden` y quien se desplaza es el `<main>`, que es
+ * `overflow-auto`. En Inicio el documento medía lo mismo que la ventana
+ * mientras el `<main>` se iba de lado con todo el contenido: un `sr-only`
+ * absoluto en la cabecera de una tabla escapaba de su panel con
+ * desplazamiento, porque su bloque contenedor era el `<main>`, no la tabla.
+ */
+async function cabeALoAncho(page: any) {
+  const medidas = await page.evaluate(() => {
+    const main = document.querySelector('main')!;
+    const borde = main.getBoundingClientRect().right;
+    // Lo que va dentro de un contenedor con desplazamiento (las tablas) puede
+    // ser ancho, salvo que sea absoluto: ese puede escapar del recorte.
+    const recortado = (el: Element) => {
+      if (getComputedStyle(el).position === 'absolute') return false;
+      for (let p = el.parentElement; p && p !== main; p = p.parentElement) {
+        if (getComputedStyle(p).overflowX !== 'visible') return true;
+      }
+      return false;
+    };
+    const culpable = Array.from(document.querySelectorAll('body *')).find((el) =>
+      !el.closest('dialog:not([open])') && !recortado(el) && el.getBoundingClientRect().right > borde + 1);
+    return {
+      documento: document.documentElement.scrollWidth,
+      ventana: window.innerWidth,
+      contenido: main.scrollWidth,
+      caja: main.clientWidth,
+      culpable: culpable ? `${culpable.tagName.toLowerCase()}.${(culpable.className || '').toString().slice(0, 70)}` : '',
+    };
+  });
+
+  expect(medidas.documento, `desborda por ${medidas.culpable}`).toBeLessThanOrEqual(medidas.ventana + 1);
+  expect(medidas.contenido, `el <main> desborda por ${medidas.culpable}`).toBeLessThanOrEqual(medidas.caja + 1);
+}
+
 for (const { nombre, ruta } of pantallas) {
   test(`${nombre} cabe a lo ancho`, async ({ page }) => {
     await entrar(page);
     conContenido();
     await page.goto(`/w/${ESPACIO}${ruta}`);
     await page.waitForLoadState('networkidle');
-
-    const medidas = await page.evaluate(() => ({
-      documento: document.documentElement.scrollWidth,
-      ventana: window.innerWidth,
-      // El culpable, si lo hay: el elemento más ancho que la ventana.
-      culpable: (() => {
-        const w = window.innerWidth;
-        for (const el of Array.from(document.querySelectorAll('body *'))) {
-          const r = el.getBoundingClientRect();
-          if (r.width > w + 1 || r.right > w + 1) {
-            return `${el.tagName.toLowerCase()}.${(el.className || '').toString().slice(0, 70)}`;
-          }
-        }
-        return '';
-      })(),
-    }));
-
-    expect(medidas.documento, `desborda por ${medidas.culpable}`).toBeLessThanOrEqual(medidas.ventana + 1);
+    await cabeALoAncho(page);
   });
 }
+
+test('inicio cabe a lo ancho', async ({ page }) => {
+  await entrar(page);
+  const wsId = conContenido();
+  const db = getTestDb();
+  const yo = db.prepare("SELECT id FROM users WHERE username = 'jose'").get() as any;
+  db.prepare('UPDATE issues SET assignee_id = ? WHERE workspace_id = ?').run(yo.id, wsId);
+
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await cabeALoAncho(page);
+});
 
 test('nada empuja la vista de lado, ni por código', async ({ page }) => {
   await entrar(page);

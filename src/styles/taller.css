@@ -217,7 +217,9 @@
 
   /* Tabla: cabecera tenue en tipo oración (sin mayúsculas), filas separadas
      por una línea y el título en seminegrita. */
-  .tabla { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  /* `relative` para que un `sr-only` (absoluto) dentro de la tabla no escape
+     de su contenedor con desplazamiento y estire el <main> a lo ancho en móvil. */
+  .tabla { position: relative; width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   .tabla th {
     text-align: left;
     font-size: 0.75rem;

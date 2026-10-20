@@ -1,60 +1,60 @@
-# Forge OS
+# Notas de desarrollo
 
-Workspace empresarial multi-tenant: Kanban, bases de datos dinámicas y base de
-conocimiento tipo Notion. Astro en modo SSR (la versión, en `package.json`). Requiere Node >=22.12
-(tienes 26 vía mise).
+Lo que no se ve en el código: reglas que se rompen con facilidad, decisiones
+que parecen errores y no lo son, y trampas en las que ya se cayó una vez. Si vas
+a tocar una de las zonas de abajo, lee su apartado antes.
 
-**El producto se llama "Forge OS"; el paquete de npm sigue siendo `forge-js`.**
+## Nombre y stack
+
+**El producto se llama «Forge OS»; el paquete de npm sigue siendo `forge-js`.**
 El repositorio se renombró a `Forge-OS`. La diferencia es deliberada: renombrar
 el paquete no aporta nada y rompería instalaciones.
 
-## Stack
+Astro en modo SSR (la versión, en `package.json`). Requiere Node >= 22.12.
 
-- **Astro 7.2** con `@astrojs/node` (adapter standalone) — hay además un `server.mjs`
-  con Express 5 en la raíz.
-- **Drizzle ORM 0.45** sobre `better-sqlite3` **v13**. Config en `drizzle.config.ts`,
-  esquema versionado también como SQL plano (`schema.sql`, `schema-v1.1-social.sql`).
-- **Tiptap 3** (sobre ProseMirror) para las notas. El esquema vive en
-  `src/lib/notes/schema.ts` y lo comparten el editor y la validación del
-  servidor; ver «Notas: Tiptap» más abajo.
+- **Astro 7** con `@astrojs/node` (adapter standalone), servido por el
+  `server.mjs` de la raíz con Express 5.
+- **`better-sqlite3` v13**, con migraciones versionadas en `src/lib/db.ts`.
+  Hay además una configuración de Drizzle (`drizzle.config.ts`) y el esquema en
+  SQL plano (`schema.sql`, `schema-v1.1-social.sql`).
+- **Tiptap 3** (sobre ProseMirror) para las notas. Ver «Notas: Tiptap».
 - **Tailwind 4** vía `@tailwindcss/vite` (no el plugin de PostCSS) + typography.
 - Auth con `bcryptjs` + `cookie` **v2**.
-- Gráficas con `chart.js`. Realtime con `socket.io-client`.
+- Gráficas con `chart.js`. Tiempo real con `socket.io`.
 
 > **`cookie` v2 renombró la API**: es `parseCookie`/`stringifyCookie`, no
-> `parse`/`serialize`, y ya no hay export por defecto. Astro ≥7.1 exige `cookie@^2`,
-> así que mantener aquí una versión vieja rompe el arranque del servidor con
-> `does not provide an export named 'parseCookie'`. Único uso propio:
-> `src/lib/sockets.mjs`.
+> `parse`/`serialize`, y ya no hay export por defecto. Astro >= 7.1 exige
+> `cookie@^2`, así que mantener aquí una versión vieja rompe el arranque del
+> servidor con `does not provide an export named 'parseCookie'`. Único uso
+> propio: `src/lib/sockets.mjs`.
 
 ## Comandos
 
 ```bash
-npm run dev       # astro dev
-npm run build     # astro build
-npm run preview
+npm run dev          # astro dev
+npm run build        # astro build
+npm test             # unitarias (Vitest)
+npm run test:e2e     # e2e (Playwright: escritorio y teléfono)
+npm run lint         # Biome
+npm run typecheck    # astro check
 ```
 
-**Los tests no están en `package.json`.** Se ejecutan directamente:
-
-```bash
-npx vitest              # unitarios, config en vitest.config.ts
-npx playwright test     # e2e, config en playwright.config.ts
-```
-
-Los navegadores de Playwright ya están descargados en `~/.cache/ms-playwright`.
-Vale la pena añadir `"test"` y `"test:e2e"` a los scripts.
+La primera vez, Playwright necesita sus navegadores: `npx playwright install`.
+Las pruebas de `tests/e2e/movil/` solo corren en el perfil de teléfono
+(Pixel 5, 393 px de ancho): los fallos de este proyecto aparecen por debajo de
+400 px.
 
 ## Bases de datos locales
 
-`forge.db` y `forge_test.db` (con sus `-shm`/`-wal`) están en la raíz del repo,
-ignorados por git (`*.db`). **No los borres ni los sobrescribas** sin avisar:
-`forge.db` tiene datos de desarrollo reales.
+`forge.db` y `forge_test.db` (con sus `-shm`/`-wal`) se crean en la raíz del
+repo y están ignorados por git (`*.db`). `forge.db` es tu base de trabajo: no
+la borres para «empezar limpio»; `npm run seed -- --force` con otro
+`DATABASE_URL` sirve para eso.
 
-`forge_test.db` **acumula páginas libres a lo largo de muchas corridas** porque los
-tests insertan y borran pero nunca hacen `VACUUM`. Una ejecución suelta no lo infla
-(se queda en ~400 KB), pero con el tiempo llegó a 534 MB siendo 99,9% espacio vacío.
-Si lo ves crecer: `sqlite3 forge_test.db "VACUUM;"`.
+`forge_test.db` **acumula páginas libres a lo largo de muchas corridas** porque
+los tests insertan y borran pero nunca hacen `VACUUM`. Una ejecución suelta no
+lo infla (se queda en ~400 KB), pero con el tiempo llegó a 534 MB siendo 99,9 %
+espacio vacío. Si lo ves crecer: `sqlite3 forge_test.db "VACUUM;"`.
 
 ## Vulnerabilidades conocidas (no accionables)
 
@@ -72,8 +72,9 @@ real**: en las dos, lo que npm propone es *retroceder*.
 **No ejecutes `npm audit fix --force`** en este repo. Cualquier otro aviso que
 aparezca **sí** es accionable: en octubre de 2026 había 22, dos críticos, en
 `astro`, `@astrojs/node` y `engine.io`, que llegan a producción. Se arreglaron
-subiendo de versión menor (1.28.1). Dependabot llevaba parado desde agosto,
-así que no basta con esperar a sus PR: mira `npm audit` de vez en cuando.
+subiendo de versión menor (1.28.1). Se acumularon porque las alertas de
+Dependabot estaban apagadas en el repositorio; desde la 2.0.1 están activas,
+junto con sus PR de seguridad.
 
 ## Accesibilidad: no lo deshagas sin querer
 
@@ -109,8 +110,9 @@ se activa con el conmutador de la app.
 
 ## Reglas de cuentas: no las repartas por los endpoints
 
-Tres módulos concentran reglas que antes estaban copiadas en varios sitios con
-redacciones distintas. Si necesitas una de ellas, **impórtala; no la reescribas**.
+Estos módulos concentran reglas que antes estaban copiadas en varios sitios con
+redacciones distintas. Si necesitas una de ellas, **impórtala; no la
+reescribas**.
 
 - **`src/lib/social.ts`** — `canInteractSocially(a, b)` decide si dos cuentas
   pueden dirigirse una acción social. Es falso si cualquiera de las dos es
@@ -162,14 +164,23 @@ fases (1.36.0 a 2.0.0). Lo que no se ve en el código:
   (`forge-focus`), no en naranja; el realce al pasar, en `forge-text` o
   `forge-surface-2`. No hay color «secundario»: en la 2.0 se retiraron
   `forge-secondary`, `forge-accent` y `forge-danger`, que duplicaban otros.
+- **El `<main>` del armazón es el que se desplaza** (`overflow-auto`), no el
+  documento: `<body>` es `overflow-hidden`. Un elemento absoluto cuyo bloque
+  contenedor sea el `<main>` escapa del recorte de cualquier contenedor con
+  desplazamiento que no esté posicionado, y ensancha la página entera en el
+  teléfono. Fue lo que pasó en Inicio con un `sr-only` en la cabecera de una
+  tabla (2.0.1); por eso `.tabla` es `relative`. La prueba
+  `tests/e2e/movil/desbordamiento.spec.ts` mide el `<main>`, no solo el
+  documento.
 - **Las páginas públicas** (portada, acceso, registro, 404) usan el CSS de la
   maqueta casi tal cual, en `src/styles/portada.css` con alcance `.portada`:
-  `/` sirve también el Hub, y sin alcance sus `.card` o `.btn` pisarían los de
+  `/` sirve también Inicio, y sin alcance sus `.card` o `.btn` pisarían los de
   la app. Ese archivo repite el orden de capas de Tailwind a propósito; sin
   él, si llega antes que Tailwind, el reset gana y los títulos salen a 14 px.
 - **Los textos de la portada** están en `textosPortada.ts`, no en `i18n/`, y
   **todo lo que afirman tiene que existir**. La maqueta prometía que una nota
-  enlazada aparece en su tarea; no existe, así que no se dice.
+  enlazada aparece en su tarea; no existe, así que no se dice. Lo mismo vale
+  para el README.
 - **Los estados salen de `src/lib/status.ts`** (nombre en i18n, color
   `--forge-st-*`). Su color es marca gráfica —punto, cinta, barra, serie—,
   nunca color de texto; el texto va en tinta (`.estado-chip`).
@@ -180,9 +191,7 @@ fases (1.36.0 a 2.0.0). Lo que no se ve en el código:
   desenfoque, halos, gradientes radiales, elevar al pasar el ratón, rebotes.
   Durante el rediseño había una lista de excepciones que fue bajando; llegó a
   cero y se borró. No la vuelvas a crear: si algo lo necesita, afina el patrón.
-- **Nada de letra por debajo de 12 px**, tampoco en móvil. Había un bloque en
-  `themes.css` que subía `text-[10px]` y similares en pantallas pequeñas; se
-  retiró con la 2.0 porque ya no quedan.
+- **Nada de letra por debajo de 12 px**, tampoco en móvil.
 - **Las capturas del README** salen de `npm run screenshots` contra una
   compilación de producción (`node server.mjs`), no contra `astro dev`: en
   desarrollo las gráficas y el editor a veces no llegan a pintarse. La semilla
@@ -237,11 +246,11 @@ Cuatro cosas que no se ven en el código:
 Hay **5** tablas en el esquema que no consulta ningún código. **No son restos ni
 un error**: son alcance declarado por adelantado. Se mantienen porque crear una
 tabla vacía en SQLite cuesta unos bytes, mientras que borrarlas obliga a
-escribir la migración dos veces cuando llegue la feature.
+escribir la migración dos veces cuando llegue la función.
 
-| Tabla | Feature prevista |
+| Tabla | Función prevista |
 |---|---|
-| `entry_relations`, `dynamic_views` | Bases de datos dinámicas fase 2 (está en el roadmap del README) |
+| `entry_relations`, `dynamic_views` | Tablas dinámicas fase 2 (en el roadmap del README) |
 | `document_chunks` | Búsqueda semántica / RAG |
 | `public_forms` | Formularios públicos |
 
@@ -252,11 +261,10 @@ y ahora la usan tickets, páginas y archivos; ver `src/lib/labels.ts`.
 interfaz: las consulta `IssueService.ts` —publica un aviso en el canal
 `general` al crear un ticket— y la limpieza de adjuntos de
 `WorkspaceService.ts`, que las une para saber qué archivos cuelgan de un
-mensaje. Aquí ponía que eran siete tablas muertas; borrar esas dos habría roto
-dos caminos vivos.
+mensaje. Borrar esas dos rompería dos caminos vivos.
 
-Antes de dar por muerta cualquiera de ellas, comprueba si su feature sigue en el
-roadmap.
+Antes de dar por muerta cualquiera de ellas, comprueba si su función sigue en
+el roadmap.
 
 ## Lo que ya está auditado (y cómo se comprobó)
 
@@ -282,8 +290,8 @@ del atributo.
 
 ## Archivos en Drive
 
-Los archivos de un espacio **no se guardan en esta máquina**: viven en el Drive
-de quien conectó la cuenta. El motivo es la salida de red — 1 GB al mes en la
+Los archivos de un espacio **no se guardan en el servidor**: viven en el Drive
+de quien conectó la cuenta. El motivo es la salida de red —1 GB al mes en la
 `e2-micro`— y condiciona todo el diseño. Cuatro cosas que no se ven en el
 código:
 
@@ -386,9 +394,3 @@ Guía completa en `deploy/README.md`. Tres cosas que conviene saber sin abrirla:
 - **Nunca `cp forge.db`.** La base está en WAL, así que copiar el archivo da una
   copia incompleta o corrupta. Usa `scripts/backup.sh`, que va por
   `sqlite3 .backup` y verifica la copia con `integrity_check`.
-
-## Estado
-
-Remote: `git@github.com:JoseSerpaCode/Forge-OS.git`. En `main` se exige una
-revisión aprobada, y como José es el único en el repo se fusiona como
-administrador (`gh pr merge --merge --admin`) con la CI en verde.

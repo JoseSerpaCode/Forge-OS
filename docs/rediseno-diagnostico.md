@@ -163,7 +163,7 @@ anterior; aparecen en estados o temas que probablemente no se recorrieron:
 | `IssueCard.astro:69`, descripción | `text-forge-muted` con `opacity-80` (claro) | **4,28:1** | 4,5:1 |
 | `BoardColumn.astro:54`, «DROP ZONE» | `text-forge-muted` con `opacity-60` | **2,68:1** claro / 3,42:1 oscuro | 4,5:1 |
 
-Los cuatro rompen reglas que `CLAUDE.md` ya escribe. **La regla existe pero
+Los cuatro rompen reglas que `docs/desarrollo.md` ya escribe. **La regla existe pero
 nada la comprueba.**
 
 **A. Restos de una identidad anterior en cian (`#00E5FF`).**
@@ -736,7 +736,7 @@ de verdad es mucho más fiable que elegir sobre una paleta.
   otra clase **pierde en silencio** el arreglo táctil.
   `tests/e2e/escritorio-hover.spec.ts` y `tests/e2e/movil/` tienen que pasar
   en cada fase.
-- **Las reglas de accesibilidad de `CLAUDE.md` siguen vigentes:** etiquetas
+- **Las reglas de accesibilidad de `docs/desarrollo.md` siguen vigentes:** etiquetas
   que envuelven, `aria-label` en controles repetidos y `dark:` atado a
   `[data-theme]`.
 - **Las reglas de 1.4 se comprueban en cada PR**, no solo al final.
@@ -753,7 +753,7 @@ de verdad es mucho más fiable que elegir sobre una paleta.
 3. **Marca nueva («Fragua»):**
    - `public/forge-icon.svg` y `Logo.astro` con el mismo trazado de
      `docs/rediseno/logo.html`: rejilla de 64, arco con hueco y montículo de
-     brasas. La nota de `CLAUDE.md` sigue valiendo: si cambias uno, cambia el
+     brasas. La nota de `docs/desarrollo.md` sigue valiendo: si cambias uno, cambia el
      otro.
    - Imagen de OpenGraph.
    - Color de la marca **fijo**, desacoplado de los tokens de tema.
@@ -898,7 +898,7 @@ Es donde más huellas de IA quedan:
 - Quitar los alias de la fase 0 y las reglas `.text-\[Npx\]` del bloque móvil.
 - Vaciar las listas de excepciones de las barandillas.
 - Regenerar las capturas del README.
-- Añadir a `CLAUDE.md` las reglas de 1.4 y la regla de que **todo botón,
+- Añadir a `docs/desarrollo.md` las reglas de 1.4 y la regla de que **todo botón,
   campo, modal o insignia sale de `src/components/ui/`**.
 
 ---

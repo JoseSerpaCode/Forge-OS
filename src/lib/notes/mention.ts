@@ -6,7 +6,7 @@ import { Node, mergeAttributes } from '@tiptap/core';
  *
  * Va en el esquema compartido, no solo en el editor: si no, el servidor
  * rechazaría cada guardado que lleve una mención (ver «Un solo esquema» en
- * CLAUDE.md).
+ * docs/desarrollo.md).
  *
  * El nombre viaja **dentro** del documento (`label`). Quien comparte la nota no
  * puede leer tus contactos, así que es lo que ve; y si el contacto se borra, la
