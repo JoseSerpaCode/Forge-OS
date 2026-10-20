@@ -18,6 +18,7 @@ interface Props {
 }
 
 import { useTranslations } from '../../i18n/ui';
+import { info as infoEstado } from '../../lib/status';
 
 const { title, status, total, shown, activaEnMovil = false, carril = null, verMas = null } = Astro.props;
 const t = useTranslations(Astro.locals.lang || 'en');
@@ -29,43 +30,31 @@ const headerCount = typeof total === 'number' ? total : 0;
 const truncated = typeof total === 'number' && typeof shown === 'number' && total > shown;
 ---
 {/*
-  En móvil se ve una columna, no cuatro.
+  En móvil se ve una columna, no cuatro: la elegida, a ancho completo, y el
+  conmutador de arriba dice cuáles son las otras y cuánto hay en cada una.
 
-  Eran cuatro `min-w-[320px]`: 1328 px de carril en los 393 que hay, sin anclaje
-  ni indicador. Se desplazaba a ciegas y siempre se acababa entre dos columnas,
-  viendo media de cada una.
-
-  El paso intermedio fue `w-[85vw]` con anclaje, que arregla el desplazamiento
-  pero no el modelo: seguían siendo cuatro columnas de escritorio puestas en
-  fila. Ahora se enseña **la columna elegida a ancho completo** y el conmutador
-  de arriba dice cuáles son las otras y cuánto hay en cada una — que es la
-  información que el carril escondía.
-
-  En `sm` y por encima no cambia nada: las cuatro columnas, como siempre.
+  La columna remata en arco (la boca de la fragua del logo) y va teñida de su
+  estado. El color sale de `lib/status.ts` y solo pinta fondo y punto: el
+  rótulo va en tinta.
 */}
-<div class:list={["board-column shrink-0 max-sm:w-full sm:w-auto sm:shrink sm:flex-1 flex flex-col bg-forge-bg/60 border border-forge-border/40 rounded-xl overflow-hidden sm:min-w-[320px] shadow-sm relative group/boardcol", !activaEnMovil && "max-sm:hidden"]} data-status={status} data-carril={carril ?? undefined} data-total={headerCount} data-shown={shown ?? 0}>
-  <!-- Subtle top accent line for column -->
-  <div class="h-1 w-full bg-gradient-to-r from-forge-secondary/10 via-forge-secondary/40 to-forge-secondary/10 opacity-0 group-hover/boardcol:opacity-100 transition-opacity"></div>
-  <div class="bg-forge-panel/70 backdrop-blur-sm max-md:backdrop-blur-none border-b border-forge-border/40 p-4 font-bold text-[13px] tracking-wide text-forge-text uppercase flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-forge-secondary shadow-[0_0_8px_var(--forge-accent-secondary)]"></div>
-      {title}
-    </div>
-    <span class="text-xs bg-forge-bg/80 px-2 py-0.5 rounded-md text-forge-muted font-mono border border-forge-border/50 issue-count shadow-inner">{headerCount}</span>
-  </div>
-  <div class="flex-1 p-3 space-y-3 overflow-y-auto min-h-[200px] transition-colors column-content relative group/col">
-    <div class="empty-state absolute inset-3 flex-col items-center justify-center text-center p-4 border-2 border-dashed border-forge-border/30 rounded-xl bg-forge-panel/20 pointer-events-none hidden group-has-[.issue-card]/col:hidden">
-      <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 50% 50%, var(--forge-muted) 2px, transparent 2px); background-size: 100% 100%;">
-        <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M 20 20 L 80 80 M 80 20 L 20 80" fill="none" stroke="currentColor" class="text-forge-muted" stroke-dasharray="2,2" stroke-width="0.5" /></svg>
-      </div>
-      <p class="text-forge-muted font-mono text-[10px] relative z-10 opacity-60">DROP ZONE</p>
-    </div>
+<section
+  class:list={["board-column columna shrink-0 max-sm:w-full sm:w-auto flex flex-col min-w-0 relative", !activaEnMovil && "max-sm:hidden"]}
+  style={`--c:${infoEstado(status).color}`}
+  aria-label={`${title}, ${headerCount}`}
+  data-status={status} data-carril={carril ?? undefined} data-total={headerCount} data-shown={shown ?? 0}>
+  <header class="columna-cabeza">
+    <h2 class="columna-titulo"><span class="truncate">{title}</span></h2>
+    <span class="columna-n issue-count" aria-hidden="true">{headerCount}</span>
+  </header>
+  <div class="flex-1 p-3 flex flex-col gap-2.5 overflow-y-auto min-h-[12rem] column-content relative">
+    {/* Vacío tipográfico: sin dibujos, una frase que dice qué pasa aquí. */}
+    <p class="empty-state hidden text-center text-sm text-forge-muted py-8 px-2 pointer-events-none">{t('board.drop_here')}</p>
     <slot />
 
     {/* Esconder trabajo sin decirlo es peor que ir lento: si la columna se ha
         recortado, se dice cuánto queda fuera y dónde verlo. */}
     {truncated && verMas && (
-      <button type="button" class="ver-mas w-full text-xs font-bold text-forge-accent-text hover:underline underline-offset-2 py-3 border-t border-forge-border/40 mt-2"
+      <button type="button" class="ver-mas btn btn-ghost btn-sm self-center text-forge-accent-text"
         data-cursor={verMas.cursor}
         data-t-plantilla={t('board.show_more')}
         data-t-cargando={t('board.loading')}>
@@ -73,16 +62,17 @@ const truncated = typeof total === 'number' && typeof shown === 'number' && tota
       </button>
     )}
     {truncated && !verMas && (
-      <p class="text-[11px] text-forge-muted font-mono text-center py-3 border-t border-forge-border/40 mt-2">
+      <p class="text-xs text-forge-muted text-center py-2">
         {shown} / {total} · {t('board.truncated')}
       </p>
     )}
   </div>
-</div>
+</section>
 
 <style>
   /* Show empty state when there are no issue cards */
   .column-content:not(:has(.issue-card)) .empty-state {
-    display: flex;
+    display: block;
   }
+
 </style>

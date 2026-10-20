@@ -128,27 +128,24 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     mirando y cuánto hay en cada uno, en una fila.
   */}
   {vista === 'tablero' && (
-  <div class="sm:hidden shrink-0 mb-3 grid grid-cols-4 gap-1 p-1 bg-forge-panel border border-forge-border rounded-xl" role="tablist" aria-label={t('board.status_filter')}>
+  <div class="segmentado grid grid-cols-4 sm:hidden shrink-0 mb-3 w-full" role="tablist" aria-label={t('board.status_filter')}>
     {columns.map((col) => (
       <button
         type="button"
         role="tab"
-        class:list={[
-          'filtro-estado flex items-center justify-center gap-1 px-0.5 rounded-lg text-xs font-semibold transition-colors min-w-0',
-          col.id === ESTADO_INICIAL ? 'bg-forge-primary text-forge-on-accent' : 'text-forge-muted',
-        ]}
+        class="filtro-estado !px-1 gap-1 min-w-0 text-xs"
         data-estado={col.id}
         aria-selected={col.id === ESTADO_INICIAL ? 'true' : 'false'}
       >
         <span class="truncate">{col.corto}</span>
-        <span class="font-mono shrink-0">{totalEstado(col.id)}</span>
+        <span class="wide shrink-0">{totalEstado(col.id)}</span>
       </button>
     ))}
   </div>
   )}
 
   <div
-    class:list={['kanban-container h-full pb-4', agrupar || vista !== 'tablero' ? 'flex flex-col gap-4 overflow-y-auto' : 'flex gap-4 overflow-x-auto']}
+    class:list={['kanban-container h-full pb-4', agrupar || vista !== 'tablero' ? 'flex flex-col gap-4 overflow-y-auto' : 'overflow-auto']}
     data-vista={vista}
     data-t-moved-day={t('view.moved_day')}
     data-t-move-day-error={t('view.move_error')}
@@ -178,10 +175,10 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       ? <p class="text-sm text-forge-muted py-10 text-center">{t('view.nothing_today')}</p>
       : grupos.map((g) => (
         <section class="vista-grupo" data-grupo={g.clave}>
-          <h2 class:list={['text-sm font-bold mb-2', g.clave === 'vencidas' ? 'text-forge-error' : 'text-forge-text']}>
-            {g.clave === 'vencidas' ? t('view.overdue') : t('view.today')} <span class="font-mono text-forge-muted font-normal">{g.tarjetas.length}</span>
+          <h2 class:list={['section-title !text-xl mb-3 flex items-baseline gap-2.5', g.clave === 'vencidas' && '!text-forge-error']}>
+            {g.clave === 'vencidas' ? t('view.overdue') : t('view.today')} <span class="wide text-sm text-forge-muted">{g.tarjetas.length}</span>
           </h2>
-          <div class="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div class="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
             {g.tarjetas.map((issue) => <IssueCard issue={issue} canEdit={canEdit} tipo={tiposPorClave.get(issue.type) ?? null} funciones={funciones} />)}
           </div>
         </section>
@@ -189,24 +186,29 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     {vista === 'proximos' && (
       <>
         {diasProximos.map((d) => (
-          <section class="dia-proximos rounded-xl border border-forge-border/40 p-3 transition-colors" data-fecha={d.fecha}>
-            <h2 class:list={['text-sm font-bold mb-2', d.fecha === hoy ? 'text-forge-accent-text' : 'text-forge-text']}>
-              {nombreDia(d.fecha)} <span class="font-mono text-forge-muted font-normal">{d.tarjetas.length || ''}</span>
+          /* Un día vacío ocupa una línea: con catorce días por delante, los
+             huecos no pueden pesar lo mismo que los días con trabajo. Sigue
+             siendo zona donde soltar una tarjeta. */
+          <section class:list={['dia-proximos border-t border-forge-border first:border-t-0', d.tarjetas.length ? 'pt-3 pb-2' : 'py-2']} data-fecha={d.fecha}>
+            <h2 class:list={['flex items-baseline gap-2.5', d.tarjetas.length > 0 && 'mb-2.5']}>
+              <span class:list={['text-lg font-extrabold narrow', d.fecha === hoy ? 'text-forge-accent-text' : 'text-forge-text']}>{nombreDia(d.fecha)}</span>
+              {d.tarjetas.length > 0
+                ? <span class="wide text-sm text-forge-muted">{d.tarjetas.length}</span>
+                : <span class="text-sm font-normal text-forge-muted">{t('view.empty_day')}</span>}
             </h2>
-            {d.tarjetas.length === 0
-              ? <p class="text-xs text-forge-muted">{t('view.empty_day')}</p>
-              : <div class="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
+            {d.tarjetas.length > 0 &&
+              <div class="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
                   {d.tarjetas.map((issue) => <IssueCard issue={issue} canEdit={canEdit} tipo={tiposPorClave.get(issue.type) ?? null} funciones={funciones} />)}
                 </div>}
           </section>
         ))}
-        <a href={masDias} class="self-center text-sm font-bold text-forge-accent-text hover:underline underline-offset-2 py-2">{t('view.more_days')}</a>
+        <a href={masDias} class="btn btn-secondary self-center">{t('view.more_days')}</a>
       </>
     )}
 
     {vista === 'tablero' && carriles.map((carril) => {
       const columnas = (
-        <div class:list={['flex gap-4', agrupar ? 'overflow-x-auto pb-1 carril-columnas' : 'h-full w-full']}>
+        <div class:list={['columnas-tablero flex sm:grid gap-3.5 items-start', agrupar ? 'overflow-x-auto pb-1 carril-columnas' : 'w-full']}>
           {columns.map((col) => {
             const tarjetas = enCarril(carril.id, col.id);
             const total = totalDe(carril.id, col.id);
@@ -232,10 +234,12 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       return carril.id === null ? columnas : (
         /* `<details>` y no un acordeón hecho a mano: se pliega con teclado y
            lector de pantalla sin escribir nada, y abierto por defecto. */
-        <details open class="carril shrink-0 bg-forge-panel/30 border border-forge-border/40 rounded-xl p-3" data-carril={carril.id}>
-          <summary class="flex items-center gap-2 cursor-pointer select-none mb-3 font-semibold text-sm text-forge-text">
-            {carril.color ? <LabelChip name={carril.nombre!} color={carril.color} /> : <span class="text-forge-muted">{carril.nombre}</span>}
-            <span class="font-mono text-xs text-forge-muted">{carril.total}</span>
+        <details open class="carril shrink-0 border-t border-forge-border first:border-t-0 pt-3" data-carril={carril.id}>
+          <summary class="flex items-center gap-2.5 cursor-pointer select-none mb-3">
+            <span class="section-title !text-xl" style={carril.color ? `--c:${carril.color}` : undefined}>
+              {carril.color && <span class="sw inline-block mr-2 align-middle" aria-hidden="true"></span>}{carril.nombre}
+            </span>
+            <span class="wide text-sm text-forge-muted">{carril.total}</span>
           </summary>
           {columnas}
         </details>
@@ -243,23 +247,18 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     })}
   </div>
 
+  {/* Tablero vacío: tipográfico, sin iconos en cajas ni desenfoque. */}
   {vista === 'tablero' && issues.length === 0 && (
-    <div class="tablero-vacio absolute inset-0 z-10 flex flex-col items-center justify-center p-8 text-center bg-forge-bg/60 backdrop-blur-sm max-md:backdrop-blur-none rounded-xl border border-forge-border/30 m-4 shadow-xl">
-      <div class="w-20 h-20 bg-forge-panel rounded-full border border-forge-border shadow-lg flex items-center justify-center mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 8h4"></path><path d="M13 12h2"></path></svg>
-      </div>
-      <h3 class="text-xl font-black text-forge-text mb-2">{t('about.kanban.empty_title')}</h3>
-      <p class="text-forge-muted max-w-md mx-auto mb-8 text-sm">{t('about.kanban.empty_desc')}</p>
+    <div class="tablero-vacio absolute inset-x-0 top-24 z-10 mx-auto max-w-md text-center px-6 pointer-events-none">
+      <h3 class="section-title mb-2">{t('about.kanban.empty_title')}</h3>
+      <p class="text-forge-muted text-sm mb-5">{t('about.kanban.empty_desc')}</p>
       {canEdit && (
         <>
-          {/* El atajo de teclado solo donde hay teclado: en un teléfono
-              señala una tecla que no existe. */}
-          <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-forge-panel border border-forge-border rounded-lg shadow-sm text-sm text-forge-muted font-medium">
-            {t('about.kanban.empty_cta_1')} <kbd class="px-2 py-1 bg-forge-bg border border-forge-border shadow-sm rounded text-[10px] text-forge-text font-mono font-bold mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
-          </div>
-          <p class="sm:hidden px-4 py-2 bg-forge-panel border border-forge-border rounded-lg shadow-sm text-sm text-forge-muted font-medium text-center">
-            {t('about.kanban.empty_cta_movil')}
+          {/* El atajo de teclado solo donde hay teclado. */}
+          <p class="hidden sm:block text-sm text-forge-muted">
+            {t('about.kanban.empty_cta_1')} <kbd class="kbd mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
           </p>
+          <p class="sm:hidden text-sm text-forge-muted">{t('about.kanban.empty_cta_movil')}</p>
         </>
       )}
     </div>
@@ -271,9 +270,9 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
 {funciones.sprints && canEdit && (
   <div id="menu-sprint-tarjeta" role="menu" aria-label={t('card.move_sprint')}
     data-t-moved={t('card.moved_to')} data-t-error={t('card.move_sprint_error')} data-t-see={t('quick.see')}
-    class="hidden fixed z-[60] min-w-[12rem] bg-forge-panel border border-forge-border rounded-xl shadow-xl py-1">
+    class="hidden menu fixed z-[60] min-w-[12rem]">
     {[{ name: t('board.backlog'), id: 'backlog' }, ...sprints.filter((s: any) => s.status !== 'completed')].map((s: any) => (
-      <button type="button" role="menuitem" class="sprint-destino block w-full text-left px-3.5 py-2 text-sm text-forge-text hover:bg-forge-bg hover:text-forge-accent-text" data-sprint={s.id} data-nombre={s.name}>{s.name}</button>
+      <button type="button" role="menuitem" class="sprint-destino menu-item" data-sprint={s.id} data-nombre={s.name}>{s.name}</button>
     ))}
   </div>
 )}
@@ -311,13 +310,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     boton.addEventListener('click', () => {
       const estado = boton.dataset.estado;
       if (!estado) return;
-      filtros.forEach((otro) => {
-        const activo = otro === boton;
-        otro.classList.toggle('bg-forge-primary', activo);
-        otro.classList.toggle('text-forge-on-accent', activo);
-        otro.classList.toggle('text-forge-muted', !activo);
-        otro.setAttribute('aria-selected', String(activo));
-      });
+      filtros.forEach((otro) => otro.setAttribute('aria-selected', String(otro === boton)));
       columnas().forEach((columna) => columna.classList.toggle('max-sm:hidden', columna.dataset.status !== estado));
     });
   });
@@ -710,7 +703,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     container.addEventListener('dragend', () => {
       arrastrada?.classList.remove('opacity-50');
       arrastrada = null;
-      columnas().forEach((c) => c.querySelector('.column-content')?.classList.remove('bg-forge-secondary/10'));
+      columnas().forEach((c) => c.querySelector('.column-content')?.classList.remove('soltar-aqui'));
     });
 
     container.addEventListener('dragover', (e: DragEvent) => {
@@ -719,7 +712,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       e.preventDefault();
       const content = col.querySelector('.column-content');
       if (!content) return;
-      content.classList.add('bg-forge-secondary/10');
+      content.classList.add('soltar-aqui');
       const despues = getDragAfterElement(content, e.clientY);
       // Por encima del «ver más», nunca debajo.
       const pie = content.querySelector(':scope > .ver-mas, :scope > p');
@@ -729,7 +722,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     });
 
     container.addEventListener('dragleave', (e: DragEvent) => {
-      columnaDe(e.target as Element)?.querySelector('.column-content')?.classList.remove('bg-forge-secondary/10');
+      columnaDe(e.target as Element)?.querySelector('.column-content')?.classList.remove('soltar-aqui');
     });
 
     container.addEventListener('drop', async (e: DragEvent) => {
@@ -744,7 +737,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       const content = col.querySelector('.column-content');
       const newStatus = col.dataset.status;
       if (!content || !newStatus) return;
-      content.classList.remove('bg-forge-secondary/10');
+      content.classList.remove('soltar-aqui');
       updateCounts();
 
       const siblings = [...content.querySelectorAll<HTMLElement>('.issue-card')];
@@ -781,15 +774,15 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       const dia = diaDe(e.target);
       if (!dia || !arrastrada) return;
       e.preventDefault();
-      dia.classList.add('bg-forge-secondary/10');
+      dia.classList.add('soltar-aqui');
     });
-    container.addEventListener('dragleave', (e: DragEvent) => diaDe(e.target)?.classList.remove('bg-forge-secondary/10'));
+    container.addEventListener('dragleave', (e: DragEvent) => diaDe(e.target)?.classList.remove('soltar-aqui'));
     container.addEventListener('drop', async (e: DragEvent) => {
       const dia = diaDe(e.target);
       const card = arrastrada;
       if (!dia || !card) return;
       e.preventDefault();
-      dia.classList.remove('bg-forge-secondary/10');
+      dia.classList.remove('soltar-aqui');
       if ((card.dataset.plannedDate || card.dataset.dueDate) === dia.dataset.fecha) return;
       try {
         // Arrastrar cambia el día en que se **hace**, nunca la entrega.

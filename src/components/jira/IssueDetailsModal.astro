@@ -24,7 +24,7 @@ const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 ---
 <!-- Drawer backdrop -->
-<div id="issue-details-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm max-md:backdrop-blur-none hidden z-[100] transition-opacity"></div>
+<div id="issue-details-backdrop" class="fixed inset-0 bg-[var(--forge-scrim)] hidden z-[100]"></div>
 
 <!-- Drawer container -->
 <div id="issue-details-modal"
@@ -58,7 +58,10 @@ const t = useTranslations(lang);
   data-t-del-confirm={t('issue.delete_confirm')}
   data-t-del-title={t('modal.delete')}
   data-t-del-error={t('issue.delete_error')}
-  class="fixed top-0 right-0 w-[550px] max-w-full h-full bg-forge-bg/95 backdrop-blur-md max-md:backdrop-blur-none border-l border-forge-border/40 z-[110] transform translate-x-full transition-transform duration-300 ease-out shadow-2xl shadow-black/50 overflow-y-auto flex flex-col">
+  class="fixed top-2 right-2 bottom-2 w-[600px] max-w-[calc(100vw-1rem)] max-sm:inset-0 max-sm:max-w-none max-sm:w-full max-sm:rounded-none bg-forge-panel border border-forge-border-strong rounded-[22px] z-[110] transform translate-x-full cajon-ticket transition-transform duration-300 ease-out shadow-forge-float overflow-y-auto flex flex-col">
+  {/* Un cajón que flota sobre el tablero (docs/rediseno/ticket.html): sombra
+      porque flota, esquinas redondas y sin desenfoque detrás. En móvil ocupa
+      toda la pantalla. */}
   
   {/*
     La cabecera se envuelve en vez de desbordarse.
@@ -74,7 +77,7 @@ const t = useTranslations(lang);
     así que en escritorio no cambia nada.
   */}
   <!-- Header -->
-  <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-forge-border/30 flex flex-wrap justify-between items-center gap-y-2 bg-gradient-to-r from-forge-panel to-forge-bg sticky top-0 z-10">
+  <div class="px-4 sm:px-5 py-2.5 border-b border-forge-border flex flex-wrap justify-between items-center gap-y-2 bg-forge-panel sticky top-0 z-10 sm:rounded-t-[22px]">
     <div class="flex items-center gap-3 min-w-0">
       {/* El selector de tipo, a tamaño de leer.
           Era un desplegable de 11 px en mayúsculas forzadas; el punto de color
@@ -88,7 +91,7 @@ const t = useTranslations(lang);
           data-tipos={JSON.stringify(issueTypes.map((ti) => ({ key: ti.key, nombre: nombreVisible(ti, t), color: ti.color })))}
           data-t-saved={t('issue.type_saved')}
           data-t-error={t('issue.type_error')}
-          class="px-2 py-1 rounded-md text-sm font-semibold bg-forge-bg/50 text-forge-text border border-forge-border/50 focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/50 focus:outline-none transition-all shadow-sm">
+          class="campo campo-inline !h-8 !text-sm font-semibold">
           {issueTypes.map((ti) => (
             <option value={ti.key}>{nombreVisible(ti, t)}</option>
           ))}
@@ -97,84 +100,79 @@ const t = useTranslations(lang);
           <a href={`/w/${sysTag}/settings#tipos-ticket`} class="hidden sm:inline text-xs text-forge-muted hover:text-forge-accent-text underline-offset-2 hover:underline whitespace-nowrap">{t('modal.manage_types')}</a>
         )}
       </span>
-      <span id="modal-issue-id" class="font-mono text-[13px] text-forge-muted tracking-wide font-medium truncate">ID-XXX</span>
+      {/* El id hexadecimal no dice nada a nadie: se queda para el código, no a la vista. */}
+      <span id="modal-issue-id" class="hidden">ID-XXX</span>
     </div>
-    <div class="flex items-center gap-1.5 sm:gap-3 ml-auto">
-      <button id="btn-share-issue" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1" title={t('modal.copy_link')}>
+    <div class="flex items-center gap-0.5 ml-auto">
+      <button id="btn-share-issue" class="btn btn-ghost btn-sm" title={t('modal.copy_link')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
         <span class="hidden sm:inline">{t('modal.share')}</span>
       </button>
       {/* Duplicar.
           Va aquí y no en la tarjeta del tablero porque duplicar se decide
           después de mirar el ticket entero, no de pasada. */}
-      <button id="btn-duplicate-issue" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1 hidden" title={t('issue.duplicate_hint')}>
+      <button id="btn-duplicate-issue" class="btn btn-ghost btn-sm hidden" title={t('issue.duplicate_hint')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         <span class="hidden sm:inline">{t('issue.duplicate')}</span>
       </button>
-      <button id="btn-guardar-plantilla" type="button" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1 hidden" title={t('tpl.save')} aria-label={t('tpl.save')}>
+      <button id="btn-guardar-plantilla" type="button" class="btn btn-ghost btn-sm hidden" title={t('tpl.save')} aria-label={t('tpl.save')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       </button>
-      <button id="btn-delete-issue" class="text-forge-error hover:bg-red-400/10 hover:text-forge-error px-3 py-1.5 rounded-md text-xs font-bold transition-all hidden border border-transparent hover:border-red-400/20">
+      <button id="btn-delete-issue" class="btn btn-ghost btn-sm !text-forge-error hidden">
         {t('modal.delete')}
       </button>
-      <button id="close-modal-btn" class="text-forge-muted hover:text-forge-text hover:bg-forge-panel p-1.5 rounded-md transition-colors border border-transparent hover:border-forge-border/30" title={t('modal.close_esc')}>
+      <button id="close-modal-btn" class="btn btn-ghost btn-icon" title={t('modal.close_esc')} aria-label={t('modal.close_esc')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
   </div>
   
   <!-- Content -->
-  <div class="p-5 sm:p-8 flex-1 flex flex-col gap-6 sm:gap-8">
+  <div class="px-5 sm:px-6 pt-5 pb-8 flex-1 flex flex-col gap-6">
     <div class="relative group">
-      <input type="text" id="modal-issue-title" aria-label={t('a11y.issue_title')} class="text-2xl font-black text-forge-text bg-transparent border-b-2 border-transparent hover:border-forge-border/50 focus:border-forge-secondary focus:outline-none w-full transition-all pb-1 tracking-tight" value="Loading...">
+      <input type="text" id="modal-issue-title" aria-label={t('a11y.issue_title')} class="page-title !text-[2.125rem] bg-transparent border-b-2 border-transparent hover:border-forge-border focus:border-forge-text focus:outline-none w-full pb-1" value="Loading...">
     </div>
     
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       <div class="space-y-2 relative">
-        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5" for="modal-issue-assignee">
+        <label class="field-label flex items-center gap-1.5" for="modal-issue-assignee">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
           {t('modal.assignee')}
         </label>
-        <select id="modal-issue-assignee" data-t-unassigned={t('modal.unassigned')} data-t-saved={t('contacts.assignee_saved')} data-t-error={t('contacts.assignee_error')} class="select-responsable w-full appearance-none bg-forge-panel/30 border border-forge-border/40 hover:border-forge-secondary/30 rounded-lg p-2.5 text-sm font-medium text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-colors cursor-pointer">
+        <select id="modal-issue-assignee" data-t-unassigned={t('modal.unassigned')} data-t-saved={t('contacts.assignee_saved')} data-t-error={t('contacts.assignee_error')} class="campo select-responsable">
           <OpcionesResponsable miembros={workspaceMembers} contactos={contactos} vacia={t('modal.unassigned')} />
         </select>
-        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 pt-6 text-forge-muted">
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </div>
       </div>
       <div class="space-y-2 relative">
-        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5" for="modal-issue-reporter">
+        <label class="field-label flex items-center gap-1.5" for="modal-issue-reporter">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
           {t('modal.reporter')}
         </label>
-        <select id="modal-issue-reporter" class="w-full appearance-none bg-forge-panel/30 border border-forge-border/40 rounded-lg p-2.5 text-sm font-medium text-forge-muted focus:outline-none cursor-pointer">
+        <select id="modal-issue-reporter" class="campo">
           <option value="system">{t('modal.system')}</option>
           {workspaceMembers.map(m => (
             <option value={m.id}>{m.username}</option>
           ))}
         </select>
-        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 pt-6 text-forge-muted">
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </div>
       </div>
     </div>
     
     <div class="space-y-2 relative">
-      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex justify-between items-center" for="modal-issue-desc">
+      <label class="field-label flex justify-between items-center" for="modal-issue-desc">
         <span class="flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="3" x2="21" y2="7"></line><polyline points="21 3 17 7 21 11"></polyline><path d="M3 13h10V3H3v10z"></path><path d="M3 21h18V13H3v8z"></path></svg>
           {t('modal.description')}
         </span>
       </label>
       <div class="relative group">
-        <textarea id="modal-issue-desc" rows="6" class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-xl p-4 text-[13px] leading-relaxed text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all placeholder:text-forge-muted resize-y shadow-inner" placeholder={t('modal.desc_placeholder') as string}></textarea>
+        <textarea id="modal-issue-desc" rows="6" class="campo resize-y" placeholder={t('modal.desc_placeholder') as string}></textarea>
         <button id="btn-save-desc"
           data-t-save={t('modal.save')}
           data-t-saving={t('modal.saving')}
           data-t-saved={t('modal.saved')}
           data-t-error={t('modal.save_error')}
           data-t-no-desc={t('modal.no_description')}
-          class="hidden absolute bottom-3 right-3 bg-forge-primary text-forge-on-accent text-[11px] uppercase tracking-wider font-bold px-4 py-1.5 rounded-lg hover:bg-forge-primary/90 hover:scale-105 active:scale-95 transition-all shadow-md shadow-forge-primary/20">{t('modal.save')}</button>
+          class="hidden absolute bottom-3 right-3 btn btn-primary btn-sm">{t('modal.save')}</button>
       </div>
     </div>
     
@@ -183,8 +181,8 @@ const t = useTranslations(lang);
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       {funciones.sprints && (
       <div class="space-y-2">
-        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-sprint">{t('modal.sprint')}</label>
-        <select id="modal-issue-sprint" data-t-error={t('issue.sprint_error')} class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+        <label class="field-label" for="modal-issue-sprint">{t('modal.sprint')}</label>
+        <select id="modal-issue-sprint" data-t-error={t('issue.sprint_error')} class="campo">
           <option value="backlog">{t('modal.backlog')}</option>
           {sprints.map((s: any) => (
             <option value={s.id}>{s.name}</option>
@@ -193,16 +191,16 @@ const t = useTranslations(lang);
       </div>
       )}
       <div class="space-y-2">
-        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-priority">{t('priority.label')}</label>
+        <label class="field-label" for="modal-issue-priority">{t('priority.label')}</label>
         <select id="modal-issue-priority" data-t-saved={t('priority.saved')} data-t-error={t('priority.error')}
-          class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+          class="campo">
           {PRIORIDADES.map((p) => <option value={p.valor} selected={p.valor === 'medium'}>{t(`priority.${p.nivel}`)}</option>)}
         </select>
       </div>
       <div class="space-y-2">
-        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-remind">{t('remind.label')}</label>
+        <label class="field-label" for="modal-issue-remind">{t('remind.label')}</label>
         <select id="modal-issue-remind" data-t-needs-date={t('remind.needs_date')} data-t-saved={t('remind.saved')} data-t-custom={t('remind.custom')}
-          class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+          class="campo">
           <option value="">{t('remind.none')}</option>
           <option value="0">{t('remind.at_time')}</option>
           <option value="60">{t('remind.1h')}</option>
@@ -214,14 +212,14 @@ const t = useTranslations(lang);
       {/* Repetir. Las opciones que dependen del día («el mismo día») se
           resuelven con la fecha de entrega al guardar: `@` es ese día. */}
       <div class="space-y-2">
-        <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-repeat">{t('repeat.label')}</label>
+        <label class="field-label" for="modal-issue-repeat">{t('repeat.label')}</label>
         <select id="modal-issue-repeat"
           data-t-custom={t('repeat.custom')}
           data-t-needs-date={t('repeat.needs_date')}
           data-t-saved={t('repeat.saved')}
           data-t-error={t('repeat.error')}
           data-t-card={t('repeat.card')}
-          class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm">
+          class="campo">
           <option value="">{t('repeat.never')}</option>
           <option value="d:1">{t('repeat.daily')}</option>
           <option value="w:1:@">{t('repeat.weekly')}</option>
@@ -232,12 +230,12 @@ const t = useTranslations(lang);
       </div>
       {funciones.puntos && (
       <div class="space-y-2 relative group/sp">
-        <label for="modal-issue-points" class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex justify-between items-center cursor-help">
+        <label for="modal-issue-points" class="field-label flex justify-between items-center cursor-help">
           <span>{t('modal.story_points')}</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted hover:text-forge-accent-text transition-colors"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         </label>
         
-        <div class="absolute bottom-full right-0 mb-2 w-64 bg-forge-panel border border-forge-border p-3 rounded-lg shadow-xl opacity-0 invisible group-hover/sp:opacity-100 group-hover/sp:visible transition-all z-50 text-[11px] text-forge-text font-normal normal-case leading-relaxed">
+        <div class="menu absolute bottom-full right-0 mb-2 w-64 !p-3 opacity-0 invisible group-hover/sp:opacity-100 group-hover/sp:visible z-50 text-xs leading-relaxed">
           <p class="font-bold mb-1 text-forge-accent-text">{t('modal.points_help_title')}</p>
           <ul class="space-y-1 text-forge-muted">
             <li><strong class="text-forge-text">1-2:</strong> {t('modal.points_help_1')}</li>
@@ -247,19 +245,19 @@ const t = useTranslations(lang);
         </div>
         
         <div class="relative">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-forge-accent-text">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-forge-muted">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon><line x1="12" y1="22" x2="12" y2="15.5"></line><polyline points="22 8.5 12 15.5 2 8.5"></polyline><polyline points="2 15.5 12 8.5 22 15.5"></polyline><line x1="12" y1="2" x2="12" y2="8.5"></line></svg>
           </div>
-          <input type="number" id="modal-issue-points" value="0" min="0" class="w-full bg-forge-bg border border-forge-border/50 rounded-lg py-2.5 pl-9 pr-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm font-mono" />
+          <input type="number" id="modal-issue-points" value="0" min="0" class="campo pl-9 pr-3" />
         </div>
       </div>
       )}
     </div>
 
     <div class="space-y-2 relative">
-      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-due-date-texto">{t('modal.due_date')}</label>
+      <label class="field-label" for="modal-issue-due-date-texto">{t('modal.due_date')}</label>
       <div class="grid grid-cols-[1fr_6.5rem] gap-2 items-start">
-        <CampoFecha id="modal-issue-due-date" inputClass="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm" />
+        <CampoFecha id="modal-issue-due-date" inputClass="campo" />
         {/* Texto y no `<input type="time">`: el nativo sale en 12 h con AM/PM
             según el navegador, igual que la fecha salía en mm/dd. */}
         <div>
@@ -267,7 +265,7 @@ const t = useTranslations(lang);
           <input type="text" id="modal-issue-due-time" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5"
             aria-describedby="modal-issue-due-time-error"
             data-t-invalid={t('modal.due_time_invalid')}
-            class="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm font-mono text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm" />
+            class="campo" />
           <p id="modal-issue-due-time-error" class="hidden mt-1 text-xs text-forge-error" role="alert">{t('modal.due_time_invalid')}</p>
         </div>
       </div>
@@ -275,14 +273,14 @@ const t = useTranslations(lang);
 
     {/* El día en que se hace, aparte de la entrega. */}
     <div class="space-y-2">
-      <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-planned-date-texto">{t('modal.planned_date')}</label>
-      <CampoFecha id="modal-issue-planned-date" inputClass="w-full bg-forge-panel/40 border border-forge-border/50 rounded-lg p-2.5 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all shadow-sm" />
+      <label class="field-label" for="modal-issue-planned-date-texto">{t('modal.planned_date')}</label>
+      <CampoFecha id="modal-issue-planned-date" inputClass="campo" />
     </div>
 
     {/* Etiquetas. El mismo selector que usan las páginas: aquí la entidad
         cambia con cada apertura del modal, y se le dice con `setEntity`. */}
     <div class="space-y-2">
-      <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('labels.assign')}</span>
+      <span class="field-label">{t('labels.assign')}</span>
       <LabelPicker sysTag={sysTag} entityType="issue" catalog={labels} class="modal-labels" />
     </div>
 
@@ -295,12 +293,12 @@ const t = useTranslations(lang);
       data-t-all-done={t('subtasks.all_done')}
       data-t-complete-parent={t('subtasks.complete_parent')}
       data-t-progress={t('subtasks.progress')}>
-      <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('subtasks.section')}</span>
+      <span class="field-label">{t('subtasks.section')}</span>
       <ul id="modal-subtareas-lista" class="space-y-1"></ul>
       <div class="modal-subtareas-editar">
         <label class="sr-only" for="modal-subtareas-nueva">{t('subtasks.add')}</label>
         <input type="text" id="modal-subtareas-nueva" autocomplete="off" maxlength="200" placeholder={`+ ${t('subtasks.add')}`}
-          class="w-full bg-forge-panel/40 border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 text-xs text-forge-text focus:border-forge-secondary outline-none" />
+          class="campo" />
       </div>
     </div>
 
@@ -312,31 +310,30 @@ const t = useTranslations(lang);
       data-t-unlink={t('notes.unlink')}
       data-t-error={t('notes.error')}
       data-t-no-results={t('notes.no_results')}>
-      <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest">{t('notes.section')}</span>
+      <span class="field-label">{t('notes.section')}</span>
       <ul id="modal-apuntes-lista" class="space-y-1"></ul>
       <div class="relative modal-apuntes-editar">
         <label class="sr-only" for="modal-apuntes-buscar">{t('notes.search')}</label>
         <input type="text" id="modal-apuntes-buscar" role="combobox" aria-expanded="false" aria-controls="modal-apuntes-resultados" aria-autocomplete="list" autocomplete="off"
           placeholder={t('notes.link')}
-          class="w-full bg-forge-panel/40 border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 text-xs text-forge-text focus:border-forge-secondary outline-none" />
-        <ul id="modal-apuntes-resultados" role="listbox" class="hidden absolute z-30 top-full left-0 right-0 mt-1 bg-forge-panel border border-forge-border rounded-xl shadow-xl p-1 max-h-60 overflow-y-auto"></ul>
+          class="campo" />
+        <ul id="modal-apuntes-resultados" role="listbox" class="menu hidden absolute z-30 top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto"></ul>
       </div>
     </div>
 
     {/* Medición de tiempo: solo si el espacio la usa. */}
     {funciones.tiempo && (
-    <div class="bg-forge-panel/20 border border-forge-border/40 rounded-xl p-5 space-y-4">
+    <div class="border-t border-forge-border pt-5 space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-[11px] font-bold text-forge-text uppercase tracking-widest flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-accent-text"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <h3 class="text-base font-bold text-forge-text">
           {t('modal.time_tracking')}
         </h3>
         <div class="flex items-center gap-2">
-          <button id="btn-stop-timer" data-t-stopping={t('card.timer_stopping')} class="hidden bg-red-500/10 hover:bg-red-500/20 text-forge-error text-xs font-bold px-3 py-1.5 rounded-lg border border-red-500/30 transition-all flex items-center gap-1.5 animate-pulse">
+          <button id="btn-stop-timer" data-t-stopping={t('card.timer_stopping')} class="hidden btn btn-danger btn-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"></rect></svg>
             {t('card.timer_stop_long')}
           </button>
-          <button id="btn-log-work" class="bg-forge-secondary/10 hover:bg-forge-secondary/20 text-forge-accent-text text-xs font-bold px-3 py-1.5 rounded-lg border border-forge-secondary/30 transition-all flex items-center gap-1.5">
+          <button id="btn-log-work" class="btn btn-secondary btn-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             {t('modal.log_work')}
           </button>
@@ -345,21 +342,21 @@ const t = useTranslations(lang);
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div class="space-y-1.5">
-          <label class="text-[10px] font-bold text-forge-muted uppercase tracking-widest" for="modal-issue-estimated">{t('modal.estimated_hours')}</label>
-          <input type="number" id="modal-issue-estimated" value="0" min="0" step="0.5" class="w-full bg-forge-bg border border-forge-border/50 rounded-lg py-2 px-3 text-sm text-forge-text focus:outline-none focus:border-forge-secondary focus:ring-1 focus:ring-forge-secondary/30 transition-all font-mono" />
+          <label class="field-label" for="modal-issue-estimated">{t('modal.estimated_hours')}</label>
+          <input type="number" id="modal-issue-estimated" value="0" min="0" step="0.5" class="campo" />
         </div>
         <div class="space-y-1.5 flex flex-col justify-end">
-          <div class="flex justify-between text-xs font-mono mb-1">
+          <div class="flex justify-between text-xs mb-1">
             <span class="text-forge-muted" id="time-tracking-text" data-template={t('modal.logged_estimated')} data-template-no-est={t('modal.logged_only')}>{t('modal.logged_estimated').replace('{logged}', '0').replace('{estimated}', '0')}</span>
-            <span class="font-bold" id="time-tracking-percent">0%</span>
+            <span class="wide" id="time-tracking-percent">0%</span>
           </div>
-          <div class="h-2.5 w-full bg-forge-bg rounded-full overflow-hidden border border-forge-border/30">
-            <div id="time-tracking-bar" class="h-full bg-forge-secondary transition-all" style="width: 0%"></div>
+          <div class="barra w-full">
+            <div id="time-tracking-bar" class="h-full rounded-full bg-forge-text" style="width: 0%"></div>
           </div>
         </div>
       </div>
 
-      <div id="work-logs-container" class="space-y-2 mt-4 pt-4 border-t border-forge-border/30 hidden"></div>
+      <div id="work-logs-container" class="mt-2 hidden"></div>
     </div>
     )}
     
@@ -376,9 +373,9 @@ const t = useTranslations(lang);
         dos intenciones, no dos almacenamientos. Dónde acaben los bytes lo
         decide el sistema, y el distintivo «Drive» aparece solo donde cambia
         algo para quien mira: esos se abren en Drive y los ve todo el espacio. */}
-    <div class="space-y-2 mt-auto pt-6 border-t border-forge-border/30">
+    <div class="space-y-2 mt-auto pt-5 border-t border-forge-border">
       <div class="flex justify-between items-center">
-        <span class="text-[10px] font-bold text-forge-muted uppercase tracking-widest flex items-center gap-1.5">
+        <span class="field-label flex items-center gap-1.5">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
           {t('files.section')}
         </span>
@@ -387,7 +384,7 @@ const t = useTranslations(lang);
       <ul id="issue-files" class="space-y-1.5"></ul>
 
       <div class="flex flex-wrap items-center gap-2 relative">
-        <button type="button" id="btn-upload-file" class="inline-flex items-center gap-1.5 text-xs font-bold text-forge-muted hover:text-forge-text border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 transition-colors">
+        <button type="button" id="btn-upload-file" class="btn btn-secondary btn-sm">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
           {/* La etiqueta en su propio span: cambiarla por «Subiendo…» con
               `textContent` sobre el botón entero se llevaría el icono por
@@ -395,19 +392,19 @@ const t = useTranslations(lang);
           <span class="btn-subir-txt">{t('files.upload')}</span>
         </button>
 
-        <button type="button" id="btn-drive-attach" class="inline-flex items-center gap-1.5 text-xs font-bold text-forge-muted hover:text-forge-text border border-dashed border-forge-border rounded-lg px-2.5 py-1.5 transition-colors" aria-expanded="false">
+        <button type="button" id="btn-drive-attach" class="btn btn-secondary btn-sm" aria-expanded="false">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
           {t('files.pick')}
         </button>
 
-        <div id="drive-attach-panel" class="hidden absolute top-full left-0 z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] bg-forge-panel border border-forge-border rounded-xl shadow-xl p-2">
-          <input type="text" id="drive-attach-search" autocomplete="off" placeholder={t('drive.attach_search')} aria-label={t('drive.attach_search')} class="w-full bg-forge-bg border border-forge-border rounded-lg px-2.5 py-1.5 text-xs text-forge-text focus:border-forge-secondary outline-none mb-2">
+        <div id="drive-attach-panel" class="menu hidden absolute top-full left-0 z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] !p-2">
+          <input type="text" id="drive-attach-search" autocomplete="off" placeholder={t('drive.attach_search')} aria-label={t('drive.attach_search')} class="campo mb-2">
           <div id="drive-attach-results" class="max-h-56 overflow-y-auto custom-scrollbar space-y-0.5"></div>
         </div>
       </div>
 
       {/* El tope y el destino se dicen aquí, no se descubren chocándose. */}
-      <p class="text-[11px] text-forge-muted leading-relaxed">{t('files.hint_drive')}</p>
+      <p class="hint leading-relaxed">{t('files.hint_drive')}</p>
 
       <input type="file" id="file-attachment" aria-label={t('a11y.attach_file')} class="hidden" />
     </div>
@@ -415,44 +412,43 @@ const t = useTranslations(lang);
 </div>
 
 <!-- Log Work Modal -->
-<dialog id="log-work-modal" class="bg-forge-panel border border-forge-border rounded-xl p-5 sm:p-6 w-[calc(100vw-2rem)] max-w-[400px] text-forge-text shadow-2xl backdrop:bg-black/60">
-  <h2 class="text-lg font-bold mb-5 flex items-center gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-accent-text"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+<dialog id="log-work-modal" class="ventana">
+  <h2 class="ventana-titulo">
     {t('modal.log_work')}
   </h2>
   <div class="space-y-4">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-1.5" for="log-work-hours">{t('modal.time_spent')}</label>
-        <input type="number" id="log-work-hours" step="0.25" min="0.25" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-forge-text focus:border-forge-secondary focus:outline-none font-mono" placeholder="e.g. 2.5">
+        <label class="block field-label mb-1.5" for="log-work-hours">{t('modal.time_spent')}</label>
+        <input type="number" id="log-work-hours" step="0.25" min="0.25" class="campo" placeholder="2,5">
       </div>
       <div>
-        <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-1.5" for="log-work-date-texto">{t('modal.date_worked')}</label>
-        <CampoFecha id="log-work-date" inputClass="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-forge-text focus:border-forge-secondary focus:outline-none" />
+        <label class="block field-label mb-1.5" for="log-work-date-texto">{t('modal.date_worked')}</label>
+        <CampoFecha id="log-work-date" inputClass="campo" />
       </div>
     </div>
     <div>
-      <label class="block text-[10px] font-bold uppercase tracking-wider text-forge-muted mb-1.5" for="log-work-desc">{t('modal.work_desc')}</label>
-      <textarea id="log-work-desc" rows="3" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary focus:outline-none placeholder:text-forge-muted" placeholder={t('modal.work_desc_placeholder') as string}></textarea>
+      <label class="block field-label mb-1.5" for="log-work-desc">{t('modal.work_desc')}</label>
+      <textarea id="log-work-desc" rows="3" class="campo" placeholder={t('modal.work_desc_placeholder') as string}></textarea>
     </div>
   </div>
-  <div class="flex justify-end gap-3 mt-6">
-    <button type="button" class="px-4 py-2 text-xs font-bold text-forge-muted hover:text-forge-text transition-colors" onclick="document.getElementById('log-work-modal').close()">{t('modal.cancel')}</button>
-    <button type="button" id="btn-save-log-work" class="bg-forge-primary text-forge-on-accent text-xs font-bold px-5 py-2 rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-forge-secondary/20">{t('modal.save_log')}</button>
+  <div class="ventana-pie">
+    <button type="button" class="btn btn-ghost" onclick="document.getElementById('log-work-modal').close()">{t('modal.cancel')}</button>
+    <button type="button" id="btn-save-log-work" class="btn btn-primary">{t('modal.save_log')}</button>
   </div>
 </dialog>
 
 
-<dialog id="dlg-plantilla" aria-labelledby="dlg-plantilla-titulo" class="bg-forge-panel border border-forge-border rounded-2xl p-5 w-[calc(100vw-2rem)] max-w-[400px] text-forge-text shadow-xl backdrop:bg-black/50"
+<dialog id="dlg-plantilla" aria-labelledby="dlg-plantilla-titulo" class="ventana"
   data-sys-tag={sysTag} data-t-saved={t('tpl.saved')} data-t-error={t('tpl.error')}>
-  <h2 id="dlg-plantilla-titulo" class="text-lg font-bold mb-3">{t('tpl.title')}</h2>
-  <label class="block text-xs font-semibold text-forge-muted mb-1" for="tpl-nombre">{t('tpl.name')}</label>
-  <input id="tpl-nombre" type="text" maxlength="60" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text mb-3" />
-  <label class="block text-xs font-semibold text-forge-muted mb-1" for="tpl-offset">{t('tpl.offset')}</label>
-  <input id="tpl-offset" type="number" min="0" max="365" class="w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text font-mono" />
-  <div class="flex justify-end gap-2 mt-5">
-    <button type="button" class="px-4 py-2 text-sm text-forge-muted hover:text-forge-text" onclick="document.getElementById('dlg-plantilla').close()">{t('modal.cancel')}</button>
-    <button type="button" id="tpl-guardar" class="bg-forge-primary text-forge-on-accent px-4 py-2 rounded-lg text-sm font-bold">{t('modal.save')}</button>
+  <h2 id="dlg-plantilla-titulo" class="ventana-titulo">{t('tpl.title')}</h2>
+  <label class="block field-label mb-1.5" for="tpl-nombre">{t('tpl.name')}</label>
+  <input id="tpl-nombre" type="text" maxlength="60" class="campo mb-3" />
+  <label class="block field-label mb-1.5" for="tpl-offset">{t('tpl.offset')}</label>
+  <input id="tpl-offset" type="number" min="0" max="365" class="campo" />
+  <div class="ventana-pie">
+    <button type="button" class="btn btn-ghost" onclick="document.getElementById('dlg-plantilla').close()">{t('modal.cancel')}</button>
+    <button type="button" id="tpl-guardar" class="btn btn-primary">{t('modal.save')}</button>
   </div>
 </dialog>
 
@@ -547,12 +543,8 @@ const t = useTranslations(lang);
       const badge = card?.querySelector<HTMLElement>('.issue-type-badge');
       if (card && badge && tipo) {
         badge.dataset.typeKey = clave;
-        badge.style.borderColor = `${tipo.color}55`;
-        const punto = badge.querySelector<HTMLElement>('[aria-hidden="true"]');
-        if (punto) punto.style.background = tipo.color;
-        const nombre = badge.querySelector<HTMLElement>('.text-forge-muted');
-        if (nombre) nombre.textContent = tipo.nombre;
-        card.style.setProperty('--franja', tipo.color);
+        badge.dataset.typeName = tipo.nombre;
+        pintarTipoEnTarjeta(card, tipo.color);
       }
       tipoAnterior = clave;
       window.showToast?.(typeEl.dataset.tSaved || '');
@@ -563,6 +555,24 @@ const t = useTranslations(lang);
       window.showToast?.(typeEl.dataset.tError || '', true);
     }
   });
+
+  /**
+   * El tipo en el pie de la tarjeta: punto de su color, nombre y, si el
+   * espacio usa puntos, «· 5 pts». Lo mismo que pinta `IssueCard.astro`.
+   */
+  function pintarTipoEnTarjeta(card: HTMLElement, color?: string) {
+    const badge = card.querySelector<HTMLElement>('.issue-type-badge');
+    if (!badge) return;
+    if (color) card.style.setProperty('--tipo', color);
+    const anterior = badge.querySelector<HTMLElement>('.sw');
+    const sw = document.createElement('span');
+    sw.className = 'sw';
+    sw.setAttribute('aria-hidden', 'true');
+    sw.style.setProperty('--c', color ?? anterior?.style.getPropertyValue('--c') ?? '');
+    const pts = Number(card.dataset.points || 0);
+    const sufijo = badge.dataset.ptsLabel && pts ? ` · ${pts} ${badge.dataset.ptsLabel}` : '';
+    badge.replaceChildren(sw, document.createTextNode(`${badge.dataset.typeName || badge.dataset.typeKey || ''}${sufijo}`));
+  }
 
   // Title change
   const titleEl = document.getElementById('modal-issue-title') as HTMLInputElement;
@@ -832,9 +842,10 @@ const t = useTranslations(lang);
     let fechaEl = card.querySelector('.card-due') as HTMLElement | null;
     if (iso) {
       if (!fechaEl) {
-        fechaEl = document.createElement('div');
-        fechaEl.className = 'card-due text-[10px] font-mono mb-2 text-forge-muted';
-        card.querySelector('h4')?.insertAdjacentElement('afterend', fechaEl);
+        fechaEl = document.createElement('span');
+        fechaEl.className = 'card-due due';
+        const empuja = card.querySelector('.tarjeta-pie .empuja');
+        empuja?.insertBefore(fechaEl, empuja.querySelector('.card-responsable'));
       }
       // La etiqueta sale del contenedor del modal, no de la tarjeta.
       //
@@ -855,7 +866,12 @@ const t = useTranslations(lang);
        * detrás, como en la tarjeta.
        */
       const hora = card.dataset.dueTime || '';
-      fechaEl.textContent = `${etiqueta} ${fecha(iso, raizModal?.dataset.lang || 'en')}${hora ? ` · ${hora}` : ''}`;
+      // Igual que la tarjeta servida: la etiqueta solo para lectores de
+      // pantalla, la fecha a la vista.
+      const sr = document.createElement('span');
+      sr.className = 'sr-only';
+      sr.textContent = `${etiqueta} `;
+      fechaEl.replaceChildren(sr, document.createTextNode(`${fecha(iso, raizModal?.dataset.lang || 'en')}${hora ? ` · ${hora}` : ''}`));
       // El rojo de vencida se recalcula aquí: si no, una fecha movida al futuro
       // seguiría pintada en rojo hasta recargar.
       //
@@ -864,16 +880,11 @@ const t = useTranslations(lang);
       // entrega de hoy desde la medianoche: la tarjeta salía en gris y, al
       // tocar cualquier campo del modal, pasaba a rojo.
       const estaVencida = card.dataset.status !== 'done' && vencida(iso, new Date(), hora);
-      fechaEl.classList.toggle('text-forge-error', estaVencida);
-      fechaEl.classList.toggle('font-bold', estaVencida);
-      fechaEl.classList.toggle('text-forge-muted', !estaVencida);
+      fechaEl.classList.toggle('late', estaVencida);
     } else if (fechaEl) {
       fechaEl.remove();
     }
 
-    // Descripción.
-    const parrafo = card.querySelector('p.line-clamp-2');
-    if (parrafo) parrafo.textContent = card.dataset.description || (card.dataset.tNoDesc || '');
 
     // Etiquetas. El bloque aparece y desaparece según haya o no: una fila
     // vacía con su margen deja un hueco que se nota.
@@ -885,17 +896,18 @@ const t = useTranslations(lang);
       zonaEtiquetas?.remove();
     } else {
       if (!zonaEtiquetas) {
-        zonaEtiquetas = document.createElement('div');
-        zonaEtiquetas.className = 'flex flex-wrap gap-1 mb-3 pl-1 card-labels';
-        card.querySelector('p.line-clamp-2')?.insertAdjacentElement('afterend', zonaEtiquetas);
+        zonaEtiquetas = document.createElement('span');
+        zonaEtiquetas.className = 'card-labels contents';
+        card.querySelector('.issue-type-badge')?.insertAdjacentElement('afterend', zonaEtiquetas);
       }
       zonaEtiquetas.innerHTML = '';
       for (const e of etiquetas) {
         const span = document.createElement('span');
-        span.className = 'inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text max-w-full px-1.5 py-0.5 text-[10px]';
+        span.className = 'chip chip-sm max-w-full';
+        span.style.setProperty('--c', e.color);
         const punto = document.createElement('span');
-        punto.className = 'rounded-full shrink-0 w-1.5 h-1.5';
-        punto.style.backgroundColor = e.color;
+        punto.className = 'sw';
+        punto.setAttribute('aria-hidden', 'true');
         const texto = document.createElement('span');
         texto.className = 'truncate';
         texto.textContent = e.name;
@@ -1118,7 +1130,7 @@ const t = useTranslations(lang);
     const container = document.getElementById('work-logs-container');
     if (!container) return;
     container.classList.remove('hidden');
-    container.innerHTML = `<div class="text-xs text-forge-muted animate-pulse">${TXT.cargandoLogs}</div>`;
+    container.innerHTML = `<div class="text-xs text-forge-muted">${TXT.cargandoLogs}</div>`;
 
     try {
       const res = await fetch(`/api/issues/${issueId}/worklogs`);
@@ -1172,18 +1184,18 @@ const t = useTranslations(lang);
         : log.description;
 
       const div = document.createElement('div');
-      div.className = 'flex items-start gap-3 p-3 bg-forge-bg/50 border border-forge-border/40 rounded-lg group';
+      div.className = 'flex items-start gap-3 py-2.5 border-b border-forge-border last:border-b-0 group';
       div.innerHTML = `
-        <img src="${escaparHtml(log.avatar_url) || '/default-avatar.svg'}" alt="" class="w-6 h-6 rounded-full border border-forge-border object-cover shrink-0 mt-0.5" loading="lazy" decoding="async" />
+        <span class="avatar mt-0.5" aria-hidden="true">${escaparHtml(String(log.username || '?').slice(0, 2))}</span>
         <div class="flex-1 min-w-0">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-forge-text">${escaparHtml(log.username)}</span>
-            <span class="text-[10px] font-mono text-forge-muted">${date}</span>
+            <span class="text-sm font-semibold text-forge-text">${escaparHtml(log.username)}</span>
+            <span class="text-xs text-forge-muted">${date}</span>
           </div>
-          <div class="text-xs text-forge-text mt-1">${escaparHtml(descripcion) || `<i class="opacity-50">${TXT.sinDescripcion}</i>`}</div>
+          <div class="text-sm text-forge-text mt-0.5">${escaparHtml(descripcion) || `<i class="text-forge-muted">${TXT.sinDescripcion}</i>`}</div>
         </div>
         <div class="flex flex-col items-end gap-2 shrink-0">
-          <span class="text-xs font-mono font-bold text-forge-accent-text bg-forge-secondary/10 px-2 py-0.5 rounded border border-forge-secondary/20">${parseFloat(Number(log.hours_spent).toFixed(2))}h</span>
+          <span class="wide text-sm">${parseFloat(Number(log.hours_spent).toFixed(2))} h</span>
           ${role !== 'viewer' ? `
           <div class="hidden group-hover:flex items-center gap-2">
             <button class="edit-worklog-btn text-forge-muted hover:text-forge-accent-text transition-colors" data-id="${log.id}" data-hours="${log.hours_spent}" data-desc="${escaparHtml(log.description)}" data-date="${log.work_date}" title={t('modal.edit_log')}>
@@ -1289,12 +1301,10 @@ const t = useTranslations(lang);
           if (bar) {
             bar.style.width = `${displayPercent}%`;
             
-            // Thresholds: < 80% Green, 80-100% Orange, > 100% Red
-            let barColor = 'bg-green-500'; // Default Green (safe zone)
-            if (percentage > 100) barColor = 'bg-red-500';
-            else if (percentage >= 80) barColor = 'bg-orange-500';
-            
-            bar.className = `h-full transition-all ${barColor}`;
+            // En tinta mientras cabe en lo estimado; en rojo solo al pasarse,
+            // que es lo único que pide atención. Verde y naranja no decían nada
+            // que el porcentaje no dijera ya.
+            bar.className = `h-full rounded-full ${percentage > 100 ? 'bg-forge-error' : 'bg-forge-text'}`;
             
             if (percentage > 100 && pct) pct.classList.add('text-forge-error');
             else if (pct) pct.classList.remove('text-forge-error');
@@ -1467,7 +1477,7 @@ const t = useTranslations(lang);
 
     if (datos.enDrive) {
       const marca = document.createElement('span');
-      marca.className = 'shrink-0 text-[9px] font-bold uppercase tracking-wider text-forge-muted border border-forge-border/60 rounded px-1.5 py-0.5';
+      marca.className = 'chip chip-sm shrink-0';
       marca.textContent = TXT.badgeDrive;
       li.appendChild(marca);
     }
@@ -1491,7 +1501,7 @@ const t = useTranslations(lang);
 
     if (!ARCHIVOS_SUBIDOS.length && !ARCHIVOS_DRIVE.length) {
       const vacio = document.createElement('li');
-      vacio.className = 'text-[11px] text-forge-muted italic';
+      vacio.className = 'text-xs text-forge-muted';
       vacio.textContent = TXT.sinArchivos;
       listaArchivos.appendChild(vacio);
       return;
@@ -1637,10 +1647,8 @@ const t = useTranslations(lang);
       const card = tarjetaDe(issueId);
       if (card) {
         card.setAttribute('data-points', pointsEl.value);
-        const spSpan = card.querySelector('.issue-type-badge')?.nextElementSibling;
-        if (spSpan) spSpan.textContent = `${pointsEl.value || 0} SP`;
+        pintarTipoEnTarjeta(card);
       }
-      if (window.showToast) window.showToast('Points saved');
     } catch (e) {
       console.error('Failed to update story points', e);
     }
@@ -1737,13 +1745,13 @@ const t = useTranslations(lang);
           const visible = prioridadVisible(valor);
           if (visible.nivel === 'normal') return;
           const marca = document.createElement('span');
-          marca.className = `card-priority flex items-center gap-1 text-[10px] font-bold ${visible.clase}`;
+          marca.className = `card-priority tarjeta-meta font-semibold ${visible.clase}`;
           marca.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg>';
           const sr = document.createElement('span');
           sr.className = 'sr-only';
           sr.textContent = `${nombre}:`;
           marca.append(sr, document.createTextNode(etiqueta));
-          card.querySelector('.issue-type-badge')?.after(marca);
+          (card.querySelector('.card-labels') ?? card.querySelector('.issue-type-badge'))?.after(marca);
         });
         window.showToast?.(sel.dataset.tSaved || '');
       } catch (e) {
@@ -1848,8 +1856,8 @@ const t = useTranslations(lang);
         if (vinculados.length === 0) { marca?.remove(); return; }
         if (!marca) {
           marca = document.createElement('span');
-          marca.className = 'card-notes flex items-center gap-1 text-[10px] text-forge-muted';
-          card.querySelector('.issue-type-badge')?.parentElement?.append(marca);
+          marca.className = 'card-notes tarjeta-meta';
+          card.querySelector('.tarjeta-pie .empuja')?.before(marca);
         }
         marca.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
         marca.append(document.createTextNode(String(vinculados.length)));
@@ -1979,8 +1987,8 @@ const t = useTranslations(lang);
         if (total === 0) { marca?.remove(); return; }
         if (!marca) {
           marca = document.createElement('span');
-          marca.className = 'card-subtareas flex items-center gap-1 text-[10px] font-mono text-forge-muted';
-          card.querySelector('.issue-type-badge')?.parentElement?.append(marca);
+          marca.className = 'card-subtareas tarjeta-meta';
+          card.querySelector('.tarjeta-pie .empuja')?.before(marca);
         }
         const frase = (textos.tProgress || '').replace('{hechas}', String(hechas)).replace('{total}', String(total));
         marca.title = frase;
@@ -2153,12 +2161,12 @@ const t = useTranslations(lang);
           if (!regla) return;
           const frase = (textos.tCard || '').replace('{regla}', describir(regla, lang));
           const marca = document.createElement('span');
-          marca.className = 'card-repeat flex items-center gap-1 text-[10px] text-forge-muted';
+          marca.className = 'card-repeat tarjeta-meta';
           marca.title = frase;
           marca.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
           const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = frase;
           marca.append(sr);
-          card.querySelector('.issue-type-badge')?.parentElement?.append(marca);
+          card.querySelector('.tarjeta-pie .empuja')?.before(marca);
         });
         window.showToast?.(textos.tSaved || '');
       } catch (e) {

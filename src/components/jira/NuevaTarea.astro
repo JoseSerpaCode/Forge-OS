@@ -47,7 +47,7 @@ const sprints = puede && funcs.sprints
   : [];
 const contactos = puede && user && !user.is_guest ? listarContactos(user.id).map((c) => ({ id: c.id, name: c.name })) : [];
 const plantillas = puede ? listarPlantillas(ws!.id).map((p) => ({ id: p.id, name: p.name })) : [];
-const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text-sm text-forge-text focus:border-forge-secondary outline-none';
+const campo = 'campo';
 ---
 {puede && (
   <dialog id="nueva-tarea"
@@ -79,8 +79,11 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     data-t-tpl-created={t('tpl.created')}
     data-t-tpl-skipped={t('tpl.skipped')}
     data-t-tpl-error={t('tpl.use_error')}
-    class="bg-forge-panel border border-forge-border rounded-2xl p-5 sm:p-6 w-[calc(100vw-2rem)] max-w-[560px] text-forge-text shadow-xl backdrop:bg-black/50">
-    <h2 id="nueva-tarea-titulo" class="text-lg font-bold mb-3">{t('modal.create_issue')}</h2>
+    class="ventana !max-w-[36rem] sm:!p-6">
+    {/* Sin maqueta propia: es la ventana única de docs/rediseno/ventanas.html
+        con la línea de alta rápida en lugar del formulario. Lo que se
+        escribe se entiende al vuelo y se enseña en píldoras debajo. */}
+    <h2 id="nueva-tarea-titulo" class="ventana-titulo">{t('modal.create_issue')}</h2>
 
     <div class="relative">
       <label class="sr-only" for="nt-linea">{t('quick.label')}</label>
@@ -88,10 +91,10 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
         role="combobox" aria-expanded="false" aria-controls="nt-apuntes-sugeridos" aria-autocomplete="list"
         aria-describedby="nt-ayuda"
         placeholder={t('quick.placeholder')}
-        class="w-full bg-forge-bg border border-forge-border rounded-xl px-3 py-2.5 text-base text-forge-text focus:border-forge-secondary outline-none" />
-      <ul id="nt-apuntes-sugeridos" role="listbox" class="hidden absolute z-40 top-full left-0 right-0 mt-1 bg-forge-panel border border-forge-border rounded-xl shadow-xl p-1 max-h-60 overflow-y-auto"></ul>
+        class="campo !h-12 !text-base !px-4 !rounded-xl" />
+      <ul id="nt-apuntes-sugeridos" role="listbox" class="menu hidden absolute z-40 top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto"></ul>
     </div>
-    <p id="nt-ayuda" class="text-xs text-forge-muted mt-1.5">{t('quick.help')}</p>
+    <p id="nt-ayuda" class="hint mt-2">{t('quick.help')}</p>
 
     {/* Plantillas: un clic crea la tarea con todo lo que lleva. También se
         usan escribiendo `/nombre` en la línea y Enter. */}
@@ -99,7 +102,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
         <span class="text-xs text-forge-muted">{t('tpl.from')}:</span>
         {plantillas.map((p) => (
-          <button type="button" class="nt-plantilla text-xs border border-forge-border rounded-full px-2.5 py-0.5 text-forge-text hover:border-forge-secondary" data-id={p.id} data-nombre={p.name}
+          <button type="button" class="nt-plantilla btn btn-secondary btn-sm" data-id={p.id} data-nombre={p.name}
             aria-label={t('tpl.use').replace('{nombre}', p.name)}>{p.name}</button>
         ))}
       </div>
@@ -111,44 +114,44 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
     <p id="nt-aviso" class="hidden text-xs text-forge-error mt-2" role="alert"></p>
 
     <details class="mt-4 group" id="nt-mas">
-      <summary class="cursor-pointer select-none text-sm font-semibold text-forge-muted hover:text-forge-text">{t('quick.more')}</summary>
+      <summary class="btn btn-ghost btn-sm -ml-3 list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none">{t('quick.more')}</summary>
       <div class="space-y-3 mt-3">
         <div>
-          <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-desc">{t('modal.description')}</label>
+          <label class="block field-label mb-1.5" for="nt-desc">{t('modal.description')}</label>
           <textarea id="nt-desc" rows="3" class={campo} placeholder={t('modal.desc_placeholder')}></textarea>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-[1fr_6.5rem] gap-2 items-start">
           <div>
-            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-fecha-texto">{t('modal.due_date')}</label>
+            <label class="block field-label mb-1.5" for="nt-fecha-texto">{t('modal.due_date')}</label>
             <CampoFecha id="nt-fecha" inputClass={campo} />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-hora">{t('modal.due_time')}</label>
-            <input type="text" id="nt-hora" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5" class={`${campo} font-mono`} />
+            <label class="block field-label mb-1.5" for="nt-hora">{t('modal.due_time')}</label>
+            <input type="text" id="nt-hora" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5" class={campo} />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-trabajo-texto">{t('modal.planned_date')}</label>
+          <label class="block field-label mb-1.5" for="nt-trabajo-texto">{t('modal.planned_date')}</label>
           <CampoFecha id="nt-trabajo" inputClass={campo} />
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-prioridad">{t('priority.label')}</label>
+            <label class="block field-label mb-1.5" for="nt-prioridad">{t('priority.label')}</label>
             <select id="nt-prioridad" class={campo}>
               {PRIORIDADES.map((p) => <option value={p.valor} selected={p.valor === 'medium'}>{t(`priority.${p.nivel}`)}</option>)}
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-tipo">{t('modal.type')}</label>
+            <label class="block field-label mb-1.5" for="nt-tipo">{t('modal.type')}</label>
             <select id="nt-tipo" class={campo}>
               {tipos.map((ti) => <option value={ti.key}>{nombreVisible(ti, t)}</option>)}
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-responsable">{t('modal.assignee')}</label>
+            <label class="block field-label mb-1.5" for="nt-responsable">{t('modal.assignee')}</label>
             {/* Miembros y contactos sin cuenta en el mismo desplegable: un
                 contacto es otra opción, no otro campo. */}
             <select id="nt-responsable" class={`select-responsable ${campo}`}>
@@ -157,7 +160,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
           </div>
           {funcs.sprints && (
             <div>
-              <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-sprint">{t('modal.sprint')}</label>
+              <label class="block field-label mb-1.5" for="nt-sprint">{t('modal.sprint')}</label>
               <select id="nt-sprint" class={campo}>
                 <option value="">{t('modal.backlog')}</option>
                 {sprints.map((s) => <option value={s.id}>{s.name}</option>)}
@@ -166,7 +169,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
           )}
           {funcs.tiempo && (
             <div>
-              <label class="block text-xs font-semibold text-forge-muted mb-1" for="nt-estimado">{t('modal.estimated_hours')}</label>
+              <label class="block field-label mb-1.5" for="nt-estimado">{t('modal.estimated_hours')}</label>
               <input type="number" id="nt-estimado" min="0" step="0.5" placeholder="0" class={`${campo} font-mono`} />
             </div>
           )}
@@ -175,10 +178,10 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
         {/* Etiquetas como botones que se encienden: cabe el catálogo entero de
             un vistazo, que con una etiqueta por asignatura son pocas. */}
         <fieldset>
-          <legend class="block text-xs font-semibold text-forge-muted mb-1.5">{t('quick.labels')}</legend>
+          <legend class="block field-label mb-1.5">{t('quick.labels')}</legend>
           <div id="nt-etiquetas" class="flex flex-wrap gap-1.5">
             {etiquetas.map((e) => (
-              <button type="button" class="nt-etiqueta rounded-full border border-forge-border px-1 py-0.5 aria-pressed:border-forge-secondary aria-pressed:bg-forge-secondary/10 transition-colors" aria-pressed="false" data-id={e.id}>
+              <button type="button" class="nt-etiqueta rounded-full p-0.5 outline-2 outline-offset-0 aria-pressed:outline aria-pressed:outline-forge-text" aria-pressed="false" data-id={e.id}>
                 <LabelChip name={e.name} color={e.color} size="sm" />
               </button>
             ))}
@@ -187,10 +190,10 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       </div>
     </details>
 
-    <div class="flex flex-wrap justify-end gap-2 mt-5">
-      <button type="button" class="px-4 py-2 text-sm text-forge-muted hover:text-forge-text" id="nt-cancelar">{t('modal.cancel')}</button>
-      <button type="button" id="nt-crear-abrir" title={t('quick.create_open_hint')} class="px-4 py-2 text-sm font-bold rounded-lg border border-forge-border text-forge-text hover:border-forge-secondary">{t('quick.create_open')}</button>
-      <button type="button" id="nt-crear" class="bg-forge-primary text-forge-on-accent px-5 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity">{t('modal.create')}</button>
+    <div class="ventana-pie flex-wrap">
+      <button type="button" class="btn btn-ghost" id="nt-cancelar">{t('modal.cancel')}</button>
+      <button type="button" id="nt-crear-abrir" title={t('quick.create_open_hint')} class="btn btn-secondary">{t('quick.create_open')}</button>
+      <button type="button" id="nt-crear" class="btn btn-primary">{t('modal.create')}</button>
     </div>
   </dialog>
 )}
@@ -271,7 +274,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
 
     function chip(textoVisible: string, tipoChip: string, quitar?: () => void) {
       const li = document.createElement('li');
-      li.className = 'flex items-center gap-1 bg-forge-bg border border-forge-border rounded-full pl-2.5 pr-1 py-0.5 text-xs text-forge-text';
+      li.className = 'chip !h-7 !pr-1';
       const etiqueta = document.createElement('span');
       etiqueta.className = 'text-forge-muted';
       etiqueta.textContent = `${tipoChip}:`;
@@ -281,7 +284,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
       if (quitar) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'w-5 h-5 rounded-full text-forge-muted hover:text-forge-error hover:bg-forge-panel';
+        b.className = 'btn btn-ghost btn-icon btn-sm !w-5 !h-5';
         b.setAttribute('aria-label', (d.tRemove || '').replace('{texto}', textoVisible));
         b.textContent = '×';
         b.addEventListener('click', () => { quitar(); linea.focus(); });
@@ -318,7 +321,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
         const li = document.createElement('li');
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'text-xs font-bold text-forge-accent-text border border-dashed border-forge-secondary/60 rounded-full px-2.5 py-0.5 hover:bg-forge-secondary/10';
+        b.className = 'btn btn-secondary btn-sm border-dashed';
         b.textContent = (d.tCreateLabel || '').replace('{nombre}', nueva);
         b.addEventListener('click', () => crearEtiqueta(nueva));
         li.append(b);
@@ -340,10 +343,22 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
         catalogo = [...catalogo, { id: e.id, name: e.name, color: e.color }];
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'nt-etiqueta rounded-full border border-forge-border px-2 py-0.5 text-xs text-forge-text aria-pressed:border-forge-secondary aria-pressed:bg-forge-secondary/10 transition-colors';
+        // Igual que las que pinta el servidor: la píldora de la etiqueta dentro
+        // de un botón que se enciende.
+        b.className = 'nt-etiqueta rounded-full p-0.5 outline-2 outline-offset-0 aria-pressed:outline aria-pressed:outline-forge-text';
         b.dataset.id = e.id;
         b.setAttribute('aria-pressed', 'true');
-        b.textContent = e.name;
+        const chip = document.createElement('span');
+        chip.className = 'chip chip-sm max-w-full';
+        chip.style.setProperty('--c', e.color);
+        const sw = document.createElement('span');
+        sw.className = 'sw';
+        sw.setAttribute('aria-hidden', 'true');
+        const rotulo = document.createElement('span');
+        rotulo.className = 'truncate';
+        rotulo.textContent = e.name;
+        chip.append(sw, rotulo);
+        b.append(chip);
         contEtiquetas.append(b);
         analizar();
       } catch (err) {
@@ -410,7 +425,7 @@ const campo = 'w-full bg-forge-bg border border-forge-border rounded-lg p-2 text
           li.id = `nt-op-${i}`;
           li.setAttribute('role', 'option');
           li.setAttribute('aria-selected', 'false');
-          li.className = 'px-2 py-1.5 rounded-lg text-sm text-forge-text cursor-pointer hover:bg-forge-bg truncate';
+          li.className = 'menu-item cursor-pointer truncate';
           li.textContent = p.title || '—';
           li.addEventListener('mousedown', (e) => { e.preventDefault(); elegirApunte(i); });
           return li;

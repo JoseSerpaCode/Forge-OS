@@ -11,6 +11,8 @@
  */
 
 export const es = {
+  'card.timer_running': 'En marcha',
+  'card.points_short': 'pts',
   'card.due': 'Entrega:',
   'board.backlog': 'Backlog',
   'board.sprint_start': 'Iniciar',
@@ -123,6 +125,7 @@ export const es = {
   'board.sort_error': 'No se ha podido ordenar.',
   'board.group_label': 'Por etiqueta',
   'board.no_label': 'Sin etiqueta',
+  'board.drop_here': 'Nada por aquí. Arrastra una tarjeta para traerla.',
   'board.show_more': 'Ver más ({n})',
   'board.loading': 'Cargando…',
   'card.complete': 'Completar «{titulo}»',

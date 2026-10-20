@@ -14,6 +14,8 @@ import { prioridadVisible } from '../../lib/prioridad';
 import { describir } from '../../lib/recurrencia';
 import { deFila as responsableDe, iniciales, valorDeContacto } from '../../lib/responsables';
 import type { Funciones } from '../../lib/funcionesEspacio';
+import { ESTADOS, INFO } from '../../lib/status';
+import { tonoDe, esFotoReal } from '../../lib/tonos';
 
 interface Props {
   issue: any;
@@ -79,196 +81,155 @@ const vence = issue.due_date && !hecha && vencida(issue.due_date, new Date(), is
   data-status={issue.status}
   data-cursor={hecha ? `${issue.cierre ?? issue.done_at ?? issue.updated_at}|${issue.id}` : undefined}
   data-labels={JSON.stringify(issue.labels || [])}
-  class={`issue-card group bg-forge-panel border border-forge-border/40 p-4 rounded-xl shadow-sm hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.15)] hover:border-forge-secondary/50 transition-all duration-300 ease-out ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} mb-4 relative overflow-hidden before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:transition-all group-hover:before:w-2`}
-  style={`--franja: ${tipo?.color ?? '#0091FF'}`}>
-  <div class="flex justify-between items-start mb-3 pl-1">
-    <span class="font-mono text-[10px] text-forge-accent-text uppercase tracking-wider">{issue.id.substring(0,8)}</span>
-    <div class="flex items-center gap-1.5">
-    {/* Mover a otro sprint, desde la propia tarjeta: escondido en el panel,
-        corregir una tarea creada en el sprint equivocado no se encontraba. */}
-    {funciones.sprints && canEdit && (
-      <button type="button" class="btn-mover-sprint w-6 h-6 rounded-md text-forge-muted hover:text-forge-text hover:bg-forge-bg flex items-center justify-center"
-        aria-haspopup="menu" aria-label={t('card.move_sprint')} title={t('card.move_sprint')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-      </button>
-    )}
-    {/* Persona con cuenta: su foto. Contacto sin cuenta: sus iniciales, con
-        borde discontinuo para distinguirlo de un miembro sin foto. */}
-    <div class={`card-responsable w-6 h-6 rounded-full bg-forge-bg border ${responsable?.tipo === 'contacto' ? 'border-dashed border-forge-muted' : 'border-forge-border'} flex items-center justify-center overflow-hidden shrink-0 text-[9px] font-bold text-forge-text`}
-      title={responsable?.nombre || t('modal.unassigned')} role="img" aria-label={responsable?.nombre || t('modal.unassigned')}>
-      {responsable?.avatar ? (
-        <img src={responsable.avatar} alt="" class="w-full h-full object-cover" loading="lazy" decoding="async" />
-      ) : responsable ? (
-        <span aria-hidden="true">{iniciales(responsable.nombre)}</span>
-      ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-forge-muted" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-      )}
-    </div>
-    </div>
-  </div>
-
-  <div class="flex items-start gap-2 mb-1.5 pl-1">
+  class:list={['issue-card tarjeta group', canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer']}
+  style={`--tipo: ${tipo?.color ?? 'var(--forge-border-strong)'}`}>
+  {/*
+    Tarjeta compacta (fase 1 del rediseño): título, una fila de pie con tipo,
+    señales y responsable, y nada más. La descripción vive en el panel; el id
+    hexadecimal no decía nada a nadie. El color del tipo va en la muesca de
+    arriba (`.tarjeta::before`), no en una franja lateral.
+  */}
+  <div class="flex items-start gap-2">
     {/*
-      Completar con un clic.
-
-      Era imprescindible arrastrar la tarjeta hasta «Hecho» —o abrirla y
-      cambiarle el estado— para la acción más frecuente de todas. Es un botón
-      de verdad, con nombre que dice qué tarea completa, y su clic no abre el
-      panel (lo corta el tablero).
+      Completar con un clic. Es un botón de verdad, con nombre que dice qué
+      tarea completa, y su clic no abre el panel (lo corta el tablero).
     */}
     {canEdit && !hecha && (
-      <button type="button" class="btn-completar mt-0.5 shrink-0 w-4 h-4 rounded-full border-2 border-forge-muted hover:border-forge-success hover:bg-forge-success/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-forge-secondary transition-colors"
+      <button type="button" class="btn-completar mt-[3px] shrink-0 w-4 h-4 rounded-full border-2 border-forge-border-strong hover:border-forge-success hover:bg-forge-success/15 transition-colors"
         aria-label={t('card.complete').replace('{titulo}', issue.title)}
         title={t('card.complete').replace('{titulo}', issue.title)}></button>
     )}
-    <h4 class="text-forge-text font-semibold text-sm group-hover:text-forge-accent-text transition-colors leading-snug min-w-0">{issue.title}</h4>
+    <h4 class="tarjeta-titulo min-w-0 flex-1">{issue.title}</h4>
+    {/* Mover a otro sprint, desde la propia tarjeta. Aparece al acercarse; en
+        táctil, siempre (reglas móviles de themes.css). */}
+    {funciones.sprints && canEdit && (
+      <button type="button" class="btn-mover-sprint btn btn-ghost btn-icon btn-sm -mt-1 -mr-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+        aria-haspopup="menu" aria-label={t('card.move_sprint')} title={t('card.move_sprint')}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button>
+    )}
   </div>
 
-  {issue.due_date && (
-    <div class={`card-due text-[10px] font-mono mb-2 ${vence ? 'text-forge-error font-bold' : 'text-forge-muted'}`}>
-      {/* `toLocaleDateString()` sin argumentos usa el idioma del navegador,
-          que no tiene por qué ser el elegido en la aplicación: salía
-          «8/24/2026» con la interfaz en español. */}
-      {t('card.due')} {fecha(String(issue.due_date).slice(0, 10), lang)}{issue.due_time ? ` · ${issue.due_time}` : ''}
-    </div>
-  )}
-
   {issue.planned_date && !hecha && (
-    <div class:list={['card-planned text-[10px] font-mono mb-2 pl-1', trasEntrega ? 'text-forge-error font-bold' : 'text-forge-muted']}>
+    <p class:list={['card-planned mt-1.5 text-xs', trasEntrega ? 'text-forge-error font-semibold' : 'text-forge-muted']}>
       {t('card.planned')} {fecha(issue.planned_date, lang)}{trasEntrega ? ` · ${t('card.after_due')}` : ''}
-    </div>
+    </p>
   )}
 
-  <p class="text-forge-muted text-xs line-clamp-2 mb-4 pl-1 leading-relaxed">{issue.description || t('modal.no_description')}</p>
-  {issue.labels && issue.labels.length > 0 && (
-    <div class="flex flex-wrap gap-1 mb-3 pl-1 card-labels">
-      {issue.labels.map((l: any) => <LabelChip name={l.name} color={l.color} size="sm" />)}
-    </div>
-  )}
-
-  <div class="flex items-center gap-2 pl-1 flex-wrap">
+  <div class="tarjeta-pie">
     {/*
       El nombre de un tipo de fábrica se traduce; el de uno propio no, porque
-      lo escribió alguien y traducir lo que escribió una persona es
-      inventárselo. Si la clave no corresponde a ningún tipo —un ticket viejo
-      de uno que se borró— se enseña la clave cruda: es fea, pero es
-      información, y una insignia en blanco no dice nada.
+      lo escribió alguien. Si la clave no corresponde a ningún tipo —un ticket
+      viejo de uno que se borró— se enseña la clave cruda: es información.
     */}
-    <span class="issue-type-badge px-2 py-0.5 rounded-md text-[10px] font-bold bg-forge-bg border shadow-sm flex items-center gap-1.5"
-      data-type-key={issue.type}
-      style={tipo ? `border-color: ${tipo.color}55` : undefined}>
-      {tipo && <span class="w-1.5 h-1.5 rounded-full shrink-0" style={`background:${tipo.color}`} aria-hidden="true"></span>}
-      <span class="text-forge-muted">
-        {tipo ? nombreVisible(tipo, t) : issue.type}
-      </span>
+    <span class="issue-type-badge tarjeta-meta" data-type-key={issue.type}
+      data-type-name={tipo ? nombreVisible(tipo, t) : issue.type}
+      data-pts-label={funciones.puntos ? t('card.points_short') : undefined}>
+      {tipo && <span class="sw" style={`--c:${tipo.color}`} aria-hidden="true"></span>}
+      {tipo ? nombreVisible(tipo, t) : issue.type}{funciones.puntos && issue.story_points ? ` · ${issue.story_points} ${t('card.points_short')}` : ''}
     </span>
+
+    {issue.labels && issue.labels.length > 0 && (
+      <span class="card-labels contents">
+        {issue.labels.map((l: any) => <LabelChip name={l.name} color={l.color} size="sm" />)}
+      </span>
+    )}
 
     {/* La prioridad solo se pinta si no es la normal: si todas llevaran
         bandera, ninguna destacaría. Con texto, no solo color. */}
     {prioridad.nivel !== 'normal' && (
-      <span class:list={['card-priority flex items-center gap-1 text-[10px] font-bold', prioridad.clase]} title={t('priority.label')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg>
+      <span class:list={['card-priority tarjeta-meta font-semibold', prioridad.clase]} title={t('priority.label')}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/></svg>
         <span class="sr-only">{t('priority.label')}:</span>
         {t(`priority.${prioridad.nivel}`)}
       </span>
     )}
 
     {issue.recurrence && (
-      <span class="card-repeat flex items-center gap-1 text-[10px] text-forge-muted" title={t('repeat.card').replace('{regla}', describir(issue.recurrence, lang))}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <span class="card-repeat tarjeta-meta" title={t('repeat.card').replace('{regla}', describir(issue.recurrence, lang))}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         <span class="sr-only">{t('repeat.card').replace('{regla}', describir(issue.recurrence, lang))}</span>
       </span>
     )}
 
     {/* Progreso de las subtareas, con texto: «2/5» dice más que una barra sola. */}
     {subTotal > 0 && (
-      <span class="card-subtareas flex items-center gap-1 text-[10px] font-mono text-forge-muted" title={t('subtasks.progress').replace('{hechas}', String(subHechas)).replace('{total}', String(subTotal))}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span class="card-subtareas tarjeta-meta" title={t('subtasks.progress').replace('{hechas}', String(subHechas)).replace('{total}', String(subTotal))}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         <span class="sr-only">{t('subtasks.progress').replace('{hechas}', String(subHechas)).replace('{total}', String(subTotal))}</span>
         <span aria-hidden="true" class="card-subtareas-texto">{subHechas}/{subTotal}</span>
       </span>
     )}
 
     {apuntes > 0 && (
-      <span class="card-notes flex items-center gap-1 text-[10px] text-forge-muted" title={t('card.linked_notes').replace('{n}', String(apuntes))}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span class="card-notes tarjeta-meta" title={t('card.linked_notes').replace('{n}', String(apuntes))}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span class="sr-only">{t('card.linked_notes').replace('{n}', String(apuntes))}</span>
         <span aria-hidden="true">{apuntes}</span>
       </span>
     )}
+
+    <span class="empuja">
+      {funciones.tiempo && hecha && horas > 0 && (
+        <span class="due" title={t('card.total_time')}>{t('card.logged_hours').replace('{h}', String(horas))}</span>
+      )}
+      {issue.due_date && (
+        <span class:list={['card-due due', vence && 'late']}>
+          {/* `toLocaleDateString()` sin argumentos usa el idioma del navegador,
+              no el elegido en la aplicación. */}
+          <span class="sr-only">{t('card.due')} </span>{fecha(String(issue.due_date).slice(0, 10), lang)}{issue.due_time ? ` · ${issue.due_time}` : ''}
+        </span>
+      )}
+      {/* Responsable solo si lo hay. Persona con cuenta: su foto o sus
+          iniciales en el arco. Contacto sin cuenta: borde discontinuo. */}
+      <span class:list={['card-responsable avatar', responsable?.tipo === 'contacto' && 'avatar-contacto', !responsable && 'hidden']}
+        style={responsable ? `--c:${tonoDe(responsable.nombre)}` : undefined}
+        title={responsable?.nombre || t('modal.unassigned')} role="img" aria-label={responsable?.nombre || t('modal.unassigned')}>
+        {esFotoReal(responsable?.avatar) ? (
+          <img src={responsable!.avatar!} alt="" loading="lazy" decoding="async" />
+        ) : responsable ? (
+          <span aria-hidden="true">{iniciales(responsable.nombre)}</span>
+        ) : null}
+      </span>
+    </span>
   </div>
 
   {/*
-    Mover una tarea, en móvil.
-
-    El arrastrar y soltar del tablero es HTML5 y **no dispara con eventos
-    táctiles**. Un desplegable en la tarjeta y no un arrastre táctil imitado:
-    reproducir el arrastre con `touchmove` sobre un carril que además se
-    desplaza en horizontal es pelearse con el gesto de desplazamiento del
-    sistema, y se pierden las dos cosas.
+    Mover una tarea, en móvil. El arrastrar y soltar del tablero es HTML5 y no
+    dispara con eventos táctiles; un desplegable en la tarjeta sí.
   */}
   {canEdit && (
     <select
-      class="mover-issue sm:hidden w-full mt-3 mb-1 bg-forge-bg border border-forge-border rounded-md px-2 py-1.5 text-xs text-forge-text focus:outline-none focus:border-forge-secondary"
+      class="mover-issue campo sm:hidden mt-3 text-xs"
       data-issue-id={issue.id}
       aria-label={t('card.move_to')}
     >
-      {[
-        { v: 'todo', t: t('status.todo') },
-        { v: 'in_progress', t: t('status.in_progress') },
-        { v: 'review', t: t('status.review') },
-        { v: 'done', t: t('status.done') },
-      ].map((o) => (
-        <option value={o.v} selected={issue.status === o.v}>{o.t}</option>
+      {ESTADOS.map((e) => (
+        <option value={e} selected={issue.status === e}>{t(INFO[e].i18n)}</option>
       ))}
     </select>
   )}
 
-  {/* El cronómetro, solo si el espacio mide el tiempo. */}
+  {/* El cronómetro, solo si el espacio mide el tiempo. En marcha se ve
+      siempre, porque es estado; para arrancarlo, el botón aparece al
+      acercarse (en táctil, siempre). */}
   {funciones.tiempo && canEdit && !hecha && (
-    <div class="card-timer mt-3 flex justify-end">
-      {issue.active_session_start ? (
-        <div class="flex items-center gap-2">
-          <div class="active-timer-display flex items-center gap-1.5 text-forge-accent-text bg-forge-secondary/10 border border-forge-secondary/20 px-2 py-1 rounded text-xs font-mono font-bold" data-start-time={issue.active_session_start} data-logged-hours={issue.logged_hours || 0}>
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-forge-secondary opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-forge-secondary"></span>
-            </span>
-            <span class="timer-text">00:00:00</span>
-          </div>
-          <button class="btn-stop-timer flex items-center gap-1 text-forge-on-accent bg-forge-secondary hover:bg-forge-secondary/80 px-2 py-1 rounded transition-colors text-[10px] font-bold shadow-sm" data-issue-id={issue.id} title={t('card.stop_timer')}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
-            {t('card.timer_stop')}
-          </button>
-        </div>
-      ) : (
-        <button class="btn-start-timer flex items-center gap-1 text-forge-muted hover:text-forge-accent-text transition-colors text-xs font-bold" data-issue-id={issue.id} title={t('card.start_timer')}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+    issue.active_session_start ? (
+      <div class="card-timer tarjeta-crono">
+        <span class="active-timer-display en-marcha" data-start-time={issue.active_session_start} data-logged-hours={issue.logged_hours || 0}>
+          {t('card.timer_running')} <b class="timer-text">00:00:00</b>
+        </span>
+        <button type="button" class="btn-stop-timer btn btn-secondary btn-sm" data-issue-id={issue.id} title={t('card.stop_timer')}>
+          {t('card.timer_stop')}
+        </button>
+      </div>
+    ) : (
+      <div class="card-timer flex justify-end -mb-1 mt-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+        <button type="button" class="btn-start-timer btn btn-ghost btn-sm" data-issue-id={issue.id} title={t('card.start_timer')}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 19 12 6 20 6 4"></polygon></svg>
           {t('card.timer_start')}
         </button>
-      )}
-    </div>
-  )}
-  {funciones.tiempo && hecha && horas > 0 && (
-    <div class="mt-3 flex justify-end">
-      <div class="flex items-center gap-1 text-forge-success bg-forge-success/10 px-2 py-1 rounded text-xs font-bold cursor-help" title={t('card.total_time')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        {t('card.logged_hours').replace('{h}', String(horas))}
       </div>
-    </div>
+    )
   )}
 </div>
-
-<style>
-  /*
-    La franja toma el color del tipo del ticket.
-
-    Va por variable CSS y no por clase de Tailwind porque Tailwind genera sus
-    clases leyendo el código: un color que solo se conoce en tiempo de
-    ejecución nunca acaba en la hoja de estilos.
-  */
-  .issue-card::before {
-    content: '';
-    background: var(--franja);
-  }
-</style>

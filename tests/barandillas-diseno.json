@@ -10,7 +10,6 @@
   },
   "paleta_tailwind": {
     "src/components/dashboard/Hub.astro": 1,
-    "src/components/jira/IssueDetailsModal.astro": 8,
     "src/components/notion/EditorClient.astro": 1,
     "src/components/notion/PageTreeItem.astro": 1,
     "src/layouts/MainLayout.astro": 2,
@@ -26,11 +25,6 @@
     "src/components/dashboard/Hub.astro": 7,
     "src/components/dashboard/TaskTable.astro": 2,
     "src/components/db/CeldaValor.astro": 1,
-    "src/components/jira/BoardColumn.astro": 2,
-    "src/components/jira/IssueCard.astro": 10,
-    "src/components/jira/IssueDetailsModal.astro": 31,
-    "src/components/jira/KanbanBoard.astro": 1,
-    "src/components/labels/LabelChip.astro": 1,
     "src/components/layout/BottomNav.astro": 1,
     "src/components/layout/Sidebar.astro": 4,
     "src/components/layout/TopBar.astro": 20,
@@ -41,7 +35,6 @@
     "src/pages/people.astro": 4,
     "src/pages/settings.astro": 4,
     "src/pages/u/[username].astro": 1,
-    "src/pages/w/[sys_tag]/board.astro": 5,
     "src/pages/w/[sys_tag]/db/[id].astro": 4,
     "src/pages/w/[sys_tag]/db/index.astro": 8,
     "src/pages/w/[sys_tag]/files.astro": 6,
@@ -50,7 +43,6 @@
   },
   "gradiente_radial": {
     "src/components/dashboard/Hub.astro": 3,
-    "src/components/jira/BoardColumn.astro": 1,
     "src/components/landing/Landing.astro": 1,
     "src/components/layout/TopBar.astro": 1,
     "src/components/notion/PageTree.astro": 3,
@@ -58,8 +50,6 @@
   },
   "eleva_al_pasar": {
     "src/components/dashboard/Hub.astro": 2,
-    "src/components/jira/IssueCard.astro": 1,
-    "src/components/jira/IssueDetailsModal.astro": 1,
     "src/components/layout/TopBar.astro": 2,
     "src/layouts/MainLayout.astro": 1,
     "src/pages/404.astro": 1,
@@ -68,24 +58,19 @@
     "src/pages/w/[sys_tag]/db/[id].astro": 1,
     "src/pages/w/[sys_tag]/db/index.astro": 2
   },
-  "desenfoque": {
-    "src/components/jira/BoardColumn.astro": 2,
-    "src/components/jira/IssueDetailsModal.astro": 4,
-    "src/components/jira/KanbanBoard.astro": 2,
-    "src/components/layout/TopBar.astro": 6,
-    "src/layouts/MainLayout.astro": 12,
-    "src/pages/w/[sys_tag]/db/[id].astro": 1,
-    "src/pages/w/[sys_tag]/db/index.astro": 3
-  },
   "halo": {
-    "src/components/jira/BoardColumn.astro": 1,
     "src/components/landing/Landing.astro": 1,
     "src/components/layout/TopBar.astro": 1,
     "src/pages/404.astro": 2,
     "src/pages/w/[sys_tag]/db/[id].astro": 1
   },
+  "desenfoque": {
+    "src/components/layout/TopBar.astro": 6,
+    "src/layouts/MainLayout.astro": 12,
+    "src/pages/w/[sys_tag]/db/[id].astro": 1,
+    "src/pages/w/[sys_tag]/db/index.astro": 3
+  },
   "animacion_perpetua": {
-    "src/components/jira/IssueCard.astro": 1,
     "src/components/layout/TopBar.astro": 1,
     "src/pages/settings.astro": 1
   }
