@@ -17,29 +17,25 @@ const isActive = page.id === currentPageId;
 
 {/* `data-page-id` y `data-parent-id` los usan arrastrar y «Mover a…» para
     saber dónde está cada nota sin volver a preguntar al servidor. */}
-<li class="tree-item pl-4 relative group/tree" data-page-id={page.id} data-parent-id={page.parent_page_id ?? ''}>
+<li class="tree-item relative group/tree" data-page-id={page.id} data-parent-id={page.parent_page_id ?? ''}>
   <div
-    class={`tree-row flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors group/item ${isActive ? 'bg-forge-panel border border-forge-border shadow-inner' : 'hover:bg-forge-bg'}`}
+    class:list={['tree-row flex items-center gap-1.5 pl-1.5 pr-1 min-h-[2rem] rounded-full cursor-pointer group/item', isActive ? 'bg-forge-surface-2' : 'hover:bg-forge-surface-2']}
     draggable={canEdit ? 'true' : undefined}
   >
     {hasChildren ? (
-      <button class="tree-toggle w-4 h-4 text-forge-muted hover:text-forge-accent-text transition-colors" aria-label={t('kb.tree.toggle')} aria-expanded="false">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right transform transition-transform group-[.expanded]/tree:rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      <button class="tree-toggle w-5 h-5 flex items-center justify-center shrink-0 text-forge-muted hover:text-forge-text" aria-label={t('kb.tree.toggle')} aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform transition-transform group-[.expanded]/tree:rotate-90" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
       </button>
     ) : (
-      <span class="w-4 h-4"></span>
+      <span class="w-5 h-5 shrink-0"></span>
     )}
     {/* Un emoji no hereda el color del tema y se dibuja distinto en cada
         sistema; el resto del árbol son iconos de línea. Si la página tiene uno
         propio guardado se respeta, y si no, el de documento. */}
-    {page.icon ? (
-      <span class="text-sm">{page.icon}</span>
-    ) : (
-      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-forge-muted" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/></svg>
-    )}
+    {page.icon && <span class="text-sm" aria-hidden="true">{page.icon}</span>}
     {/* `draggable="false"` en el enlace: si no, el navegador arrastra la URL
         en vez de la fila, y soltarla no mueve nada. */}
-    <a href={`/w/${sys_tag}/p/${page.id}`} draggable="false" class={`tree-title flex-1 text-sm truncate select-none ${isActive ? 'text-forge-text font-bold' : 'text-forge-text hover:text-forge-muted transition-colors'}`} aria-current={isActive ? 'page' : undefined}>
+    <a href={`/w/${sys_tag}/p/${page.id}`} draggable="false" class:list={['tree-title flex-1 text-sm truncate select-none text-forge-text', isActive && 'font-semibold']} aria-current={isActive ? 'page' : undefined}>
       {page.title}
     </a>
 
@@ -47,13 +43,13 @@ const isActive = page.id === currentPageId;
         teclado y siempre en pantallas táctiles, donde no hay ratón que pase. */}
     {canEdit && (
       <div class="flex items-center opacity-0 group-hover/item:opacity-100 group-focus-within/item:opacity-100 pointer-coarse:opacity-100 transition-opacity">
-        <button class="move-tree-page-btn w-5 h-5 flex items-center justify-center rounded hover:bg-forge-border text-forge-muted hover:text-forge-text transition-all" data-id={page.id} aria-label={t('kb.tree.move')} title={t('kb.tree.move')}>
+        <button class="move-tree-page-btn btn btn-ghost btn-icon btn-sm !w-6 !h-6" data-id={page.id} aria-label={t('kb.tree.move')} title={t('kb.tree.move')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>
         </button>
-        <button class="add-child-btn w-5 h-5 flex items-center justify-center rounded hover:bg-forge-border text-forge-muted hover:text-forge-text transition-all" data-parent-id={page.id} aria-label={t('kb.tree.add_child')} title={t('kb.tree.add_child')}>
+        <button class="add-child-btn btn btn-ghost btn-icon btn-sm !w-6 !h-6" data-parent-id={page.id} aria-label={t('kb.tree.add_child')} title={t('kb.tree.add_child')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         </button>
-        <button class="delete-tree-page-btn w-5 h-5 flex items-center justify-center rounded hover:bg-red-500/20 text-forge-muted hover:text-forge-error transition-all" data-id={page.id} aria-label={t('kb.delete_page')} title={t('kb.delete_page')}>
+        <button class="delete-tree-page-btn btn btn-ghost btn-icon btn-sm !w-6 !h-6 hover:!text-forge-error" data-id={page.id} aria-label={t('kb.delete_page')} title={t('kb.delete_page')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       </div>
@@ -61,7 +57,7 @@ const isActive = page.id === currentPageId;
   </div>
 
   {hasChildren && (
-    <ul class="tree-children border-l border-forge-border/50 transition-colors ml-2 mt-1 hidden group-[.expanded]/tree:block" data-parent-id={page.id}>
+    <ul class="tree-children border-l border-forge-border ml-[1.05rem] pl-1 mt-px space-y-px hidden group-[.expanded]/tree:block" data-parent-id={page.id}>
       {children.map(child => (
         <Astro.self page={child} childrenMap={childrenMap} currentPageId={currentPageId} sys_tag={sys_tag} canEdit={canEdit} t={t} />
       ))}

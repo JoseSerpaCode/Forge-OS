@@ -2,6 +2,8 @@
 import { useTranslations } from '../../i18n/ui';
 import LabelPicker from '../labels/LabelPicker.astro';
 import { loadNote } from '../../lib/notes/content';
+import { tonoDe, esFotoReal } from '../../lib/tonos';
+import { iniciales } from '../../lib/responsables';
 import db from '../../lib/db';
 import { listar as listarContactos } from '../../lib/contactos';
 
@@ -122,14 +124,16 @@ function formatDate(dateStr: string | undefined) {
 <div class="flex-1 min-w-0 flex flex-col h-full bg-forge-bg overflow-y-auto">
   {/* En móvil el contenido usa el ancho entero: 64 px de padding lateral sobre
     360 son casi un quinto de la pantalla. */}
-  <div class="max-w-3xl mx-auto w-full px-4 sm:px-8 py-6 sm:py-12 flex flex-col min-h-full">
+  {/* Medida de lectura de 68 caracteres (docs/rediseno/notas.html): más ancho
+      cansa al leer; el resto de la columna queda en blanco a propósito. */}
+  <div class="max-w-[68ch] w-full px-4 sm:px-10 py-6 sm:py-8 flex flex-col min-h-full">
     
     <!-- Breadcrumbs -->
     {parentTitle && (
-      <nav class="text-xs font-mono text-forge-muted mb-4 flex items-center gap-2">
-        <a href={`/w/${sysTag}/p/${parentId}`} class="hover:text-forge-text transition-colors">{parentTitle}</a>
-        <span class="text-forge-border">/</span>
-        <span class="text-forge-text truncate">{initialTitle || 'Untitled'}</span>
+      <nav class="text-sm text-forge-muted mb-3 flex items-center gap-2" aria-label={t('a11y.breadcrumbs')}>
+        <a href={`/w/${sysTag}/p/${parentId}`} class="hover:text-forge-text hover:underline underline-offset-2">{parentTitle}</a>
+        <span class="text-forge-border-strong" aria-hidden="true">/</span>
+        <span class="text-forge-text truncate" aria-current="page">{initialTitle || t('kb.untitled')}</span>
       </nav>
     )}
 
@@ -149,7 +153,7 @@ function formatDate(dateStr: string | undefined) {
         id="btn-open-tree"
         aria-controls="page-tree-aside"
         aria-expanded="false"
-        class="md:hidden shrink-0 w-10 h-10 rounded-lg border border-forge-border text-forge-muted hover:text-forge-accent-text flex items-center justify-center"
+        class="md:hidden shrink-0 btn btn-secondary btn-icon"
         aria-label={t('kb.open_tree')}
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -157,8 +161,8 @@ function formatDate(dateStr: string | undefined) {
       <input type="text" id="editor-title" aria-label={t('a11y.page_title')} 
         value={initialTitle}
         readonly={!canEdit}
-        class="text-2xl sm:text-4xl font-bold bg-transparent text-forge-text focus:outline-none focus:border-b focus:border-forge-secondary border-b border-transparent w-full transition-colors pb-1"
-        placeholder="Untitled" autocomplete="off" />
+        class="page-title !text-[clamp(2rem,3.6vw,3.25rem)] bg-transparent focus:outline-none border-b-2 border-transparent focus:border-forge-text w-full pb-1"
+        placeholder={t('kb.untitled')} autocomplete="off" />
       {/*
         Borrar la página estaba **fuera de la pantalla y solo con el ratón
         encima**: `-right-12` la sacaba del viewport en móvil, y `opacity-0
@@ -167,27 +171,30 @@ function formatDate(dateStr: string | undefined) {
         el comportamiento discreto de aparecer al acercarse.
       */}
       {canEdit && (
-        <button id="btn-delete-page" class="shrink-0 sm:absolute sm:-right-12 w-9 h-9 rounded flex items-center justify-center text-forge-muted hover:bg-red-500/20 hover:text-forge-error transition-colors sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100" title={t('kb.delete_page')} aria-label={t('kb.delete_page')}>
+        <button id="btn-delete-page" class="shrink-0 btn btn-ghost btn-icon hover:!text-forge-error sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100" title={t('kb.delete_page')} aria-label={t('kb.delete_page')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
         </button>
       )}
     </div>
 
     <!-- Metadata Bar -->
-    <div class="flex items-center gap-3 mb-10 pb-4 border-b border-forge-border/50">
-      <img src={authorAvatar || '/default-avatar.svg'} class="w-6 h-6 rounded-full border border-forge-border bg-forge-panel" alt="Author" loading="lazy" decoding="async" />
-      <div class="flex items-center gap-2 text-xs font-mono text-forge-muted">
-        <span>{t('kb.forged_by')} <span class="text-forge-text font-bold">{authorName || '—'}</span></span>
-        <span class="text-forge-border">•</span>
+    <div class="flex items-center flex-wrap gap-2.5 mb-7 pb-4 border-b border-forge-border text-sm text-forge-muted">
+      <span class="avatar" style={`--c:${tonoDe(authorName)}`} aria-hidden="true">{esFotoReal(authorAvatar) ? <img src={authorAvatar} alt="" loading="lazy" decoding="async" /> : iniciales(authorName || '?')}</span>
+      <div class="flex items-center gap-1.5">
+        <span><b class="text-forge-text font-semibold">{authorName || '—'}</b></span>
+        <span aria-hidden="true">·</span>
         <span>{t('kb.updated')} {formatDate(updatedAt)}</span>
         {initialContent === 'null' || !initialContent || initialContent === '{}' ? (
           <>
-            <span class="text-forge-border">•</span>
-            <span class="bg-forge-primary/10 text-forge-primary px-1.5 py-0.5 rounded border border-forge-primary/30">Draft</span>
+            <span aria-hidden="true">·</span>
+            <span class="chip">{t('kb.draft')}</span>
           </>
         ) : null}
       </div>
-      <div class="ml-auto flex items-center gap-2">
+      <div class="ml-auto flex items-center gap-1">
+        {/* El guardado, siempre en el mismo sitio: a la derecha de la cabecera
+            de la nota. Abajo a la derecha flotaba sobre el texto. */}
+        <span id="save-status" class="text-sm text-forge-muted mr-1" aria-live="polite">{t('kb.saved')}</span>
         {/*
           Los atajos del editor se esconden en móvil.
 
@@ -197,12 +204,12 @@ function formatDate(dateStr: string | undefined) {
           sitio para lo que sí se usa.
         */}
         <div class="relative group hidden md:block">
-          <button class="text-forge-muted hover:text-forge-primary px-2 py-1.5 rounded-md transition-colors" aria-label={t('kb.editor_tips')}>
+          <button class="btn btn-ghost btn-icon btn-sm" aria-label={t('kb.editor_tips')}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
           </button>
           
-          <div class="absolute right-0 top-full mt-2 w-56 bg-forge-panel border border-forge-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-3 text-xs text-forge-text pointer-events-none">
-            <h4 class="font-bold text-forge-primary mb-2 border-b border-forge-border pb-1">{t('kb.shortcuts')}</h4>
+          <div class="menu absolute right-0 top-full mt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible z-50 !p-3 text-sm text-forge-text pointer-events-none">
+            <h4 class="font-bold mb-2 pb-1.5 border-b border-forge-border">{t('kb.shortcuts')}</h4>
             <ul class="space-y-2 text-forge-muted">
               {/* Solo los atajos que el navegador cede.
 
@@ -215,16 +222,16 @@ function formatDate(dateStr: string | undefined) {
 
                   Los cinco textos estaban además escritos en inglés a mano;
                   solo el título pasaba por el diccionario. */}
-              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.slash')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50">/</span></li>
-              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.markdown')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50 whitespace-nowrap">1. - [] # &gt;</span></li>
-              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.move')}</span> <span class="text-[10px]">{t('kb.sc.drag')} <span class="bg-forge-bg px-1 py-0.5 rounded font-bold border border-forge-border/50">⋮⋮</span></span></li>
-              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.undo')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50 whitespace-nowrap">Ctrl Z / Y</span></li>
-              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.styles')}</span> <span class="font-mono text-[10px] bg-forge-bg px-1.5 py-0.5 rounded border border-forge-border/50 whitespace-nowrap">Ctrl B / I</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.slash')}</span> <span class="kbd">/</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.markdown')}</span> <span class="kbd whitespace-nowrap">1. - [] # &gt;</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.move')}</span> <span class="text-xs">{t('kb.sc.drag')} <span class="kbd">⋮⋮</span></span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.undo')}</span> <span class="kbd whitespace-nowrap">Ctrl Z / Y</span></li>
+              <li class="flex justify-between items-center gap-2"><span>{t('kb.sc.styles')}</span> <span class="kbd whitespace-nowrap">Ctrl B / I</span></li>
             </ul>
           </div>
         </div>
 
-        <button id="btn-share-page" class="text-forge-muted hover:text-forge-accent-text hover:bg-forge-secondary/10 px-3 py-1.5 rounded-md text-xs font-bold transition-all border border-transparent hover:border-forge-secondary/30 flex items-center gap-1" title="Copy Link to Page">
+        <button id="btn-share-page" class="btn btn-ghost btn-sm" title={t('kb.copy_link')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
           {t('kb.share')}
         </button>
@@ -235,7 +242,7 @@ function formatDate(dateStr: string | undefined) {
         es lo que permite cruzar los apuntes de «Parcial 2» con las tareas de
         «Parcial 2». Se ven aunque no se pueda editar. */}
     {(canEdit || labels.length > 0) && (
-      <div class="-mt-6 mb-8">
+      <div class="-mt-3 mb-7">
         <LabelPicker
           sysTag={sysTag}
           entityType="page"
@@ -248,7 +255,7 @@ function formatDate(dateStr: string | undefined) {
     )}
 
     {avisoCarga && (
-      <p role="alert" class="mb-6 rounded-lg border border-forge-error/40 bg-forge-error/10 px-4 py-3 text-sm text-forge-text">{avisoCarga}</p>
+      <p role="alert" class="mb-6 rounded-[14px] border border-forge-error px-4 py-3 text-sm text-forge-text">{avisoCarga}</p>
     )}
 
     {/* El editor. `page-editor` es el nombre de siempre: lo buscan los tests
@@ -280,7 +287,7 @@ function formatDate(dateStr: string | undefined) {
             </button>
           </div>
           <form data-link-form class="hidden">
-            <input data-link-input type="text" inputmode="url" autocomplete="off" aria-label={t('kb.fmt.link')} placeholder={t('kb.fmt.link_placeholder')} class="w-64 bg-forge-bg border border-forge-border rounded px-2 py-1 text-sm text-forge-text focus:outline-none focus:border-forge-accent-primary" />
+            <input data-link-input type="text" inputmode="url" autocomplete="off" aria-label={t('kb.fmt.link')} placeholder={t('kb.fmt.link_placeholder')} class="campo !w-64 !h-8" />
           </form>
         </div>
 
@@ -292,9 +299,6 @@ function formatDate(dateStr: string | undefined) {
       </>
     )}
 
-    <div class="fixed bottom-4 right-8 flex items-center gap-2 text-xs font-mono text-forge-muted">
-      <span id="save-status">{t('kb.saved')}</span>
-    </div>
   </div>
 </div>
 
@@ -456,15 +460,22 @@ function formatDate(dateStr: string | undefined) {
     padding-bottom: 6rem;
     color: var(--forge-text);
     caret-color: var(--forge-accent-primary);
+    font-size: 1rem;
+    line-height: 1.65;
   }
+  .note-content h1 { font-size: 1.625rem; font-weight: 800; font-stretch: 75%; line-height: 1.1; }
+  .note-content h2 { font-size: 1.25rem; font-weight: 700; }
+  .note-content h3 { font-size: 1rem; font-weight: 700; }
+  .note-content ul:not([data-type='taskList']) { list-style: square; }
+  .note-content li::marker { color: var(--forge-accent-primary); }
   .note-content p { margin: 0.25em 0; min-height: 1.6em; }
   .note-content :where(h1, h2, h3) { margin-top: 1.2em; margin-bottom: 0.2em; color: var(--forge-text); }
   .note-content :where(ul, ol) { margin: 0; padding-left: 1.5em; }
   .note-content li { margin: 0.15em 0; }
   .note-content li > p { margin: 0; }
   .note-content blockquote {
-    border-left: 4px solid var(--forge-accent-secondary);
-    background: var(--forge-bg);
+    border-left: 3px solid var(--forge-border-strong);
+    background: transparent;
     padding: 0.5em 1em;
     margin: 0.75em 0;
     font-style: normal;
@@ -475,9 +486,11 @@ function formatDate(dateStr: string | undefined) {
   .note-content hr { border-color: var(--forge-border); margin: 1.5em 0; }
   .note-content a { color: var(--forge-accent-text); text-decoration: underline; cursor: text; }
 
+  /* Resaltado: tinte del naranja con el texto en tinta. Blanco sobre el
+     naranja de relleno no llega a 4,5:1. */
   .note-content mark {
-    background-color: var(--forge-accent-primary);
-    color: #fff;
+    background-color: color-mix(in srgb, var(--forge-accent-primary) 28%, transparent);
+    color: var(--forge-text);
     padding: 0.1rem 0.2rem;
     border-radius: 3px;
   }
@@ -488,20 +501,23 @@ function formatDate(dateStr: string | undefined) {
   .note-content :where(code)::after { content: none !important; }
   .note-content :not(pre) > code {
     color: var(--forge-text);
-    background-color: var(--forge-bg);
-    border: 1px solid var(--forge-border);
-    padding: 0.1rem 0.3rem;
-    border-radius: 4px;
-    font-size: 0.9em;
+    background-color: var(--forge-surface-2);
+    border: 0;
+    padding: 0.05rem 0.3rem;
+    border-radius: 6px;
+    font-size: 0.86em;
     font-weight: 400;
     font-family: var(--forge-mono);
   }
   .note-content pre {
-    background: var(--forge-bg);
+    background: var(--forge-surface-2);
     color: var(--forge-text);
-    border: 1px solid var(--forge-border);
-    border-radius: 8px;
-    padding: 0.75em 1em;
+    border: 0;
+    border-left: 3px solid var(--forge-border-strong);
+    border-radius: 0;
+    padding: 0.75em 0.875em;
+    font-size: 0.8125rem;
+    line-height: 1.6;
     font-family: var(--forge-mono);
   }
   .note-content pre code { background: none; border: 0; padding: 0; color: inherit; }
@@ -527,7 +543,7 @@ function formatDate(dateStr: string | undefined) {
     vertical-align: top;
     color: var(--forge-text);
   }
-  .note-content th { background: var(--forge-panel); font-weight: 700; text-align: left; }
+  .note-content th { background: var(--forge-surface-2); font-weight: 650; text-align: left; }
   .note-content .selectedCell { background: color-mix(in srgb, var(--forge-accent-primary) 15%, transparent); }
 
   /* Texto de ayuda de la línea vacía. Va con el color atenuado del tema, sin
@@ -547,7 +563,7 @@ function formatDate(dateStr: string | undefined) {
   .note-content ::selection,
   .note-content *::selection {
     background-color: var(--forge-accent-primary);
-    color: #ffffff;
+    color: var(--forge-on-accent);
   }
 
   /* Línea que marca dónde caerá un bloque al soltarlo. */
@@ -587,9 +603,9 @@ function formatDate(dateStr: string | undefined) {
     gap: 2px;
     padding: 4px;
     background: var(--forge-panel);
-    border: 1px solid var(--forge-border);
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--forge-border-strong);
+    border-radius: 14px;
+    box-shadow: var(--forge-shadow-float);
     z-index: 40;
     visibility: hidden;
   }
@@ -625,9 +641,9 @@ function formatDate(dateStr: string | undefined) {
     overflow-y: auto;
     padding: 4px;
     background: var(--forge-panel);
-    border: 1px solid var(--forge-border);
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--forge-border-strong);
+    border-radius: 14px;
+    box-shadow: var(--forge-shadow-float);
     z-index: 50;
   }
   .note-slash-item {
@@ -636,8 +652,8 @@ function formatDate(dateStr: string | undefined) {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 6px 8px;
-    border-radius: 6px;
+    padding: 7px 10px;
+    border-radius: 10px;
     font-size: 14px;
     color: var(--forge-text);
     text-align: left;

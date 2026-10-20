@@ -9,8 +9,6 @@
   },
   "texto_minusculo": {
     "src/components/db/CeldaValor.astro": 1,
-    "src/components/notion/EditorClient.astro": 5,
-    "src/components/notion/PageTree.astro": 1,
     "src/layouts/MainLayout.astro": 3,
     "src/pages/activity.astro": 6,
     "src/pages/people.astro": 4,
@@ -23,7 +21,6 @@
   },
   "gradiente_radial": {
     "src/components/landing/Landing.astro": 1,
-    "src/components/notion/PageTree.astro": 3,
     "src/pages/u/[username].astro": 1
   },
   "halo": {
@@ -32,8 +29,6 @@
     "src/pages/w/[sys_tag]/db/[id].astro": 1
   },
   "paleta_tailwind": {
-    "src/components/notion/EditorClient.astro": 1,
-    "src/components/notion/PageTreeItem.astro": 1,
     "src/layouts/MainLayout.astro": 2,
     "src/pages/activity.astro": 16,
     "src/pages/settings.astro": 25,
