@@ -12,6 +12,8 @@ import { useTranslations } from '../../i18n/ui';
 import { nombreDeRol } from '../../lib/roles';
 import { solicitudesPendientes as contarSolicitudes, rolEnEspacio, sysTagDeEspacio } from '../../lib/consultas';
 import { listar as listarVistas } from '../../lib/vistasGuardadas';
+import { tonoDe, esFotoReal } from '../../lib/tonos';
+import { iniciales } from '../../lib/responsables';
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
 
@@ -62,172 +64,91 @@ if (workspaceId && user?.is_sysadmin !== 1) {
 const isOwner = userRole === 'owner' || userRole === 'sysadmin';
 // Amigos y solicitudes, solo si la cuenta los tiene encendidos (migración 52).
 const socialOn = !user?.is_guest && user?.social_enabled === 1;
+
+// Cuántas tareas quedan por hacer y cuántas notas hay: un dato que ayuda a
+// decidir adónde ir, no adorno. Las subtareas no cuentan (no son tarjetas).
+const abiertas = workspaceId
+  ? (db.prepare("SELECT COUNT(*) AS n FROM issues WHERE workspace_id = ? AND status != 'done' AND parent_issue_id IS NULL").get(workspaceId) as any).n as number
+  : 0;
+const notas = workspaceId ? (db.prepare('SELECT COUNT(*) AS n FROM pages WHERE workspace_id = ?').get(workspaceId) as any).n as number : 0;
 ---
 
-{/* Fuera del DOM en móvil, no solo fuera de la pantalla.
+{/* Fuera del DOM en móvil, no solo fuera de la pantalla: desde que la barra
+    inferior sustituyó a la hamburguesa no hay forma de abrirlo, y ensanchaba
+    la región desplazable del documento.
 
-    Seguía renderizándose con `-translate-x-full`, o sea 240 px de contenido
-    plantados en `left: -240`. Desde que la barra inferior sustituyó a la
-    hamburguesa ya no hay forma de abrirlo, así que era peso muerto que además
-    ensancha la región desplazable del documento: el navegador deja llevar la
-    vista hasta él, y la página aparece corrida con el texto cortado. */}
-<aside id="app-sidebar" class="hidden md:flex fixed md:static inset-y-0 left-0 z-50 w-60 bg-forge-panel border-r border-forge-border flex-col h-full shrink-0 transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0">
-  
-  <!-- Logo -->
-  <div class="h-14 px-4 border-b border-forge-border flex items-center hover:bg-forge-bg transition-colors shrink-0">
+    Rediseño «Taller» (docs/rediseno/panel.html): mismo fondo que la página,
+    enlaces en píldora sin iconos —la etiqueta ya lo dice—, el activo en tinta
+    con el punto naranja, y el nombre del espacio como rótulo de su sección. */}
+<aside id="app-sidebar" class="hidden md:flex fixed md:static inset-y-0 left-0 z-50 w-[14.5rem] bg-forge-bg border-r border-forge-border flex-col h-full shrink-0">
+
+  <div class="h-[3.25rem] px-4 border-b border-forge-border flex items-center shrink-0">
     <Logo href="/" size="sm" />
   </div>
 
-  <!-- Workspace switcher -->
   {workspaceName && (
-    <a href="/" class="mx-3 mt-3 mb-4 flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-forge-border/50 bg-forge-bg/30 hover:border-forge-secondary/50 hover:bg-forge-bg transition-colors group text-left shrink-0" title={t('sidebar.switch_ws')} aria-label={t('sidebar.switch_ws')}>
-      <div class="flex-1 min-w-0">
-        <div class="text-[9px] text-forge-muted font-bold tracking-widest uppercase">{t('sidebar.workspace') || 'Workspace'}</div>
-        <span class="text-xs font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors block">{workspaceName}</span>
-      </div>
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted shrink-0"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+    <a href="/" class="ws-switch" title={t('sidebar.switch_ws')} aria-label={`${t('sidebar.switch_ws')}: ${workspaceName}`}>
+      <span class="min-w-0">
+        <strong class="block truncate">{workspaceName}</strong>
+        {sys_tag && <span class="block truncate text-xs text-forge-muted">#{sys_tag}</span>}
+      </span>
     </a>
   )}
 
-  <!-- Nav -->
-  <nav class="flex-1 overflow-y-auto py-3 px-3 space-y-3">
-    {/*
-      Navegación global, siempre visible: no depende de que haya un workspace
-      seleccionado. /activity solo era alcanzable desde la columna derecha del
-      Hub; al retirarla, esta es su única entrada.
-    */}
-    <a href="/" class={`sidebar-link ${isHub ? 'active' : ''}`} aria-current={isHub ? 'page' : undefined}>
-      <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
-      {t('sidebar.hub')}
-    </a>
-
-    <a href="/activity" class={`sidebar-link ${isActivity ? 'active' : ''}`} aria-current={isActivity ? 'page' : undefined}>
-      <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      {t('sidebar.activity')}
-    </a>
-
-    <div class="h-px bg-forge-border/50 my-4 mx-1"></div>
+  <nav class="nav-lateral flex-1 overflow-y-auto" aria-label={t('a11y.main_nav')}>
+    {/* Navegación global, siempre visible: no depende de que haya un espacio. */}
+    <a href="/" class:list={['sidebar-link', isHub && 'active']} aria-current={isHub ? 'page' : undefined}><span>{t('sidebar.hub')}</span></a>
+    <a href="/activity" class:list={['sidebar-link', isActivity && 'active']} aria-current={isActivity ? 'page' : undefined}><span>{t('sidebar.activity')}</span></a>
 
     {sys_tag ? (
       <>
-        {/* Dashboard */}
-        <a 
-          href={`/w/${sys_tag}`} 
-          class={`sidebar-link ${isDash ? 'active' : ''}`}
-          aria-current={isDash ? 'page' : undefined}
-        >
-          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-          {t('sidebar.dashboard')}
-        </a>
-
-        {/* Kanban Board */}
-        <a 
-          href={`/w/${sys_tag}/board`} 
-          class={`sidebar-link ${isBoard ? 'active' : ''}`}
-          aria-current={isBoard ? 'page' : undefined}
-        >
-          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="11"/><rect x="17" y="3" width="5" height="7"/></svg>
-          {t('sidebar.kanban')}
+        {workspaceName && <p class="nav-rotulo">{workspaceName}</p>}
+        <a href={`/w/${sys_tag}`} class:list={['sidebar-link', isDash && 'active']} aria-current={isDash ? 'page' : undefined}><span>{t('sidebar.dashboard')}</span></a>
+        <a href={`/w/${sys_tag}/board`} class:list={['sidebar-link', isBoard && 'active']} aria-current={isBoard ? 'page' : undefined}>
+          <span>{t('sidebar.kanban')}</span>
+          {abiertas > 0 && <span class="cuenta" aria-label={t('sidebar.open_count').replace('{n}', String(abiertas))}>{abiertas}</span>}
         </a>
         {vistasGuardadas.length > 0 && (
-          <ul class="vistas-guardadas ml-7 -mt-0.5 mb-1 space-y-0.5" aria-label={t('views.section')} data-sys-tag={sys_tag} data-t-deleted={t('views.deleted')}>
+          <ul class="vistas-guardadas ml-4 mb-1 space-y-0.5" aria-label={t('views.section')} data-sys-tag={sys_tag} data-t-deleted={t('views.deleted')}>
             {vistasGuardadas.map((v) => (
               <li class="group/vista flex items-center gap-1">
                 <a href={v.url} aria-current={urlActual === v.url ? 'page' : undefined}
-                  class:list={['flex-1 min-w-0 truncate text-xs px-2 py-1 rounded-md transition-colors', urlActual === v.url ? 'text-forge-accent-text font-semibold' : 'text-forge-muted hover:text-forge-text']}>{v.name}</a>
-                <button type="button" class="borrar-vista shrink-0 opacity-0 group-hover/vista:opacity-100 focus:opacity-100 text-forge-muted hover:text-forge-error text-xs px-1" data-id={v.id}
+                  class:list={['flex-1 min-w-0 truncate text-sm px-3 py-1 rounded-full', urlActual === v.url ? 'font-semibold text-forge-text bg-forge-surface-2' : 'text-forge-muted hover:text-forge-text hover:bg-forge-surface-2']}>{v.name}</a>
+                <button type="button" class="borrar-vista btn btn-ghost btn-icon btn-sm shrink-0 opacity-0 group-hover/vista:opacity-100 focus:opacity-100" data-id={v.id}
                   aria-label={t('views.delete').replace('{nombre}', v.name)}>×</button>
               </li>
             ))}
           </ul>
         )}
-
-        {/* Knowledge Base */}
-        <a 
-          href={`/w/${sys_tag}/p`} 
-          class={`sidebar-link ${isKB ? 'active' : ''}`}
-          aria-current={isKB ? 'page' : undefined}
-        >
-          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-          {t('sidebar.knowledge')}
+        <a href={`/w/${sys_tag}/p`} class:list={['sidebar-link', isKB && 'active']} aria-current={isKB ? 'page' : undefined}>
+          <span>{t('sidebar.knowledge')}</span>
+          {notas > 0 && <span class="cuenta" aria-hidden="true">{notas}</span>}
         </a>
-
-        {/* Dynamic Databases */}
-        <a 
-          href={`/w/${sys_tag}/db`} 
-          class={`sidebar-link guest-restricted-action ${isDB ? 'active' : ''}`}
-          aria-current={isDB ? 'page' : undefined}
-          data-guest={user?.is_guest ? 'true' : 'false'}
-          data-guest-msg="Please create an account to use Dynamic Databases."
-        >
-          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-          {t('sidebar.databases')}
-        </a>
-
-        {/* Files (Drive) */}
-        <a
-          href={`/w/${sys_tag}/files`}
-          class={`sidebar-link guest-restricted-action ${isFiles ? 'active' : ''}`}
-          aria-current={isFiles ? 'page' : undefined}
-          data-guest={user?.is_guest ? 'true' : 'false'}
-          data-guest-msg="Please create an account to use Files."
-        >
-          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-          {t('drive.sidebar')}
-        </a>
-
-        {/* Metrics */}
-        <a 
-          href={`/w/${sys_tag}/metrics`} 
-          class={`sidebar-link guest-restricted-action ${isMetrics ? 'active' : ''}`}
-          aria-current={isMetrics ? 'page' : undefined}
-          data-guest={user?.is_guest ? 'true' : 'false'}
-          data-guest-msg="Please create an account to view workspace Metrics."
-        >
-          <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-          {t('sidebar.metrics')}
-        </a>
-
-        {/* Divider */}
-        <div class="h-px bg-forge-border/50 my-4 mx-1"></div>
-
-        {/* Settings (owner only) */}
+        <a href={`/w/${sys_tag}/db`} class:list={['sidebar-link guest-restricted-action', isDB && 'active']} aria-current={isDB ? 'page' : undefined}
+          data-guest={user?.is_guest ? 'true' : 'false'} data-guest-msg={t('guest.needs_account')}><span>{t('sidebar.databases')}</span></a>
+        <a href={`/w/${sys_tag}/files`} class:list={['sidebar-link guest-restricted-action', isFiles && 'active']} aria-current={isFiles ? 'page' : undefined}
+          data-guest={user?.is_guest ? 'true' : 'false'} data-guest-msg={t('guest.needs_account')}><span>{t('drive.sidebar')}</span></a>
+        <a href={`/w/${sys_tag}/metrics`} class:list={['sidebar-link guest-restricted-action', isMetrics && 'active']} aria-current={isMetrics ? 'page' : undefined}
+          data-guest={user?.is_guest ? 'true' : 'false'} data-guest-msg={t('guest.needs_account')}><span>{t('sidebar.metrics')}</span></a>
         {isOwner && (
-          <a 
-            href={`/w/${sys_tag}/settings`} 
-            class={`sidebar-link ${isSettings ? 'active' : ''}`}
-            aria-current={isSettings ? 'page' : undefined}
-          >
-            <svg class="sidebar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            {t('sidebar.settings')}
-          </a>
+          <a href={`/w/${sys_tag}/settings`} class:list={['sidebar-link', isSettings && 'active']} aria-current={isSettings ? 'page' : undefined}><span>{t('sidebar.settings')}</span></a>
         )}
       </>
     ) : (
-      <div class="p-4 mt-2 text-sm text-center border border-dashed border-forge-border rounded-lg bg-forge-panel/30 mx-1">
-        <div class="w-8 h-8 rounded-full bg-forge-bg border border-forge-border flex items-center justify-center mx-auto mb-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-        </div>
-        <p class="text-forge-muted text-xs mb-2">{t('sidebar.no_workspace')}</p>
-        <a href="/" class="text-forge-accent-text font-bold text-xs hover:underline">{t('sidebar.browse_ws')}</a>
+      <div class="mt-4 px-3 text-sm">
+        <p class="text-forge-muted mb-1">{t('sidebar.no_workspace')}</p>
+        <a href="/" class="font-semibold text-forge-accent-text hover:underline underline-offset-2">{t('sidebar.browse_ws')}</a>
       </div>
     )}
   </nav>
 
-  <!-- User Footer -->
   <div class="p-3 border-t border-forge-border shrink-0">
     {user?.is_guest === 1 && (
-      <a href="/register" class="flex items-center justify-center w-full mb-3 py-1.5 bg-forge-primary text-forge-on-accent rounded text-xs font-bold hover:bg-forge-primary/90 transition-colors">
-        {t('auth.login') || 'Sign In'} / {t('auth.register') || 'Register'}
+      <a href="/register" class="btn btn-primary w-full mb-2">
+        {t('auth.login')} / {t('auth.register')}
       </a>
     )}
-    {/*
-      Esto llevaba **directo a los ajustes**, sin menú.
-      Consecuencia: a tu propio perfil no apuntaba ningún enlace en toda la
-      aplicación. Se podía llegar escribiendo `/u/tu-nombre` a mano, y el banner
-      solo se cambiaba pasando el ratón por encima de una imagen que no se sabía
-      que fuera pulsable. Aquí están las cuatro cosas que cuelgan de la cuenta.
-    */}
+    {/* La cuenta: perfil, personas, contactos, ajustes y salir. */}
     <div class="relative" id="user-menu-root">
       <button
         id="btn-user-menu"
@@ -235,64 +156,40 @@ const socialOn = !user?.is_guest && user?.social_enabled === 1;
         aria-haspopup="true"
         aria-expanded="false"
         aria-controls="user-menu"
-        class="w-full flex items-center gap-3 hover:bg-forge-bg px-2 py-2.5 -mx-1 rounded-lg transition-colors group text-left"
+        class="w-full flex items-center gap-2.5 hover:bg-forge-surface-2 px-2 py-2 rounded-[14px] text-left"
         title={t('user.menu.open')}
       >
-        {user?.avatar_url && !user.is_guest ? (
-          <img src={user.avatar_url} class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg object-cover shrink-0" alt="" loading="lazy" decoding="async" />
-        ) : (
-          <div class="w-8 h-8 rounded-full border border-forge-border bg-forge-bg flex items-center justify-center text-forge-accent-text shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </div>
-        )}
-        <div class="flex-1 min-w-0 leading-tight">
-          <div class="text-xs font-bold text-forge-text truncate group-hover:text-forge-accent-text transition-colors">{user?.is_guest ? t('user.menu.guest') : (user?.username || t('user.menu.guest'))}</div>
-          <div class={`text-[10px] font-mono uppercase truncate mt-0.5 tracking-wider ${user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted'}`}>{user?.is_guest ? t('user.menu.unregistered') : userRole ? nombreDeRol(userRole, lang) : `@${user?.username ?? ''}`}</div>
-        </div>
+        <span class="avatar avatar-lg" style={`--c:${tonoDe(user?.username)}`} aria-hidden="true">
+          {esFotoReal(user?.avatar_url) && !user?.is_guest ? <img src={user!.avatar_url!} alt="" loading="lazy" decoding="async" /> : iniciales(user?.username || '?')}
+        </span>
+        <span class="flex-1 min-w-0 leading-tight">
+          <span class="block text-sm font-semibold text-forge-text truncate">{user?.is_guest ? t('user.menu.guest') : (user?.username || t('user.menu.guest'))}</span>
+          <span class:list={['block text-xs truncate mt-0.5', user?.is_guest ? 'text-forge-accent-text' : 'text-forge-muted']}>{user?.is_guest ? t('user.menu.unregistered') : userRole ? nombreDeRol(userRole, lang) : `@${user?.username ?? ''}`}</span>
+        </span>
         {socialOn && pendientes > 0 && (
-          <span class="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center" aria-label={t('friends.incoming')}>
+          <span class="shrink-0 min-w-[1.25rem] h-5 px-1 rounded-full bg-forge-primary text-forge-on-accent text-xs font-bold flex items-center justify-center" aria-label={t('friends.incoming')}>
             {pendientes > 9 ? '9+' : pendientes}
           </span>
         )}
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted shrink-0" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
       </button>
 
-      <div
-        id="user-menu"
-        role="menu"
-        aria-labelledby="btn-user-menu"
-        class="hidden absolute bottom-full left-0 right-0 mb-2 bg-forge-panel border border-forge-border rounded-xl shadow-xl overflow-hidden z-50 py-1"
-      >
+      <div id="user-menu" role="menu" aria-labelledby="btn-user-menu" class="menu hidden absolute bottom-full left-0 right-0 mb-2 z-50">
         {user?.is_guest ? (
-          <a href="/register" role="menuitem" class="user-menu-item">{t('user.menu.register')}</a>
+          <a href="/register" role="menuitem" class="menu-item">{t('user.menu.register')}</a>
         ) : (
           <>
-            <a href={`/u/${user?.username}`} role="menuitem" class="user-menu-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              {t('user.menu.profile')}
-            </a>
+            <a href={`/u/${user?.username}`} role="menuitem" class="menu-item">{t('user.menu.profile')}</a>
             {socialOn && (
-            <a href="/people" role="menuitem" class="user-menu-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              <span class="flex-1">{t('friends.title')}</span>
-              {pendientes > 0 && (
-                <span class="min-w-[18px] h-[18px] px-1 rounded-full bg-forge-primary text-forge-on-accent text-[10px] font-black flex items-center justify-center">{pendientes > 9 ? '9+' : pendientes}</span>
-              )}
-            </a>
+              <a href="/people" role="menuitem" class="menu-item">
+                <span class="flex-1">{t('friends.title')}</span>
+                {pendientes > 0 && <span class="min-w-[1.25rem] h-5 px-1 rounded-full bg-forge-primary text-forge-on-accent text-xs font-bold flex items-center justify-center">{pendientes > 9 ? '9+' : pendientes}</span>}
+              </a>
             )}
-            <a href="/contacts" role="menuitem" class="user-menu-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 17a4 4 0 0 1 8 0"/></svg>
-              {t('contacts.title')}
-            </a>
-            <a href="/settings" role="menuitem" class="user-menu-item">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              {t('user.menu.account')}
-            </a>
-            <div class="h-px bg-forge-border/50 my-1"></div>
-            <button type="button" role="menuitem" id="btn-user-menu-logout" class="user-menu-item w-full text-left hover:text-forge-error">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              {t('user.settings.signout')}
-            </button>
+            <a href="/contacts" role="menuitem" class="menu-item">{t('contacts.title')}</a>
+            <a href="/settings" role="menuitem" class="menu-item">{t('user.menu.account')}</a>
+            <div class="menu-sep"></div>
+            <button type="button" role="menuitem" id="btn-user-menu-logout" class="menu-item !text-forge-error">{t('user.settings.signout')}</button>
           </>
         )}
       </div>
@@ -359,65 +256,72 @@ const socialOn = !user?.is_guest && user?.social_enabled === 1;
 </script>
 
 <style>
-  .user-menu-item {
+  .ws-switch {
+    margin: 0.75rem 0.75rem 0.25rem;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    padding: 9px 14px;
-    font-size: 13px;
-    font-weight: 500;
+    gap: 0.5rem;
+    padding: 0.5625rem 0.875rem;
+    border: 1px solid var(--forge-border);
+    border-radius: 16px;
+    background: var(--forge-panel);
+    font-size: 0.8125rem;
     color: var(--forge-text);
-    text-decoration: none;
-    transition: background-color 0.15s, color 0.15s;
-    cursor: pointer;
-    background: transparent;
-    border: 0;
   }
-  .user-menu-item:hover {
-    background: var(--forge-bg);
-    color: var(--forge-accent-text);
+  .ws-switch:hover { border-color: var(--forge-border-strong); }
+  .ws-switch::after {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+    flex: none;
   }
-
-  /* Sidebar link styles */
+  .nav-lateral { padding: 0.5rem 0.75rem; display: flex; flex-direction: column; gap: 1px; }
+  .nav-rotulo {
+    padding: 0.875rem 0.625rem 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--forge-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Píldora; la activa en tinta, con el punto naranja de la marca. Nada se
+     desplaza ni se agranda al pasar el ratón. */
   .sidebar-link {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: 13px;
+    gap: 0.5rem;
+    min-height: 2.125rem;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
     font-weight: 500;
     color: var(--forge-text);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    text-decoration: none;
-    cursor: pointer;
-    border: 1px solid transparent;
-    background: transparent;
-    width: 100%;
-    margin-bottom: 2px;
+    position: relative;
   }
-  .sidebar-link:hover {
-    color: var(--forge-accent-text);
-    background: rgba(0, 229, 255, 0.04);
-    border-color: rgba(0, 229, 255, 0.15);
-    transform: translateX(4px);
-  }
+  .sidebar-link:hover { background: var(--forge-surface-2); }
   .sidebar-link.active {
-    color: var(--forge-accent-text);
-    background: rgba(0, 229, 255, 0.08);
-    border-color: rgba(0, 229, 255, 0.2);
-    font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--forge-accent-secondary);
+    background: var(--forge-text);
+    color: var(--forge-bg);
+    font-weight: 650;
+    padding-left: 1.75rem;
   }
-  .sidebar-icon {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-    transition: transform 0.2s ease;
+  .sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-top: -0.25rem;
+    border-radius: 50%;
+    background: #E8590C;
   }
-  .sidebar-link:hover .sidebar-icon {
-    transform: scale(1.1) rotate(2deg);
-  }
-</style>
-
+  .sidebar-link .cuenta { color: var(--forge-muted); font-size: 0.75rem; font-weight: 500; }
+  .sidebar-link.active .cuenta { color: var(--forge-bg); }
 </style>
