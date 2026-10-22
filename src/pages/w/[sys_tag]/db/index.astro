@@ -6,7 +6,8 @@ import { useTranslations } from '../../../../i18n/ui';
 
 const { sys_tag } = Astro.params;
 const user = Astro.locals.user!;
-const t = useTranslations(Astro.locals.lang || 'en');
+const lang = Astro.locals.lang || 'en';
+const t = useTranslations(lang);
 
 if (!user) return Astro.redirect('/login');
 if (user.is_guest) return Astro.redirect('/register');
@@ -25,6 +26,7 @@ import Vacio from '../../../../components/ui/Vacio.astro';
 import Figura from '../../../../components/brand/Figura.astro';
 import { ICONOS_ELEGIBLES, ICONO_POR_DEFECTO } from '../../../../lib/icons';
 import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
+import { relativo } from '../../../../lib/fechas';
 import { MAX_COLUMNAS, MAX_FILAS } from '../../../../lib/importarTabla';
 
 const databases = orm.select().from(dynamicDatabases)
@@ -67,6 +69,39 @@ const TXT = {
 const filasPorTabla = new Map(
   (db.prepare(`SELECT database_id AS id, COUNT(*) AS n FROM dynamic_entries WHERE database_id IN (SELECT id FROM dynamic_databases WHERE workspace_id = ?) GROUP BY database_id`).all(workspace.id) as Array<{ id: string; n: number }>).map((r) => [r.id, r.n])
 );
+
+// La vista previa de cada ficha: sus columnas (hasta cuatro) y sus tres
+// primeras filas, en el mismo orden que la tabla abierta (recientes primero;
+// a igual fecha, el del archivo importado). Una consulta para todas.
+const primeras = db.prepare(`
+  SELECT database_id AS id, payload_json AS datos FROM (
+    SELECT database_id, payload_json, ROW_NUMBER() OVER (PARTITION BY database_id ORDER BY created_at DESC, rowid) AS n
+    FROM dynamic_entries WHERE database_id IN (SELECT id FROM dynamic_databases WHERE workspace_id = ?)
+  ) WHERE n <= 3`).all(workspace.id) as Array<{ id: string; datos: string }>;
+const editada = new Map(
+  (db.prepare(`SELECT database_id AS id, MAX(COALESCE(updated_at, created_at)) AS cuando FROM dynamic_entries
+    WHERE database_id IN (SELECT id FROM dynamic_databases WHERE workspace_id = ?) GROUP BY database_id`).all(workspace.id) as Array<{ id: string; cuando: string }>)
+    .map((r) => [r.id, r.cuando])
+);
+const NOMBRE_TIPO: Record<string, string> = { text: t('db.type_text'), number: t('db.type_number'), select: t('db.type_select'), file: t('db.type_file') };
+const textoCelda = (tipo: string, v: unknown) =>
+  v == null || v === '' ? '' : tipo === 'file' ? t('db.type_file') : String(v);
+const fichas = databases.map((d) => {
+  let columnas: Array<{ id: string; name: string; type: string }> = [];
+  try { columnas = JSON.parse(d.schemaJson || '{}').columns ?? []; } catch {}
+  const tipos = Object.entries(columnas.reduce<Record<string, number>>((acc, c) => ((acc[c.type] = (acc[c.type] ?? 0) + 1), acc), {}))
+    .map(([tipo, n]) => `${NOMBRE_TIPO[tipo] ?? tipo}${n > 1 ? ` · ${n}` : ''}`);
+  const vistas = columnas.slice(0, 4);
+  const filas = primeras.filter((f) => f.id === d.id).map((f) => {
+    let datos: Record<string, unknown> = {};
+    try { datos = JSON.parse(f.datos); } catch {}
+    return vistas.map((c) => textoCelda(c.type, datos[c.id]));
+  });
+  return { d, columnas, vistas, tipos, filas, nFilas: filasPorTabla.get(d.id) ?? 0, cuando: editada.get(d.id) ?? d.createdAt };
+});
+// Una figura distinta por ficha con filas, para que no sea siempre la misma.
+const POSES_FICHA = ['colgada', 'lectora', 'saluda', 'espera'] as const;
+const COLORES_FICHA = ['turquesa', 'rosa', 'lila', 'ambar'] as const;
 ---
 
 <MainLayout hideFooter={true} title={`${t('sidebar.databases')} — ${workspace.name}`} workspaceId={workspace.id}>
@@ -107,7 +142,75 @@ const filasPorTabla = new Map(
         )}
       </Vacio>
     ) : (
-      <div class="panel overflow-x-auto">
+      <>
+      {/* Dos vistas: fichas (por defecto), con una hoja de muestra de cada
+          tabla, y la lista de siempre. La elección se recuerda en el navegador. */}
+      {/* A la izquierda: a la derecha asoma la figura de las plantillas. */}
+      <div class="flex mb-5">
+        <div class="segmentado" role="group" aria-label={t('db.view_label')}>
+          <button type="button" class="vista-tablas" data-vista="fichas" aria-pressed="true">{t('db.view_cards')}</button>
+          <button type="button" class="vista-tablas" data-vista="lista" aria-pressed="false">{t('db.view_list')}</button>
+        </div>
+      </div>
+
+      <div id="tablas-fichas" class="fichas-tablas">
+        {fichas.map((f, i) => {
+          const primeraConFilas = fichas.findIndex((x) => x.filas.length > 0) === i;
+          return (
+            <article class="ficha-tabla">
+              <div class="ficha-vista">
+                {f.tipos.length > 0 && <div class="ficha-tipos">{f.tipos.map((x) => <span>{x}</span>)}</div>}
+                <div class="ficha-hoja" style={`--cols: ${Math.max(1, f.vistas.length)}; transform: rotate(${i % 2 ? 1 : -1.2}deg) translateY(6px)`} aria-hidden="true">
+                  <div class="ficha-fila ficha-cabecera">{f.vistas.map((c) => <span>{c.name}</span>)}</div>
+                  {f.filas.length > 0
+                    ? f.filas.map((fila) => <div class="ficha-fila">{fila.map((v) => <span>{v}</span>)}</div>)
+                    : [0, 1, 2].map(() => <i class="ficha-fila-vacia"></i>)}
+                  {primeraConFilas && <Figura pose="colgada" color="turquesa" alto={96} style="position: absolute; right: -52px; top: -8px" />}
+                </div>
+                {f.filas.length === 0 && <Figura pose="caja" color="ambar" alto={104} style="position: absolute; right: 12px; top: 10px" />}
+              </div>
+              <div class="ficha-pie">
+                <h2 class="ficha-nombre">
+                  <span class="text-forge-muted shrink-0" aria-hidden="true"><DbIcon value={f.d.icon} size={18} /></span>
+                  <a href={`/w/${sys_tag}/db/${f.d.id}`} class="ficha-enlace">{f.d.name}</a>
+                </h2>
+                {f.d.description && <p class="hint line-clamp-2">{f.d.description}</p>}
+                <div class="ficha-cifras">
+                  <span><b class="wide">{f.nFilas}</b> {t('db.unit_rows')}</span>
+                  <span><b class="wide">{f.columnas.length}</b> {t('db.unit_cols')}</span>
+                  {f.nFilas === 0
+                    ? <span class="ml-auto text-sm font-bold text-forge-accent-text">{t('db.add_first_row')} →</span>
+                    : <span class="ml-auto hint">{t('db.edited').replace('{cuando}', relativo(f.cuando, lang))}</span>}
+                  {canEdit && (
+                    <button type="button" class="btn-borrar-tabla btn btn-ghost btn-icon btn-sm hover:!text-forge-error" data-id={f.d.id} data-nombre={f.d.name}
+                      title={t('db.delete_table')} aria-label={t('db.delete_named').replace('{name}', f.d.name)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+
+        {canEdit && (
+          <section class="ficha-plantillas" aria-labelledby="fichas-plantillas-titulo">
+            <Figura pose="lectora" color="rosa" alto={92} style="position: absolute; right: 26px; top: -62px" />
+            <div class="flex flex-col gap-1.5">
+              <h2 id="fichas-plantillas-titulo" class="ficha-plantillas-titulo">{t('db.tpl_heading')}</h2>
+              <p class="hint">{t('db.tpl_desc')}</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              {plantillas.slice(0, 3).map((p) => (
+                <button type="button" class="ficha-plantilla" data-plantilla={p.id}><b>{p.nombre}</b><span>{p.columnas.slice(0, 3).map((c) => c.name.toLowerCase()).join(' · ')}</span></button>
+              ))}
+              <button type="button" class="ficha-plantilla" data-plantilla="__blank__"><b>{t('db.tpl_blank')}</b><span>{t('db.tpl_blank_desc')}</span></button>
+            </div>
+          </section>
+        )}
+      </div>
+
+      <div id="tablas-lista" class="panel overflow-x-auto" hidden>
         <table class="tabla">
           <thead><tr><th>{t('db.col_table')}</th><th class="max-sm:hidden">{t('db.col_desc')}</th><th class="num max-sm:hidden">{t('db.col_columns')}</th><th class="num">{t('db.col_rows')}</th>{canEdit && <th><span class="sr-only">{t('db.col_actions')}</span></th>}</tr></thead>
           <tbody>
@@ -141,6 +244,7 @@ const filasPorTabla = new Map(
           </tbody>
         </table>
       </div>
+      </>
     )}
   </div>
 
@@ -352,6 +456,29 @@ const filasPorTabla = new Map(
 
     const dlg = document.getElementById('importar-db') as HTMLDialogElement | null;
     if (dlg) montarImportar(dlg);
+
+    // Fichas o lista: se recuerda en el navegador, no en la cuenta.
+    const fichasEl = document.getElementById('tablas-fichas');
+    const listaEl = document.getElementById('tablas-lista');
+    const ponerVista = (vista: string) => {
+      if (!fichasEl || !listaEl) return;
+      fichasEl.hidden = vista === 'lista';
+      listaEl.hidden = vista !== 'lista';
+      document.querySelectorAll<HTMLButtonElement>('.vista-tablas').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.vista === vista)));
+    };
+    try { ponerVista(localStorage.getItem('forge_tablas_vista') || 'fichas'); } catch { /* sin almacenamiento */ }
+    document.querySelectorAll<HTMLButtonElement>('.vista-tablas').forEach((b) => b.addEventListener('click', () => {
+      ponerVista(b.dataset.vista || 'fichas');
+      try { localStorage.setItem('forge_tablas_vista', b.dataset.vista || 'fichas'); } catch { /* sin almacenamiento */ }
+    }));
+
+    // Una plantilla desde la ficha: abre el alta y la elige, como si se
+    // hubiera pulsado dentro del diálogo.
+    document.querySelectorAll<HTMLButtonElement>('.ficha-plantilla').forEach((b) => b.addEventListener('click', () => {
+      document.getElementById('btn-new-db')?.click();
+      document.querySelector<HTMLButtonElement>(`.tpl-card[data-tpl="${b.dataset.plantilla}"]`)?.click();
+    }));
+
 
     function montarImportar(dlg: HTMLDialogElement) {
       const d = dlg.dataset;
