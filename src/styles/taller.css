@@ -789,6 +789,49 @@
   .ficha-plantilla b { font-size: 0.875rem; }
   .ficha-plantilla span { font-size: 0.75rem; color: var(--forge-muted); }
 
+  /* ── Archivos (archivos.html) ──────────────────────────────────────── */
+  /* La conexión como el camino de los bytes: navegador → Drive. */
+  .camino-drive { display: flex; flex-wrap: wrap; align-items: center; gap: 0.875rem 1.25rem; padding: 1rem 1.25rem; }
+  .camino-drive-ruta { display: flex; align-items: center; gap: 0.625rem; flex: 1 1 26rem; min-width: 0; flex-wrap: wrap; }
+  .camino-nodo { font-size: 0.8125rem; font-weight: 700; padding: 0.5rem 0.75rem; border-radius: 12px; background: var(--forge-surface-2); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .camino-nodo-papel { background: #F8F7F4; color: #171614; box-shadow: inset 0 0 0 1px var(--forge-border-strong); }
+  .camino-flecha { position: relative; flex: 1 1 2.5rem; min-width: 2.5rem; max-width: 9rem; height: 2px; background: var(--forge-accent-primary); }
+  .camino-flecha::after { content: ''; position: absolute; right: -2px; top: -5px; border-left: 9px solid var(--forge-accent-primary); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+  .camino-drive-nota { flex-basis: 100%; margin: 0; padding-top: 0.75rem; border-top: 1px solid var(--forge-border); }
+
+  /* El explorador vacío: la boca de la fragua como zona para soltar. */
+  .archivos-vacio { padding: 3.5rem 1.5rem 0; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; overflow: hidden; }
+  .archivos-vacio-titulo { margin: 0; font-size: clamp(2rem, 4.5vw, 2.75rem); line-height: 0.95; font-weight: 800; font-stretch: 64%; text-wrap: balance; }
+  .arco-subida {
+    position: relative; width: min(26rem, 72vw); height: 18rem; margin-top: 6rem;
+    border: 2.5px dashed var(--forge-border-strong); border-bottom: 0;
+    border-radius: 50% 50% 0 0 / 46% 46% 0 0;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .arco-subida-boca {
+    width: 46%; height: 58%; box-sizing: border-box; padding-bottom: 1.1rem;
+    border: 2.5px dashed var(--forge-accent-primary); border-bottom: 0;
+    border-radius: 50% 50% 0 0 / 42% 42% 0 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: 0.8125rem; font-weight: 700; color: var(--forge-accent-text);
+  }
+  /* La versión pequeña, para la escena de «sin Drive conectado». */
+  .arco-subida-mini { width: 8rem; height: 6.5rem; margin: 0 0 0 6.5rem; font-size: 0.75rem; font-weight: 800; color: var(--forge-muted); }
+  .arco-subida-mini span { margin-bottom: 1rem; }
+  .pegatina-archivo { position: absolute; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+  .pegatina-archivo i { font-style: normal; font-family: var(--forge-mono); font-size: 0.75rem; border: 1px solid #857E74; border-radius: 4px; padding: 0 4px; }
+  @media (max-width: 40rem) {
+    .pegatina-archivo { display: none; }
+    .arco-subida .figura:last-child { display: none; }
+  }
+  /* Arrastrando archivos encima: el explorador entero se ofrece. */
+  #explorador.soltando { outline: 2.5px dashed var(--forge-accent-primary); outline-offset: -6px; }
+  #explorador.soltando::after {
+    content: attr(data-t-soltar); position: absolute; inset: 0; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--forge-panel) 86%, transparent);
+    font-size: 1.5rem; font-weight: 800; font-stretch: 68%; color: var(--forge-text); pointer-events: none;
+  }
+
   /* ── Perfil (perfil.html) ───────────────────────────────────────────── */
   .avatar-xl { width: 6.5rem; height: 7.375rem; font-size: 2.6rem; border: 4px solid var(--forge-bg); font-stretch: 75%; font-weight: 800; }
   /* La banda va en el tono de la persona, entero: no lleva texto encima. El
