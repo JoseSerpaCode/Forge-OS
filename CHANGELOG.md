@@ -6,6 +6,17 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.5.0] - 2026-10-22
+
+Actividad con figura: la segunda de las propuestas de «más magia».
+
+### Changed
+
+- **Al día**: sin avisos por leer, Actividad abre con un «Al día.» grande, la fragua en reposo con una figura tumbada encima y otra avivando las brasas, y los tres últimos avisos. «Qué me avisa» lleva a la sección de avisos de Ajustes.
+- **Avisos por día**, con una pegatina por día («Hoy», «Ayer», «lunes, 19 de octubre») contada en la zona horaria de quien mira. Los avisos sin leer llevan la brasa, y arriba corre una figura con el cartel de cuántos hay.
+- **Filtros por tipo**: todo, asignaciones, menciones y sistema.
+- **Tu semana**: los avisos de los últimos siete días en arcos que crecen con lo que pasó; hoy, en naranja.
+
 ## [2.4.0] - 2026-10-22
 
 Vacíos con figura: la primera de las cuatro propuestas de «más magia».

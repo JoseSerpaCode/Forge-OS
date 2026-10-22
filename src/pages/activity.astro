@@ -3,7 +3,8 @@ import MainLayout from '../layouts/MainLayout.astro';
 import db from '../lib/db';
 import { useTranslations } from '../i18n/ui';
 import { colorDeNotificacion } from '../lib/notificaciones';
-import { fecha, relativo } from '../lib/fechas';
+import { fecha, relativo, deSQLite, hoyEn, sumarDiasIso } from '../lib/fechas';
+import Figura from '../components/brand/Figura.astro';
 
 const user = Astro.locals.user!;
 if (!user) return Astro.redirect('/login');
@@ -51,6 +52,45 @@ const parsedInvites = invites.map(inv => {
 });
 
 const unreadCount = notifications.filter(n => n.is_read === 0).length;
+
+// Los días se cuentan en la zona de quien mira, no en la del servidor (UTC):
+// un aviso de las 23:00 en Bogotá es de hoy, no de mañana.
+const zona = user.timezone;
+const hoy = hoyEn(zona);
+const ayer = sumarDiasIso(hoy, -1);
+const diaDe = (v: unknown) => { const d = deSQLite(v); return d ? hoyEn(zona, d) : hoy; };
+const nombreDia = (dia: string, forma: 'short' | 'long') =>
+  new Intl.DateTimeFormat(lang, forma === 'short' ? { weekday: 'short', timeZone: 'UTC' } : { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+    .format(new Date(`${dia}T12:00:00Z`));
+
+// Los avisos, agrupados por día y en orden.
+const grupos: Array<{ dia: string; etiqueta: string; hoy: boolean; avisos: any[] }> = [];
+for (const n of notifications) {
+  const dia = diaDe(n.created_at);
+  let g = grupos.at(-1);
+  if (!g || g.dia !== dia) {
+    g = { dia, etiqueta: dia === hoy ? t('activity.today') : dia === ayer ? t('activity.yesterday') : nombreDia(dia, 'long'), hoy: dia === hoy, avisos: [] };
+    grupos.push(g);
+  }
+  g.avisos.push(n);
+}
+
+// La semana: avisos por día de los últimos siete, el último hoy. Cuenta sobre
+// los 50 más recientes que carga la página, así que en una semana con más de
+// 50 los arcos se quedan cortos; para lo que dicen (cuándo hubo movimiento)
+// basta.
+const semana = Array.from({ length: 7 }, (_, i) => sumarDiasIso(hoy, i - 6)).map((dia) => ({
+  dia,
+  n: notifications.filter((x) => diaDe(x.created_at) === dia).length,
+  nombre: dia === hoy ? t('activity.today') : nombreDia(dia, 'short'),
+  hoy: dia === hoy,
+}));
+const maxSemana = Math.max(1, ...semana.map((d) => d.n));
+
+const ultimos = notifications.slice(0, 3);
+// El tipo de cada aviso, para los filtros: lo que no es asignación, mención o
+// sistema cuenta como «otros» y solo sale en «Todo».
+const tipoDe = (tipo: string) => (['assign', 'mention', 'system'].includes(tipo) ? tipo : 'otro');
 ---
 
 <MainLayout title={t('activity.title')}>
@@ -74,20 +114,56 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
       </div>
     </div>
 
-    <div id="tab-notifications" class="activity-tab-content">
-      <section class="panel">
-        <div class="panel-cabeza">
-          <h2 class="text-base font-bold">{t('activity.recent_notifications')}</h2>
-          {unreadCount > 0 && (
+    <div id="tab-notifications" class="activity-tab-content flex flex-col gap-7">
+      {unreadCount === 0 ? (
+        /* Al día: la fragua en reposo, con su gente. */
+        <section class="panel actividad-heroe">
+          <div class="actividad-heroe-texto">
+            <h2>{t('activity.caught_up_title')}</h2>
+            <p class="actividad-heroe-sub">{notifications.length ? t('activity.caught_up_since').replace('{cuando}', relativo(notifications[0].created_at, lang)) : t('activity.caught_up_empty')}</p>
+            {ultimos.length > 0 && (
+              <ul class="actividad-ultimos">
+                {ultimos.map((n) => (
+                  <li><span class={`sw ${colorDeNotificacion(n.type)}`} aria-hidden="true"></span><span class="min-w-0 truncate">{n.title}</span><time>{relativo(n.created_at, lang)}</time></li>
+                ))}
+              </ul>
+            )}
+            <div class="flex flex-wrap gap-2.5"><a href="/settings#avisos" class="btn btn-secondary">{t('activity.what_notifies')}</a></div>
+          </div>
+          <div class="actividad-escena" aria-hidden="true">
+            <div class="fragua-fria">
+              <div class="fragua-fria-boca"><div class="fragua-fria-brasa"></div></div>
+              <Figura pose="tumbada" color="lila" alto={90} style="position: absolute; top: -66px; left: 50%; margin-left: -88px" />
+              <Figura pose="aviva" color="ambar" alto={118} style="position: absolute; bottom: 0; left: -96px" />
+              <span class="pegatina" style="position: absolute; top: -64px; right: -12px; transform: rotate(6deg)">{t('activity.unread_n').replace('{n}', '0')}</span>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2" role="group" aria-label={t('activity.filter_label')}>
+            <button type="button" class="filtro-aviso btn btn-secondary btn-sm" data-tipo="todo" aria-pressed="true">{t('activity.filter_all')}</button>
+            <button type="button" class="filtro-aviso btn btn-secondary btn-sm" data-tipo="assign" aria-pressed="false"><span class="sw bg-forge-info" aria-hidden="true"></span>{t('activity.filter_assign')}</button>
+            <button type="button" class="filtro-aviso btn btn-secondary btn-sm" data-tipo="mention" aria-pressed="false"><span class="sw bg-forge-warning" aria-hidden="true"></span>{t('activity.filter_mention')}</button>
+            <button type="button" class="filtro-aviso btn btn-secondary btn-sm" data-tipo="system" aria-pressed="false"><span class="sw bg-forge-error" aria-hidden="true"></span>{t('activity.filter_system')}</button>
+          </div>
+          <div class="flex items-end gap-3">
+            <Figura pose="corre" color="turquesa" alto={100} cartel={t('activity.new_n').replace('{n}', String(unreadCount))} class="max-sm:hidden" />
             <button id="btn-activity-mark-read" class="btn btn-ghost btn-sm">{t('activity.mark_all_read')}</button>
-          )}
+          </div>
         </div>
-        {notifications.length === 0 ? (
-          <p class="panel-cuerpo hint">{t('activity.caught_up')}</p>
-        ) : (
-          <ul class="divide-y divide-forge-border">
-            {notifications.map((n) => (
-              <li class="flex items-start gap-3 px-4 py-3.5 group">
+      )}
+
+      {/* Los avisos, por día. Al día, se ven igual debajo: ya leídos. */}
+      {grupos.map((g, i) => (
+        <section class="grupo-avisos flex flex-col gap-3" aria-label={g.etiqueta}>
+          <div class="flex items-end">
+            <h2 class:list={['pegatina-dia', { 'pegatina-hoy': g.hoy }]} style={`transform: rotate(${g.hoy ? -3 : i % 2 ? -2 : 2}deg)`}>{g.etiqueta}</h2>
+            {g.hoy && unreadCount > 0 && <Figura pose="apoyada" color="rosa" alto={60} style="margin-left: -4px; margin-bottom: -6px" />}
+          </div>
+          <ul class="panel divide-y divide-forge-border overflow-hidden">
+            {g.avisos.map((n) => (
+              <li class="aviso-fila flex items-start gap-3 px-4 py-3.5" data-tipo={tipoDe(n.type)}>
                 <span class={`sw mt-1.5 ${colorDeNotificacion(n.type, !!n.is_read)}`} aria-hidden="true"></span>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-baseline justify-between gap-4">
@@ -100,14 +176,34 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
                   )}
                 </div>
                 {!n.is_read && (
-                  <button class="btn-mark-single-read btn btn-ghost btn-icon btn-sm shrink-0" data-id={n.id} title={t('activity.mark_read')} aria-label={t('activity.mark_read')}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  </button>
+                  <>
+                    <span class="brasa-sin-leer" title={t('activity.unread')}><span class="sr-only">{t('activity.unread')}</span></span>
+                    <button class="btn-mark-single-read btn btn-ghost btn-icon btn-sm shrink-0" data-id={n.id} title={t('activity.mark_read')} aria-label={t('activity.mark_read')}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
+                  </>
                 )}
               </li>
             ))}
           </ul>
-        )}
+        </section>
+      ))}
+
+      {/* La semana en arcos: crecen con los avisos de cada día. */}
+      <section class="flex flex-col gap-3" aria-labelledby="semana-titulo">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="semana-titulo" class="section-title">{t('activity.week_title')}</h2>
+          <span class="hint">{t('activity.week_hint')}</span>
+        </div>
+        <ol class="panel semana-arcos">
+          {semana.map((d) => (
+            <li class:list={['semana-dia', { 'semana-hoy': d.hoy }]} aria-label={t('activity.week_day').replace('{dia}', d.nombre).replace('{n}', String(d.n))}>
+              <b aria-hidden="true">{d.n}</b>
+              <span class="semana-arco" style={`height: ${8 + Math.round((d.n / maxSemana) * 104)}px`} aria-hidden="true"></span>
+              <span aria-hidden="true">{d.nombre}</span>
+            </li>
+          ))}
+        </ol>
       </section>
     </div>
 
@@ -232,6 +328,18 @@ const unreadCount = notifications.filter(n => n.is_read === 0).length;
         window.location.reload();
       }
     } catch (e) { console.error(e); }
+  });
+
+  // Filtros por tipo: esconden filas y los días que se quedan sin ninguna.
+  document.querySelectorAll<HTMLButtonElement>('.filtro-aviso').forEach((b) => {
+    b.addEventListener('click', () => {
+      const tipo = b.dataset.tipo;
+      document.querySelectorAll<HTMLButtonElement>('.filtro-aviso').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+      document.querySelectorAll<HTMLElement>('.aviso-fila').forEach((f) => { f.hidden = tipo !== 'todo' && f.dataset.tipo !== tipo; });
+      document.querySelectorAll<HTMLElement>('.grupo-avisos').forEach((g) => {
+        g.hidden = !g.querySelector('.aviso-fila:not([hidden])');
+      });
+    });
   });
 
   document.querySelectorAll('.btn-mark-single-read').forEach(btn => {

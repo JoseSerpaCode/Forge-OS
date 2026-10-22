@@ -687,6 +687,64 @@
   .vacio-mini-escena .figura { position: relative; z-index: 1; }
   .vacio-peana { display: block; width: 6.5rem; height: 1.9rem; background: var(--forge-surface-2); border-radius: 999px 999px 4px 4px; }
 
+  /* ── Pegatinas: papel sobre la interfaz, en los dos temas ─────────── */
+  .pegatina {
+    display: inline-block; background: #F8F7F4; color: #171614;
+    font-size: 0.8125rem; font-weight: 700; padding: 7px 12px; border-radius: 10px;
+    box-shadow: var(--forge-shadow-float); white-space: nowrap;
+  }
+  .pegatina-dia {
+    margin: 0; display: inline-block; font-size: 1.625rem; font-weight: 800; font-stretch: 68%;
+    padding: 2px 14px 5px; border-radius: 12px; line-height: 1.15;
+    background: var(--forge-surface-2); color: var(--forge-text); border: 1px solid var(--forge-border);
+  }
+  .pegatina-dia.pegatina-hoy { background: var(--forge-accent-primary); color: var(--forge-on-accent); border-color: transparent; }
+  .pegatina-dia::first-letter { text-transform: uppercase; }
+
+  /* ── Actividad: al día (actividad.html) ─────────────────────────────── */
+  .actividad-heroe {
+    display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-end;
+    padding: 2.5rem 2.75rem 0; border-radius: 26px; overflow: hidden;
+  }
+  .actividad-heroe-texto { flex: 1 1 20rem; min-width: 0; display: flex; flex-direction: column; gap: 1.1rem; padding-bottom: 2.5rem; }
+  .actividad-heroe h2 { margin: 0; font-size: clamp(4rem, 9vw, 6.5rem); line-height: 0.85; font-weight: 800; font-stretch: 64%; letter-spacing: -0.03em; }
+  .actividad-heroe-sub { margin: 0; font-size: 1.125rem; line-height: 1.5; color: var(--forge-muted); max-width: 46ch; }
+  .actividad-ultimos { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.875rem; }
+  .actividad-ultimos li { display: flex; gap: 0.6rem; align-items: center; }
+  .actividad-ultimos time { margin-left: auto; color: var(--forge-muted); font-family: var(--forge-mono); font-size: 0.75rem; white-space: nowrap; }
+  .actividad-escena { flex: 0 1 25rem; display: flex; justify-content: center; align-items: flex-end; min-height: 21rem; position: relative; }
+  /* La fragua en reposo: el arco en gris, la brasa pequeña pero encendida. */
+  .fragua-fria {
+    position: relative; width: 18.75rem; height: 16rem;
+    background: var(--forge-border-strong); border-radius: 50% 50% 0 0 / 58% 58% 0 0;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .fragua-fria-boca { width: 50%; height: 62%; background: var(--forge-panel); border-radius: 50% 50% 0 0 / 42% 42% 0 0; display: flex; align-items: flex-end; justify-content: center; }
+  .fragua-fria-brasa { width: 46%; height: 22%; background: var(--forge-accent-primary); border-radius: 50% 50% 0 0 / 90% 90% 0 0; }
+  @media (max-width: 40rem) {
+    .actividad-heroe { padding: 1.75rem 1.25rem 0; }
+    .actividad-escena { flex-basis: 100%; min-height: 16rem; }
+    /* Se escala la escena entera: encoger solo el arco dejaba a las figuras
+       enormes encima. */
+    .fragua-fria { transform: scale(0.72); transform-origin: bottom center; }
+  }
+  /* Un filtro encendido: tinta llena, como la pestaña activa. */
+  .btn-secondary[aria-pressed='true'] { background: var(--forge-text); color: var(--forge-bg); border-color: var(--forge-text); }
+  /* Sin leer: la brasa, no una píldora. */
+  .brasa-sin-leer { width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: var(--forge-accent-primary); flex: none; }
+
+  /* La semana en arcos. */
+  .semana-arcos {
+    margin: 0; list-style: none; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.75rem; align-items: end; padding: 1.1rem 1.25rem 0.9rem; min-height: 11rem;
+  }
+  .semana-dia { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--forge-muted); }
+  .semana-dia b { font-size: 0.875rem; font-stretch: 125%; font-weight: 650; color: var(--forge-text); }
+  .semana-arco { display: block; width: 100%; max-width: 4rem; border-radius: 999px 999px 6px 6px; background: var(--forge-border); }
+  .semana-hoy { color: var(--forge-text); font-weight: 700; }
+  .semana-hoy b { color: var(--forge-accent-text); }
+  .semana-hoy .semana-arco { background: var(--forge-accent-primary); }
+
   /* ── Perfil (perfil.html) ───────────────────────────────────────────── */
   .avatar-xl { width: 6.5rem; height: 7.375rem; font-size: 2.6rem; border: 4px solid var(--forge-bg); font-stretch: 75%; font-weight: 800; }
   /* La banda va en el tono de la persona, entero: no lleva texto encima. El
