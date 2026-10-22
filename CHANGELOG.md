@@ -6,6 +6,23 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.4.0] - 2026-10-22
+
+Vacíos con figura: la primera de las cuatro propuestas de «más magia».
+
+### Added
+
+- **`Figura.astro`**: las personas de la portada, con trece poses (tumbada, avivando las brasas, corriendo con un cartel, colgada, cargando una caja, haciendo el pino, de rodillas escribiendo, con lupa…). Mismo cuerpo de arco en todas.
+- **`Vacio.astro`** y sus estilos en `taller.css`: escena con figura a la izquierda, qué hay aquí y como mucho dos acciones a la derecha. En el teléfono la escena va encima.
+
+### Changed
+
+- **Tablero vacío**: «Todo despejado.», con una figura haciendo el pino sobre la columna «Por hacer» y el botón de nueva tarea.
+- **Notas vacías**: «Una hoja en blanco.», con la figura escribiendo junto a la hoja.
+- **Tablas vacías**: la figura llega con una caja; se puede empezar con una tabla nueva o importando un Excel o CSV desde el propio vacío.
+- **Métricas**: cada gráfica sin datos tiene su figura, distinta en cada panel.
+- **Búsqueda sin resultados**, en la paleta y en el buscador de arriba: la figura con la lupa.
+
 ## [2.3.0] - 2026-10-22
 
 ### Added

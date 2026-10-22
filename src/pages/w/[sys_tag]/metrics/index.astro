@@ -2,6 +2,7 @@
 import MainLayout from '../../../../layouts/MainLayout.astro';
 import db from '../../../../lib/db';
 import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
+import Figura from '../../../../components/brand/Figura.astro';
 
 const { sys_tag } = Astro.params;
 const user = Astro.locals.user!;
@@ -66,7 +67,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
           </div>
         </div>
         <div class="panel-cuerpo flex-1 flex flex-col">
-          <p id="dist-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div id="dist-empty-state" class="hidden flex-1 vacio-mini justify-center py-8"><Figura pose="lupa" color="ambar" alto={80} /><p data-texto class="m-0"></p></div>
           <div class="relative flex-1 w-full min-h-[16rem]" id="dist-chart-container"><canvas id="dist-canvas"></canvas></div>
           <div class="hidden overflow-x-auto" id="dist-table-container"></div>
         </div>
@@ -84,7 +85,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
           </div>
         </div>
         <div class="panel-cuerpo flex-1 flex flex-col">
-          <p id="burn-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div id="burn-empty-state" class="hidden flex-1 vacio-mini justify-center py-8"><div class="vacio-mini-escena"><Figura pose="espera" color="turquesa" alto={88} /><span class="vacio-peana" style="margin-top: -1.45rem"></span></div><p data-texto class="m-0"></p></div>
           <div class="relative flex-1 w-full min-h-[16rem]" id="burn-chart-container"><canvas id="burn-canvas"></canvas></div>
           <div class="hidden overflow-x-auto" id="burn-table-container"></div>
         </div>
@@ -105,7 +106,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
           </div>
         </div>
         <div class="panel-cuerpo flex-1 flex flex-col">
-          <p id="vel-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div id="vel-empty-state" class="hidden flex-1 vacio-mini justify-center py-8"><div class="vacio-mini-escena"><Figura pose="tumbada" color="lila" alto={62} /><span class="vacio-peana" style="margin-top: -0.4rem"></span></div><p data-texto class="m-0"></p></div>
           <div class="relative flex-1 w-full min-h-[16rem]" id="vel-chart-container"><canvas id="vel-canvas"></canvas></div>
           <div class="hidden overflow-x-auto" id="vel-table-container"></div>
         </div>
@@ -124,7 +125,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
           </div>
         </div>
         <div class="panel-cuerpo flex-1 flex flex-col">
-          <p id="prec-empty-state" class="hidden flex-1 grid place-items-center text-center text-sm text-forge-muted py-8"></p>
+          <div id="prec-empty-state" class="hidden flex-1 vacio-mini justify-center py-8"><div class="vacio-mini-escena"><Figura pose="lectora" color="rosa" alto={88} /><span class="vacio-peana" style="margin-top: -1.45rem"></span></div><p data-texto class="m-0"></p></div>
           <div class="relative flex-1 w-full min-h-[16rem]" id="prec-chart-container"><canvas id="prec-canvas"></canvas></div>
           <div class="hidden overflow-x-auto" id="prec-table-container"></div>
         </div>
@@ -196,7 +197,7 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
 
     function vacio(clave: string, texto: string) {
       const p = document.getElementById(`${clave}-empty-state`);
-      if (p) { p.textContent = texto; p.classList.remove('hidden'); }
+      if (p) { (p.querySelector('[data-texto]') ?? p).textContent = texto; p.classList.remove('hidden'); }
       document.getElementById(`${clave}-chart-container`)?.classList.add('hidden');
       const tabla = document.getElementById(`${clave}-table-container`);
       if (tabla) tabla.innerHTML = '';

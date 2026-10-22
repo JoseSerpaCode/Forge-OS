@@ -11,6 +11,8 @@ import { relativo } from '../../../../lib/fechas';
 import { tonoDe, esFotoReal } from '../../../../lib/tonos';
 import { iniciales } from '../../../../lib/responsables';
 import LabelChip from '../../../../components/labels/LabelChip.astro';
+import Vacio from '../../../../components/ui/Vacio.astro';
+import Figura from '../../../../components/brand/Figura.astro';
 
 const lang = Astro.locals.lang || 'en';
 const t = useTranslations(lang);
@@ -75,11 +77,13 @@ const recientes = notas.slice(0, 3);
         </header>
 
         {notas.length === 0 ? (
-          <div class="panel px-5 py-8 text-center max-w-xl">
-            <p class="font-semibold text-forge-text mb-1">{t('kb.empty_desc')}</p>
-            <p class="text-sm text-forge-muted md:hidden">{t('kb.empty_cta_movil')}</p>
-            <p class="text-sm text-forge-muted hidden md:block">{t('kb.empty_cta')}</p>
-          </div>
+          <Vacio etiqueta={t('sidebar.knowledge')} titulo={t('kb.empty_title')} texto={t('kb.empty_desc')}>
+            <Fragment slot="escena">
+              <div class="vacio-hoja" style="width: 8.75rem; height: 10.5rem; transform: rotate(-4deg); margin-bottom: 1.9rem"><i></i><i></i><i style="width: 86%"></i><i style="width: 92%"></i><i class="brasa"></i></div>
+              <Figura pose="escribe" color="rosa" alto={104} style="position: absolute; right: 0.25rem; bottom: 1.4rem" />
+            </Fragment>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('btn-new-root-page')?.click()">{t('kb.new_page')}</button>
+          </Vacio>
         ) : (
           <>
             {ultima && (

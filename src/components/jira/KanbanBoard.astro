@@ -3,6 +3,8 @@ import BoardColumn from './BoardColumn.astro';
 import IssueCard from './IssueCard.astro';
 import IssueDetailsModal from './IssueDetailsModal.astro';
 import LabelChip from '../labels/LabelChip.astro';
+import Vacio from '../ui/Vacio.astro';
+import Figura from '../brand/Figura.astro';
 import { claveConteo, cursorDe } from '../../lib/tablero';
 import type { Funciones } from '../../lib/funcionesEspacio';
 import { sumarDiasIso } from '../../lib/fechas';
@@ -159,24 +161,26 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
   )}
 
   {/*
-    Tablero vacío: una línea encima de las columnas, no un aviso flotando
-    sobre ellas. Flotando se pisaba con el «Nada por aquí» de cada columna,
-    que en este caso tampoco se pinta (ver `data-vacio`).
+    Tablero vacío: un bloque encima de las columnas, no un aviso flotando
+    sobre ellas (se pisaba con el «Nada por aquí» de cada columna, que en este
+    caso tampoco se pinta: ver `data-vacio`).
   */}
   {vista === 'tablero' && issues.length === 0 && (
-    <div class="tablero-vacio panel shrink-0 mb-3 px-4 py-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <h3 class="text-base font-bold text-forge-text">{t('about.kanban.empty_title')}</h3>
-      <p class="text-sm text-forge-muted">{t('about.kanban.empty_desc')}</p>
+    <Vacio class="tablero-vacio shrink-0 mb-4" etiqueta={t('nav.board')} titulo={t('about.kanban.empty_title')} texto={t('about.kanban.empty_desc')}>
+      <Fragment slot="escena">
+        <div class="vacio-arco" style="--c: var(--forge-st-todo)">
+          {t('status.todo')} · 0
+          <Figura pose="pino" color="lila" alto={104} style="position: absolute; bottom: calc(100% - 4px); left: 50%; margin-left: -40px" />
+        </div>
+      </Fragment>
       {canEdit && (
         <>
-          {/* El atajo de teclado solo donde hay teclado. */}
-          <p class="hidden sm:block text-sm text-forge-muted">
-            {t('about.kanban.empty_cta_1')} <kbd class="kbd mx-1">C</kbd> {t('about.kanban.empty_cta_2')}
-          </p>
-          <p class="sm:hidden text-sm text-forge-muted">{t('about.kanban.empty_cta_movil')}</p>
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('btn-new-issue')?.click()">{t('board.new_issue')}</button>
+          {/* El atajo solo donde hay teclado; en el teléfono basta el botón. */}
+          <p class="hidden sm:block text-sm text-forge-muted">{t('about.kanban.empty_cta_1')} <kbd class="kbd mx-1">C</kbd> {t('about.kanban.empty_cta_2')}</p>
         </>
       )}
-    </div>
+    </Vacio>
   )}
 
   <div

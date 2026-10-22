@@ -103,6 +103,6 @@ test('el tablero vacío no ofrece una tecla que no existe', async ({ page }) => 
     ns.map((n) => n.getBoundingClientRect().width).filter((w) => w > 0)
   );
   expect(pistas, 'se dibuja un atajo de teclado en un teléfono').toEqual([]);
-  // Y en su lugar se señala el botón, que sí está a un dedo de distancia.
-  await expect(vacio.locator('p.sm\\:hidden')).toBeVisible();
+  // Y en su lugar está el botón, que sí está a un dedo de distancia.
+  await expect(vacio.getByRole('button', { name: /Nueva tarea|New task/ })).toBeVisible();
 });

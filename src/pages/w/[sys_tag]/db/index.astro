@@ -21,6 +21,8 @@ import { desc, eq } from 'drizzle-orm';
 import { plantillasTraducidas } from '../../../../lib/dbTemplates';
 import Icon from '../../../../components/icons/Icon.astro';
 import DbIcon from '../../../../components/icons/DbIcon.astro';
+import Vacio from '../../../../components/ui/Vacio.astro';
+import Figura from '../../../../components/brand/Figura.astro';
 import { ICONOS_ELEGIBLES, ICONO_POR_DEFECTO } from '../../../../lib/icons';
 import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
 import { MAX_COLUMNAS, MAX_FILAS } from '../../../../lib/importarTabla';
@@ -92,10 +94,18 @@ const filasPorTabla = new Map(
     </header>
 
     {databases.length === 0 ? (
-      <div class="panel px-5 py-8 max-w-xl">
-        <h3 class="font-semibold text-forge-text mb-1">{t('db.empty_title')}</h3>
-        <p class="text-sm text-forge-muted">{t('db.empty_desc')}</p>
-      </div>
+      <Vacio etiqueta={t('sidebar.databases')} titulo={t('db.empty_title')} texto={t('db.empty_desc')}>
+        <Fragment slot="escena">
+          <div class="vacio-hoja" style="width: 9.5rem; transform: rotate(3deg); margin-bottom: 1.6rem; border-radius: 10px 10px 0 0"><i></i><i class="fila"></i><i class="fila"></i><i class="fila"></i></div>
+          <Figura pose="caja" color="ambar" alto={108} style="position: absolute; left: 0.75rem; bottom: 0.9rem" />
+        </Fragment>
+        {canEdit && (
+          <>
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('btn-new-db')?.click()">{t('db.create')}</button>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('btn-importar-db')?.click()">{t('db.import')}</button>
+          </>
+        )}
+      </Vacio>
     ) : (
       <div class="panel overflow-x-auto">
         <table class="tabla">
