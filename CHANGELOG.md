@@ -6,6 +6,32 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.2.0] - 2026-10-21
+
+### Added
+
+- **Archivos al crear una tarea.** «Añadir archivos» en el alta: se suben en cuanto la tarea existe, y uno que falle no la deshace, se avisa. Antes había que crearla, abrirla y subirlos desde el panel.
+- **Plantillas en el alta, también las de serie.** Un desplegable «Plantilla» con las del espacio y las seis de serie. Elegir una **rellena el formulario** —título, descripción, prioridad, entrega, hora, etiquetas— para ajustarlo antes de crear, y sus pasos llegan como subtareas. Antes solo salían las guardadas en el espacio y creaban la tarea al instante con el título genérico.
+- **Los puntos sirven para algo.** Con puntos encendidos, cada columna suma los suyos, la cabecera del tablero dice cuántos van hechos («13 de 67 pts hechos») y Métricas mide el avance del sprint y la velocidad en puntos. También se pueden poner al crear la tarea.
+- **Editar etiquetas y tipos desde los ajustes**: nombre y color en la misma ventana, con un botón «Editar» en cada fila. La etiqueta se editaba tras un botón que decía «Renombrar», y el tipo solo se renombraba con el `prompt()` del navegador, sin poder cambiarle el color.
+
+### Changed
+
+- **El alta enseña todos los campos**, sin «Más opciones» plegado: había que abrirlo en cada tarea para llegar a la fecha o a las etiquetas.
+- El panel sube los adjuntos con la misma función que el alta, y avisa en el idioma de la app si un archivo pasa de 10 MB o no es de un tipo admitido (antes, «Max file size is 20MB» en inglés, cuando el servidor cortaba en 10).
+
+### Fixed
+
+- **No se podía crear una tarea con una hora antes de las diez** («9:00», «8:30»): el alta exigía dos cifras y respondía «No se ha podido crear la tarea». En el panel sí funcionaba. Ahora el alta, el panel, las plantillas y el servidor leen la hora igual (`lib/hora.ts`), y lo que no es una hora se dice junto al campo.
+- **Los tres puntos de una tarjeta abrían un menú vacío** cuando la tarea estaba en el backlog y no había ningún sprint abierto. El botón solo sale si hay otro sprint al que mandarla.
+- **Mover una tarjeta fallaba a veces con un 500** («database is locked»): las transacciones que leen y luego escriben no esperaban al bloqueo de otra conexión. Ahora todas empiezan con `BEGIN IMMEDIATE`.
+- Cambiar los puntos en el panel no comprobaba la respuesta y solo retocaba una copia de la tarjeta.
+- Una foto subida como adjunto se guardaba como «foto.jpg.webp».
+
+### Removed
+
+- El endpoint que creaba una tarea directamente desde una plantilla (`templates/usar`): el alta las usa ahora para rellenar el formulario.
+
 ## [2.1.0] - 2026-10-20
 
 ### Added

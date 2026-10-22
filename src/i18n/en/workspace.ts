@@ -251,4 +251,8 @@ export const en = {
   'metrics.col_count': 'Tasks',
   'metrics.table_hint': 'The same data as the chart, for screen readers or to copy.',
   'metrics.no_charts': 'With sprints and time tracking off, the only metric is workload. Turn them on in Workspace settings.',
+  'metrics.velocity_points': 'Points closed per sprint',
+  'metrics.velocity_points_series': 'Points closed',
+  'metrics.points_of': '{n} of {total} pts',
+  'metrics.col_points': 'Points',
 } as const;

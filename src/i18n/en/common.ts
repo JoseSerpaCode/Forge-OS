@@ -99,8 +99,6 @@ export const en = {
   'types.name_ph': 'Incident, Assignment, Preventive…',
   'types.color': 'Colour',
   'types.create': 'Add type',
-  'types.rename': 'Rename',
-  'types.rename_prompt': 'New name for this type',
   'types.delete': 'Delete type',
   'types.delete_move': 'Move them and delete',
   'types.replacement': 'Move those tasks to',
@@ -271,4 +269,6 @@ export const en = {
   'search.type.issue': 'Task',
   'search.type.page': 'Note',
   'search.type.hint': 'Shortcut',
+  'types.edit_named': 'Edit the type «{nombre}»',
+  'types.edit_title': 'Edit type',
 } as const;

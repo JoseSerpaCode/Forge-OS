@@ -133,6 +133,8 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     updateTransaction();
     return new Response(JSON.stringify({ success: true, recurrencia }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err: any) {
+    // Al registro: un 500 sin rastro no se puede investigar.
+    console.error('[move]', err);
     return new Response(err.message, { status: 500 });
   }
 };

@@ -100,6 +100,8 @@ export interface Tablero {
   tarjetas: any[];
   /** Total real por columna, o por `carril|columna` si se agrupa. */
   conteos: Record<string, number>;
+  /** Puntos de cada columna, con las mismas claves que `conteos`. */
+  puntos: Record<string, number>;
 }
 
 /** La clave de conteo de una columna, dentro de un carril o no. */
@@ -128,16 +130,35 @@ export function cargarTablero(f: FiltroTablero): Tablero {
   `).all(f.userId, ...params) as any[];
 
   const conteos: Record<string, number> = {};
+  const puntos: Record<string, number> = {};
   const filas = db.prepare(`
-    SELECT ${carril} AS carril, i.status AS status, COUNT(*) AS n
+    SELECT ${carril} AS carril, i.status AS status, COUNT(*) AS n, COALESCE(SUM(COALESCE(i.story_points, 0)), 0) AS pts
     FROM issues i ${unirCarril}
     WHERE ${donde}
     GROUP BY ${particion}
-  `).all(...params) as Array<{ carril: string | null; status: string; n: number }>;
-  for (const r of filas) conteos[claveConteo(r.status, f.agruparPorEtiqueta ? r.carril : null)] = r.n;
+  `).all(...params) as Array<{ carril: string | null; status: string; n: number; pts: number }>;
+  for (const r of filas) {
+    const clave = claveConteo(r.status, f.agruparPorEtiqueta ? r.carril : null);
+    conteos[clave] = r.n;
+    puntos[clave] = r.pts;
+  }
 
   ponerEtiquetas(tarjetas);
-  return { tarjetas, conteos };
+  return { tarjetas, conteos, puntos };
+}
+
+/**
+ * Los puntos de lo que se está mirando: el total y los ya hechos, con los
+ * mismos filtros que las columnas. Sin carriles, que contarían dos veces una
+ * tarea con dos etiquetas.
+ */
+export function puntosDeLaVista(f: FiltroTablero): { total: number; hechos: number } {
+  const { donde, params } = filtros(f);
+  return db.prepare(`
+    SELECT COALESCE(SUM(COALESCE(i.story_points, 0)), 0) AS total,
+           COALESCE(SUM(CASE WHEN i.status = 'done' THEN COALESCE(i.story_points, 0) ELSE 0 END), 0) AS hechos
+    FROM issues i WHERE ${donde}
+  `).get(...params) as { total: number; hechos: number };
 }
 
 /**

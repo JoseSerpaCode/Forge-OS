@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { STORAGE_DIR } from '../../lib/storage';
+import { MAXIMO_ADJUNTO, TIPOS_ADJUNTO } from '../../lib/adjuntos';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = locals.user!;
@@ -45,22 +46,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   // [A-4 FIX] Enforce file size limit (10 MB)
-  const MAX_SIZE = 10 * 1024 * 1024;
-  if (file.size > MAX_SIZE) {
+  if (file.size > MAXIMO_ADJUNTO) {
     return new Response(JSON.stringify({ error: 'File too large (max 10 MB)' }), { status: 413 });
   }
 
   // [A-4 FIX] Whitelist allowed MIME types — client-provided type, but blocked at server level
-  const ALLOWED_TYPES = [
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'application/pdf', 'text/plain', 'text/csv',
-    'application/zip',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  ];
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!TIPOS_ADJUNTO.includes(file.type)) {
     return new Response(JSON.stringify({ error: `File type '${file.type}' is not allowed` }), { status: 400 });
   }
 

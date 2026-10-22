@@ -15,12 +15,15 @@ interface Props {
    * traer las siguientes. `cursor` es el de la última tarjeta pintada.
    */
   verMas?: { cursor: string } | null;
+  /** Los puntos de la columna (con puntos encendidos), y los de las tarjetas pintadas. */
+  puntos?: number;
+  puntosMostrados?: number;
 }
 
 import { useTranslations } from '../../i18n/ui';
 import { info as infoEstado } from '../../lib/status';
 
-const { title, status, total, shown, activaEnMovil = false, carril = null, verMas = null } = Astro.props;
+const { title, status, total, shown, activaEnMovil = false, carril = null, verMas = null, puntos, puntosMostrados = 0 } = Astro.props;
 const t = useTranslations(Astro.locals.lang || 'en');
 
 // El contador del encabezado lo pisa el JavaScript al arrastrar tarjetas, pero
@@ -41,10 +44,16 @@ const truncated = typeof total === 'number' && typeof shown === 'number' && tota
   class:list={["board-column columna shrink-0 max-sm:w-full sm:w-auto flex flex-col min-w-0 relative", !activaEnMovil && "max-sm:hidden"]}
   style={`--c:${infoEstado(status).color}`}
   aria-label={`${title}, ${headerCount}`}
-  data-status={status} data-carril={carril ?? undefined} data-total={headerCount} data-shown={shown ?? 0}>
+  data-status={status} data-carril={carril ?? undefined} data-total={headerCount} data-shown={shown ?? 0}
+  data-puntos={puntos} data-puntos-shown={puntos === undefined ? undefined : puntosMostrados}>
   <header class="columna-cabeza">
     <h2 class="columna-titulo"><span class="truncate">{title}</span></h2>
-    <span class="columna-n issue-count" aria-hidden="true">{headerCount}</span>
+    <span class="flex items-baseline gap-2 shrink-0">
+      {puntos !== undefined && (
+        <span class="columna-pts" data-plantilla={t('board.points_short')}>{t('board.points_short').replace('{n}', String(puntos))}</span>
+      )}
+      <span class="columna-n issue-count" aria-hidden="true">{headerCount}</span>
+    </span>
   </header>
   <div class="flex-1 p-3 flex flex-col gap-2.5 overflow-y-auto min-h-[12rem] column-content relative">
     {/* Vacío tipográfico: sin dibujos, una frase que dice qué pasa aquí. */}

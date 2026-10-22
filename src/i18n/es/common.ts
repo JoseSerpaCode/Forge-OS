@@ -99,8 +99,6 @@ export const es = {
   'types.name_ph': 'Incidencia, Entrega, Preventivo…',
   'types.color': 'Color',
   'types.create': 'Añadir tipo',
-  'types.rename': 'Renombrar',
-  'types.rename_prompt': 'Nuevo nombre para este tipo',
   'types.delete': 'Borrar tipo',
   'types.delete_move': 'Moverlos y borrar',
   'types.replacement': 'Pasar esas tareas a',
@@ -271,4 +269,6 @@ export const es = {
   'search.type.issue': 'Tarea',
   'search.type.page': 'Nota',
   'search.type.hint': 'Atajo',
+  'types.edit_named': 'Editar el tipo «{nombre}»',
+  'types.edit_title': 'Editar tipo',
 } as const;

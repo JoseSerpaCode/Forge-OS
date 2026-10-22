@@ -3,7 +3,8 @@ import db from './db';
 import { IssueService } from './IssueService';
 import { esPrioridad } from './prioridad';
 import { esRegla } from './recurrencia';
-import { diasHasta, sumarDiasIso } from './fechas';
+import { diasHasta } from './fechas';
+import { normalizarHora } from './hora';
 
 /**
  * Plantillas de tareas: «Parcial», con su descripción, su etiqueta, sus pasos y
@@ -47,7 +48,8 @@ export function limpiarContenido(entrada: unknown): Contenido | null {
   if (esRegla(c.recurrence)) fuera.recurrence = c.recurrence as string;
   const off = Number(c.due_offset);
   if (c.due_offset !== undefined && c.due_offset !== null && Number.isInteger(off) && off >= 0 && off <= 365) fuera.due_offset = off;
-  if (typeof c.due_time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(c.due_time)) fuera.due_time = c.due_time;
+  const hora = normalizarHora(c.due_time);
+  if (hora) fuera.due_time = hora;
   // Repetir necesita fecha: sin desplazamiento, la regla no tiene de dónde contar.
   if (fuera.recurrence && fuera.due_offset === undefined) delete fuera.recurrence;
   return fuera;
@@ -146,29 +148,4 @@ export function desdeTarea(issueId: string, workspaceId: string, nombre: unknown
 
 export function borrar(id: string, workspaceId: string): boolean {
   return db.prepare('DELETE FROM task_templates WHERE id = ? AND workspace_id = ?').run(id, workspaceId).changes > 0;
-}
-
-/**
- * Crear una tarea desde una plantilla.
- *
- * Las etiquetas que ya no existen se **saltan y se dice cuántas**, en vez de
- * fallar —la plantilla seguiría sin servir— o crearlas —aparecerían etiquetas
- * que alguien borró a propósito—.
- */
-export async function usar(id: string, workspaceId: string, userId: string, isSysadmin: number, hoy: string, sprintId?: string | null) {
-  const fila = db.prepare('SELECT payload_json FROM task_templates WHERE id = ? AND workspace_id = ?').get(id, workspaceId) as any;
-  if (!fila) return null;
-  let c: Contenido | null = null;
-  try { c = limpiarContenido(JSON.parse(fila.payload_json)); } catch { /* fila rota */ }
-  if (!c) return null;
-  const vivas = (c.label_ids ?? []).filter((l) => db.prepare('SELECT 1 FROM labels WHERE id = ? AND workspace_id = ?').get(l, workspaceId));
-  const tipoValido = c.type && db.prepare('SELECT 1 FROM issue_types WHERE workspace_id = ? AND key = ?').get(workspaceId, c.type) ? c.type : undefined;
-  const due = c.due_offset !== undefined ? sumarDiasIso(hoy, c.due_offset) : undefined;
-  const { id: nuevo } = await IssueService.create({
-    workspace_id: workspaceId, title: c.title, description: c.description, type: tipoValido as any, priority: c.priority as any,
-    due_date: due, due_time: due ? c.due_time : undefined, sprint_id: sprintId ?? undefined,
-    label_ids: vivas, recurrence: due ? c.recurrence : undefined,
-  } as any, userId, isSysadmin);
-  for (const titulo of c.subtareas ?? []) IssueService.crearSubtarea(nuevo, titulo, userId, isSysadmin);
-  return { id: nuevo, etiquetasSaltadas: (c.label_ids?.length ?? 0) - vivas.length };
 }

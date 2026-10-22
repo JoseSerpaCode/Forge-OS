@@ -442,6 +442,9 @@
     background: var(--c);
     flex: none;
   }
+  /* Los puntos de la columna, junto a la cuenta: en tinta, porque el fondo ya
+     va teñido del estado. */
+  .columna-pts { font-size: 0.75rem; font-weight: 650; color: var(--forge-text); white-space: nowrap; }
   .columna-n {
     font-size: 1.375rem;
     font-stretch: 125%;

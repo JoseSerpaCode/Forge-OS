@@ -36,7 +36,6 @@ const ESPERADO: Record<string, string[]> = {
   'pages/search.ts':          ['viewer'],  // buscar apuntes es leer
   'views.ts':                 ['viewer'],
   'templates/index.ts':       ['viewer', 'editor'],
-  'templates/usar.ts':        ['editor'],  // las vistas guardadas son personales: no cambian lo que ven los demás
 };
 
 function ficheros(dir: string, acc: string[] = []): string[] {

@@ -290,13 +290,13 @@ const wsPendingInvites = (db.prepare(`
           <li class="fila-etiqueta flex items-center justify-between gap-3 bg-forge-bg/50 border border-forge-border p-3 rounded-lg" data-id={e.id} data-name={e.name} data-color={e.color}>
             <div class="flex items-center gap-3 min-w-0">
               <LabelChip name={e.name} color={e.color} />
-              <span class="text-xs text-forge-muted truncate">
+              <span class="chip-uso text-xs text-forge-muted truncate">
                 {e.usos === 0 ? t('labels.unused') : e.usos === 1 ? t('labels.used_in_one') : t('labels.used_in').replace('{n}', String(e.usos))}
               </span>
             </div>
             <div class="flex items-center gap-1 shrink-0">
-              <button class="btn-renombrar-etiqueta text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors">{t('labels.rename')}</button>
-              <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-forge-error/10 transition-colors" aria-label={t('labels.delete')} title={t('labels.delete')}>
+              <button type="button" class="btn-editar-etiqueta btn btn-ghost btn-sm" aria-label={t('labels.edit_named').replace('{nombre}', e.name)}>{t('labels.edit')}</button>
+              <button type="button" class="btn-borrar-etiqueta btn btn-ghost btn-icon btn-sm !text-forge-error" aria-label={t('labels.delete')} title={t('labels.delete')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -316,11 +316,13 @@ const wsPendingInvites = (db.prepare(`
       data-t-in-use-one={t('types.in_use_confirm_one')}
       data-t-last={t('types.err_last')}
       data-t-delete={t('types.delete')}
-      data-t-rename={t('types.rename_prompt')}
+      data-t-edit-title={t('types.edit_title')}
+      data-t-name={t('types.name')}
       data-t-errrepetido={t('types.err_repetido')}
       data-t-errnombre_vacio={t('types.err_nombre_vacio')}
       data-t-errnombre_largo={t('types.err_nombre_largo')}
-      data-t-errdemasiados={t('types.err_demasiados')}>
+      data-t-errdemasiados={t('types.err_demasiados')}
+      data-t-errcolor_invalido={t('labels.err_bad_color')}>
       <div class="flex items-center justify-between mb-2 gap-4">
         <h2 class="text-lg font-bold text-forge-text">{t('types.title')}
         </h2>
@@ -362,7 +364,7 @@ const wsPendingInvites = (db.prepare(`
       <ul id="lista-tipos" class="space-y-2">
         {tiposTicket.map((ti: any) => (
           <li class="fila-tipo flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 bg-forge-bg/50 border border-forge-border p-3 rounded-lg"
-            data-id={ti.id} data-key={ti.key} data-name={ti.name} data-color={ti.color} data-builtin={ti.isBuiltin ? '1' : '0'}>
+            data-id={ti.id} data-key={ti.key} data-name={ti.name} data-visible={nombreVisible(ti, t)} data-color={ti.color} data-builtin={ti.isBuiltin ? '1' : '0'}>
             <div class="flex items-center gap-3 min-w-0 flex-wrap">
               <span class="w-3 h-3 rounded-full shrink-0" style={`background:${ti.color}`} aria-hidden="true"></span>
               <span class="text-sm font-semibold text-forge-text truncate">
@@ -373,8 +375,8 @@ const wsPendingInvites = (db.prepare(`
               </span>
             </div>
             <div class="flex items-center gap-1 shrink-0 self-end sm:self-auto">
-              <button class="btn-renombrar-tipo text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors">{t('types.rename')}</button>
-              <button class="btn-borrar-tipo text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-forge-error/10 transition-colors" aria-label={t('types.delete')} title={t('types.delete')}>
+              <button type="button" class="btn-editar-tipo btn btn-ghost btn-sm" aria-label={t('types.edit_named').replace('{nombre}', nombreVisible(ti, t))}>{t('labels.edit')}</button>
+              <button type="button" class="btn-borrar-tipo btn btn-ghost btn-icon btn-sm !text-forge-error" aria-label={t('types.delete')} title={t('types.delete')}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
               </button>
             </div>
@@ -398,6 +400,32 @@ const wsPendingInvites = (db.prepare(`
         <button type="button" id="tipo-borrar-cancelar" class="px-4 py-2 text-sm font-bold text-forge-muted hover:text-forge-text">{t('modal.cancel')}</button>
         <button type="button" id="tipo-borrar-confirmar" class="btn btn-primary">{t('types.delete_move')}</button>
       </div>
+    </dialog>
+
+    {/* Editar una etiqueta o un tipo: nombre y color en la misma ventana.
+        Antes la etiqueta se editaba en la propia fila con un botón que decía
+        «Renombrar» —y cambiaba también el color, sin que se adivinara— y el
+        tipo solo se renombraba, con el `prompt()` del navegador. */}
+    <dialog id="editar-catalogo" class="ventana" aria-labelledby="editar-catalogo-titulo">
+      <h2 id="editar-catalogo-titulo" class="ventana-titulo"></h2>
+      <form id="editar-catalogo-form" novalidate>
+        <label id="editar-catalogo-rotulo" class="block field-label mb-1.5" for="editar-catalogo-nombre"></label>
+        <input type="text" id="editar-catalogo-nombre" class="campo" autocomplete="off" />
+        <fieldset class="mt-4">
+          <legend class="block field-label mb-1.5">{t('labels.color')}</legend>
+          <div id="editar-catalogo-colores" class="flex flex-wrap gap-1.5">
+            {COLORES.map((c) => (
+              <button type="button" class="color-opt w-8 h-8 rounded-lg border-2 border-transparent transition-all focus:outline-none focus:ring-2 focus:ring-forge-focus aria-pressed:border-forge-text"
+                style={`background-color:${c}`} data-color={c} aria-label={c} aria-pressed="false"></button>
+            ))}
+          </div>
+        </fieldset>
+        <p id="editar-catalogo-error" class="hidden mt-3 text-sm text-forge-error" role="alert"></p>
+        <div class="ventana-pie">
+          <button type="button" id="editar-catalogo-cancelar" class="btn btn-ghost">{t('modal.cancel')}</button>
+          <button type="submit" class="btn btn-primary">{t('labels.save')}</button>
+        </div>
+      </form>
     </dialog>
 
     {/* Funciones del tablero.
@@ -701,7 +729,10 @@ const wsPendingInvites = (db.prepare(`
   autoNeedUrl: t('ws.settings.auto_need_url'),
   sysTag: sys_tag,
   LBL: {
-    rename: t('labels.rename'),
+    edit: t('labels.edit'),
+    editNamed: t('labels.edit_named'),
+    editTitle: t('labels.edit_title'),
+    name: t('labels.name'),
     save: t('labels.save'),
     cancel: t('labels.cancel'),
     del: t('labels.delete'),
@@ -843,24 +874,23 @@ const wsPendingInvites = (db.prepare(`
       li.dataset.color = etiqueta.color;
 
       li.innerHTML = `
-        <div class="flex items-center gap-3 min-w-0 flex-wrap">
-          <span class="inline-flex items-center gap-1.5 rounded-md border border-forge-border/60 bg-forge-bg text-forge-text max-w-full px-2 py-1 text-xs">
-            <span class="rounded-full shrink-0 w-2 h-2 chip-dot"></span>
-            <span class="truncate chip-name"></span>
-          </span>
-          <span class="text-xs text-forge-muted truncate chip-uso"></span>
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="chip max-w-full"><span class="sw" aria-hidden="true"></span><span class="truncate chip-name"></span></span>
+          <span class="chip-uso text-xs text-forge-muted truncate"></span>
         </div>
-        <div class="flex items-center gap-1 shrink-0 self-end sm:self-auto">
-          <button class="btn-renombrar-etiqueta text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5 rounded transition-colors"></button>
-          <button class="btn-borrar-etiqueta text-forge-muted hover:text-forge-error p-1.5 rounded hover:bg-forge-error/10 transition-colors">
+        <div class="flex items-center gap-1 shrink-0">
+          <button type="button" class="btn-editar-etiqueta btn btn-ghost btn-sm"></button>
+          <button type="button" class="btn-borrar-etiqueta btn btn-ghost btn-icon btn-sm !text-forge-error">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
           </button>
         </div>
       `;
-      li.querySelector('.chip-dot').style.backgroundColor = etiqueta.color;
+      li.querySelector('.chip').style.setProperty('--c', etiqueta.color);
       li.querySelector('.chip-name').textContent = etiqueta.name;
       li.querySelector('.chip-uso').textContent = LBL.unused;
-      li.querySelector('.btn-renombrar-etiqueta').textContent = LBL.rename;
+      const editar = li.querySelector('.btn-editar-etiqueta');
+      editar.textContent = LBL.edit;
+      editar.setAttribute('aria-label', LBL.editNamed.replace('{nombre}', etiqueta.name));
       const borrar = li.querySelector('.btn-borrar-etiqueta');
       borrar.setAttribute('aria-label', LBL.del);
       borrar.title = LBL.del;
@@ -909,71 +939,32 @@ const wsPendingInvites = (db.prepare(`
         return;
       }
 
-      if (e.target.closest('.btn-renombrar-etiqueta')) abrirEdicion(fila);
+      if (e.target.closest('.btn-editar-etiqueta')) abrirEdicion(fila);
     });
 
-    /** Cambia la fila por un formulario en el sitio, sin modal. */
+    /** Nombre y color, en la ventana compartida con los tipos. La fila se retoca sin recargar. */
     function abrirEdicion(fila) {
-      if (fila.querySelector('.edicion-etiqueta')) return;
-      const original = fila.innerHTML;
-
-      const caja = document.createElement('div');
-      caja.className = 'edicion-etiqueta flex flex-col sm:flex-row sm:items-center gap-3 w-full';
-      caja.innerHTML = `
-        <input type="text" maxlength="40" class="campo editar-nombre flex-1 min-w-0">
-        <div class="editar-colores flex flex-wrap gap-1.5"></div>
-        <div class="flex gap-2 shrink-0">
-          <button class="btn btn-primary editar-guardar"></button>
-          <button class="editar-cancelar text-xs font-bold text-forge-muted hover:text-forge-text px-2 py-1.5"></button>
-        </div>
-      `;
-      caja.querySelector('.editar-guardar').textContent = LBL.save;
-      caja.querySelector('.editar-cancelar').textContent = LBL.cancel;
-      const campo = caja.querySelector('.editar-nombre');
-      campo.value = fila.dataset.name;
-
-      const paleta = caja.querySelector('.editar-colores');
-      paletaNueva.querySelectorAll('.color-opt').forEach((modelo) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'color-opt w-7 h-7 rounded-lg border-2 border-transparent transition-all focus:outline-none focus:ring-2 focus:ring-forge-focus aria-pressed:border-forge-text';
-        b.style.backgroundColor = modelo.dataset.color;
-        b.dataset.color = modelo.dataset.color;
-        b.setAttribute('aria-label', modelo.dataset.color);
-        b.setAttribute('aria-pressed', String(modelo.dataset.color === fila.dataset.color));
-        paleta.appendChild(b);
-      });
-      paleta.addEventListener('click', (ev) => {
-        const boton = ev.target.closest('.color-opt');
-        if (boton) marcarColor(paleta, boton.dataset.color);
-      });
-
-      fila.innerHTML = '';
-      fila.appendChild(caja);
-      campo.focus();
-      campo.select();
-
-      caja.querySelector('.editar-cancelar').addEventListener('click', () => { fila.innerHTML = original; });
-
-      caja.querySelector('.editar-guardar').addEventListener('click', async () => {
-        const name = campo.value.trim();
-        const color = colorElegido(paleta);
-        const res = await fetch(apiEtiquetas, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: fila.dataset.id, name, color }),
-        });
-        const datos = await res.json().catch(() => ({}));
-        if (!res.ok) return window.showToast?.(explicar(datos.error_code), true);
-
-        // Se conserva el texto de uso: renombrar no cambia dónde está puesta.
-        const uso = new DOMParser().parseFromString(original, 'text/html')
-          .querySelector('.chip-uso, .text-xs.text-forge-muted')?.textContent ?? '';
-        fila.dataset.name = name;
-        fila.dataset.color = color;
-        fila.innerHTML = filaDe({ id: fila.dataset.id, name, color }).innerHTML;
-        const usoEl = fila.querySelector('.chip-uso');
-        if (usoEl && uso) usoEl.textContent = uso;
+      window.forgeEditarCatalogo?.({
+        titulo: LBL.editTitle,
+        rotulo: LBL.name,
+        nombre: fila.dataset.name,
+        color: fila.dataset.color,
+        maximo: 40,
+        guardar: async (name, color) => {
+          const res = await fetch(apiEtiquetas, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: fila.dataset.id, name, color }),
+          });
+          const datos = await res.json().catch(() => ({}));
+          if (!res.ok) return explicar(datos.error_code);
+          // Se conserva el texto de uso: editarla no cambia dónde está puesta.
+          const uso = fila.querySelector('.chip-uso')?.textContent ?? '';
+          const nueva = filaDe({ id: fila.dataset.id, name, color: color || fila.dataset.color });
+          nueva.querySelector('.chip-uso').textContent = uso;
+          fila.replaceWith(nueva);
+          return null;
+        },
       });
     }
   })();
@@ -1297,6 +1288,51 @@ const wsPendingInvites = (db.prepare(`
    * ticket, la insignia de cada tarjeta y el filtro, así que mantener todo eso
    * al día a mano desde aquí son cuatro sitios que se desincronizan.
    */
+  // ── La ventana de editar (etiquetas y tipos) ───────────────────────────────
+  type Edicion = {
+    titulo: string; rotulo: string; nombre: string; color: string; maximo: number;
+    /** Devuelve el error que enseñar, o `null` si se guardó. */
+    guardar: (nombre: string, color: string | undefined) => Promise<string | null>;
+  };
+  (() => {
+    const dlg = document.getElementById('editar-catalogo') as HTMLDialogElement | null;
+    const form = document.getElementById('editar-catalogo-form') as HTMLFormElement | null;
+    const campo = document.getElementById('editar-catalogo-nombre') as HTMLInputElement | null;
+    const paleta = document.getElementById('editar-catalogo-colores');
+    const error = document.getElementById('editar-catalogo-error');
+    if (!dlg || !form || !campo || !paleta || !error) return;
+    let actual: Edicion | null = null;
+    const marcar = (color: string) => paleta.querySelectorAll<HTMLElement>('.color-opt').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === color)));
+
+    paleta.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('.color-opt');
+      if (b?.dataset.color) marcar(b.dataset.color);
+    });
+    document.getElementById('editar-catalogo-cancelar')?.addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!actual) return;
+      const color = paleta.querySelector<HTMLElement>('.color-opt[aria-pressed="true"]')?.dataset.color;
+      const fallo = await actual.guardar(campo.value.trim(), color);
+      if (fallo === null) { dlg.close(); return; }
+      error.textContent = fallo;
+      error.classList.remove('hidden');
+    });
+
+    (window as any).forgeEditarCatalogo = (edicion: Edicion) => {
+      actual = edicion;
+      document.getElementById('editar-catalogo-titulo')!.textContent = edicion.titulo;
+      document.getElementById('editar-catalogo-rotulo')!.textContent = edicion.rotulo;
+      campo.value = edicion.nombre;
+      campo.maxLength = edicion.maximo;
+      marcar(edicion.color);
+      error.classList.add('hidden');
+      dlg.showModal();
+      campo.select();
+    };
+  })();
+
   (() => {
     const raiz = document.getElementById('tipos-ticket');
     if (!raiz) return;
@@ -1336,21 +1372,36 @@ const wsPendingInvites = (db.prepare(`
       aviso((raiz.dataset[`tErr${datos?.error_code}`] as string) || raiz.dataset.tError || '', true);
     });
 
-    // ── Renombrar ───────────────────────────────────────────────────────────
-    raiz.querySelectorAll('.btn-renombrar-tipo').forEach((b) => {
-      b.addEventListener('click', async () => {
+    // ── Editar ──────────────────────────────────────────────────────────────
+    raiz.querySelectorAll('.btn-editar-tipo').forEach((b) => {
+      b.addEventListener('click', () => {
         const fila = b.closest('.fila-tipo') as HTMLElement;
-        // Renombrar no toca la clave, así que ningún ticket cambia de tipo.
-        const nuevo = window.prompt(raiz.dataset.tRename || '', fila.dataset.name || '');
-        if (nuevo === null || nuevo.trim() === fila.dataset.name) return;
-
-        const res = await fetch(`${base}/${fila.dataset.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: nuevo.trim() }),
+        const visible = fila.dataset.visible || fila.dataset.name || '';
+        (window as any).forgeEditarCatalogo?.({
+          titulo: raiz.dataset.tEditTitle || '',
+          rotulo: raiz.dataset.tName || '',
+          nombre: visible,
+          color: fila.dataset.color || '',
+          maximo: 30,
+          guardar: async (nombre: string, color: string | undefined) => {
+            // El nombre solo viaja si cambia: un tipo de serie con su nombre
+            // traducido («Tarea») pasaría a llamarse así para siempre y dejaría
+            // de cambiar con el idioma. Renombrar no toca la clave, así que
+            // ningún ticket cambia de tipo.
+            const cuerpo: Record<string, string> = {};
+            if (nombre !== visible) cuerpo.name = nombre;
+            if (color && color !== fila.dataset.color) cuerpo.color = color;
+            if (!Object.keys(cuerpo).length) return null;
+            const res = await fetch(`${base}/${fila.dataset.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(cuerpo),
+            });
+            if (res.ok) { window.location.reload(); return null; }
+            const datos = await res.json().catch(() => null);
+            return (raiz.dataset[`tErr${datos?.error_code}`] as string) || raiz.dataset.tError || '';
+          },
         });
-        if (res.ok) window.location.reload();
-        else fallo();
       });
     });
 

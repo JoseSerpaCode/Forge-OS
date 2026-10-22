@@ -251,4 +251,8 @@ export const es = {
   'metrics.col_count': 'Tareas',
   'metrics.table_hint': 'Los mismos datos que la gráfica, para leerlos con lector de pantalla o copiarlos.',
   'metrics.no_charts': 'Con sprints y medición de tiempo apagados, la única métrica es la carga por persona. Se encienden en Ajustes del espacio.',
+  'metrics.velocity_points': 'Puntos cerrados por sprint',
+  'metrics.velocity_points_series': 'Puntos cerrados',
+  'metrics.points_of': '{n} de {total} pts',
+  'metrics.col_points': 'Puntos',
 } as const;

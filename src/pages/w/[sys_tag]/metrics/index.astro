@@ -33,7 +33,8 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       estimado y registrado. */}
   <div class="pb-12" id="metricas"
     data-sprints={funcs.sprints ? 'true' : 'false'}
-    data-tiempo={funcs.tiempo ? 'true' : 'false'}>
+    data-tiempo={funcs.tiempo ? 'true' : 'false'}
+    data-puntos={funcs.puntos ? 'true' : 'false'}>
     <header class="page-head">
       <div class="min-w-0">
         <h1 class="page-title">{t('metrics.title')}</h1>
@@ -93,7 +94,9 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       <section class="panel flex flex-col min-h-[22rem]" data-grafica="vel">
         <div class="panel-cabeza !items-start">
           <div class="min-w-0">
-            <h2>{t('metrics.velocity_trend')}</h2>
+            {/* Con puntos encendidos, la velocidad se mide en puntos: es para
+                lo que existen. Sin ellos, en tareas cerradas. */}
+            <h2>{funcs.puntos ? t('metrics.velocity_points') : t('metrics.velocity_trend')}</h2>
             <p class="hint mt-0.5" id="vel-scope-label">{t('metrics.scope_5sprints')}</p>
           </div>
           <div class="segmentado shrink-0" role="group" aria-label={t('metrics.view_label')}>
@@ -148,6 +151,9 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       completed: t('metrics.completed'),
       remaining: t('metrics.remaining'),
       doneOf: t('metrics.done_of'),
+      pointsOf: t('metrics.points_of'),
+      velocityPoints: t('metrics.velocity_points_series'),
+      colPoints: t('metrics.col_points'),
       velocity: t('metrics.velocity_series'),
       colPerson: t('metrics.col_person'),
       colSprint: t('metrics.col_sprint'),
@@ -246,15 +252,19 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       if (!res?.ok) return vacio('burn', T.loadError);
       const d = await res.json();
       if (!d || d.total_issues === 0) return vacio('burn', T.noSprintIssues);
-      const quedan = d.total_issues - d.completed_issues;
+      // En puntos si el espacio los usa y el sprint tiene alguno; si no, en tareas.
+      const enPuntos = raiz.dataset.puntos === 'true' && d.total_points > 0;
+      const hechas = enPuntos ? d.completed_points : d.completed_issues;
+      const total = enPuntos ? d.total_points : d.total_issues;
+      const quedan = total - hechas;
       lleno('burn');
       graficas.burn?.destroy();
       graficas.burn = new Chart(document.getElementById('burn-canvas') as HTMLCanvasElement, {
         type: 'doughnut',
-        data: { labels: [T.completed, T.remaining], datasets: [{ data: [d.completed_issues, quedan], backgroundColor: [tema.estado.done, tema.borde], borderWidth: 0 }] },
-        options: opciones({ cutout: '72%', plugins: { title: { display: true, text: T.doneOf.replace('{n}', d.completed_issues).replace('{total}', d.total_issues), color: tema.texto, font: { size: 16, weight: 700 } } } }),
+        data: { labels: [T.completed, T.remaining], datasets: [{ data: [hechas, quedan], backgroundColor: [tema.estado.done, tema.borde], borderWidth: 0 }] },
+        options: opciones({ cutout: '72%', plugins: { title: { display: true, text: (enPuntos ? T.pointsOf : T.doneOf).replace('{n}', hechas).replace('{total}', total), color: tema.texto, font: { size: 16, weight: 700 } } } }),
       });
-      pintarTabla('burn', titulo('burn'), ['', T.colCount], [[T.completed, d.completed_issues], [T.remaining, quedan]]);
+      pintarTabla('burn', titulo('burn'), ['', enPuntos ? T.colPoints : T.colCount], [[T.completed, hechas], [T.remaining, quedan]]);
     }
 
     // ── Tareas cerradas por sprint ────────────────────────────────────────
@@ -265,13 +275,15 @@ const sprints = db.prepare('SELECT id, name, status FROM sprints WHERE workspace
       const datos = await res.json();
       if (!datos?.length) return vacio('vel', T.notEnough);
       lleno('vel');
+      const enPuntos = raiz.dataset.puntos === 'true';
+      const valor = (d: any) => (enPuntos ? d.points : d.velocity);
       graficas.vel?.destroy();
       graficas.vel = new Chart(document.getElementById('vel-canvas') as HTMLCanvasElement, {
         type: 'line',
-        data: { labels: datos.map((d: any) => d.sprint_name), datasets: [{ label: T.velocity, data: datos.map((d: any) => d.velocity), borderColor: tema.texto, backgroundColor: tema.texto, borderWidth: 2, tension: 0.25 }] },
+        data: { labels: datos.map((d: any) => d.sprint_name), datasets: [{ label: enPuntos ? T.velocityPoints : T.velocity, data: datos.map(valor), borderColor: tema.texto, backgroundColor: tema.texto, borderWidth: 2, tension: 0.25 }] },
         options: opciones({ scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }),
       });
-      pintarTabla('vel', titulo('vel'), [T.colSprint, T.colDone], datos.map((d: any) => [d.sprint_name, d.velocity]));
+      pintarTabla('vel', titulo('vel'), [T.colSprint, enPuntos ? T.colPoints : T.colDone], datos.map((d: any) => [d.sprint_name, valor(d)]));
     }
 
     // ── Estimado y registrado ─────────────────────────────────────────────

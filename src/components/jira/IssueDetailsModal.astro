@@ -50,7 +50,9 @@ const t = useTranslations(lang);
   data-t-files-upload={t('files.upload')}
   data-t-files-uploading={t('files.uploading')}
   data-t-files-uploaded={t('files.uploaded')}
-  data-t-files-err-upload={t('files.err_upload')}
+  data-t-files-err-too-big={t('files.err_too_big')}
+  data-t-files-err-type={t('files.err_type')}
+  data-t-files-err-named={t('files.err_named')}
   data-t-link-copied={t('modal.link_copied')}
   data-t-dup-confirm={t('issue.duplicate_confirm')}
   data-t-dup-title={t('issue.duplicate')}
@@ -457,6 +459,8 @@ const t = useTranslations(lang);
   import { fecha, vencida, diaDeCalendario } from '../../lib/fechas';
   import { prioridadVisible } from '../../lib/prioridad';
   import { describir, diaDe } from '../../lib/recurrencia';
+  import { normalizarHora } from '../../lib/hora';
+  import { subirAdjunto } from '../../lib/client/adjuntos';
 
   /**
    * La tarjeta de una tarea, por `data-issue-id`.
@@ -670,7 +674,9 @@ const t = useTranslations(lang);
     subir: modalRaiz?.dataset.tFilesUpload || '',
     subiendo: modalRaiz?.dataset.tFilesUploading || '',
     subido: modalRaiz?.dataset.tFilesUploaded || '',
-    errorSubida: modalRaiz?.dataset.tFilesErrUpload || '',
+    errorGrande: modalRaiz?.dataset.tFilesErrTooBig || '',
+    errorTipo: modalRaiz?.dataset.tFilesErrType || '',
+    errorNombre: modalRaiz?.dataset.tFilesErrNamed || '',
   };
 
   // ── Archivos del espacio ───────────────────────────────────────────────────
@@ -1554,82 +1560,26 @@ const t = useTranslations(lang);
     pintarArchivos();
   };
 
-  fileInput?.addEventListener('change', () => {
+  // La subida (con las fotos pasadas a WebP) es la misma que usa el alta:
+  // `lib/client/adjuntos.ts`.
+  fileInput?.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
-    if (!file) return;
-    
-    const idEl = document.getElementById('modal-issue-id');
-    const issueId = idEl?.getAttribute('data-full-id');
-    if (!issueId) return;
+    const issueId = idDelTicket();
+    if (!file || !issueId) return;
 
     // El botón dice lo que está pasando y **vuelve a su sitio** al terminar.
     // Antes se quedaba con «Uploading...» para siempre si algo fallaba.
     if (btnSubirTxt) btnSubirTxt.textContent = TXT.subiendo;
-    
-    const formData = new FormData();
-    formData.append('entity_type', 'issue');
-    formData.append('entity_id', issueId);
-    
-    const uploadFile = async (blobToUpload: Blob, filename: string) => {
-      if (btnSubirTxt) btnSubirTxt.textContent = TXT.subiendo;
-      formData.append('file', blobToUpload, filename);
-      try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        if (res.ok) {
-          // @ts-ignore
-          window.showToast(TXT.subido);
-          // @ts-ignore
-          window.loadIssueAttachments(issueId);
-        } else {
-          // @ts-ignore
-          window.showToast(TXT.errorSubida, true);
-        }
-      } catch (e) {
-        // @ts-ignore
-        window.showToast(TXT.errorSubida, true);
-      } finally {
-        fileInput.value = '';
-        if (btnSubirTxt) btnSubirTxt.textContent = TXT.subir;
-      }
-    };
-
-    // WebP Compression for images
-    if (file.type.startsWith('image/') && !file.type.includes('svg')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX = 1920; 
-          let w = img.width;
-          let h = img.height;
-          
-          if (w > h && w > MAX) { h *= MAX/w; w = MAX; }
-          else if (h > MAX) { w *= MAX/h; h = MAX; }
-          
-          canvas.width = w; 
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          if (ctx) ctx.drawImage(img, 0, 0, w, h);
-          
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const baseName = file.name.replace(/\\.[^/.]+$/, "");
-              uploadFile(blob, baseName + '.webp');
-            }
-          }, 'image/webp', 0.8);
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    } else {
-      if (file.size > 20 * 1024 * 1024) {
-         // @ts-ignore
-         window.showToast?.('Max file size is 20MB', true);
-         return;
-      }
-      uploadFile(file, file.name);
+    const r = await subirAdjunto(file, issueId);
+    fileInput.value = '';
+    if (btnSubirTxt) btnSubirTxt.textContent = TXT.subir;
+    if (r.ok) {
+      window.showToast?.(TXT.subido);
+      (window as any).loadIssueAttachments(issueId);
+      return;
     }
+    const plantilla = r.motivo === 'demasiado_grande' ? TXT.errorGrande : r.motivo === 'tipo' ? TXT.errorTipo : TXT.errorNombre;
+    window.showToast?.(plantilla.replace('{nombre}', file.name), true);
   });
 
   const pointsEl = document.getElementById('modal-issue-points') as HTMLInputElement;
@@ -1638,19 +1588,24 @@ const t = useTranslations(lang);
     const issueId = idEl?.getAttribute('data-full-id');
     if (!issueId) return;
 
+    const puntos = Math.max(0, parseInt(pointsEl.value) || 0);
     try {
-      await fetch(`/api/issues/${issueId}`, {
+      const res = await fetch(`/api/issues/${issueId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ story_points: parseInt(pointsEl.value) || 0 })
+        body: JSON.stringify({ story_points: puntos })
       });
-      const card = tarjetaDe(issueId);
-      if (card) {
-        card.setAttribute('data-points', pointsEl.value);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Todas las copias (con carriles hay una por etiqueta), y las sumas de
+      // la columna y de la cabecera.
+      tarjetasDe(issueId).forEach((card) => {
+        card.setAttribute('data-points', String(puntos));
         pintarTipoEnTarjeta(card);
-      }
+      });
+      (window as any).forgeActualizarCuentas?.();
     } catch (e) {
-      console.error('Failed to update story points', e);
+      console.error('puntos:', e);
+      window.showToast?.(window.forgeMsg?.errGenerico || '', true);
     }
   });
 
@@ -1764,25 +1719,17 @@ const t = useTranslations(lang);
 
   // ── Hora de entrega ────────────────────────────────────────────────────────
   //
-  // `HH:MM` de pared, sin zona. Admite «18», «1800» o «18.00» y lo deja como
-  // «18:00»; lo que no sea una hora no se guarda y se avisa.
+  // `HH:MM` de pared, sin zona. Admite «9», «9:00», «1800» o «18.00» y lo
+  // deja como «18:00» (`lib/hora.ts`, la misma regla que el alta y el
+  // servidor); lo que no sea una hora no se guarda y se avisa.
   (() => {
     const campo = document.getElementById('modal-issue-due-time') as HTMLInputElement | null;
     const error = document.getElementById('modal-issue-due-time-error');
     if (!campo) return;
-    const normalizar = (v: string) => {
-      const limpio = v.trim().replace(/[.h]/gi, ':');
-      if (!limpio) return '';
-      const m = /^(\d{1,2})(?::?(\d{2}))?$/.exec(limpio);
-      if (!m) return null;
-      const h = Number(m[1]), min = Number(m[2] ?? 0);
-      if (h > 23 || min > 59) return null;
-      return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-    };
     campo.addEventListener('change', async () => {
       const issueId = document.getElementById('modal-issue-id')?.getAttribute('data-full-id');
       if (!issueId) return;
-      const hora = normalizar(campo.value);
+      const hora = normalizarHora(campo.value);
       const malo = hora === null;
       error?.classList.toggle('hidden', !malo);
       campo.setAttribute('aria-invalid', String(malo));

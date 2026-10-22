@@ -78,9 +78,11 @@ servidor de base de datos, ni colas, ni capa de caché que mantener.
 - Vistas **Hoy** y **Próximos**, fecha de trabajo aparte de la de entrega,
   subtareas, tareas que se repiten («cada lunes», «el día 15 de cada mes»),
   vistas guardadas y tipos de tarea propios de cada espacio.
-- **Plantillas de tareas**, escritas en los ajustes del espacio (con seis de
-  serie para empezar) o guardadas desde cualquier tarea, y usadas desde el
-  alta o escribiendo `/nombre` en el alta rápida.
+- **Plantillas de tareas**, escritas en los ajustes del espacio o guardadas
+  desde cualquier tarea, y seis de serie. Elegir una en el alta rellena el
+  formulario para ajustarlo antes de crear, y sus pasos llegan como subtareas.
+- **Archivos adjuntos al crear la tarea**, y etiquetas y tipos de tarea que se
+  editan (nombre y color) desde los ajustes del espacio.
 - **En el teléfono**, una columna cada vez con las pestañas de estado fijas
   arriba: mantener pulsada una tarjeta y soltarla en una pestaña la mueve,
   deslizar a los lados cambia de pestaña, y cada tarjeta tiene su hoja de
@@ -91,7 +93,9 @@ servidor de base de datos, ni colas, ni capa de caché que mantener.
 - Carriles por etiqueta, completar con un clic y «Deshacer», y un calendario
   `.ics` de solo lectura para suscribirse desde Google Calendar.
 - Sprints, medición de tiempo (el cronómetro se para cuando la tarea pasa a
-  revisión o a Hecho) y puntos, opcionales.
+  revisión o a Hecho) y puntos, opcionales. Con puntos, cada columna los suma,
+  el tablero dice cuántos van hechos y Métricas mide el avance del sprint y la
+  velocidad en puntos.
 
 **Notas**
 

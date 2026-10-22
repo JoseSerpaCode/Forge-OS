@@ -5,7 +5,7 @@ import db from '../../../lib/db';
 import { checkWorkspaceAccess } from '../../../lib/guard';
 import { useTranslations } from '../../../i18n/ui';
 import { listar as listarEtiquetas } from '../../../lib/labels';
-import { cargarTablero, cargarVista } from '../../../lib/tablero';
+import { cargarTablero, cargarVista, puntosDeLaVista } from '../../../lib/tablero';
 import { hoyEn, sumarDiasIso } from '../../../lib/fechas';
 import { funciones } from '../../../lib/funcionesEspacio';
 import { OPCIONES as OPCIONES_PRIORIDAD } from '../../../lib/prioridad';
@@ -144,16 +144,19 @@ const grupos = vista === 'tablero' ? [] : cargarVista({
   hasta: sumarDiasIso(hoy, dias - 1),
 });
 
-const { tarjetas: issues, conteos: statusCounts } = vista === 'tablero'
-  ? cargarTablero({
-      workspaceId: workspace.id,
-      userId: user.id,
-      sprintId: funcs.sprints ? activeSprintId : undefined,
-      labelId: etiquetaFiltro?.id ?? null,
-      agruparPorEtiqueta: agrupar,
-      ...filtrosExtra,
-    })
-  : { tarjetas: [] as any[], conteos: {} as Record<string, number> };
+const filtroTablero = {
+  workspaceId: workspace.id,
+  userId: user.id,
+  sprintId: funcs.sprints ? activeSprintId : undefined,
+  labelId: etiquetaFiltro?.id ?? null,
+  agruparPorEtiqueta: agrupar,
+  ...filtrosExtra,
+};
+const { tarjetas: issues, conteos: statusCounts, puntos: statusPoints } = vista === 'tablero'
+  ? cargarTablero(filtroTablero)
+  : { tarjetas: [] as any[], conteos: {} as Record<string, number>, puntos: {} as Record<string, number> };
+// Con puntos encendidos, la cabecera dice cuántos van hechos de lo que se mira.
+const puntosVista = funcs.puntos && vista === 'tablero' ? puntosDeLaVista({ ...filtroTablero, agruparPorEtiqueta: false }) : null;
 
 /** Enlace a otra vista conservando el filtro de etiqueta. */
 const enlaceVista = (v: string) => {
@@ -229,9 +232,14 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
     <header class="page-head !mb-3 max-sm:hidden">
       <div class="min-w-0">
         <h1 class="page-title">{workspace.name}</h1>
-        {(sprintActual || funcs.tiempo) && (
+        {(sprintActual || funcs.tiempo || (puntosVista && puntosVista.total > 0)) && (
           <div class="page-meta">
             {sprintActual && <span>{sprintActual.name}{sprintActual.status === 'active' ? ` · ${t('board.sprint_active_suffix').replace(/[()]/g, '').trim()}` : ''}</span>}
+            {puntosVista && puntosVista.total > 0 && (
+              <span id="puntos-vista" data-plantilla={t('board.points_done')}>
+                {t('board.points_done').replace('{hechos}', String(puntosVista.hechos)).replace('{total}', String(puntosVista.total))}
+              </span>
+            )}
             {funcs.tiempo && (
               <span class="inline-flex items-center gap-2.5" id="sprint-time-container" data-t-no-estimate={t('dashboard.logged_no_estimate')} data-logged={totalLogged} data-estimated={totalEstimated}>
                 <span class="barra w-28" aria-hidden="true">
@@ -446,7 +454,7 @@ const sprintActual = funcs.sprints && activeSprintId ? (sprints.find((sp: any) =
 
     <div class="flex-1 overflow-clip">
       <!-- Pass sprints to KanbanBoard so IssueDetailsModal can use it -->
-      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} contactos={contactos} userRole={acceso.rol} statusCounts={statusCounts} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} filtrosUrl={new URLSearchParams(Object.entries({ prioridad: filtroPrioridad ?? '', vence: filtroVence ? String(filtroVence) : '', responsable: responsablePedido && filtroResponsable ? responsablePedido : '' }).filter(([, v]) => v)).toString()} vista={vista} grupos={grupos} hoy={hoy} dias={dias} />
+      <KanbanBoard workspaceId={workspace.id} issues={issues} sprints={sprints} currentSprintId={activeSprintId} workspaceMembers={workspaceMembers} contactos={contactos} userRole={acceso.rol} statusCounts={statusCounts} statusPoints={statusPoints} labels={etiquetasDelEspacio} issueTypes={tiposDelEspacio} sysTag={sys_tag} funciones={funcs} agrupar={agrupar} filtroEtiqueta={etiquetaFiltro?.id ?? null} filtrosUrl={new URLSearchParams(Object.entries({ prioridad: filtroPrioridad ?? '', vence: filtroVence ? String(filtroVence) : '', responsable: responsablePedido && filtroResponsable ? responsablePedido : '' }).filter(([, v]) => v)).toString()} vista={vista} grupos={grupos} hoy={hoy} dias={dias} />
     </div>
   </div>
 
