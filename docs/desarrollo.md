@@ -181,6 +181,12 @@ fases (1.36.0 a 2.0.0). Lo que no se ve en el código:
   **todo lo que afirman tiene que existir**. La maqueta prometía que una nota
   enlazada aparece en su tarea; no existe, así que no se dice. Lo mismo vale
   para el README.
+- **Las figuras salen de `src/components/brand/Figura.astro`** (personas con
+  el cuerpo de arco; trece poses) y **los vacíos de `components/ui/Vacio.astro`**
+  (escena + qué hay aquí + como mucho dos acciones). Una pose nueva se añade
+  ahí, con los hombros en (±15, -45) y las caderas en (±10, -2), no como SVG
+  suelto en la página. Son decorativas (`aria-hidden`): el texto de al lado
+  tiene que bastar.
 - **Los estados salen de `src/lib/status.ts`** (nombre en i18n, color
   `--forge-st-*`). Su color es marca gráfica —punto, cinta, barra, serie—,
   nunca color de texto; el texto va en tinta (`.estado-chip`).

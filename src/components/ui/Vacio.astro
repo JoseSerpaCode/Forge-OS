@@ -1,0 +1,28 @@
+---
+/**
+ * Un estado vacío de «Taller»: a la izquierda una escena con una figura
+ * haciendo algo que tiene que ver con la sección, a la derecha qué hay aquí
+ * cuando hay algo, y como mucho dos acciones.
+ *
+ * La escena va en el hueco `escena` y es decorativa (lo que cuenta lo dice el
+ * texto). En el teléfono se apila encima del texto.
+ */
+interface Props {
+  /** Nombre corto de la sección, en mono, encima del título. */
+  etiqueta?: string;
+  titulo: string;
+  texto?: string;
+  class?: string;
+}
+const { etiqueta, titulo, texto, class: clase } = Astro.props;
+---
+<section class:list={['vacio', clase]}>
+  <div class="vacio-escena" aria-hidden="true"><slot name="escena" /></div>
+  <div class="vacio-cuerpo">
+    {etiqueta && <span class="vacio-etiqueta">{etiqueta}</span>}
+    <h2 class="vacio-titulo">{titulo}</h2>
+    {texto && <p class="vacio-texto">{texto}</p>}
+    <slot name="texto" />
+    {Astro.slots.has('default') && <div class="vacio-acciones"><slot /></div>}
+  </div>
+</section>

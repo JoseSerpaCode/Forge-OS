@@ -404,7 +404,7 @@ const currentUrl = Astro.url.pathname;
           
           if (searchResults) {
             if (data.length === 0) {
-               searchResults.innerHTML = `<li class="px-3 py-4 text-forge-muted text-sm text-center">${escaparHtml(textosBarra.tNoResults || '')}</li>`;
+               searchResults.innerHTML = `<li class="vacio-mini vacio-mini-fila px-3 py-4">${document.getElementById('figura-lupa')?.innerHTML ?? ''}<span>${escaparHtml(textosBarra.tNoResults || '')}</span></li>`;
             } else {
                let html = '';
                data.forEach((item: any) => {

@@ -629,6 +629,64 @@
   .paleta-entrada { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--forge-border); }
   .menu-titulo { padding: 8px 10px 4px; font-size: 0.75rem; font-weight: 600; color: var(--forge-muted); }
 
+  /* ── Vacíos con figura (Vacio.astro) ─────────────────────────────────
+     Escena a la izquierda, en la superficie 2; texto a la derecha. Las
+     figuras salen de la escena a propósito (se apoyan, cuelgan), así que la
+     escena no recorta. */
+  .vacio {
+    display: flex;
+    background: var(--forge-panel);
+    border: 1px solid var(--forge-border);
+    border-radius: 22px;
+    overflow: hidden;
+  }
+  .vacio-escena {
+    flex: 0 0 15rem;
+    min-height: 15rem;
+    background: var(--forge-surface-2);
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .vacio-cuerpo { padding: 1.75rem; display: flex; flex-direction: column; gap: 0.625rem; justify-content: center; min-width: 0; }
+  .vacio-etiqueta { font-family: var(--forge-mono); font-size: 0.75rem; color: var(--forge-muted); }
+  .vacio-titulo { margin: 0; font-size: 2.125rem; line-height: 1; font-weight: 800; font-stretch: 64%; letter-spacing: -0.01em; text-wrap: balance; }
+  .vacio-texto { margin: 0; font-size: 0.875rem; line-height: 1.5; color: var(--forge-muted); max-width: 52ch; }
+  .vacio-acciones { display: flex; flex-wrap: wrap; gap: 0.625rem; align-items: center; margin-top: 0.25rem; }
+  @media (max-width: 40rem) {
+    .vacio { flex-direction: column; }
+    .vacio-escena { flex-basis: auto; min-height: 15rem; }
+  }
+  /* El remate de columna como peana de una escena (el del tablero vacío). */
+  .vacio-arco {
+    width: 9.5rem; height: 7.5rem;
+    background: var(--c, var(--forge-st-todo));
+    border-radius: 50% 50% 0 0 / 46px 46px 0 0;
+    display: flex; justify-content: center; padding-top: 1.1rem; box-sizing: border-box;
+    color: var(--forge-panel); font-weight: 800; font-stretch: 68%; font-size: 1.125rem;
+    position: relative;
+  }
+  /* Una hoja de papel inclinada: notas y tablas. */
+  .vacio-hoja {
+    background: #F8F7F4; color: #171614;
+    border-radius: 10px; box-shadow: var(--forge-shadow-float);
+    padding: 1.1rem 1rem; box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 0.55rem;
+  }
+  .vacio-hoja i { display: block; height: 6px; border-radius: 3px; background: #CFCAC0; }
+  .vacio-hoja i:first-child { height: 12px; width: 70%; background: #171614; }
+  .vacio-hoja i.brasa { background: #E8590C; width: 40%; }
+  .vacio-hoja i.fila { height: 18px; background: none; border: 1.5px dashed #CFCAC0; border-radius: 6px; }
+
+  /* Vacío pequeño, dentro de un panel (Métricas, la paleta). */
+  .vacio-mini { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; color: var(--forge-muted); font-size: 0.875rem; padding: 1rem; }
+  .vacio-mini-fila { flex-direction: row; text-align: left; justify-content: flex-start; gap: 0.75rem; }
+  /* Una figura sentada o tumbada necesita algo debajo: un arco pequeño. */
+  .vacio-mini-escena { display: flex; flex-direction: column; align-items: center; }
+  .vacio-mini-escena .figura { position: relative; z-index: 1; }
+  .vacio-peana { display: block; width: 6.5rem; height: 1.9rem; background: var(--forge-surface-2); border-radius: 999px 999px 4px 4px; }
+
   /* ── Perfil (perfil.html) ───────────────────────────────────────────── */
   .avatar-xl { width: 6.5rem; height: 7.375rem; font-size: 2.6rem; border: 4px solid var(--forge-bg); font-stretch: 75%; font-weight: 800; }
   /* La banda va en el tono de la persona, entero: no lleva texto encima. El

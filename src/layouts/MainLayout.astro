@@ -6,6 +6,7 @@ import BottomNav from '../components/layout/BottomNav.astro';
 import Footer from '../components/layout/Footer.astro';
 import GuestBanner from '../components/layout/GuestBanner.astro';
 import NuevaTarea from '../components/jira/NuevaTarea.astro';
+import Figura from '../components/brand/Figura.astro';
 import EditarCatalogo from '../components/EditarCatalogo.astro';
 import ContactoRapido from '../components/jira/ContactoRapido.astro';
 import HeadMarca from '../components/brand/HeadMarca.astro';
@@ -200,6 +201,10 @@ Astro.response.headers.set('Pragma', 'no-cache');
     </dialog>
 
     <!-- Command Palette (Cmd+K) -->
+    {/* La figura de «sin resultados», para la paleta y el buscador de arriba:
+        la clonan sus scripts, que pintan la lista con HTML. */}
+    <template id="figura-lupa"><Figura pose="lupa" color="ambar" alto={56} /></template>
+
     <dialog id="cmd-k-palette" class="ventana paleta z-[200]">
       <div class="paleta-entrada">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-forge-muted shrink-0" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -505,6 +510,12 @@ Astro.response.headers.set('Pragma', 'no-cache');
           return '<p class="px-3 py-6 text-sm text-forge-muted text-center">' + texto + '</p>';
         }
 
+        // Sin resultados: la figura con la lupa, del <template> de abajo.
+        function sinNada(texto) {
+          var f = document.getElementById('figura-lupa');
+          return '<div class="vacio-mini vacio-mini-fila px-4 py-5">' + (f ? f.innerHTML : '') + '<p class="m-0">' + texto + '</p></div>';
+        }
+
         function opciones() {
           return Array.prototype.slice.call(hits.querySelectorAll('a[role="option"]'));
         }
@@ -543,7 +554,7 @@ Astro.response.headers.set('Pragma', 'no-cache');
                 // pantalla dura un instante y no da ningún error; se veía como
                 // una prueba que fallaba una de cada ocho corridas.
                 if (!palette.open) return;
-                if (!datos.length) { pinta(aviso(hits.dataset.tNone || ''), true); return; }
+                if (!datos.length) { pinta(sinNada(hits.dataset.tNone || ''), true); return; }
 
                 var html = datos.map(function (item) {
                   // `textContent` no vale aquí porque se arma HTML, así que el

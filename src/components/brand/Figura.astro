@@ -1,0 +1,159 @@
+---
+import { escaparHtml } from '../../lib/texto';
+
+/**
+ * Las figuras de «Taller»: personas hechas con el arco de la fragua.
+ *
+ * El cuerpo es siempre el mismo (el arco y la cabeza redonda); lo que cambia
+ * es la pose: brazos y piernas son trazos gruesos que salen de los hombros
+ * (±15, -45) y de las caderas (±10, -2). Así cualquier pose nueva se lee como
+ * de la misma familia que las de la portada.
+ *
+ * Son decorativas siempre (`aria-hidden`): lo que cuentan lo dice el texto de
+ * al lado. Los colores son fijos, como el naranja del logo, porque son
+ * personajes y no interfaz: no cambian con el tema.
+ */
+interface Props {
+  pose:
+    | 'tumbada' | 'aviva' | 'corre' | 'apoyada' | 'colgada' | 'caja'
+    | 'lectora' | 'lanza' | 'saluda' | 'pino' | 'escribe' | 'lupa' | 'espera';
+  color?: 'lila' | 'turquesa' | 'ambar' | 'rosa';
+  /** Alto en px; el ancho sale del viewBox. */
+  alto?: number;
+  /** Texto del cartel, en las poses que llevan uno (corre, lanza). */
+  cartel?: string;
+  class?: string;
+  style?: string;
+}
+
+const { pose, color = 'lila', alto = 120, cartel = '', class: clase, style } = Astro.props;
+
+const COLORES = { lila: '#A98BF0', turquesa: '#3FB6C9', ambar: '#E0A23A', rosa: '#E58FB8' } as const;
+const c = COLORES[color];
+const PAPEL = '#F8F7F4';
+const TINTA = '#171614';
+const BRASA = '#E8590C';
+const GRIS = '#857E74';
+
+interface Pose {
+  caja: string;
+  giro?: number;
+  miembros: string[];
+  cabeza?: [number, number];
+  /** Lo que va dentro del giro, encima del cuerpo (objetos que sostiene). */
+  dentro?: string;
+  /** Lo que va fuera del giro (suelo, chispas, trayectorias). */
+  fuera?: string;
+}
+
+const carta = (x: number, y: number, giro: number, texto: string, ancho = 96) =>
+  `<g transform="translate(${x} ${y}) rotate(${giro})"><rect x="${-ancho / 2}" y="-18" width="${ancho}" height="36" rx="9" fill="${PAPEL}"/>` +
+  `<text x="0" y="6" text-anchor="middle" font-family="Archivo, sans-serif" font-size="17" font-weight="800" fill="${TINTA}">${texto}</text></g>`;
+
+// El cartel se pinta dentro de un SVG hecho como cadena: escapado.
+const rotulo = escaparHtml(cartel);
+
+const POSES: Record<Props['pose'], Pose> = {
+  // Tumbada boca arriba, manos detrás de la cabeza: «al día», nada que hacer.
+  tumbada: {
+    caja: '-112 -64 162 96', giro: -90,
+    miembros: ['M-15 -44L-26 -66L-10 -88', 'M15 -46L30 -68L12 -88', 'M-10 -2L-14 36', 'M10 -2L30 14L22 38'],
+    fuera: `<text x="-104" y="-38" font-family="Archivo, sans-serif" font-size="16" font-weight="800" fill="${GRIS}">z</text><text x="-92" y="-52" font-family="Archivo, sans-serif" font-size="12" font-weight="800" fill="${GRIS}">z</text>`,
+  },
+  // Aviva las brasas con un palo: la fragua sigue encendida.
+  aviva: {
+    caja: '-50 -112 140 160', giro: 14,
+    miembros: ['M-10 -2L-24 34', 'M10 -2L20 34', 'M-15 -44L8 -28L24 -22', 'M15 -46L34 -32'],
+    dentro: `<path d="M26 -30L74 26" stroke="${GRIS}" stroke-width="6" stroke-linecap="round"/>`,
+    fuera: `<circle cx="62" cy="44" r="6" fill="${BRASA}"/><circle cx="74" cy="34" r="3.5" fill="#FF9452"/>`,
+  },
+  // Corre con un cartel en alto.
+  corre: {
+    caja: '-96 -150 170 196', giro: 10,
+    miembros: ['M-10 -2L-30 16L-46 26', 'M10 -2L30 12L30 36', 'M-15 -44L-26 -98', 'M15 -46L20 -100'],
+    dentro: carta(-3, -118, -8, rotulo),
+    fuera: `<path d="M-62 -44h-26M-58 -26h-18M-64 -8h-22" stroke="#5C574F" stroke-width="4" stroke-linecap="round"/>`,
+  },
+  // Apoyada en algo, piernas cruzadas.
+  apoyada: {
+    caja: '-64 -112 112 150', giro: -14,
+    miembros: ['M-15 -44L-40 -54', 'M15 -46L32 -28L18 -10', 'M-10 -2L12 34', 'M10 -2L-12 34'],
+  },
+  // Colgada de un borde por las manos (las manos quedan en y = -112).
+  colgada: {
+    caja: '-44 -122 88 164', giro: -6,
+    miembros: ['M-15 -44L-20 -112', 'M15 -46L8 -114', 'M-10 -2L-18 20L-12 36', 'M10 -2L8 36'],
+  },
+  // Lleva una caja sobre la cabeza.
+  caja: {
+    caja: '-60 -152 120 192', giro: -6,
+    miembros: ['M-10 -2L-24 34', 'M10 -2L20 16L14 36', 'M-15 -44L-32 -80L-28 -104', 'M15 -46L32 -80L28 -104'],
+    dentro: `<rect x="-42" y="-146" width="84" height="44" rx="6" fill="#C9A26B"/><rect x="-42" y="-130" width="84" height="7" fill="#A8834F"/><rect x="-8" y="-146" width="16" height="16" fill="${PAPEL}"/>`,
+  },
+  // Sentada en un borde, leyendo una ficha.
+  lectora: {
+    caja: '-56 -112 112 152', cabeza: [-2, -80],
+    miembros: ['M-10 -2L-16 18L-10 38', 'M10 -2L18 18L24 36', 'M-15 -44L-4 -28L10 -40', 'M15 -46L24 -32L16 -42'],
+    dentro: `<g transform="translate(16 -54) rotate(10)"><rect x="-16" y="-20" width="32" height="40" rx="5" fill="${PAPEL}"/><rect x="-10" y="-11" width="20" height="4" rx="2" fill="#CFCAC0"/><rect x="-10" y="-2" width="14" height="4" rx="2" fill="#CFCAC0"/><rect x="-10" y="7" width="17" height="4" rx="2" fill="${BRASA}"/></g>`,
+  },
+  // Lanza un archivo en arco.
+  lanza: {
+    caja: '-50 -170 210 212', giro: -10,
+    miembros: ['M-10 -2L-28 30', 'M10 -2L28 24L24 38', 'M15 -46L36 -76L52 -92', 'M-15 -44L-38 -30'],
+    fuera: `<path d="M48 -118Q96 -168 140 -134" stroke="${GRIS}" stroke-width="4" stroke-dasharray="1 11" stroke-linecap="round" fill="none"/>` +
+      `<g transform="translate(146 -124) rotate(24)"><rect x="-17" y="-21" width="34" height="42" rx="5" fill="${PAPEL}"/><text x="0" y="5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="${TINTA}">${rotulo}</text></g>`,
+  },
+  // Sentada en lo alto, saludando.
+  saluda: {
+    caja: '-60 -112 120 152',
+    miembros: ['M-10 -2L-18 20L-12 38', 'M10 -2L20 18L26 36', 'M-15 -44L-32 -20L-36 -2', 'M15 -46L34 -76L28 -102'],
+    fuera: `<path d="M44 -104l8 -6M48 -92l10 -2" stroke="${GRIS}" stroke-width="4" stroke-linecap="round"/>`,
+  },
+  // Haciendo el pino (las manos quedan abajo, en y ≈ 96).
+  pino: {
+    caja: '-56 -40 112 144', giro: 176,
+    miembros: ['M-10 -2L-30 22', 'M10 -2L24 14L40 10', 'M-15 -44L-22 -96', 'M15 -46L20 -96'],
+  },
+  // De rodillas, escribiendo con un lápiz enorme.
+  escribe: {
+    caja: '-60 -112 136 152', giro: 8, cabeza: [-2, -80],
+    miembros: ['M-10 -2L-18 28L-46 32', 'M10 -2L28 16L30 36', 'M15 -46L34 -26L44 -14', 'M-15 -44L4 -22'],
+    dentro: `<path d="M36 -40L60 24" stroke="${BRASA}" stroke-width="8"/><path d="M56 22L64 36L60 22Z" fill="${PAPEL}" stroke="${PAPEL}" stroke-width="4"/>`,
+  },
+  // Inclinada, mirando con lupa.
+  lupa: {
+    caja: '-60 -130 190 172', giro: 26,
+    miembros: ['M-10 -2L-30 30', 'M10 -2L8 36', 'M-15 -44L-2 -14', 'M15 -46L40 -42L56 -52'],
+    fuera: `<path d="M-56 38H126" stroke="#3D3A36" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>` +
+      `<circle cx="88" cy="-14" r="20" fill="none" stroke="${GRIS}" stroke-width="5"/><path d="M73 -2L62 8" stroke="${GRIS}" stroke-width="7" stroke-linecap="round"/>` +
+      `<text x="88" y="-6" text-anchor="middle" font-family="Archivo, sans-serif" font-size="22" font-weight="800" fill="${BRASA}">?</text>`,
+  },
+  // Sentada con los brazos cruzados, esperando.
+  espera: {
+    caja: '-60 -112 120 152',
+    miembros: ['M-10 -2L-16 18L-10 38', 'M10 -2L16 18L10 38', 'M-15 -44L8 -30L20 -38', 'M15 -46L-8 -32L-20 -40'],
+  },
+};
+
+const p = POSES[pose];
+const [, , anchoCaja, altoCaja] = p.caja.split(' ').map(Number);
+const ancho = Math.round((alto * anchoCaja) / altoCaja);
+const [hx, hy] = p.cabeza ?? [0, -80];
+const cuerpo =
+  `<g${p.giro ? ` transform="rotate(${p.giro})"` : ''} stroke="${c}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none">` +
+  p.miembros.map((d) => `<path d="${d}"/>`).join('') +
+  `<path d="M-22 0V-36A22 22 0 0 1 22 -36V0Z" fill="${c}" stroke="none"/><circle cx="${hx}" cy="${hy}" r="18" fill="${c}" stroke="none"/>` +
+  (p.dentro ? `<g stroke="none">${p.dentro}</g>` : '') +
+  `</g>`;
+---
+<svg
+  class:list={['figura', clase]}
+  style={style}
+  viewBox={p.caja}
+  width={ancho}
+  height={alto}
+  aria-hidden="true"
+  focusable="false"
+  overflow="visible"
+  set:html={(p.fuera && pose === 'lupa' ? p.fuera : '') + cuerpo + (p.fuera && pose !== 'lupa' ? p.fuera : '')}
+/>
