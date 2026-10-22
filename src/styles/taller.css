@@ -745,6 +745,50 @@
   .semana-hoy b { color: var(--forge-accent-text); }
   .semana-hoy .semana-arco { background: var(--forge-accent-primary); }
 
+  /* ── Tablas en fichas (tablas.html) ────────────────────────────────── */
+  .fichas-tablas { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr)); gap: 1.25rem; }
+  .ficha-tabla {
+    position: relative; display: flex; flex-direction: column;
+    background: var(--forge-panel); border: 1px solid var(--forge-border); border-radius: 22px; overflow: hidden;
+  }
+  .ficha-tabla:hover { border-color: var(--forge-border-strong); }
+  .ficha-vista { position: relative; padding: 1.1rem 1.1rem 0; background: var(--forge-surface-2); min-height: 9.5rem; display: flex; flex-direction: column; justify-content: flex-end; }
+  .ficha-tipos { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 0.625rem; padding-right: 5rem; }
+  .ficha-tipos span { font-size: 0.75rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--forge-bg); color: var(--forge-text); }
+  /* La hoja: papel en los dos temas, como las pegatinas. */
+  .ficha-hoja {
+    position: relative; width: 84%; background: #F8F7F4; color: #171614;
+    border-radius: 12px 12px 0 0; padding: 4px 0; font-family: var(--forge-mono); font-size: 0.75rem;
+    box-shadow: var(--forge-shadow-float);
+  }
+  .ficha-fila { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 0.5rem; padding: 6px 12px; border-bottom: 1px solid #E4E1DA; }
+  .ficha-fila:last-child { border-bottom: 0; }
+  .ficha-fila span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ficha-cabecera { font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; font-weight: 700; border-bottom-color: #CFCAC0; }
+  .ficha-fila-vacia { display: block; margin: 8px 12px; height: 18px; border: 1.5px dashed #CFCAC0; border-radius: 6px; }
+  .ficha-pie { padding: 1rem 1.25rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--forge-border); }
+  .ficha-nombre { margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 800; }
+  /* Toda la ficha se abre con el enlace del nombre (sin anidar la papelera). */
+  .ficha-enlace::after { content: ''; position: absolute; inset: 0; }
+  .ficha-enlace:focus-visible { outline: none; }
+  .ficha-tabla:has(.ficha-enlace:focus-visible) { outline: 2px solid var(--forge-focus); outline-offset: 2px; }
+  .ficha-cifras { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; font-size: 0.8125rem; color: var(--forge-muted); }
+  .ficha-cifras b { font-size: 1.75rem; color: var(--forge-text); line-height: 1; }
+  .ficha-cifras .btn-borrar-tabla { position: relative; z-index: 1; }
+  .ficha-plantillas {
+    position: relative; border: 1.5px dashed var(--forge-border-strong); border-radius: 22px;
+    padding: 1.4rem; display: flex; flex-direction: column; gap: 1rem; justify-content: space-between;
+  }
+  .ficha-plantillas-titulo { margin: 0; font-size: 1.625rem; font-weight: 800; font-stretch: 68%; padding-right: 5rem; }
+  .ficha-plantilla {
+    text-align: left; min-height: 4rem; padding: 0.625rem 0.875rem; border-radius: 14px;
+    background: var(--forge-panel); border: 1px solid var(--forge-border); color: var(--forge-text);
+    display: flex; flex-direction: column; gap: 2px; font: inherit; cursor: pointer;
+  }
+  .ficha-plantilla:hover { border-color: var(--forge-text); }
+  .ficha-plantilla b { font-size: 0.875rem; }
+  .ficha-plantilla span { font-size: 0.75rem; color: var(--forge-muted); }
+
   /* ── Perfil (perfil.html) ───────────────────────────────────────────── */
   .avatar-xl { width: 6.5rem; height: 7.375rem; font-size: 2.6rem; border: 4px solid var(--forge-bg); font-stretch: 75%; font-weight: 800; }
   /* La banda va en el tono de la persona, entero: no lleva texto encima. El

@@ -6,6 +6,16 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.6.0] - 2026-10-22
+
+Tablas en fichas: la tercera de las propuestas de «más magia».
+
+### Added
+
+- **Tablas en fichas**, la vista por defecto: cada tabla enseña una hoja con sus columnas (hasta cuatro) y sus tres primeras filas de verdad, los tipos de columna que tiene, cuántas filas y columnas y cuándo se editó. Una tabla vacía lleva una figura con una caja y la invitación a añadir la primera fila.
+- **Empezar desde una plantilla** en la última ficha: abre el alta con esa plantilla ya elegida.
+- La **lista** de siempre sigue a un clic («Fichas | Lista»); la elección se recuerda en el navegador.
+
 ## [2.5.0] - 2026-10-22
 
 Actividad con figura: la segunda de las propuestas de «más magia».
