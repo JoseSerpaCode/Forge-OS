@@ -43,10 +43,9 @@ test('el formulario guarda las horas estimadas', async ({ page }) => {
   await page.goto(`/w/${ESPACIO}/board`);
   await page.locator('#btn-new-issue').click();
 
-  // El alta nueva: la línea rápida y, en «Más opciones», las horas (solo con
-  // la medición de tiempo encendida, que `conEspacio` enciende).
+  // El alta: la línea rápida y, a la vista, las horas (solo con la medición
+  // de tiempo encendida, que `conEspacio` enciende).
   await page.fill('#nt-linea', 'Con estimación');
-  await page.locator('#nt-mas summary').click();
   await page.fill('#nt-estimado', '3.5');
   await page.locator('#nt-crear').click();
 

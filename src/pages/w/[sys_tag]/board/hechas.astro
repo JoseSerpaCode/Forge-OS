@@ -27,6 +27,9 @@ const acceso = abrirEspacioDePagina(Astro.params.sys_tag, user, 'viewer');
 if (!acceso.ok) return new Response('Not Found', { status: 404 });
 const ws = acceso.ws;
 const funcs = funciones(ws.id);
+const sprintsAbiertos = funcs.sprints
+  ? (db.prepare("SELECT id FROM sprints WHERE workspace_id = ? AND status != 'completed'").all(ws.id) as Array<{ id: string }>).map((s) => s.id)
+  : [];
 const q = Astro.url.searchParams;
 
 const etiqueta = q.get('label');
@@ -72,6 +75,6 @@ const canEdit = acceso.rol === 'owner' || acceso.rol === 'editor';
 const ultima = tarjetas[tarjetas.length - 1];
 ---
 {tarjetas.map((issue) => (
-  <IssueCard issue={issue} canEdit={canEdit} tipo={tipos.get(issue.type) ?? null} funciones={funcs} carril={agrupar ? carril : null} />
+  <IssueCard issue={issue} canEdit={canEdit} tipo={tipos.get(issue.type) ?? null} funciones={funcs} carril={agrupar ? carril : null} sprintsAbiertos={sprintsAbiertos} />
 ))}
 <template data-hechas-meta data-hay-mas={hayMas ? 'true' : 'false'} data-cursor={ultima ? cursorDe(ultima) : ''}></template>

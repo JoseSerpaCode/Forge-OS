@@ -17,6 +17,7 @@ import { esPaginaDelEspacio, vincular } from './apuntes';
 import { esRegla, siguiente as siguienteFecha } from './recurrencia';
 import { esAntelacion } from './recordatorios';
 import { hoyEn, diaDeCalendario } from './fechas';
+import { normalizarHora } from './hora';
 
 /**
  * El fragmento de `SET` que mantiene `done_at` al cambiar el estado.
@@ -39,7 +40,15 @@ export const SET_DONE_AT =
 export const esDia = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && diaDeCalendario(v) === v;
 
 /** `HH:MM` válido o vacío. La `CHECK` de la base también lo exige; esto da un 400 en vez de un 500. */
-export const esHora = (v: unknown) => v === null || v === '' || (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v));
+/**
+ * La hora de entrega en `HH:MM`, o `null` sin hora. Lanza 400 si no es una
+ * hora: «9:00» o «9» valen y se guardan como «09:00» (`lib/hora.ts`).
+ */
+function horaDeEntrega(valor: unknown): string | null {
+  const hora = normalizarHora(valor);
+  if (hora === null) throw new ApiError(400, 'Invalid due_time');
+  return hora || null;
+}
 
 export class IssueService {
   /**
@@ -76,8 +85,7 @@ export class IssueService {
     // Validar antes de escribir: la `CHECK` de la base rechazaría lo mismo,
     // pero con un 500 que no dice qué campo estaba mal.
     if ('priority' in data && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
-    if ('due_time' in data && !esHora((data as any).due_time)) throw new ApiError(400, 'Invalid due_time');
-    if ((data as any).due_time === '') (data as any).due_time = null;
+    if ('due_time' in data) (data as any).due_time = horaDeEntrega((data as any).due_time);
     if ('reminder_minutes' in data) {
       const m = (data as any).reminder_minutes;
       if (m === '' || m === undefined) (data as any).reminder_minutes = null;
@@ -400,7 +408,7 @@ export class IssueService {
      * entera— y se insertan en la misma transacción que la tarea, así que no
      * puede quedar una tarea a medio etiquetar.
      */
-    const extra = data as Partial<Issue> & { label_ids?: unknown; page_ids?: unknown };
+    const extra = data as Partial<Issue> & { label_ids?: unknown; page_ids?: unknown; subtareas?: unknown };
     const lista = (v: unknown, campo: string): string[] => {
       if (v === undefined || v === null) return [];
       if (!Array.isArray(v) || v.length > 20 || v.some((x) => typeof x !== 'string')) throw new ApiError(400, `Invalid ${campo}`);
@@ -408,6 +416,17 @@ export class IssueService {
     };
     const etiquetas = lista(extra.label_ids, 'label_ids');
     const paginas = lista(extra.page_ids, 'page_ids');
+    // Los pasos de una plantilla elegida en el alta: se crean como subtareas
+    // al terminar, igual que al usar la plantilla desde el servidor.
+    if (extra.subtareas !== undefined && extra.subtareas !== null
+      && (!Array.isArray(extra.subtareas) || extra.subtareas.length > 30 || extra.subtareas.some((x) => typeof x !== 'string'))) {
+      throw new ApiError(400, 'Invalid subtareas');
+    }
+    const subtareas = ((extra.subtareas as string[] | undefined) ?? []).map((x) => x.trim().slice(0, 200)).filter(Boolean);
+    // Los puntos también al crear: el `INSERT` no los llevaba y había que
+    // abrir la tarea después para ponerlos.
+    const pedidos = Number(data.story_points);
+    const puntos = Number.isInteger(pedidos) && pedidos > 0 && pedidos <= 1000 ? pedidos : 0;
     for (const id of etiquetas) {
       if (!db.prepare('SELECT 1 FROM labels WHERE id = ? AND workspace_id = ?').get(id, data.workspace_id)) {
         throw new ApiError(400, 'Label not found in this workspace');
@@ -417,7 +436,7 @@ export class IssueService {
       if (!esPaginaDelEspacio(id, data.workspace_id)) throw new ApiError(400, 'Page not found in this workspace');
     }
     if (data.priority !== undefined && data.priority !== null && !esPrioridad(data.priority)) throw new ApiError(400, 'Invalid priority');
-    if (data.due_time !== undefined && !esHora(data.due_time)) throw new ApiError(400, 'Invalid due_time');
+    if (data.due_time !== undefined) data.due_time = horaDeEntrega(data.due_time) ?? undefined;
     const antelacion = (data as any).reminder_minutes ?? null;
     if (!esAntelacion(antelacion)) throw new ApiError(400, 'Invalid reminder_minutes');
     const planificada = (data as any).planned_date || null;
@@ -452,15 +471,16 @@ export class IssueService {
 
     db.transaction(() => {
       db.prepare(`
-        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, assignee_contact_id, due_date, due_time, description, estimated_hours, priority, recurrence, planned_date, reminder_minutes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO issues (id, workspace_id, sprint_id, title, type, status, reporter_id, position, assignee_id, assignee_contact_id, due_date, due_time, description, estimated_hours, priority, recurrence, planned_date, reminder_minutes, story_points)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(issueId, data.workspace_id, data.sprint_id || null, data.title, data.type || 'task', status, userId, position,
         responsable.assignee_id ?? null, responsable.assignee_contact_id ?? null, data.due_date || null, (data.due_date && data.due_time) || null, data.description || null, horas,
-        data.priority || 'medium', regla, planificada, data.due_date ? antelacion : null);
+        data.priority || 'medium', regla, planificada, data.due_date ? antelacion : null, puntos);
       const ponerEtiqueta = db.prepare('INSERT OR IGNORE INTO issue_labels (issue_id, label_id) VALUES (?, ?)');
       for (const id of etiquetas) ponerEtiqueta.run(issueId, id);
       for (const id of paginas) vincular(issueId, id, userId);
     })();
+    for (const titulo of subtareas) IssueService.crearSubtarea(issueId, titulo, userId, isSysadmin);
 
     // Avisar a quien queda asignado **al crear**, no solo al editar después.
     //

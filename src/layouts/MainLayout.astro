@@ -318,7 +318,13 @@ Astro.response.headers.set('Pragma', 'no-cache');
       document.addEventListener('DOMContentLoaded', function () {
         try {
           var pendiente = sessionStorage.getItem('forge_aviso');
-          if (pendiente) { sessionStorage.removeItem('forge_aviso'); window.showToast(pendiente); }
+          if (pendiente) {
+            sessionStorage.removeItem('forge_aviso');
+            // Texto suelto, o `{ texto, error }` cuando el aviso es de algo que falló.
+            var aviso = { texto: pendiente, error: false };
+            try { var leido = JSON.parse(pendiente); if (leido && typeof leido.texto === 'string') aviso = leido; } catch (e) { /* texto suelto */ }
+            window.showToast(aviso.texto, !!aviso.error);
+          }
         } catch (e) { /* sin almacenamiento */ }
       });
       window.showToast = function(msg, type = false, opciones = null) {

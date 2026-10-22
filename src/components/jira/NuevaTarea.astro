@@ -1,6 +1,6 @@
 ---
 /**
- * El alta de tareas: una línea rápida y, debajo, «Más opciones».
+ * El alta de tareas: una línea rápida y, debajo, todos los campos a la vista.
  *
  * Sustituye al formulario de `board.astro`, que se había quedado atrás: no
  * dejaba poner etiquetas, la fecha salía en mm/dd/yyyy con la app en español y
@@ -21,6 +21,8 @@ import { listar as listarEtiquetas, COLOR_POR_DEFECTO } from '../../lib/labels';
 import { listar as listarTipos, nombreVisible } from '../../lib/issueTypes';
 import { OPCIONES as PRIORIDADES } from '../../lib/prioridad';
 import { listar as listarPlantillas } from '../../lib/plantillas';
+import { plantillasDeSerie } from '../../lib/plantillasDeSerie';
+import { TIPOS_ADJUNTO } from '../../lib/adjuntos';
 import CampoFecha from '../forms/CampoFecha.astro';
 import OpcionesResponsable from './OpcionesResponsable.astro';
 import { listar as listarContactos } from '../../lib/contactos';
@@ -45,7 +47,16 @@ const sprints = puede && funcs.sprints
   ? db.prepare("SELECT id, name FROM sprints WHERE workspace_id = ? AND status != 'completed' ORDER BY start_date DESC, rowid DESC").all(ws!.id) as Array<{ id: string; name: string }>
   : [];
 const contactos = puede && user && !user.is_guest ? listarContactos(user.id).map((c) => ({ id: c.id, name: c.name })) : [];
-const plantillas = puede ? listarPlantillas(ws!.id).map((p) => ({ id: p.id, name: p.name })) : [];
+const plantillas = puede ? listarPlantillas(ws!.id) : [];
+const deSerie = puede ? plantillasDeSerie(lang) : [];
+// Todas las plantillas con su contenido, para rellenar el formulario en el
+// navegador sin ir al servidor. `e:` son las del espacio; `s:`, las de serie.
+const plantillasCliente = Object.fromEntries([
+  ...plantillas.map((p) => [`e:${p.id}`, { name: p.name, contenido: p.contenido }]),
+  ...deSerie.map((p) => [`s:${p.clave}`, { name: p.nombre, contenido: p.contenido }]),
+]);
+// Gestionarlas es de quien entra en los ajustes del espacio.
+const gestionaPlantillas = Boolean(puede && user && checkWorkspaceAccess(user.id, user.is_sysadmin, ws!.id, 'owner').granted);
 const campo = 'campo';
 ---
 {puede && (
@@ -74,10 +85,15 @@ const campo = 'campo';
     data-t-err-create={t('issue.err_create')}
     data-t-label-error={t('quick.label_error')}
     data-t-creating={t('issue.creating')}
-    data-plantillas={JSON.stringify(plantillas)}
-    data-t-tpl-created={t('tpl.created')}
-    data-t-tpl-skipped={t('tpl.skipped')}
-    data-t-tpl-error={t('tpl.use_error')}
+    data-plantillas={JSON.stringify(plantillasCliente)}
+    data-t-tpl-applied={t('tpl.applied')}
+    data-t-tpl-steps={t('tpl.applied_steps')}
+    data-t-tpl-repeat={t('tpl.applied_repeat')}
+    data-t-uploading={t('files.uploading_n')}
+    data-t-files-failed={t('issue.created_files_failed')}
+    data-t-file-too-big={t('files.err_too_big')}
+    data-t-file-type={t('files.err_type')}
+    data-t-file-remove={t('files.attach_remove')}
     class="ventana !max-w-[36rem] sm:!p-6">
     {/* Sin maqueta propia: es la ventana única de docs/rediseno/ventanas.html
         con la línea de alta rápida en lugar del formulario. Lo que se
@@ -95,26 +111,39 @@ const campo = 'campo';
     </div>
     <p id="nt-ayuda" class="hint mt-2">{t('quick.help')}</p>
 
-    {/* Plantillas: un clic crea la tarea con todo lo que lleva. También se
-        usan escribiendo `/nombre` en la línea y Enter. */}
-    {plantillas.length > 0 && (
-      <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
-        <span class="text-xs text-forge-muted">{t('tpl.from')}:</span>
-        {plantillas.map((p) => (
-          <button type="button" class="nt-plantilla btn btn-secondary btn-sm" data-id={p.id} data-nombre={p.name}
-            aria-label={t('tpl.use').replace('{nombre}', p.name)}>{p.name}</button>
-        ))}
+    {/* Plantillas: elegir una **rellena el formulario** —título, descripción,
+        entrega, etiquetas, pasos— y se ajusta antes de crear. Antes creaba la
+        tarea al instante con el título genérico («Parcial»), y solo salían
+        las guardadas en el espacio: sin ninguna, no había nada que elegir.
+        También se eligen escribiendo `/nombre` y Enter. */}
+    <div class="mt-3">
+      <div class="flex items-baseline justify-between gap-3 mb-1.5">
+        <label class="block field-label" for="nt-plantilla">{t('tpl.label')}</label>
+        {gestionaPlantillas && <a href={`/w/${ws!.sys_tag}/settings#plantillas-espacio`} class="enlace text-sm">{t('tpl.manage')}</a>}
       </div>
-    )}
+      <select id="nt-plantilla" class={campo} aria-describedby="nt-plantilla-resumen">
+        <option value="">{t('tpl.none')}</option>
+        {plantillas.length > 0 && (
+          <optgroup label={t('tpl.group_space')}>
+            {plantillas.map((p) => <option value={`e:${p.id}`}>{p.name}</option>)}
+          </optgroup>
+        )}
+        <optgroup label={t('tpl.group_builtin')}>
+          {deSerie.map((p) => <option value={`s:${p.clave}`}>{p.nombre}</option>)}
+        </optgroup>
+      </select>
+    </div>
+    <p id="nt-plantilla-resumen" class="hint mt-1.5 hidden" aria-live="polite"></p>
 
     {/* Lo que la línea ha reconocido. Cada chip se puede quitar: devuelve sus
         palabras al título. */}
     <ul id="nt-chips" class="flex flex-wrap gap-1.5 mt-2.5 empty:hidden" aria-live="polite"></ul>
     <p id="nt-aviso" class="hidden text-xs text-forge-error mt-2" role="alert"></p>
 
-    <details class="mt-4 group" id="nt-mas">
-      <summary class="btn btn-ghost btn-sm -ml-3 list-none [&::-webkit-details-marker]:hidden cursor-pointer select-none">{t('quick.more')}</summary>
-      <div class="space-y-3 mt-3">
+    {/* Todos los campos a la vista: plegados bajo «Más opciones» había que
+        abrirlos en cada alta para llegar a la fecha o a las etiquetas. */}
+    <div id="nt-mas" class="mt-4">
+      <div class="space-y-3">
         <div>
           <label class="block field-label mb-1.5" for="nt-desc">{t('modal.description')}</label>
           <textarea id="nt-desc" rows="3" class={campo} placeholder={t('modal.desc_placeholder')}></textarea>
@@ -127,8 +156,10 @@ const campo = 'campo';
           </div>
           <div>
             <label class="block field-label mb-1.5" for="nt-hora">{t('modal.due_time')}</label>
-            <input type="text" id="nt-hora" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5" class={campo} />
+            <input type="text" id="nt-hora" inputmode="numeric" autocomplete="off" placeholder="18:00" maxlength="5" class={campo}
+              aria-describedby="nt-hora-error" />
           </div>
+          <p id="nt-hora-error" class="hidden sm:col-span-2 text-xs text-forge-error" role="alert">{t('modal.due_time_invalid')}</p>
         </div>
 
         <div>
@@ -172,6 +203,12 @@ const campo = 'campo';
               <input type="number" id="nt-estimado" min="0" step="0.5" placeholder="0" class={`${campo} font-mono`} />
             </div>
           )}
+          {funcs.puntos && (
+            <div>
+              <label class="block field-label mb-1.5" for="nt-puntos">{t('modal.story_points')}</label>
+              <input type="number" id="nt-puntos" min="0" max="1000" step="1" placeholder="0" class={`${campo} font-mono`} />
+            </div>
+          )}
         </div>
 
         {/* Etiquetas como botones que se encienden: cabe el catálogo entero de
@@ -188,8 +225,23 @@ const campo = 'campo';
             ))}
           </div>
         </fieldset>
+
+        {/* Archivos al crear: antes había que crear la tarea, abrirla y
+            subirlos desde el panel. Se suben en cuanto existe la tarea. */}
+        <div>
+          <span class="block field-label mb-1.5">{t('files.attach_label')}</span>
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <label class="btn btn-secondary btn-sm cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              {t('files.attach_add')}
+              <input type="file" id="nt-archivos" multiple class="sr-only" accept={TIPOS_ADJUNTO.join(',')} aria-describedby="nt-archivos-ayuda" />
+            </label>
+            <span id="nt-archivos-ayuda" class="hint">{t('files.attach_hint')}</span>
+          </div>
+          <ul id="nt-archivos-lista" class="mt-2 space-y-1 empty:hidden"></ul>
+        </div>
       </div>
-    </details>
+    </div>
 
     <div class="ventana-pie flex-wrap">
       <button type="button" class="btn btn-ghost" id="nt-cancelar">{t('modal.cancel')}</button>
@@ -203,6 +255,10 @@ const campo = 'campo';
   import { aPayload, nuevoContacto } from './responsableCliente';
   import { interpretar, normalizar, type Interpretacion, type Tramo } from '../../lib/altaRapida';
   import { describir } from '../../lib/recurrencia';
+  import { normalizarHora } from '../../lib/hora';
+  import { hoyLocal, sumarDiasIso } from '../../lib/fechas';
+  import { MAXIMO_ADJUNTO, TIPOS_ADJUNTO } from '../../lib/adjuntos';
+  import { subirAdjunto } from '../../lib/client/adjuntos';
 
   const dlg = document.getElementById('nueva-tarea') as HTMLDialogElement | null;
   if (dlg) montar(dlg);
@@ -238,6 +294,15 @@ const campo = 'campo';
     const descartados = new Set<string>();
     /** Campos que alguien tocó a mano: la línea ya no los pisa. */
     const manual = { fecha: false, hora: false, prioridad: false, trabajo: false, responsable: false };
+    /**
+     * Lo que pone una plantilla elegida. Va **debajo** de la línea: si se
+     * escribe «viernes» después de elegir «Parcial», gana el viernes.
+     */
+    const porDefecto = { fecha: '', hora: '', prioridad: 'medium' };
+    /** Lo que la plantilla añade al crear y no tiene campo propio. */
+    let dePlantilla: { subtareas: string[]; recurrence: string | null } = { subtareas: [], recurrence: null };
+    /** Las etiquetas que puso la plantilla: al cambiarla se quitan esas y no otras. */
+    let etiquetasDePlantilla: string[] = [];
     const encendidas = new Set<string>();
     const apagadas = new Set<string>();
     /** Título normalizado del apunte → id, al elegirlo en el buscador. */
@@ -258,11 +323,11 @@ const campo = 'campo';
       const r = ignorar.size ? interpretar(linea.value, { ...ctx, ignorar }) : primera;
       ultima = r;
 
-      if (!manual.fecha) fecha.value = r.fecha ?? '';
+      if (!manual.fecha) fecha.value = r.fecha ?? porDefecto.fecha;
       const trabajo = $<HTMLInputElement>('nt-trabajo');
       if (trabajo && !manual.trabajo) trabajo.value = r.fechaTrabajo ?? '';
-      if (!manual.hora) hora.value = r.hora ?? '';
-      if (!manual.prioridad) prioridad.value = r.prioridad ?? 'medium';
+      if (!manual.hora) hora.value = r.hora ?? porDefecto.hora;
+      if (!manual.prioridad) prioridad.value = r.prioridad ?? porDefecto.prioridad;
       if (responsable && !manual.responsable) responsable.value = r.responsable?.valor ?? '';
       const desdeLinea = new Set(r.etiquetas.map((e) => e.id));
       contEtiquetas.querySelectorAll<HTMLButtonElement>('.nt-etiqueta').forEach((b) => {
@@ -384,7 +449,18 @@ const campo = 'campo';
     });
     fecha.addEventListener('change', () => { manual.fecha = true; });
     $<HTMLInputElement>('nt-trabajo')?.addEventListener('change', () => { manual.trabajo = true; });
-    hora.addEventListener('change', () => { manual.hora = true; });
+    // La hora se lee igual que en el panel y en el servidor (`lib/hora.ts`):
+    // «9», «9:00» o «0900» quedan como «09:00». Lo que no sea una hora se
+    // dice junto al campo, no con un «no se ha podido crear» genérico.
+    const errorHora = $<HTMLParagraphElement>('nt-hora-error')!;
+    const leerHora = () => {
+      const h = normalizarHora(hora.value);
+      errorHora.classList.toggle('hidden', h !== null);
+      hora.setAttribute('aria-invalid', String(h === null));
+      if (h !== null) hora.value = h;
+      return h;
+    };
+    hora.addEventListener('change', () => { manual.hora = true; leerHora(); });
     prioridad.addEventListener('change', () => { manual.prioridad = true; });
 
     // ── `[[` busca apuntes ───────────────────────────────────────────────────
@@ -462,7 +538,6 @@ const campo = 'campo';
     });
 
     // ── Crear ────────────────────────────────────────────────────────────────
-    const horaValida = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
     let enviando = false;
 
     async function idsDeApuntes(titulos: string[]) {
@@ -483,47 +558,135 @@ const campo = 'campo';
     }
 
     // ── Plantillas ───────────────────────────────────────────────────────────
-    const plantillas: Array<{ id: string; name: string }> = JSON.parse(d.plantillas || '[]');
-    async function usarPlantilla(id: string, nombre: string) {
-      if (enviando) return;
-      enviando = true;
-      try {
-        const sprint = $<HTMLSelectElement>('nt-sprint')?.value || null;
-        const res = await fetch(`/api/w/${sysTag}/templates/usar`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, sprint_id: sprint }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const r = await res.json();
-        const aviso = r.etiquetasSaltadas > 0
-          ? (d.tTplSkipped || '').replace('{n}', String(r.etiquetasSaltadas))
-          : (d.tTplCreated || '').replace('{nombre}', nombre);
-        // El aviso viaja a la página siguiente: aquí se recarga el tablero.
-        try { sessionStorage.setItem('forge_aviso', aviso); } catch { /* sin almacenamiento */ }
-        window.location.href = `/w/${sysTag}/board?issue=${encodeURIComponent(r.id)}`;
-      } catch (err) {
-        console.error('usar plantilla:', err);
-        window.showToast?.(d.tTplError || '', true);
-        enviando = false;
+    type Contenido = {
+      title?: string; description?: string; type?: string; priority?: string; label_ids?: string[];
+      subtareas?: string[]; recurrence?: string; due_offset?: number; due_time?: string;
+    };
+    const plantillas: Record<string, { name: string; contenido: Contenido }> = JSON.parse(d.plantillas || '{}');
+    const selPlantilla = $<HTMLSelectElement>('nt-plantilla');
+    const resumenPlantilla = $<HTMLParagraphElement>('nt-plantilla-resumen');
+
+    /** Rellena el formulario con la plantilla, o lo deja como estaba sin ella. */
+    function aplicarPlantilla(clave: string) {
+      const p = plantillas[clave];
+      for (const id of etiquetasDePlantilla) encendidas.delete(id);
+      etiquetasDePlantilla = [];
+      if (!p) {
+        porDefecto.fecha = porDefecto.hora = '';
+        porDefecto.prioridad = 'medium';
+        dePlantilla = { subtareas: [], recurrence: null };
+        resumenPlantilla?.classList.add('hidden');
+        analizar();
+        return;
       }
+      const c = p.contenido;
+      linea.value = c.title ?? '';
+      descartados.clear();
+      ($<HTMLTextAreaElement>('nt-desc')!).value = c.description ?? '';
+      // La entrega cuenta desde hoy, en la zona de quien crea.
+      porDefecto.fecha = c.due_offset !== undefined ? sumarDiasIso(hoyLocal(), c.due_offset) : '';
+      porDefecto.hora = c.due_offset !== undefined ? (c.due_time ?? '') : '';
+      porDefecto.prioridad = c.priority === 'lowest' ? 'low' : (c.priority ?? 'medium');
+      manual.fecha = manual.hora = manual.prioridad = false;
+      if (c.type && Array.from(tipo.options).some((o) => o.value === c.type)) tipo.value = c.type;
+      // Se suman a las que ya hubiera (la del filtro del tablero, por ejemplo).
+      // Una etiqueta borrada no tiene botón y no se manda.
+      etiquetasDePlantilla = (c.label_ids ?? []).filter((id) => !encendidas.has(id));
+      for (const id of etiquetasDePlantilla) { encendidas.add(id); apagadas.delete(id); }
+      dePlantilla = { subtareas: c.subtareas ?? [], recurrence: c.recurrence ?? null };
+
+      const partes = [
+        dePlantilla.subtareas.length ? (d.tTplSteps || '').replace('{n}', String(dePlantilla.subtareas.length)) : '',
+        dePlantilla.recurrence ? (d.tTplRepeat || '').replace('{regla}', describir(dePlantilla.recurrence, lang)) : '',
+      ].filter(Boolean);
+      if (resumenPlantilla) {
+        resumenPlantilla.textContent = partes.length ? (d.tTplApplied || '').replace('{detalle}', partes.join(' · ')) : '';
+        resumenPlantilla.classList.toggle('hidden', partes.length === 0);
+      }
+      analizar();
+      linea.focus();
     }
-    dlg.querySelectorAll<HTMLButtonElement>('.nt-plantilla').forEach((b) =>
-      b.addEventListener('click', () => usarPlantilla(b.dataset.id!, b.dataset.nombre || '')));
+    selPlantilla?.addEventListener('change', () => aplicarPlantilla(selPlantilla.value));
+
+    // ── Archivos ─────────────────────────────────────────────────────────────
+    const entradaArchivos = $<HTMLInputElement>('nt-archivos');
+    const listaArchivos = $<HTMLUListElement>('nt-archivos-lista')!;
+    let archivos: File[] = [];
+    /** Por qué no se va a subir, antes de intentarlo. Las fotos se reducen al subir, así que su tamaño no cuenta aquí. */
+    const problemaDe = (f: File) => {
+      if (!TIPOS_ADJUNTO.includes(f.type)) return (d.tFileType || '').replace('{nombre}', f.name);
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type) && f.size > MAXIMO_ADJUNTO) return (d.tFileTooBig || '').replace('{nombre}', f.name);
+      return '';
+    };
+    function pintarArchivos() {
+      listaArchivos.replaceChildren(...archivos.map((f, i) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center gap-2 text-sm';
+        const nombre = document.createElement('span');
+        nombre.className = 'truncate flex-1 min-w-0';
+        nombre.textContent = f.name;
+        const tam = document.createElement('span');
+        tam.className = 'hint shrink-0';
+        tam.textContent = f.size >= 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(f.size / 1024))} KB`;
+        const quitar = document.createElement('button');
+        quitar.type = 'button';
+        quitar.className = 'btn btn-ghost btn-icon btn-sm shrink-0';
+        quitar.setAttribute('aria-label', (d.tFileRemove || '').replace('{nombre}', f.name));
+        quitar.textContent = '×';
+        quitar.addEventListener('click', () => { archivos.splice(i, 1); pintarArchivos(); });
+        li.append(nombre, tam, quitar);
+        const problema = problemaDe(f);
+        if (problema) {
+          const aviso = document.createElement('span');
+          aviso.className = 'basis-full text-xs text-forge-error';
+          aviso.textContent = problema;
+          li.classList.add('flex-wrap');
+          li.append(aviso);
+        }
+        return li;
+      }));
+    }
+    entradaArchivos?.addEventListener('change', () => {
+      for (const f of Array.from(entradaArchivos.files ?? [])) {
+        if (!archivos.some((x) => x.name === f.name && x.size === f.size)) archivos.push(f);
+      }
+      entradaArchivos.value = '';
+      pintarArchivos();
+    });
+
+    /** Sube los adjuntos a la tarea recién creada y devuelve los que fallaron. */
+    async function subirArchivos(issueId: string, boton: HTMLElement) {
+      const fallidos: string[] = [];
+      const validos = archivos.filter((f) => !problemaDe(f));
+      for (const [i, f] of validos.entries()) {
+        boton.textContent = (d.tUploading || '').replace('{n}', String(i + 1)).replace('{total}', String(validos.length));
+        const r = await subirAdjunto(f, issueId);
+        if (!r.ok) fallidos.push(f.name);
+      }
+      return [...fallidos, ...archivos.filter((f) => problemaDe(f)).map((f) => f.name)];
+    }
 
     async function crear(abrir: boolean) {
       if (enviando) return;
-      // `/nombre` + Enter usa esa plantilla.
+      // `/nombre` + Enter elige esa plantilla: rellena el formulario, no crea.
       const barra = /^\/(.+)$/.exec(linea.value.trim());
       if (barra) {
         const buscado = normalizar(barra[1]);
-        const p = plantillas.find((x) => normalizar(x.name) === buscado) ?? plantillas.find((x) => normalizar(x.name).startsWith(buscado));
-        if (p) { usarPlantilla(p.id, p.name); return; }
+        const claves = Object.keys(plantillas);
+        const clave = claves.find((k) => normalizar(plantillas[k].name) === buscado) ?? claves.find((k) => normalizar(plantillas[k].name).startsWith(buscado));
+        if (clave) {
+          if (selPlantilla) selPlantilla.value = clave;
+          aplicarPlantilla(clave);
+          return;
+        }
       }
       analizar();
       const r = ultima!;
       const titulo = r.titulo.trim();
       if (!titulo) { window.showToast?.(d.tErrTitle || '', true); linea.focus(); return; }
-      const horaTexto = hora.value.trim();
-      if (horaTexto && !horaValida(horaTexto)) { window.showToast?.(d.tErrCreate || '', true); hora.focus(); return; }
+      const horaTexto = leerHora();
+      if (horaTexto === null) { hora.focus(); return; }
+      const regla = r.recurrencia ?? dePlantilla.recurrence;
 
       enviando = true;
       const boton = $('nt-crear')!;
@@ -542,7 +705,8 @@ const campo = 'campo';
           label_ids: etiquetasElegidas,
           page_ids: await idsDeApuntes(r.apuntes),
           // Una repetición sin fecha no se manda: el servidor la rechazaría.
-          recurrence: r.recurrencia && fecha.value ? r.recurrencia : null,
+          recurrence: regla && fecha.value ? regla : null,
+          subtareas: dePlantilla.subtareas,
           planned_date: ($<HTMLInputElement>('nt-trabajo')?.value) || r.fechaTrabajo || null,
           // Un recordatorio sin entrega no tiene a qué referirse.
           reminder_minutes: fecha.value && r.recordatorio !== null ? r.recordatorio : null,
@@ -551,6 +715,8 @@ const campo = 'campo';
         if (sprint) cuerpo.sprint_id = sprint.value || null;
         const estimado = $<HTMLInputElement>('nt-estimado');
         if (estimado?.value) cuerpo.estimated_hours = Number(estimado.value);
+        const puntos = $<HTMLInputElement>('nt-puntos');
+        if (puntos?.value) cuerpo.story_points = Number(puntos.value);
 
         const res = await fetch(`/api/w/${sysTag}/issues`, {
           method: 'POST',
@@ -564,10 +730,19 @@ const campo = 'campo';
         const { id } = await res.json();
         try { localStorage.setItem(CLAVE_TIPO, tipo.value); } catch { /* sin almacenamiento */ }
 
+        // La tarea ya existe: un archivo que falla no la deshace, se avisa.
+        const fallidos = archivos.length ? await subirArchivos(id, boton) : [];
+        const avisoFallo = fallidos.length ? (d.tFilesFailed || '').replace('{lista}', fallidos.join(', ')) : '';
+        // Si la página se va a recargar, el aviso viaja a la siguiente.
         const enTablero = !!document.querySelector('.kanban-container') && window.location.pathname.endsWith('/board');
+        if (avisoFallo && (abrir || enTablero)) {
+          try { sessionStorage.setItem('forge_aviso', JSON.stringify({ texto: avisoFallo, error: true })); } catch { /* sin almacenamiento */ }
+        }
+
         if (abrir || !enTablero) {
           if (abrir) { window.location.href = `/w/${sysTag}/board?issue=${encodeURIComponent(id)}`; return; }
           dlg.close();
+          if (avisoFallo) { window.showToast?.(avisoFallo, true); return; }
           window.showToast?.(d.tCreated || '', false, {
             accion: d.tSee || '',
             alPulsar: () => { window.location.href = `/w/${sysTag}/board?issue=${encodeURIComponent(id)}`; },
@@ -591,6 +766,12 @@ const campo = 'campo';
     function abrirAlta() {
       linea.value = '';
       ($<HTMLTextAreaElement>('nt-desc')!).value = '';
+      if (selPlantilla) selPlantilla.value = '';
+      aplicarPlantilla('');
+      archivos = [];
+      pintarArchivos();
+      errorHora.classList.add('hidden');
+      hora.removeAttribute('aria-invalid');
       descartados.clear();
       encendidas.clear();
       apagadas.clear();
@@ -598,6 +779,8 @@ const campo = 'campo';
       manual.fecha = manual.hora = manual.prioridad = manual.trabajo = manual.responsable = false;
       const est = $<HTMLInputElement>('nt-estimado');
       if (est) est.value = '';
+      const pts = $<HTMLInputElement>('nt-puntos');
+      if (pts) pts.value = '';
       // El último tipo usado en este espacio, no siempre el primero de la lista.
       try {
         const guardado = localStorage.getItem(CLAVE_TIPO);

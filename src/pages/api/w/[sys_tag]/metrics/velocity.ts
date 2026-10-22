@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
     // 3. Query execution (bound securely to resolved workspace_id)
     const velocityData = db.prepare(`
-      SELECT s.name as sprint_name, COUNT(i.id) as velocity
+      SELECT s.name as sprint_name, COUNT(i.id) as velocity, COALESCE(SUM(COALESCE(i.story_points, 0)), 0) as points
       FROM issues i
       JOIN sprints s ON i.sprint_id = s.id
       WHERE i.workspace_id = ? AND i.status = 'done' AND s.status = 'completed'

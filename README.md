@@ -78,9 +78,11 @@ database server, no queue and no cache tier to operate.
 - **Today** and **Upcoming** views, a work date separate from the due date,
   subtasks, repeating tasks («every monday», «on the 15th of each month»),
   saved views and custom issue types per workspace.
-- **Task templates**, written in the workspace settings (six built-in ones to
-  start from) or saved from any task, and used from the new-task form or by
-  typing `/name` in quick add.
+- **Task templates**, written in the workspace settings or saved from any task,
+  plus six built-in ones. Picking one in the new-task form fills it in to
+  adjust before creating, and its steps become subtasks.
+- **Files attached when creating a task**, and labels and task types edited
+  (name and colour) from the workspace settings.
 - **On a phone**, one column at a time with the status tabs pinned on top:
   press and hold a card and drop it on a tab to move it, swipe sideways to
   change tab, or use the card's move sheet.
@@ -90,7 +92,9 @@ database server, no queue and no cache tier to operate.
 - Swimlanes by label, one-click complete with undo, and a read-only `.ics`
   calendar to subscribe from Google Calendar.
 - Optional sprints, time tracking (the timer stops when a task reaches review
-  or Done) and story points.
+  or Done) and story points: with points on, columns add them up, the board
+  says how many are done, and Metrics measures sprint progress and velocity in
+  points.
 
 **Notes**
 

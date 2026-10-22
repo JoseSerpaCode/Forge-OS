@@ -73,6 +73,9 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
       // romperla mientras se le añade la serie.
       total_issues: hoy.issuesTotal,
       completed_issues: hoy.issuesDone,
+      // Con puntos encendidos, el avance se mide en puntos.
+      total_points: hoy.pointsTotal,
+      completed_points: hoy.pointsDone,
       series: serieCompleta.map((f) => ({
         date: f.takenOn,
         points_total: f.pointsTotal,

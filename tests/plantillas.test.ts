@@ -50,7 +50,7 @@ describe('lista blanca', () => {
   });
 });
 
-describe('guardar y usar', () => {
+describe('guardar y crear desde ellas', () => {
   it('guarda título, prioridad, etiquetas, subtareas y la entrega relativa', () => {
     const r = plantillas.desdeTarea('t', 'w', 'Parcial', 'u', 7);
     expect(r.ok).toBe(true);
@@ -58,20 +58,26 @@ describe('guardar y usar', () => {
     expect(p.contenido).toMatchObject({ title: 'Parcial', priority: 'high', label_ids: ['l1', 'l2'], subtareas: ['Tema 1', 'Tema 2'], due_offset: 7 });
   });
 
-  it('al usarla: la entrega cuenta desde ese día, las subtareas vuelven, y una etiqueta borrada se salta y se dice', async () => {
-    const id = plantillas.listar('w')[0].id;
-    db.exec("DELETE FROM labels WHERE id = 'l2'");
-    const r = await plantillas.usar(id, 'w', 'u', 0, '2026-10-20');
-    expect(r).toMatchObject({ etiquetasSaltadas: 1 });
-    const nueva = db.prepare('SELECT title, due_date, priority FROM issues WHERE id = ?').get(r!.id);
-    expect(nueva).toEqual({ title: 'Parcial', due_date: '2026-10-27', priority: 'high' });
-    expect(db.prepare('SELECT label_id FROM issue_labels WHERE issue_id = ?').all(r!.id)).toEqual([{ label_id: 'l1' }]);
-    expect(db.prepare('SELECT title FROM issues WHERE parent_issue_id = ? ORDER BY position').all(r!.id).map((x: any) => x.title)).toEqual(['Tema 1', 'Tema 2']);
+  /*
+   * Elegir una plantilla en el alta rellena el formulario en el navegador; lo
+   * que no tiene campo —los pasos— viaja en el alta como `subtareas`.
+   */
+  it('el alta crea los pasos como subtareas, con puntos y la hora leída como en el panel', async () => {
+    const { id } = await IssueService.create({
+      workspace_id: 'w', title: 'Parcial', subtareas: ['Tema 1', ' Tema 2 ', ''], story_points: 5,
+      due_date: '2026-10-27', due_time: '9:00',
+    } as any, 'u', 0);
+    expect(db.prepare('SELECT story_points, due_time FROM issues WHERE id = ?').get(id)).toEqual({ story_points: 5, due_time: '09:00' });
+    expect(db.prepare('SELECT title FROM issues WHERE parent_issue_id = ? ORDER BY position').all(id).map((x: any) => x.title)).toEqual(['Tema 1', 'Tema 2']);
   });
 
-  it('la plantilla de otro espacio no se puede usar ni borrar desde este', async () => {
+  it('el alta rechaza pasos mal formados y una hora que no es hora', async () => {
+    await expect(IssueService.create({ workspace_id: 'w', title: 'X', subtareas: 'Tema 1' } as any, 'u', 0)).rejects.toMatchObject({ statusCode: 400 });
+    await expect(IssueService.create({ workspace_id: 'w', title: 'X', due_date: '2026-10-27', due_time: '25:00' } as any, 'u', 0)).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('la plantilla de otro espacio no se puede borrar desde este', () => {
     const id = plantillas.listar('w')[0].id;
-    expect(await plantillas.usar(id, 'w2', 'u', 0, '2026-10-20')).toBeNull();
     expect(plantillas.borrar(id, 'w2')).toBe(false);
     // Control: desde su espacio, sí.
     expect(plantillas.borrar(id, 'w')).toBe(true);

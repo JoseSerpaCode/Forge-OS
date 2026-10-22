@@ -228,9 +228,6 @@ fases (1.36.0 a 2.0.0). Lo que no se ve en el código:
   marcha, porque esas tarjetas las tiene que repintar el servidor. A Hecho va
   siempre por `completar()`, que sabe de repeticiones.
 - **La pestaña va en `?estado=`**, que el servidor lee al pintar.
-- **El sprint que se recuerda es el que se está viendo** (`selector.value`), no
-  el de la dirección: sin `?sprint=` se guardaba «backlog» y desde la segunda
-  visita el tablero abría vacío. Lo fija `tests/e2e/sprint-recordado.spec.ts`.
 
 ## Buscadores
 
@@ -255,6 +252,34 @@ llevar nada que el alta no admita. Las de serie (`plantillasDeSerie.ts`) van
 en los dos idiomas dentro del propio archivo porque, como las de las tablas,
 se convierten en datos al guardarse; una prueba comprueba que pasan la lista
 blanca sin perder nada.
+
+**Elegir una en el alta rellena el formulario; no crea nada.** Sus valores van
+*debajo* de lo que dice la línea rápida (si se escribe «viernes» después, gana
+el viernes), y lo que no tiene campo —los pasos— viaja en el alta como
+`subtareas`. Ya no hay endpoint que cree una tarea directamente desde una
+plantilla: creaba «Parcial» con el título genérico y había que renombrarla.
+
+## Alta de tareas
+
+- **Las horas se leen con `normalizarHora()` (`src/lib/hora.ts`)** en el alta,
+  en el panel, en las plantillas y en el servidor. Había dos reglas: el panel
+  aceptaba «9:00» y el alta lo rechazaba con un error genérico, así que ninguna
+  hora antes de las diez se podía poner al crear.
+- **Los adjuntos van por `subirAdjunto()` (`src/lib/client/adjuntos.ts`)**,
+  desde el alta y desde el panel, con los tipos y el tope de
+  `src/lib/adjuntos.ts`, que es la misma lista que usa `/api/upload`. Al crear,
+  los archivos se suben cuando la tarea ya existe: uno que falla no la deshace,
+  se avisa.
+
+## La base de datos
+
+**Toda transacción empieza con `BEGIN IMMEDIATE`** (`db.transaction` está
+envuelto en `src/lib/db.ts`). Con el `BEGIN` diferido de better-sqlite3, una
+transacción que lee y luego escribe falla al instante con «database is locked»
+si otra conexión escribió entre medias, y en ese caso SQLite no espera el
+`busy_timeout`. Mover tarjetas fallaba así con un 500 de vez en cuando. No
+vuelvas a llamar a `.deferred` salvo para algo que solo lea; lo fija
+`tests/db-transacciones.test.ts`.
 
 ## La marca va en un solo componente
 
@@ -373,6 +398,16 @@ lo es: los archivos siguen en su Drive.
 
 ## Tablero: lo que no se ve en el código
 
+- **Puntos**: con `feat_points`, cada columna los suma (`cargarTablero` los
+  devuelve con las mismas claves que las cuentas), la cabecera dice cuántos van
+  hechos (`puntosDeLaVista`, sin carriles para no contar dos veces) y Métricas
+  mide el avance del sprint y la velocidad en puntos. En el navegador se
+  recalculan con las cuentas (`updateCounts`).
+- **«Mover a otro sprint» solo sale si hay a dónde ir** (`sprintsAbiertos` en
+  `IssueCard`): en el backlog y sin sprints abiertos, el menú salía vacío.
+- **El sprint que se recuerda es el que se está viendo** (`selector.value`), no
+  el de la dirección: sin `?sprint=` se guardaba «backlog» y desde la segunda
+  visita el tablero abría vacío. Lo fija `tests/e2e/sprint-recordado.spec.ts`.
 - **Sprints, tiempo y puntos son funciones del espacio** (`workspaces.feat_sprints`,
   `feat_time`, `feat_points`). Se leen **solo** con `src/lib/funcionesEspacio.ts`;
   no escribas `if (ws.feat_time)` en un endpoint. Apagar no borra datos. Los

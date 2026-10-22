@@ -70,6 +70,30 @@ db.pragma('foreign_keys = ON'); // Vital para los CASCADE DELETES
 db.pragma('temp_store = MEMORY');
 db.pragma('cache_size = -64000'); // 64MB de caché
 
+/**
+ * Toda transacción empieza con `BEGIN IMMEDIATE`, no con el `BEGIN` diferido
+ * que usa better-sqlite3 por defecto.
+ *
+ * En WAL, una transacción diferida que **lee** primero y **escribe** después
+ * falla al instante con «database is locked» si otra conexión escribió entre
+ * medias: SQLite no puede subirla a escritura sobre una foto vieja, y en ese
+ * caso no espera el `busy_timeout`. Mover una tarjeta (lee las vecinas,
+ * escribe la posición) fallaba así de vez en cuando con un 500. `IMMEDIATE`
+ * pide el lock de escritura al empezar, y ese sí espera.
+ *
+ * Una transacción dentro de otra sigue yendo con `SAVEPOINT`.
+ */
+const transaccionDiferida = db.transaction.bind(db);
+db.transaction = ((fn: (...args: any[]) => any) => {
+  const t = transaccionDiferida(fn);
+  return Object.assign((...args: any[]) => t.immediate(...args), {
+    deferred: t.deferred,
+    immediate: t.immediate,
+    exclusive: t.exclusive,
+    default: t.immediate,
+  });
+}) as typeof db.transaction;
+
 process.on('SIGINT', () => { db.close(); process.exit(); });
 process.on('SIGTERM', () => { db.close(); process.exit(); });
 
