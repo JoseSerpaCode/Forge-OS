@@ -36,7 +36,7 @@ export const GET: APIRoute = async (context) => {
   }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 };
 
-// Optional: DELETE to remove a database completely
+// Borrar la tabla con sus filas.
 export const DELETE: APIRoute = async (context) => {
   const { sys_tag, id } = context.params;
   const user = context.locals.user!;
@@ -53,7 +53,9 @@ export const DELETE: APIRoute = async (context) => {
   const dbId = id;
 
   const database = orm.select().from(dynamicDatabases).where(eq(dynamicDatabases.id, dbId as string)).get();
-  if (!database) return new Response('Database not found', { status: 404 });
+  // De este espacio: ser editor de uno no deja borrar las tablas de otro
+  // sabiendo su id. El GET de arriba ya lo comprobaba; el borrado, no.
+  if (!database || database.workspaceId !== workspace.id) return new Response('Database not found', { status: 404 });
 
   // SQLite ON DELETE CASCADE handles dynamic_entries and dynamic_views
   orm.delete(dynamicDatabases).where(eq(dynamicDatabases.id, dbId as string)).run();

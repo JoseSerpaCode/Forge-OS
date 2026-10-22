@@ -23,6 +23,7 @@ import Icon from '../../../../components/icons/Icon.astro';
 import DbIcon from '../../../../components/icons/DbIcon.astro';
 import { ICONOS_ELEGIBLES, ICONO_POR_DEFECTO } from '../../../../lib/icons';
 import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
+import { MAX_COLUMNAS, MAX_FILAS } from '../../../../lib/importarTabla';
 
 const databases = orm.select().from(dynamicDatabases)
   .where(eq(dynamicDatabases.workspaceId, workspace.id))
@@ -77,10 +78,16 @@ const filasPorTabla = new Map(
         <p class="page-sub max-w-2xl">{t('db.subtitle')}</p>
       </div>
       {canEdit && (
-        <button id="btn-new-db" class="btn btn-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-          {t('db.create')}
-        </button>
+        <div class="flex gap-2 items-center">
+          <button id="btn-importar-db" type="button" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+            {t('db.import')}
+          </button>
+          <button id="btn-new-db" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            {t('db.create')}
+          </button>
+        </div>
       )}
     </header>
 
@@ -92,21 +99,33 @@ const filasPorTabla = new Map(
     ) : (
       <div class="panel overflow-x-auto">
         <table class="tabla">
-          <thead><tr><th>{t('db.col_table')}</th><th>{t('db.col_desc')}</th><th class="num">{t('db.col_columns')}</th><th class="num">{t('db.col_rows')}</th></tr></thead>
+          <thead><tr><th>{t('db.col_table')}</th><th class="max-sm:hidden">{t('db.col_desc')}</th><th class="num max-sm:hidden">{t('db.col_columns')}</th><th class="num">{t('db.col_rows')}</th>{canEdit && <th><span class="sr-only">{t('db.col_actions')}</span></th>}</tr></thead>
           <tbody>
             {databases.map((database) => (
               <tr>
                 <td class="titulo">
                   <a href={`/w/${sys_tag}/db/${database.id}`} class="flex items-center gap-2.5 hover:underline underline-offset-2">
                     <span class="text-forge-muted shrink-0" aria-hidden="true"><DbIcon value={database.icon} size={18} /></span>
-                    <span class="truncate max-w-[20rem]">{database.name}</span>
+                    <span class="truncate max-w-[20rem] max-sm:max-w-[11rem]">{database.name}</span>
                   </a>
                 </td>
-                <td class="text-forge-muted max-w-[28rem] truncate">{database.description || '—'}</td>
+                {/* En el teléfono, nombre, filas y borrar: con las cinco columnas
+                    la papelera quedaba fuera de la pantalla. */}
+                <td class="text-forge-muted max-w-[28rem] truncate max-sm:hidden">{database.description || '—'}</td>
                 {/* `schemaJson` en camelCase: en snake_case daba undefined y el
                     contador marcaba 0 columnas en todas las tablas. */}
-                <td class="num">{(() => { try { return JSON.parse(database.schemaJson || '{}').columns?.length || 0; } catch { return 0; } })()}</td>
+                <td class="num max-sm:hidden">{(() => { try { return JSON.parse(database.schemaJson || '{}').columns?.length || 0; } catch { return 0; } })()}</td>
                 <td class="num">{filasPorTabla.get(database.id) ?? 0}</td>
+                {/* Borrar desde la lista: antes solo había una papelera sin
+                    texto dentro de cada tabla, y no se encontraba. */}
+                {canEdit && (
+                  <td class="w-0 !py-1">
+                    <button type="button" class="btn-borrar-tabla btn btn-ghost btn-icon btn-sm hover:!text-forge-error" data-id={database.id} data-nombre={database.name}
+                      title={t('db.delete_table')} aria-label={t('db.delete_named').replace('{name}', database.name)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -148,6 +167,16 @@ const filasPorTabla = new Map(
           <span class="min-w-0">
             <span class="block text-sm font-bold text-forge-text">{t('db.tpl_blank')}</span>
             <span class="block text-xs text-forge-muted">{t('db.tpl_blank_desc')}</span>
+          </span>
+        </button>
+
+        <button type="button" id="btn-tpl-importar" class="w-full text-left flex items-center gap-4 bg-forge-panel border border-dashed border-forge-border rounded-2xl px-4 py-3 -mt-3 mb-6 hover:border-forge-text transition-all focus:outline-none focus:ring-2 focus:ring-forge-focus">
+          <span class="w-9 h-9 shrink-0 rounded-lg bg-forge-bg border border-forge-border/60 flex items-center justify-center text-forge-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+          </span>
+          <span class="min-w-0">
+            <span class="block text-sm font-bold text-forge-text">{t('db.tpl_import')}</span>
+            <span class="block text-xs text-forge-muted">{t('db.tpl_import_desc')}</span>
           </span>
         </button>
 
@@ -254,6 +283,267 @@ const filasPorTabla = new Map(
       </div>
     </dialog>
   )}
+
+  {/* Importar una tabla que ya existe en Excel o en CSV. El archivo se lee en
+      el navegador —la hoja, los tipos y la vista previa se deciden aquí— y al
+      servidor llegan columnas y filas (`api/w/[sys_tag]/db/importar.ts`). */}
+  {canEdit && (
+    <dialog id="importar-db" class="ventana !max-w-[48rem]" aria-labelledby="importar-db-titulo"
+      data-sys-tag={sys_tag}
+      data-t-col={t('db.import_col_default')} data-t-yes={t('db.import_yes')} data-t-no={t('db.import_no')}
+      data-t-summary={t('db.import_summary')} data-t-more-rows={t('db.import_more_rows')} data-t-more-cols={t('db.import_more_cols')}
+      data-t-empty={t('db.import_empty')} data-t-unreadable={t('db.import_unreadable')}
+      data-t-err-number={t('db.import_err_number')} data-t-err-options={t('db.import_err_options')}
+      data-t-err-large={t('db.import_err_large')} data-t-err={t('db.import_err')}
+      data-t-done={t('db.import_done')} data-t-working={t('db.import_working')} data-t-action={t('db.import_action')}
+      data-t-type-text={t('db.type_text')} data-t-type-number={t('db.type_number')} data-t-type-select={t('db.type_select')}
+      data-t-col-name={t('db.col_name')} data-t-col-type={t('db.col_type')}
+      data-t-deleted={t('db.deleted')} data-t-confirm-delete={t('db.confirm_delete_table')} data-t-delete={t('db.delete_table')} data-t-err-delete={t('db.err_delete_table')}>
+      <h2 id="importar-db-titulo" class="ventana-titulo">{t('db.import_title')}</h2>
+      <p class="text-sm text-forge-muted mb-4">{t('db.import_desc').replace('{filas}', String(MAX_FILAS)).replace('{columnas}', String(MAX_COLUMNAS))}</p>
+      <label class="btn btn-secondary cursor-pointer max-w-full">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+        <span id="importar-archivo-nombre" class="truncate">{t('db.import_choose')}</span>
+        <input type="file" id="importar-archivo" class="sr-only"
+          accept=".csv,.tsv,.txt,.xlsx,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+      </label>
+      {/* Fuera de la vista previa: si la hoja elegida está vacía, la vista se
+          esconde y hay que poder pasar a otra. */}
+      <div id="importar-hoja-campo" class="hidden mt-4 max-w-xs">
+        <label class="block field-label mb-1.5" for="importar-hoja">{t('db.import_sheet')}</label>
+        <select id="importar-hoja" class="campo"></select>
+      </div>
+      <p id="importar-error" class="hidden mt-3 text-sm text-forge-error" role="alert"></p>
+
+      <div id="importar-vista" class="hidden mt-5 space-y-4">
+        <div class="max-w-md">
+          <label class="block field-label mb-1.5" for="importar-nombre">{t('db.table_name')}</label>
+          <input type="text" id="importar-nombre" class="campo" maxlength="120" autocomplete="off" />
+        </div>
+        <div>
+          <p id="importar-resumen" class="text-sm font-semibold" aria-live="polite"></p>
+          <p id="importar-avisos" class="text-sm text-forge-muted"></p>
+        </div>
+        <div class="overflow-x-auto border border-forge-border rounded-xl max-h-[45vh] overflow-y-auto">
+          <table id="importar-tabla" class="tabla"></table>
+        </div>
+        <p class="hint">{t('db.import_preview_hint')}</p>
+      </div>
+
+      <div class="ventana-pie">
+        <button type="button" id="importar-cancelar" class="btn btn-ghost">{t('modal.cancel')}</button>
+        <button type="button" id="importar-confirmar" class="btn btn-primary" disabled>{t('db.import_action')}</button>
+      </div>
+    </dialog>
+  )}
+
+  <script>
+    import { leerCsv, MAX_FILAS, prepararTabla, type Celda, type TablaImportada, type TipoImportado } from '../../../../lib/importarTabla';
+
+    const dlg = document.getElementById('importar-db') as HTMLDialogElement | null;
+    if (dlg) montarImportar(dlg);
+
+    function montarImportar(dlg: HTMLDialogElement) {
+      const d = dlg.dataset;
+      const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+      const archivo = $<HTMLInputElement>('importar-archivo');
+      const rotuloArchivo = $('importar-archivo-nombre');
+      const error = $('importar-error');
+      const vista = $('importar-vista');
+      const nombre = $<HTMLInputElement>('importar-nombre');
+      const campoHoja = $('importar-hoja-campo');
+      const selHoja = $<HTMLSelectElement>('importar-hoja');
+      const resumen = $('importar-resumen');
+      const avisos = $('importar-avisos');
+      const tablaVista = $<HTMLTableElement>('importar-tabla');
+      const confirmar = $<HTMLButtonElement>('importar-confirmar');
+      const rotuloInicial = rotuloArchivo.textContent || '';
+
+      let hojas: Array<{ nombre: string; filas: Celda[][] }> = [];
+      let tabla: TablaImportada | null = null;
+
+      const decir = (texto: string) => { error.textContent = texto; error.classList.toggle('hidden', !texto); };
+      function reiniciar() {
+        archivo.value = '';
+        rotuloArchivo.textContent = rotuloInicial;
+        hojas = [];
+        tabla = null;
+        decir('');
+        vista.classList.add('hidden');
+        campoHoja.classList.add('hidden');
+        confirmar.disabled = true;
+        confirmar.textContent = d.tAction || '';
+      }
+      function abrir() { reiniciar(); dlg.showModal(); }
+
+      document.getElementById('btn-importar-db')?.addEventListener('click', abrir);
+      // Desde la galería de «Nueva tabla»: se cierra esa y se abre esta.
+      document.getElementById('btn-tpl-importar')?.addEventListener('click', () => {
+        (document.getElementById('new-db-modal') as HTMLDialogElement | null)?.close();
+        abrir();
+      });
+      $('importar-cancelar').addEventListener('click', () => dlg.close());
+
+      /**
+       * El texto de un CSV. Excel en Windows lo guarda en Windows-1252 si no se
+       * elige «CSV UTF-8», y leído como UTF-8 cada tilde sale como «�».
+       */
+      async function textoDe(f: File) {
+        const bytes = await f.arrayBuffer();
+        try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+        catch { return new TextDecoder('windows-1252').decode(bytes); }
+      }
+
+      archivo.addEventListener('change', async () => {
+        const f = archivo.files?.[0];
+        if (!f) return;
+        rotuloArchivo.textContent = f.name;
+        decir('');
+        vista.classList.add('hidden');
+        confirmar.disabled = true;
+        try {
+          if (/\.xlsx$/i.test(f.name)) {
+            const { leerXlsx } = await import('../../../../lib/xlsx');
+            // Unas cuantas de margen: la cabecera y alguna fila vacía arriba.
+            hojas = leerXlsx(new Uint8Array(await f.arrayBuffer()), MAX_FILAS + 50);
+          } else {
+            hojas = [{ nombre: '', filas: leerCsv(await textoDe(f)) }];
+          }
+        } catch (err) {
+          console.error('importar:', err);
+          decir(d.tUnreadable || '');
+          return;
+        }
+        nombre.value = f.name.replace(/\.[^.]+$/, '').trim().slice(0, 120);
+        // Si se borra el nombre, se usa el del archivo.
+        nombre.placeholder = nombre.value;
+        // La primera hoja con datos: un libro suele abrir con una portada o un
+        // resumen vacío.
+        const primera = Math.max(0, hojas.findIndex((h) => prepararTabla(h.filas)?.filas.length));
+        selHoja.replaceChildren(...hojas.map((h, i) => new Option(h.nombre || String(i + 1), String(i), false, i === primera)));
+        campoHoja.classList.toggle('hidden', hojas.length < 2);
+        preparar(primera);
+      });
+      selHoja.addEventListener('change', () => preparar(Number(selHoja.value)));
+
+      function preparar(i: number) {
+        tabla = prepararTabla(hojas[i]?.filas ?? [], {
+          nombreColumna: (n) => (d.tCol || '').replace('{n}', String(n)),
+          si: d.tYes,
+          no: d.tNo,
+        });
+        if (!tabla || !tabla.filas.length) {
+          tabla = null;
+          vista.classList.add('hidden');
+          decir(d.tEmpty || '');
+          confirmar.disabled = true;
+          return;
+        }
+        decir('');
+        pintar(tabla);
+        vista.classList.remove('hidden');
+        confirmar.disabled = false;
+      }
+
+      const nombreTipo: Record<TipoImportado, string> = { text: d.tTypeText || '', number: d.tTypeNumber || '', select: d.tTypeSelect || '' };
+
+      /** Cabecera con el nombre y el tipo de cada columna, y las cinco primeras filas. */
+      function pintar(t: TablaImportada) {
+        resumen.textContent = (d.tSummary || '').replace('{filas}', String(t.filas.length)).replace('{columnas}', String(t.columnas.length));
+        avisos.textContent = [
+          t.sobranFilas ? (d.tMoreRows || '').replaceAll('{n}', String(t.filas.length)) : '',
+          t.sobranColumnas ? (d.tMoreCols || '').replaceAll('{n}', String(t.columnas.length)) : '',
+        ].filter(Boolean).join(' ');
+
+        const cabecera = document.createElement('tr');
+        t.columnas.forEach((c, i) => {
+          const th = document.createElement('th');
+          th.className = 'min-w-[11rem] align-top !normal-case !tracking-normal';
+          const pila = document.createElement('div');
+          pila.className = 'grid gap-1.5';
+          const campo = document.createElement('input');
+          campo.type = 'text';
+          campo.className = 'imp-nombre campo !py-1.5 !text-sm';
+          campo.value = c.name;
+          campo.maxLength = 120;
+          campo.setAttribute('aria-label', `${d.tColName} ${i + 1}`);
+          const tipo = document.createElement('select');
+          tipo.className = 'imp-tipo campo !py-1.5 !text-sm';
+          tipo.setAttribute('aria-label', `${d.tColType} ${i + 1}`);
+          for (const p of c.posibles) tipo.append(new Option(nombreTipo[p], p, false, p === c.type));
+          pila.append(campo, tipo);
+          th.append(pila);
+          cabecera.append(th);
+        });
+        const cuerpo = document.createElement('tbody');
+        for (const fila of t.filas.slice(0, 5)) {
+          const tr = document.createElement('tr');
+          for (const v of fila) {
+            const td = document.createElement('td');
+            td.className = 'max-w-[16rem] truncate';
+            td.textContent = v === null ? '' : String(v);
+            tr.append(td);
+          }
+          cuerpo.append(tr);
+        }
+        const thead = document.createElement('thead');
+        thead.append(cabecera);
+        tablaVista.replaceChildren(thead, cuerpo);
+      }
+
+      confirmar.addEventListener('click', async () => {
+        if (!tabla) return;
+        const nombres = Array.from(tablaVista.querySelectorAll<HTMLInputElement>('.imp-nombre'));
+        const tipos = Array.from(tablaVista.querySelectorAll<HTMLSelectElement>('.imp-tipo'));
+        const columns = tabla.columnas.map((c, i) => ({ name: nombres[i]?.value.trim() || c.name, type: tipos[i]?.value || c.type }));
+        confirmar.disabled = true;
+        confirmar.textContent = d.tWorking || '';
+        decir('');
+        try {
+          const res = await fetch(`/api/w/${d.sysTag}/db/importar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: nombre.value.trim() || nombre.placeholder, columns, rows: tabla.filas }),
+          });
+          const datos = await res.json().catch(() => ({}));
+          if (!res.ok) throw datos;
+          try { sessionStorage.setItem('forge_aviso', (d.tDone || '').replace('{n}', String(datos.filas))); } catch { /* sin almacenamiento */ }
+          window.location.href = `/w/${d.sysTag}/db/${datos.id}`;
+        } catch (e: any) {
+          const codigo = e?.error_code;
+          decir(
+            codigo === 'bad_number' ? (d.tErrNumber || '').replace('{columna}', e.columna).replace('{fila}', String(e.fila))
+            : codigo === 'too_many_options' ? (d.tErrOptions || '').replace('{columna}', e.columna)
+            : codigo === 'too_large' ? (d.tErrLarge || '')
+            : (d.tErr || ''),
+          );
+          confirmar.disabled = false;
+          confirmar.textContent = d.tAction || '';
+        }
+      });
+
+      // Borrar una tabla desde la lista, con la misma confirmación que dentro.
+      // Sus textos viajan en este diálogo: los dos existen solo para quien edita.
+      document.querySelectorAll<HTMLButtonElement>('.btn-borrar-tabla').forEach((b) => b.addEventListener('click', () => {
+        const pregunta = (d.tConfirmDelete || '').replace('{name}', b.dataset.nombre || '');
+        window.forgeConfirm?.(pregunta, async () => {
+          b.disabled = true;
+          const res = await fetch(`/api/w/${d.sysTag}/db/${b.dataset.id}`, { method: 'DELETE' }).catch(() => null);
+          if (!res?.ok) { b.disabled = false; window.showToast?.(d.tErrDelete || '', true); return; }
+          const fila = b.closest('tr');
+          const quedan = fila?.parentElement?.querySelectorAll('tr').length ?? 0;
+          // La última: se recarga para enseñar el «todavía no hay tablas».
+          if (quedan <= 1) {
+            try { sessionStorage.setItem('forge_aviso', d.tDeleted || ''); } catch { /* sin almacenamiento */ }
+            window.location.reload();
+            return;
+          }
+          fila?.remove();
+          window.showToast?.(d.tDeleted || '');
+        }, d.tDelete);
+      }));
+    }
+  </script>
 
   <script define:vars={{ sysTag: sys_tag, plantillas, TXT }}>
     class DatabaseManager {

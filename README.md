@@ -81,8 +81,10 @@ database server, no queue and no cache tier to operate.
 - **Task templates**, written in the workspace settings or saved from any task,
   plus six built-in ones. Picking one in the new-task form fills it in to
   adjust before creating, and its steps become subtasks.
-- **Files attached when creating a task**, and labels and task types edited
-  (name and colour) from the workspace settings.
+- **Files attached when creating a task**, and labels and task types created
+  from the new-task form itself and edited (name and colour) in the settings.
+- **Select several cards** to move them to another status or sprint, label
+  them or delete them in one go.
 - **On a phone**, one column at a time with the status tabs pinned on top:
   press and hold a card and drop it on a tab to move it, swipe sideways to
   change tab, or use the card's move sheet.
@@ -109,8 +111,9 @@ database server, no queue and no cache tier to operate.
 
 **Tables and files**
 
-- **Tables** built from the UI, Airtable-style, from scratch or from a
-  template, including a file column that points to the workspace's files.
+- **Tables** built from the UI, Airtable-style, from scratch, from a template
+  or **imported from Excel or CSV**, including a file column that points to the
+  workspace's files.
 - **Files** live in the Google Drive of whoever connected the workspace, in
   folders mirrored on both sides. Labels, name search across the whole
   workspace, and labels inherited when a file is attached to a task.

@@ -34,7 +34,8 @@ const canEdit = acceso.rol !== 'viewer';
 
 import { orm } from '../../../../lib/db/drizzle';
 import { dynamicDatabases, dynamicEntries, dynamicViews } from '../../../../lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { MAX_FILAS } from '../../../../lib/importarTabla';
 import { abrirEspacioDePagina } from '../../../../lib/paginaEspacio';
 
 const database = orm.select().from(dynamicDatabases)
@@ -45,11 +46,12 @@ if (!database) return Astro.redirect('/404');
 const schema = JSON.parse(database.schemaJson);
 const columns = schema.columns || [];
 
-// Fetch entries for table
+// Las más nuevas arriba. A igual fecha —las de una importación entran en el
+// mismo segundo—, en el orden en que se escribieron, que es el del archivo.
 const entries = orm.select().from(dynamicEntries)
   .where(eq(dynamicEntries.databaseId, database.id))
-  .orderBy(desc(dynamicEntries.createdAt))
-  .limit(500)
+  .orderBy(desc(dynamicEntries.createdAt), sql`rowid`)
+  .limit(MAX_FILAS)
   .all() as any[];
 
 // Las columnas de tipo archivo guardan un id; para pintar la tabla hace falta

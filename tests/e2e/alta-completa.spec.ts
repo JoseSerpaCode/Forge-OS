@@ -90,3 +90,44 @@ test('los archivos elegidos al crear se suben a la tarea, y los puntos se guarda
   expect(tarea.story_points).toBe(3);
   await expect.poll(() => (db.prepare("SELECT COUNT(*) AS n FROM attachments WHERE entity_type = 'issue' AND entity_id = ?").get(tarea.id) as any).n).toBe(1);
 });
+
+test('una etiqueta nueva se crea desde el alta, queda puesta y la tarea la lleva', async ({ page }) => {
+  const { db, wsId } = await conAlta(page);
+  await page.locator('#nt-nueva-etiqueta').click();
+  await expect(page.locator('#editar-catalogo')).toBeVisible();
+  await page.fill('#editar-catalogo-nombre', 'Cálculo');
+  await page.locator('#editar-catalogo-guardar').click();
+  await expect(page.locator('#editar-catalogo')).toBeHidden();
+  const chip = page.locator('#nt-etiquetas .nt-etiqueta', { hasText: 'Cálculo' });
+  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+
+  // Repetida: el error sale en la ventana y no se cierra.
+  await page.locator('#nt-nueva-etiqueta').click();
+  await page.fill('#editar-catalogo-nombre', 'cálculo');
+  await page.locator('#editar-catalogo-guardar').click();
+  await expect(page.locator('#editar-catalogo-error')).toBeVisible();
+  await page.locator('#editar-catalogo-cancelar').click();
+
+  const titulo = `Con etiqueta ${unico()}`;
+  await page.fill('#nt-linea', titulo);
+  await page.locator('#nt-crear').click();
+  await expect.poll(() => fila(db, wsId, titulo)?.id ?? null).not.toBeNull();
+  const etiquetas = db.prepare('SELECT l.name FROM issue_labels il JOIN labels l ON l.id = il.label_id WHERE il.issue_id = ?').all(fila(db, wsId, titulo).id);
+  expect(etiquetas).toEqual([{ name: 'Cálculo' }]);
+});
+
+test('un tipo nuevo se crea desde el alta y queda elegido', async ({ page }) => {
+  const { db, wsId } = await conAlta(page);
+  await page.locator('#nt-nuevo-tipo').click();
+  await page.fill('#editar-catalogo-nombre', 'Parcial');
+  await page.locator('#editar-catalogo-guardar').click();
+  await expect(page.locator('#editar-catalogo')).toBeHidden();
+  await expect(page.locator('#nt-tipo option:checked')).toHaveText('Parcial');
+
+  const titulo = `Con tipo ${unico()}`;
+  await page.fill('#nt-linea', titulo);
+  await page.locator('#nt-crear').click();
+  await expect.poll(() => fila(db, wsId, titulo)?.id ?? null).not.toBeNull();
+  const { type } = db.prepare('SELECT type FROM issues WHERE workspace_id = ? AND title = ?').get(wsId, titulo) as any;
+  expect(db.prepare('SELECT name FROM issue_types WHERE workspace_id = ? AND key = ?').get(wsId, type)).toEqual({ name: 'Parcial' });
+});

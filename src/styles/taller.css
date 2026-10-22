@@ -533,6 +533,59 @@
     padding: 0.5rem 0 0.75rem;
     margin-top: -0.5rem;
   }
+  /* Seleccionar varias: cada tarjeta lleva un círculo arriba a la derecha, y
+     la elegida, el círculo lleno con la marca y un contorno de tinta. */
+  .seleccionando .issue-card { cursor: pointer; }
+  /* Sitio bajo la última tarjeta para que la barra no la tape. Un hueco y no
+     `padding`: el `p-3` de la columna es utilidad y le gana a esta capa. */
+  .seleccionando .column-content::after { content: ''; flex: none; height: 4rem; }
+  .seleccionando .issue-card::after {
+    content: '';
+    position: absolute;
+    top: -0.4375rem;
+    right: -0.4375rem;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 50%;
+    border: 2px solid var(--forge-border-strong);
+    background: var(--forge-panel);
+  }
+  .seleccionando .issue-card.elegida { outline: 2px solid var(--forge-text); outline-offset: 1px; }
+  .seleccionando .issue-card.elegida::after {
+    content: '✓';
+    display: grid;
+    place-items: center;
+    border-color: var(--forge-text);
+    background: var(--forge-text);
+    color: var(--forge-bg);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+  /* La barra de acciones de la selección: abajo, encima de la navegación del
+     teléfono. */
+  .barra-seleccion {
+    position: fixed;
+    z-index: 60;
+    left: 50%;
+    bottom: 1.5rem;
+    translate: -50% 0;
+    width: min(42rem, calc(100vw - 2rem));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem 0.625rem 1rem;
+    background: var(--forge-panel);
+    color: var(--forge-text);
+    border: 1px solid var(--forge-border-strong);
+    border-radius: 18px;
+    box-shadow: var(--forge-shadow-float);
+  }
+  @media (width < 48rem) {
+    .barra-seleccion { bottom: calc(4.75rem + env(safe-area-inset-bottom)); flex-wrap: wrap; }
+    .seleccionando .column-content::after { height: 7rem; }
+  }
+
   /* Mientras se arrastra, las pestañas de estado son destino: borde
      discontinuo, y la que está bajo el dedo, teñida de su estado. */
   .pestanas-estado.arrastrando > .filtro-estado { outline: 1.5px dashed var(--forge-border-strong); outline-offset: -3px; }
