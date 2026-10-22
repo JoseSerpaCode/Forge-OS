@@ -6,6 +6,8 @@ import { useTranslations } from '../../../i18n/ui';
 import { conexionDe, driveDisponible } from '../../../lib/drive';
 import { archivosDe, caminoDe, carpeta, carpetasDe } from '../../../lib/driveFiles';
 import LabelPicker from '../../../components/labels/LabelPicker.astro';
+import Figura from '../../../components/brand/Figura.astro';
+import Vacio from '../../../components/ui/Vacio.astro';
 import { deVarias as etiquetasDeVarias, listar as listarEtiquetas } from '../../../lib/labels';
 import { abrirEspacioDePagina } from '../../../lib/paginaEspacio';
 
@@ -128,13 +130,14 @@ const formatoDe = (nombre: string) => {
 
     {!conexion ? (
       disponible ? (
-      <div class="panel p-6">
-        <h2 class="section-title !text-xl">{t('drive.not_connected')}</h2>
-        <p class="text-sm text-forge-muted mt-2 max-w-xl leading-relaxed">{t('drive.not_connected_desc')}</p>
-
+      <Vacio etiqueta={t('drive.title')} titulo={t('drive.not_connected')} texto={t('drive.not_connected_desc')}>
+        <Fragment slot="escena">
+          <div class="arco-subida arco-subida-mini"><span>Drive</span></div>
+          <Figura pose="lanza" color="turquesa" alto={104} cartel="PDF" style="position: absolute; left: 1.25rem; bottom: 0" />
+        </Fragment>
         {/* Los dos avisos van **antes** del botón, no escondidos detrás. Quien
             conecta decide por todo el equipo y pone su propio almacenamiento. */}
-        <ul class="mt-5 space-y-3 text-sm text-forge-muted max-w-xl">
+        <ul slot="texto" class="mt-1 space-y-2.5 text-sm text-forge-muted max-w-xl">
           <li class="flex gap-3">
             <svg class="shrink-0 mt-0.5 text-forge-muted" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             <span>{t('drive.warn_link')}</span>
@@ -144,15 +147,12 @@ const formatoDe = (nombre: string) => {
             <span>{t('drive.warn_owner')}</span>
           </li>
         </ul>
-
         {esPropietario ? (
-          <button id="btn-drive-connect" class="btn btn-primary mt-6">
-            {t('drive.connect')}
-          </button>
+          <button id="btn-drive-connect" class="btn btn-primary">{t('drive.connect')}</button>
         ) : (
-          <p class="mt-6 text-sm text-forge-muted">{t('drive.only_owner')}</p>
+          <p class="text-sm text-forge-muted">{t('drive.only_owner')}</p>
         )}
-      </div>
+      </Vacio>
       ) : null
     ) : (
       <div class="space-y-6">
@@ -168,36 +168,36 @@ const formatoDe = (nombre: string) => {
           </div>
         )}
 
-        <div class="panel p-5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="min-w-0">
-              <p class="block field-label">{t('drive.connected_as')}</p>
-              <p class="text-base font-bold text-forge-text truncate">{conexion.googleEmail || '—'}</p>
-              {conexion.connectedAt && (
-                <p class="text-xs text-forge-muted mt-1">{t('drive.connected_on')} {conexion.connectedAt.slice(0, 10)}</p>
-              )}
-            </div>
-            <div class="flex items-center gap-3 shrink-0">
-              {conexion.folderLink && (
-                <a href={conexion.folderLink} target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
-                  {t('drive.open_folder')}
-                </a>
-              )}
-              {esPropietario && (
-                <button id="btn-drive-disconnect" class="btn btn-ghost hover:!text-forge-error">
-                  {t('drive.disconnect')}
-                </button>
-              )}
-            </div>
+        {/* La conexión como lo que es: el camino de los bytes, del navegador
+            al Drive de quien conectó, sin pasar por este servidor. */}
+        <div class="panel camino-drive">
+          <div class="camino-drive-ruta">
+            <span class="camino-nodo">{t('drive.flow_browser')}</span>
+            <span class="camino-flecha" aria-hidden="true"></span>
+            <span class="camino-nodo camino-nodo-papel" title={conexion.googleEmail || ''}>{t('drive.flow_drive').replace('{email}', conexion.googleEmail || '—')}</span>
+            <span class="hint whitespace-nowrap">{t('drive.flow_bytes')}</span>
           </div>
-
-          <p class="mt-4 pt-4 border-t border-forge-border hint leading-relaxed">{t('drive.warn_link')}</p>
+          <div class="flex items-center gap-2 shrink-0 ml-auto">
+            {conexion.folderLink && (
+              <a href={conexion.folderLink} target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+                {t('drive.open_folder')}
+              </a>
+            )}
+            {esPropietario && (
+              <button id="btn-drive-disconnect" class="btn btn-ghost hover:!text-forge-error">
+                {t('drive.disconnect')}
+              </button>
+            )}
+          </div>
+          <p class="camino-drive-nota hint leading-relaxed">
+            {conexion.connectedAt && <>{t('drive.connected_on')} {conexion.connectedAt.slice(0, 10)} · </>}{t('drive.warn_link')}
+          </p>
         </div>
 
         {/* El explorador. Carpetas primero y archivos después, como en
             cualquier gestor de archivos: mezclarlos obliga a leer el icono de
             cada fila para saber en qué se puede entrar. */}
-        <div class="panel overflow-hidden">
+        <div id="explorador" class="panel overflow-hidden relative" data-t-soltar={t('drive.drop_active')}>
           <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-forge-border">
             <nav class="flex items-center gap-1.5 text-sm min-w-0" aria-label={t('drive.files_title')}>
               <a href={`/w/${sys_tag}/files`} class:list={['truncate hover:underline', camino.length ? 'text-forge-muted' : 'text-forge-text font-semibold']}>
@@ -316,10 +316,27 @@ const formatoDe = (nombre: string) => {
           <ul id="resultados-busqueda" class="hidden divide-y divide-forge-border/40"></ul>
 
           {carpetas.length === 0 && archivos.length === 0 && (
-            <div class="px-5 py-16 text-center">
-              <p class="text-sm font-bold text-forge-text">{t('drive.empty')}</p>
-              <p class="text-xs text-forge-muted mt-1.5 max-w-sm mx-auto leading-relaxed">{t('drive.empty_desc')}</p>
-            </div>
+            /* Solo donde de verdad se puede subir: si no, «o pulsa Subir» mentiría. */
+            puedeEditar && disponible && conexion.status === 'ok' ? (
+              /* Vacío y se puede subir: la boca de la fragua como zona para soltar. */
+              <div class="archivos-vacio">
+                <h2 class="archivos-vacio-titulo">{t('drive.drop_title')}</h2>
+                <p class="hint max-w-[52ch]">{t('drive.drop_desc')}</p>
+                <div class="arco-subida" aria-hidden="true">
+                  <div class="arco-subida-boca"><span>{t('drive.drop_or')}</span></div>
+                  <span class="pegatina pegatina-archivo" style="left: -2.5rem; top: 3.75rem; transform: rotate(-9deg)"><i>PDF</i>apuntes-calculo.pdf</span>
+                  <span class="pegatina pegatina-archivo" style="right: -3.4rem; top: 6.5rem; transform: rotate(7deg)"><i>PNG</i>pizarra-lunes.png</span>
+                  <span class="pegatina pegatina-archivo" style="right: 1.9rem; top: -2.25rem; transform: rotate(-4deg)"><i>CSV</i>notas.csv</span>
+                  <Figura pose="saluda" color="lila" alto={92} style="position: absolute; top: -78px; left: 50%; margin-left: -36px" />
+                  <Figura pose="lanza" color="turquesa" alto={170} cartel="DOCX" style="position: absolute; left: -6rem; bottom: 0" />
+                </div>
+              </div>
+            ) : (
+              <div class="px-5 py-16 text-center">
+                <p class="text-sm font-bold text-forge-text">{t('drive.empty')}</p>
+                <p class="text-xs text-forge-muted mt-1.5 max-w-sm mx-auto leading-relaxed">{t('drive.empty_desc')}</p>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -451,11 +468,8 @@ const formatoDe = (nombre: string) => {
       }
     }
 
-    inputArchivo?.addEventListener('change', async () => {
-      const archivos = [...(inputArchivo.files || [])];
-      inputArchivo.value = '';
+    async function subirVarios(archivos) {
       if (!archivos.length) return;
-
       let alguno = false;
       // De uno en uno: en paralelo, varias subidas grandes se pelean por el
       // ancho de banda y todas van lentas.
@@ -463,7 +477,39 @@ const formatoDe = (nombre: string) => {
 
       zonaProgreso.classList.add('hidden');
       if (alguno) window.location.reload();
+    }
+
+    inputArchivo?.addEventListener('change', async () => {
+      const archivos = [...(inputArchivo.files || [])];
+      inputArchivo.value = '';
+      await subirVarios(archivos);
     });
+
+    // Soltar archivos sobre el explorador: la misma subida que el botón.
+    // Solo donde hay botón de subir (quien edita, con el Drive conectado).
+    const explorador = document.getElementById('explorador');
+    if (explorador && inputArchivo) {
+      let dentro = 0;
+      const conArchivos = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+      explorador.addEventListener('dragenter', (e) => {
+        if (!conArchivos(e)) return;
+        e.preventDefault();
+        dentro++;
+        explorador.classList.add('soltando');
+      });
+      explorador.addEventListener('dragover', (e) => { if (conArchivos(e)) e.preventDefault(); });
+      explorador.addEventListener('dragleave', () => {
+        dentro = Math.max(0, dentro - 1);
+        if (!dentro) explorador.classList.remove('soltando');
+      });
+      explorador.addEventListener('drop', async (e) => {
+        if (!conArchivos(e)) return;
+        e.preventDefault();
+        dentro = 0;
+        explorador.classList.remove('soltando');
+        await subirVarios([...(e.dataTransfer?.files || [])]);
+      });
+    }
 
     // ── Carpetas ─────────────────────────────────────────────────────────────
     const formCarpeta = document.getElementById('form-carpeta');

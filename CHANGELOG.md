@@ -6,6 +6,20 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.7.0] - 2026-10-22
+
+Archivos con la boca de la fragua: la última de las propuestas de «más magia».
+
+### Added
+
+- **Soltar archivos sobre el explorador** para subirlos, con la misma subida directa a Drive que el botón. Mientras se arrastra, el explorador entero se ofrece («Suelta para subir a Drive»). Solo para quien puede subir, con el Drive conectado.
+
+### Changed
+
+- **La conexión, como el camino de los bytes**: «Tu navegador → Drive de [cuenta] · 0 bytes por este servidor», con abrir la carpeta y desconectar al lado.
+- **Explorador vacío**: «Suelta aquí lo que quieras guardar.», con la boca de la fragua en discontinuo como zona para soltar, pegatinas de archivos y dos figuras (una lanza un archivo, otra saluda desde lo alto). Solo sale donde de verdad se puede subir.
+- **Sin Drive conectado**: el vacío con figura, con los dos avisos antes del botón de conectar.
+
 ## [2.6.0] - 2026-10-22
 
 Tablas en fichas: la tercera de las propuestas de «más magia».
