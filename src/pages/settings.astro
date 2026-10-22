@@ -347,7 +347,8 @@ const oauthNotice =
       <div class="h-px w-full bg-forge-border/40 my-10"></div>
 
       <!-- Notifications Settings -->
-      <section class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* `#avisos`: el enlace «Qué me avisa» de Actividad aterriza aquí. */}
+      <section id="avisos" class="grid grid-cols-1 md:grid-cols-3 gap-8 scroll-mt-6">
         <div class="md:col-span-1">
           <h2 class="text-lg font-bold text-forge-text">{t('user.settings.notifs')}</h2>
           <p class="text-sm text-forge-muted mt-1">{t('user.settings.notifs_desc')}</p>
