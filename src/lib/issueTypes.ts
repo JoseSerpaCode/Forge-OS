@@ -40,7 +40,7 @@ export interface TipoTicket {
   isBuiltin: boolean;
 }
 
-const LARGO_MAXIMO = 30;
+export const LARGO_MAXIMO = 30;
 /** Un desplegable de más de veinte entradas ya no se elige: se busca. */
 const MAXIMO_POR_ESPACIO = 20;
 

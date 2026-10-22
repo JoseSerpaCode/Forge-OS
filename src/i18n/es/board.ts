@@ -168,6 +168,8 @@ export const es = {
   'quick.created': 'Tarea creada.',
   'quick.see': 'Ver',
   'quick.label_error': 'No se ha podido crear la etiqueta.',
+  'quick.new_type': 'Nuevo tipo',
+  'quick.new_type_title': 'Nuevo tipo de tarea',
   'sprint.manage': 'Gestionar sprints…',
   'sprint.manage_title': 'Sprints',
   'sprint.manage_empty': 'No hay sprints.',

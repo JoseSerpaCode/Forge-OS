@@ -6,11 +6,19 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
-## [2.3.0] - 2026-10-21
+## [2.3.0] - 2026-10-22
 
 ### Added
 
+- **Importar tablas desde Excel o CSV.** «Importar» en Tablas (y en la galería de «Nueva tabla») lee un `.xlsx` —con selector de hoja— o un CSV, enseña las cinco primeras filas y propone el tipo de cada columna (texto, número o selección), que se puede cambiar antes de crear. Entiende los CSV de Excel en español: punto y coma, coma decimal y tildes en Windows-1252. Hasta 1000 filas y 50 columnas, en el orden del archivo.
+- **Crear etiquetas y tipos desde el alta de tareas.** «Nueva etiqueta» al final de las etiquetas y «Nuevo tipo» junto al tipo (este, para propietarios) abren la misma ventana de nombre y color que los ajustes, y lo creado queda puesto. Antes solo se podía escribiendo `#nombre` en la línea o yendo a los ajustes.
 - **Seleccionar varias tareas a la vez en el tablero.** «Seleccionar» junto a «Ordenar» pone un círculo en cada tarjeta; pulsar la elige (con Mayús, un tramo de la misma columna) y una barra abajo permite **moverlas** a un estado o a un sprint, **ponerles una etiqueta** o **borrarlas**, con una confirmación que dice cuántas. Escape o «Listo» salen. En el teléfono va como icono en la fila principal y la barra queda encima de la navegación. Antes solo se podía tarea a tarea, desde el panel de cada una.
+
+### Fixed
+
+- **Borrar tablas desde la lista.** Solo había una papelera sin texto dentro de cada tabla; ahora cada fila de la lista tiene la suya, con confirmación, y en el teléfono se ve sin desplazar.
+- El borrado de una tabla no comprobaba que fuera del espacio de la dirección: un editor de un espacio podía borrar la de otro sabiendo su id.
+- La página de una tabla enseñaba 500 filas como mucho; ahora 1000, como lo que se puede importar.
 
 ## [2.2.0] - 2026-10-21
 

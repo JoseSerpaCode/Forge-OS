@@ -402,32 +402,6 @@ const wsPendingInvites = (db.prepare(`
       </div>
     </dialog>
 
-    {/* Editar una etiqueta o un tipo: nombre y color en la misma ventana.
-        Antes la etiqueta se editaba en la propia fila con un botón que decía
-        «Renombrar» —y cambiaba también el color, sin que se adivinara— y el
-        tipo solo se renombraba, con el `prompt()` del navegador. */}
-    <dialog id="editar-catalogo" class="ventana" aria-labelledby="editar-catalogo-titulo">
-      <h2 id="editar-catalogo-titulo" class="ventana-titulo"></h2>
-      <form id="editar-catalogo-form" novalidate>
-        <label id="editar-catalogo-rotulo" class="block field-label mb-1.5" for="editar-catalogo-nombre"></label>
-        <input type="text" id="editar-catalogo-nombre" class="campo" autocomplete="off" />
-        <fieldset class="mt-4">
-          <legend class="block field-label mb-1.5">{t('labels.color')}</legend>
-          <div id="editar-catalogo-colores" class="flex flex-wrap gap-1.5">
-            {COLORES.map((c) => (
-              <button type="button" class="color-opt w-8 h-8 rounded-lg border-2 border-transparent transition-all focus:outline-none focus:ring-2 focus:ring-forge-focus aria-pressed:border-forge-text"
-                style={`background-color:${c}`} data-color={c} aria-label={c} aria-pressed="false"></button>
-            ))}
-          </div>
-        </fieldset>
-        <p id="editar-catalogo-error" class="hidden mt-3 text-sm text-forge-error" role="alert"></p>
-        <div class="ventana-pie">
-          <button type="button" id="editar-catalogo-cancelar" class="btn btn-ghost">{t('modal.cancel')}</button>
-          <button type="submit" class="btn btn-primary">{t('labels.save')}</button>
-        </div>
-      </form>
-    </dialog>
-
     {/* Funciones del tablero.
         Un `<label>` que **envuelve** cada casilla y sin `for`: envolver ya la
         asocia, y un `for` que apuntara a otro sitio haría que el navegador
@@ -1288,50 +1262,6 @@ const wsPendingInvites = (db.prepare(`
    * ticket, la insignia de cada tarjeta y el filtro, así que mantener todo eso
    * al día a mano desde aquí son cuatro sitios que se desincronizan.
    */
-  // ── La ventana de editar (etiquetas y tipos) ───────────────────────────────
-  type Edicion = {
-    titulo: string; rotulo: string; nombre: string; color: string; maximo: number;
-    /** Devuelve el error que enseñar, o `null` si se guardó. */
-    guardar: (nombre: string, color: string | undefined) => Promise<string | null>;
-  };
-  (() => {
-    const dlg = document.getElementById('editar-catalogo') as HTMLDialogElement | null;
-    const form = document.getElementById('editar-catalogo-form') as HTMLFormElement | null;
-    const campo = document.getElementById('editar-catalogo-nombre') as HTMLInputElement | null;
-    const paleta = document.getElementById('editar-catalogo-colores');
-    const error = document.getElementById('editar-catalogo-error');
-    if (!dlg || !form || !campo || !paleta || !error) return;
-    let actual: Edicion | null = null;
-    const marcar = (color: string) => paleta.querySelectorAll<HTMLElement>('.color-opt').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === color)));
-
-    paleta.addEventListener('click', (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLElement>('.color-opt');
-      if (b?.dataset.color) marcar(b.dataset.color);
-    });
-    document.getElementById('editar-catalogo-cancelar')?.addEventListener('click', () => dlg.close());
-    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!actual) return;
-      const color = paleta.querySelector<HTMLElement>('.color-opt[aria-pressed="true"]')?.dataset.color;
-      const fallo = await actual.guardar(campo.value.trim(), color);
-      if (fallo === null) { dlg.close(); return; }
-      error.textContent = fallo;
-      error.classList.remove('hidden');
-    });
-
-    (window as any).forgeEditarCatalogo = (edicion: Edicion) => {
-      actual = edicion;
-      document.getElementById('editar-catalogo-titulo')!.textContent = edicion.titulo;
-      document.getElementById('editar-catalogo-rotulo')!.textContent = edicion.rotulo;
-      campo.value = edicion.nombre;
-      campo.maxLength = edicion.maximo;
-      marcar(edicion.color);
-      error.classList.add('hidden');
-      dlg.showModal();
-      campo.select();
-    };
-  })();
 
   (() => {
     const raiz = document.getElementById('tipos-ticket');
@@ -1377,7 +1307,7 @@ const wsPendingInvites = (db.prepare(`
       b.addEventListener('click', () => {
         const fila = b.closest('.fila-tipo') as HTMLElement;
         const visible = fila.dataset.visible || fila.dataset.name || '';
-        (window as any).forgeEditarCatalogo?.({
+        window.forgeEditarCatalogo?.({
           titulo: raiz.dataset.tEditTitle || '',
           rotulo: raiz.dataset.tName || '',
           nombre: visible,

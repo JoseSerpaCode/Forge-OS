@@ -370,6 +370,27 @@ OAuth, que va firmado con HMAC. La biografía se pinta dentro de
 `<meta content="...">` y Astro escapa las comillas, así que no se puede salir
 del atributo.
 
+## Importar tablas
+
+- **El archivo se lee en el navegador** y al servidor llegan nombre, columnas y
+  filas (`api/w/[sys_tag]/db/importar.ts`). Las reglas —qué es un número, qué
+  tipo se propone, los topes— están en `src/lib/importarTabla.ts`, puro, y las
+  usan los dos lados: la vista previa no puede dar por numérica una columna que
+  luego el servidor rechace.
+- **El `.xlsx` lo lee `src/lib/xlsx.ts`** con `fflate` y expresiones regulares,
+  sin librería de hojas de cálculo. Solo valores: cadenas compartidas, en
+  línea, números, booleanos y fechas (por el estilo de la celda). Se importa
+  con `import()` para que el descompresor no viaje en la página si no se usa.
+- **Un número no empieza por cero ni pasa de quince cifras** (`aNumero`): son
+  códigos o teléfonos, y como número perderían el cero.
+- **Orden**: las filas de una importación entran en el mismo segundo, así que la
+  página ordena por `created_at DESC` y, a igualdad, por `rowid`: el orden del
+  archivo. El tope de filas de la página y el de importar son el mismo
+  (`MAX_FILAS`).
+- **La ventana de nombre y color** de etiquetas y tipos es una sola
+  (`components/EditarCatalogo.astro`, en `MainLayout`): la usan los ajustes para
+  editar y el alta para crear. Se abre con `window.forgeEditarCatalogo`.
+
 ## Archivos en Drive
 
 Los archivos de un espacio **no se guardan en el servidor**: viven en el Drive

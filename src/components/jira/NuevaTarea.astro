@@ -17,8 +17,8 @@ import db from '../../lib/db';
 import { checkWorkspaceAccess } from '../../lib/guard';
 import { useTranslations } from '../../i18n/ui';
 import { funciones as funcionesDe } from '../../lib/funcionesEspacio';
-import { listar as listarEtiquetas, COLOR_POR_DEFECTO } from '../../lib/labels';
-import { listar as listarTipos, nombreVisible } from '../../lib/issueTypes';
+import { listar as listarEtiquetas, COLOR_POR_DEFECTO, COLORES, LARGO_MAXIMO as LARGO_ETIQUETA } from '../../lib/labels';
+import { listar as listarTipos, nombreVisible, LARGO_MAXIMO as LARGO_TIPO } from '../../lib/issueTypes';
 import { OPCIONES as PRIORIDADES } from '../../lib/prioridad';
 import { listar as listarPlantillas } from '../../lib/plantillas';
 import { plantillasDeSerie } from '../../lib/plantillasDeSerie';
@@ -84,6 +84,22 @@ const campo = 'campo';
     data-t-err-title={t('issue.err_title')}
     data-t-err-create={t('issue.err_create')}
     data-t-label-error={t('quick.label_error')}
+    data-colores={JSON.stringify(COLORES)}
+    data-largo-etiqueta={LARGO_ETIQUETA}
+    data-largo-tipo={LARGO_TIPO}
+    data-t-new-label={t('labels.new')}
+    data-t-new-type={t('quick.new_type_title')}
+    data-t-name={t('labels.name')}
+    data-t-create={t('labels.create')}
+    data-t-err-label-required={t('labels.err_required')}
+    data-t-err-label-too-long={t('labels.err_too_long')}
+    data-t-err-label-duplicate={t('labels.err_duplicate')}
+    data-t-err-label-too-many={t('labels.err_too_many')}
+    data-t-err-type-repetido={t('types.err_repetido')}
+    data-t-err-type-nombre-vacio={t('types.err_nombre_vacio')}
+    data-t-err-type-nombre-largo={t('types.err_nombre_largo')}
+    data-t-err-type-demasiados={t('types.err_demasiados')}
+    data-t-err-type={t('types.error')}
     data-t-creating={t('issue.creating')}
     data-plantillas={JSON.stringify(plantillasCliente)}
     data-t-tpl-applied={t('tpl.applied')}
@@ -175,7 +191,12 @@ const campo = 'campo';
             </select>
           </div>
           <div>
-            <label class="block field-label mb-1.5" for="nt-tipo">{t('modal.type')}</label>
+            {/* Crear un tipo es de propietarios (la API lo exige): borrar uno
+                reescribe las tareas que lo llevan. */}
+            <div class="flex items-baseline justify-between gap-3 mb-1.5">
+              <label class="block field-label" for="nt-tipo">{t('modal.type')}</label>
+              {gestionaPlantillas && <button type="button" id="nt-nuevo-tipo" class="enlace text-sm leading-none">{t('quick.new_type')}</button>}
+            </div>
             <select id="nt-tipo" class={campo}>
               {tipos.map((ti) => <option value={ti.key}>{nombreVisible(ti, t)}</option>)}
             </select>
@@ -223,6 +244,12 @@ const campo = 'campo';
                 <span class="truncate">{e.name}</span>
               </button>
             ))}
+            {/* Crear una sin salir del alta. Antes solo se podía escribiendo
+                `#nombre` en la línea, y eso no lo adivinaba nadie. */}
+            <button type="button" id="nt-nueva-etiqueta" class="btn btn-secondary btn-sm border-dashed">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              {t('labels.new')}
+            </button>
           </div>
         </fieldset>
 
@@ -389,7 +416,10 @@ const campo = 'campo';
         b.type = 'button';
         b.className = 'btn btn-secondary btn-sm border-dashed';
         b.textContent = (d.tCreateLabel || '').replace('{nombre}', nueva);
-        b.addEventListener('click', () => crearEtiqueta(nueva));
+        b.addEventListener('click', async () => {
+          const fallo = await crearEtiqueta(nueva);
+          if (fallo) window.showToast?.(fallo, true);
+        });
         li.append(b);
         chips.append(li);
       }
@@ -397,15 +427,25 @@ const campo = 'campo';
       aviso.textContent = faltan.map((f) => (d.tNoteMissing || '').replace('{titulo}', f)).join(' ');
     }
 
-    async function crearEtiqueta(nombre: string) {
+    /** Explica el `error_code` de crear una etiqueta. */
+    const errorEtiqueta = (codigo: string | undefined) => ({
+      required: d.tErrLabelRequired, too_long: d.tErrLabelTooLong, duplicate: d.tErrLabelDuplicate, too_many: d.tErrLabelTooMany,
+    } as Record<string, string | undefined>)[codigo ?? ''] || d.tLabelError || '';
+
+    /**
+     * Crea la etiqueta y la deja puesta. Devuelve el error que enseñar, o
+     * `null`. Desde la línea (`#nombre`) el error sale en un aviso; desde el
+     * botón, en la ventana.
+     */
+    async function crearEtiqueta(nombre: string, color = d.colorDefecto): Promise<string | null> {
       try {
         const res = await fetch(`/api/w/${sysTag}/labels`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: nombre, color: d.colorDefecto }),
+          body: JSON.stringify({ name: nombre, color }),
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const e = await res.json();
+        const e = await res.json().catch(() => ({}));
+        if (!res.ok) return errorEtiqueta(e.error_code);
         catalogo = [...catalogo, { id: e.id, name: e.name, color: e.color }];
         const b = document.createElement('button');
         b.type = 'button';
@@ -431,13 +471,63 @@ const campo = 'campo';
         rotulo.className = 'truncate';
         rotulo.textContent = e.name;
         b.append(sw, marca, rotulo);
-        contEtiquetas.append(b);
+        contEtiquetas.insertBefore(b, $('nt-nueva-etiqueta'));
+        encendidas.add(e.id);
+        apagadas.delete(e.id);
         analizar();
+        return null;
       } catch (err) {
         console.error('crear etiqueta:', err);
-        window.showToast?.(d.tLabelError || '', true);
+        return d.tLabelError || '';
       }
     }
+
+    /** El primer color de la paleta que no lleva ninguna etiqueta; si están todos, el siguiente. */
+    const colorLibre = (usados: string[]) => {
+      const colores: string[] = JSON.parse(d.colores || '[]');
+      const usadosMin = new Set(usados.map((c) => c.toLowerCase()));
+      return colores.find((c) => !usadosMin.has(c.toLowerCase())) ?? colores[usados.length % colores.length] ?? d.colorDefecto ?? '';
+    };
+
+    $('nt-nueva-etiqueta')?.addEventListener('click', () => {
+      window.forgeEditarCatalogo?.({
+        titulo: d.tNewLabel || '',
+        rotulo: d.tName || '',
+        nombre: '',
+        color: colorLibre(catalogo.map((e) => e.color)),
+        maximo: Number(d.largoEtiqueta) || 40,
+        boton: d.tCreate,
+        guardar: (nombre, color) => crearEtiqueta(nombre, color),
+      });
+    });
+
+    // Un tipo nuevo entra en el desplegable ya elegido.
+    $('nt-nuevo-tipo')?.addEventListener('click', () => {
+      window.forgeEditarCatalogo?.({
+        titulo: d.tNewType || '',
+        rotulo: d.tName || '',
+        nombre: '',
+        color: colorLibre([]),
+        maximo: Number(d.largoTipo) || 30,
+        boton: d.tCreate,
+        guardar: async (name, color) => {
+          const res = await fetch(`/api/w/${sysTag}/issue-types`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, color }),
+          }).catch(() => null);
+          const datos = await res?.json().catch(() => ({}));
+          if (!res?.ok) {
+            return ({
+              repetido: d.tErrTypeRepetido, nombre_vacio: d.tErrTypeNombreVacio, nombre_largo: d.tErrTypeNombreLargo, demasiados: d.tErrTypeDemasiados,
+            } as Record<string, string | undefined>)[datos?.error_code] || d.tErrType || '';
+          }
+          tipo.append(new Option(datos.type.name, datos.type.key, true, true));
+          tipo.dispatchEvent(new Event('change'));
+          return null;
+        },
+      });
+    });
 
     contEtiquetas.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.nt-etiqueta');

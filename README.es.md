@@ -82,7 +82,7 @@ servidor de base de datos, ni colas, ni capa de caché que mantener.
   desde cualquier tarea, y seis de serie. Elegir una en el alta rellena el
   formulario para ajustarlo antes de crear, y sus pasos llegan como subtareas.
 - **Archivos adjuntos al crear la tarea**, y etiquetas y tipos de tarea que se
-  editan (nombre y color) desde los ajustes del espacio.
+  crean desde el propio alta y se editan (nombre y color) desde los ajustes.
 - **Seleccionar varias tarjetas** para moverlas de estado o de sprint,
   ponerles una etiqueta o borrarlas de una vez.
 - **En el teléfono**, una columna cada vez con las pestañas de estado fijas
@@ -112,9 +112,9 @@ servidor de base de datos, ni colas, ni capa de caché que mantener.
 
 **Tablas y archivos**
 
-- **Tablas** creadas desde la interfaz, al estilo de Airtable, desde cero o con
-  una plantilla, incluida una columna de tipo archivo que apunta a los archivos
-  del espacio.
+- **Tablas** creadas desde la interfaz, al estilo de Airtable, desde cero, con
+  una plantilla o **importadas desde Excel o CSV**, incluida una columna de tipo
+  archivo que apunta a los archivos del espacio.
 - **Los archivos** viven en el Drive de quien conectó el espacio, en carpetas
   que se reflejan a los dos lados. Etiquetas, búsqueda por nombre en todo el
   espacio y etiquetas heredadas al adjuntar un archivo a una tarea.

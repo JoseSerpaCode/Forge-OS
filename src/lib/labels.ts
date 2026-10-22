@@ -36,7 +36,7 @@ export const COLORES = [
 
 export const COLOR_POR_DEFECTO = COLORES[1];
 
-const LARGO_MAXIMO = 40;
+export const LARGO_MAXIMO = 40;
 /** Tope por espacio. Cien etiquetas ya no se eligen, se buscan. */
 const MAXIMO_POR_ESPACIO = 100;
 

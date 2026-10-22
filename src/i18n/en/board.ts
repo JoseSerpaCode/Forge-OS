@@ -168,6 +168,8 @@ export const en = {
   'quick.created': 'Task created.',
   'quick.see': 'See',
   'quick.label_error': 'The label could not be created.',
+  'quick.new_type': 'New type',
+  'quick.new_type_title': 'New task type',
   'sprint.manage': 'Manage sprints…',
   'sprint.manage_title': 'Sprints',
   'sprint.manage_empty': 'There are no sprints.',

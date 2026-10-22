@@ -66,4 +66,18 @@ interface Window {
       `confirm()` del navegador, que se puede bloquear tras el primer aviso y
       deja los botones sin hacer nada en silencio. */
   forgeConfirm?: (message: string, onConfirm: () => void, title?: string) => void;
+  /** Ventana de nombre y color de etiquetas y tipos (`EditarCatalogo.astro`). */
+  forgeEditarCatalogo?: (edicion: EdicionCatalogo) => void;
+}
+
+interface EdicionCatalogo {
+  titulo: string;
+  rotulo: string;
+  nombre: string;
+  color: string;
+  maximo: number;
+  /** El texto del botón; «Guardar» si no se dice. */
+  boton?: string;
+  /** Devuelve el error que enseñar, o `null` si se guardó. */
+  guardar: (nombre: string, color: string | undefined) => Promise<string | null>;
 }

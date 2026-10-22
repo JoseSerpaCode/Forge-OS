@@ -36,6 +36,7 @@ const ESPERADO: Record<string, string[]> = {
   'pages/search.ts':          ['viewer'],  // buscar apuntes es leer
   'views.ts':                 ['viewer'],
   'templates/index.ts':       ['viewer', 'editor'],
+  'db/importar.ts':           ['editor'],  // crear una tabla con sus filas, como crearla a mano
 };
 
 function ficheros(dir: string, acc: string[] = []): string[] {
