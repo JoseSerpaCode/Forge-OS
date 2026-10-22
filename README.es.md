@@ -83,6 +83,8 @@ servidor de base de datos, ni colas, ni capa de caché que mantener.
   formulario para ajustarlo antes de crear, y sus pasos llegan como subtareas.
 - **Archivos adjuntos al crear la tarea**, y etiquetas y tipos de tarea que se
   editan (nombre y color) desde los ajustes del espacio.
+- **Seleccionar varias tarjetas** para moverlas de estado o de sprint,
+  ponerles una etiqueta o borrarlas de una vez.
 - **En el teléfono**, una columna cada vez con las pestañas de estado fijas
   arriba: mantener pulsada una tarjeta y soltarla en una pestaña la mueve,
   deslizar a los lados cambia de pestaña, y cada tarjeta tiene su hoja de

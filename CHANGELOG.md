@@ -6,6 +6,12 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 > Las entradas entre la 0.6.0 y la 1.4.0 se reconstruyeron a posteriori a partir del historial de git, agrupadas por los saltos de versión que realmente ocurrieron en `package.json`. La 1.1.0 nunca existió: se pasó directamente de la 1.0.0 a la 1.2.0.
 
+## [2.3.0] - 2026-10-21
+
+### Added
+
+- **Seleccionar varias tareas a la vez en el tablero.** «Seleccionar» junto a «Ordenar» pone un círculo en cada tarjeta; pulsar la elige (con Mayús, un tramo de la misma columna) y una barra abajo permite **moverlas** a un estado o a un sprint, **ponerles una etiqueta** o **borrarlas**, con una confirmación que dice cuántas. Escape o «Listo» salen. En el teléfono va como icono en la fila principal y la barra queda encima de la navegación. Antes solo se podía tarea a tarea, desde el panel de cada una.
+
 ## [2.2.0] - 2026-10-21
 
 ### Added

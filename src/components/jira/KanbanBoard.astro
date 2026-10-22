@@ -329,6 +329,64 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
   </dialog>
 )}
 
+{/* Varias tarjetas a la vez: la barra sale al pulsar «Seleccionar» en la
+    barra del tablero. Cada acción usa los mismos endpoints que una tarjeta
+    suelta —mover, etiquetar, borrar—, así que repeticiones, cronómetros,
+    automatizaciones y permisos se aplican igual. */}
+{canEdit && vista === 'tablero' && (
+  <div id="barra-seleccion" class="barra-seleccion hidden" role="region" aria-label={t('sel.region')}
+    data-t-count={t('sel.count')} data-t-count-one={t('sel.count_one')} data-t-none={t('sel.none')}
+    data-t-working={t('sel.working')} data-t-confirm={t('sel.confirm_delete')} data-t-confirm-one={t('sel.confirm_delete_one')}
+    data-t-moved={t('sel.done_moved')} data-t-deleted={t('sel.done_deleted')} data-t-labeled={t('sel.done_labeled')}
+    data-t-failed={t('sel.failed')} data-t-delete={t('sel.delete')}>
+    <span id="sel-cuenta" class="text-sm font-semibold" aria-live="polite"></span>
+    {/* En el teléfono los menús cuelgan de la barra, no del botón: anclados al
+        botón, el de la izquierda se salía de la pantalla. */}
+    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+      <div class="relative max-md:static">
+        <button type="button" id="sel-mover" class="sel-accion btn btn-secondary btn-sm" aria-haspopup="menu" aria-expanded="false" aria-controls="sel-menu-mover">
+          {t('sel.move')}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <div id="sel-menu-mover" role="menu" class="sel-menu menu hidden absolute bottom-full right-0 max-md:left-0 mb-2 min-w-[13rem] max-h-[55vh] overflow-y-auto">
+          <p class="px-3 pt-1.5 pb-1 text-xs font-semibold text-forge-muted">{t('board.move_status')}</p>
+          {columns.map((col) => (
+            <button type="button" role="menuitem" class="sel-estado menu-item" data-estado={col.id} data-titulo={col.title} style={`--c:${infoEstado(col.id).color}`}>
+              <span class="sw" aria-hidden="true"></span>{col.title}
+            </button>
+          ))}
+          {funciones.sprints && (
+            <>
+              <div class="menu-sep"></div>
+              <p class="px-3 pt-1.5 pb-1 text-xs font-semibold text-forge-muted">{t('modal.sprint')}</p>
+              {[{ name: t('board.backlog'), id: 'backlog' }, ...sprints.filter((s: any) => s.status !== 'completed')].map((s: any) => (
+                <button type="button" role="menuitem" class="sel-sprint menu-item" data-sprint={s.id} data-nombre={s.name}>{s.name}</button>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+      {labels.length > 0 && (
+        <div class="relative max-md:static">
+          <button type="button" id="sel-etiqueta" class="sel-accion btn btn-secondary btn-sm" aria-haspopup="menu" aria-expanded="false" aria-controls="sel-menu-etiqueta">
+            {t('sel.label')}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <div id="sel-menu-etiqueta" role="menu" class="sel-menu menu hidden absolute bottom-full right-0 max-md:left-0 mb-2 min-w-[13rem] max-h-[55vh] overflow-y-auto">
+            {labels.map((l) => (
+              <button type="button" role="menuitem" class="sel-etiqueta menu-item" data-id={l.id} data-nombre={l.name} style={`--c:${l.color}`}>
+                <span class="sw" aria-hidden="true"></span><span class="truncate">{l.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <button type="button" id="sel-borrar" class="sel-accion btn btn-secondary btn-sm !text-forge-error">{t('sel.delete')}</button>
+      <button type="button" id="sel-listo" class="btn btn-primary btn-sm">{t('sel.done')}</button>
+    </div>
+  </div>
+)}
+
 <IssueDetailsModal sprints={sprints} currentSprintId={currentSprintId} workspaceMembers={workspaceMembers} contactos={contactos} labels={labels} issueTypes={issueTypes} sysTag={sysTag} canManageTypes={userRole === 'owner'} funciones={funciones} />
 
 <script>
@@ -896,6 +954,8 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
     container.addEventListener('dragstart', (e: DragEvent) => {
       const card = tarjetaDe(e.target);
       if (!card || !e.dataTransfer) return;
+      // Seleccionando, pulsar es elegir: nada se arrastra.
+      if (container.classList.contains('seleccionando')) { e.preventDefault(); return; }
       arrastrada = card;
       card.dataset.origenCarril = columnaDe(card)?.dataset.carril ?? '';
       card.dataset.statusVal = columnaDe(card)?.dataset.status || '';
@@ -1096,7 +1156,7 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       toque = { x: dedo.clientX, y: dedo.clientY };
       inicio = { x: dedo.clientX, y: dedo.clientY, t: Date.now() };
       const objetivo = e.target as HTMLElement;
-      const card = canEdit && container.dataset.vista === 'tablero' ? tarjetaDe(objetivo) : null;
+      const card = canEdit && container.dataset.vista === 'tablero' && !container.classList.contains('seleccionando') ? tarjetaDe(objetivo) : null;
       if (!card || objetivo.closest('button, a, select, input, textarea')) return;
       // El arrastre nativo también arranca con el dedo en Chrome para Android
       // y competiría con este.
@@ -1238,6 +1298,197 @@ const totalEstado = (estado: string) => carriles.reduce((n, c) => n + totalDe(c.
       window.showToast?.(window.forgeMsg?.errGenerico || '', true);
     }
   });
+
+  // ── Seleccionar varias ─────────────────────────────────────────────────────
+  //
+  // Pulsar una tarjeta la elige en vez de abrirla; Mayús+clic elige el tramo
+  // desde la anterior, dentro de la misma columna. Una tarea con dos etiquetas
+  // sale dos veces con carriles: se elige por id, así que las dos copias van
+  // juntas.
+  const barraSeleccion = document.getElementById('barra-seleccion');
+  const botonSeleccionar = document.getElementById('btn-seleccionar');
+  if (barraSeleccion && botonSeleccionar && container) montarSeleccion(barraSeleccion, botonSeleccionar, container);
+  function montarSeleccion(barra: HTMLElement, btnSeleccionar: HTMLElement, container: HTMLElement) {
+    const b = barra.dataset;
+    const elegidas = new Set<string>();
+    let anterior: HTMLElement | null = null;
+    let trabajando = false;
+    const activo = () => container.classList.contains('seleccionando');
+    const copiasDe = (id: string) => Array.from(document.querySelectorAll<HTMLElement>(`.issue-card[data-issue-id="${CSS.escape(id)}"]`));
+    const tituloDe = (id: string) => copiasDe(id)[0]?.querySelector('h4')?.textContent?.trim() || id;
+    const menus = Array.from(barra.querySelectorAll<HTMLElement>('.sel-menu'));
+    const cerrarMenus = () => {
+      menus.forEach((m) => m.classList.add('hidden'));
+      barra.querySelectorAll('[aria-haspopup="menu"]').forEach((x) => x.setAttribute('aria-expanded', 'false'));
+    };
+
+    function pintar() {
+      document.querySelectorAll<HTMLElement>('.issue-card').forEach((c) => {
+        c.classList.toggle('elegida', elegidas.has(c.dataset.issueId!));
+      });
+      const n = elegidas.size;
+      const cuenta = document.getElementById('sel-cuenta')!;
+      if (!trabajando) cuenta.textContent = n === 0 ? (b.tNone || '') : n === 1 ? (b.tCountOne || '') : (b.tCount || '').replace('{n}', String(n));
+      barra.querySelectorAll<HTMLButtonElement>('.sel-accion').forEach((x) => { x.disabled = n === 0 || trabajando; });
+    }
+    function entrar() {
+      container.classList.add('seleccionando');
+      btnSeleccionar.setAttribute('aria-pressed', 'true');
+      barra.classList.remove('hidden');
+      pintar();
+    }
+    function salir() {
+      elegidas.clear();
+      anterior = null;
+      container.classList.remove('seleccionando');
+      btnSeleccionar.setAttribute('aria-pressed', 'false');
+      barra.classList.add('hidden');
+      cerrarMenus();
+      pintar();
+    }
+    btnSeleccionar.addEventListener('click', () => (activo() ? salir() : entrar()));
+    document.getElementById('sel-listo')?.addEventListener('click', salir);
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !activo() || trabajando) return;
+      // Escape en la confirmación de borrar cancela esa ventana, no la selección.
+      if (document.querySelector('dialog[open]')) return;
+      if (menus.some((m) => !m.classList.contains('hidden'))) cerrarMenus();
+      else salir();
+    });
+
+    // En captura: seleccionando, nada de la tarjeta (completar, mover, abrir)
+    // recibe el clic.
+    container.addEventListener('click', (e) => {
+      if (!activo()) return;
+      const card = tarjetaDe(e.target);
+      if (!card) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (trabajando) return;
+      const id = card.dataset.issueId!;
+      const columna = columnaDe(card);
+      if (e.shiftKey && anterior && columna && columnaDe(anterior) === columna) {
+        const lista = Array.from(columna.querySelectorAll<HTMLElement>('.issue-card'));
+        const [desde, hasta] = [lista.indexOf(anterior), lista.indexOf(card)].sort((x, y) => x - y);
+        lista.slice(desde, hasta + 1).forEach((c) => elegidas.add(c.dataset.issueId!));
+      } else if (elegidas.has(id)) {
+        elegidas.delete(id);
+      } else {
+        elegidas.add(id);
+      }
+      anterior = card;
+      pintar();
+    }, true);
+
+    // Los menús de la barra se abren hacia arriba.
+    barra.querySelectorAll<HTMLButtonElement>('[aria-haspopup="menu"]').forEach((boton) => {
+      boton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = document.getElementById(boton.getAttribute('aria-controls') || '');
+        const abierto = menu && !menu.classList.contains('hidden');
+        cerrarMenus();
+        if (menu && !abierto) {
+          menu.classList.remove('hidden');
+          boton.setAttribute('aria-expanded', 'true');
+          menu.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+        }
+      });
+    });
+    document.addEventListener('click', (e) => { if (!barra.contains(e.target as Node)) cerrarMenus(); });
+
+    /**
+     * Hace lo mismo con cada elegida, de cuatro en cuatro, y recarga con un
+     * aviso: muchas tarjetas cambian de sitio a la vez, y el servidor sabe
+     * pintarlas mejor que retocarlas aquí una por una.
+     */
+    async function enLote(paraCada: (id: string, i: number) => Promise<Response> | null, mensaje: (n: number) => string) {
+      cerrarMenus();
+      const ids = [...elegidas];
+      const fallidas: string[] = [];
+      let hechas = 0;
+      let i = 0;
+      trabajando = true;
+      pintar();
+      const cuenta = document.getElementById('sel-cuenta')!;
+      const avanzar = () => { cuenta.textContent = (b.tWorking || '').replace('{n}', String(hechas)).replace('{total}', String(ids.length)); };
+      avanzar();
+      const trabajador = async () => {
+        while (i < ids.length) {
+          const indice = i++;
+          const id = ids[indice];
+          try {
+            const peticion = paraCada(id, indice);
+            if (peticion) {
+              const res = await peticion;
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            }
+          } catch (err) {
+            console.error('selección:', id, err);
+            fallidas.push(tituloDe(id));
+          }
+          hechas++;
+          avanzar();
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(4, ids.length) }, trabajador));
+      const bien = ids.length - fallidas.length;
+      const aviso = fallidas.length
+        ? `${bien ? `${mensaje(bien)} ` : ''}${(b.tFailed || '').replace('{lista}', fallidas.join(', '))}`
+        : mensaje(bien);
+      try { sessionStorage.setItem('forge_aviso', JSON.stringify({ texto: aviso, error: fallidas.length > 0 })); } catch { /* sin almacenamiento */ }
+      window.location.reload();
+    }
+
+    const json = { 'Content-Type': 'application/json' };
+
+    // Mover a un estado: al final de esa columna, en el orden en que se eligieron.
+    barra.querySelectorAll<HTMLButtonElement>('.sel-estado').forEach((boton) => boton.addEventListener('click', () => {
+      const estado = boton.dataset.estado!;
+      const destino = columnas().filter((c) => c.dataset.status === estado);
+      const base = Math.max(0, ...destino.flatMap((c) => Array.from(c.querySelectorAll<HTMLElement>('.issue-card')).map((x) => Number(x.dataset.position) || 0)));
+      enLote((id, i) => {
+        const copia = copiasDe(id)[0];
+        if ((columnaDe(copia)?.dataset.status || copia?.dataset.status) === estado) return null;
+        return fetch(`/api/issues/${id}/move`, { method: 'PATCH', headers: json, body: JSON.stringify({ status: estado, position: base + 100000 * (i + 1), workspaceId }) });
+      }, (n) => (b.tMoved || '').replace('{destino}', boton.dataset.titulo || '').replace('{n}', String(n)));
+    }));
+
+    // Mover a un sprint: mismo estado y misma posición.
+    barra.querySelectorAll<HTMLButtonElement>('.sel-sprint').forEach((boton) => boton.addEventListener('click', () => {
+      const sprint = boton.dataset.sprint!;
+      enLote((id) => {
+        const copia = copiasDe(id)[0];
+        if ((copia?.dataset.sprintId || 'backlog') === sprint) return null;
+        return fetch(`/api/issues/${id}/move`, {
+          method: 'PATCH',
+          headers: json,
+          body: JSON.stringify({
+            sprint_id: sprint === 'backlog' ? null : sprint,
+            status: columnaDe(copia)?.dataset.status || copia?.dataset.status || 'todo',
+            position: Number(copia?.dataset.position || 0),
+            workspaceId,
+          }),
+        });
+      }, (n) => (b.tMoved || '').replace('{destino}', boton.dataset.nombre || '').replace('{n}', String(n)));
+    }));
+
+    // Poner una etiqueta: se suma a las que ya tengan.
+    barra.querySelectorAll<HTMLButtonElement>('.sel-etiqueta').forEach((boton) => boton.addEventListener('click', () => {
+      enLote((id) => fetch(`/api/w/${sysTag}/labels/assign`, {
+        method: 'POST', headers: json, body: JSON.stringify({ label_id: boton.dataset.id, entity_type: 'issue', entity_id: id }),
+      }), (n) => (b.tLabeled || '').replace('{etiqueta}', boton.dataset.nombre || '').replace('{n}', String(n)));
+    }));
+
+    // Borrar, con confirmación que dice cuántas.
+    document.getElementById('sel-borrar')?.addEventListener('click', () => {
+      const n = elegidas.size;
+      if (!n) return;
+      const pregunta = n === 1 ? (b.tConfirmOne || '') : (b.tConfirm || '').replace('{n}', String(n));
+      window.forgeConfirm?.(pregunta, () => {
+        enLote((id) => fetch(`/api/issues/${id}`, { method: 'DELETE' }), (hechas) => (b.tDeleted || '').replace('{n}', String(hechas)));
+      }, b.tDelete);
+    });
+  }
 
   // El tablero ya responde a los clics. Lo leen las pruebas: con la máquina
   // cargada, pulsar antes de que el script termine no hace nada y la prueba

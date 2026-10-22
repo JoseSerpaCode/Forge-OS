@@ -83,6 +83,8 @@ database server, no queue and no cache tier to operate.
   adjust before creating, and its steps become subtasks.
 - **Files attached when creating a task**, and labels and task types edited
   (name and colour) from the workspace settings.
+- **Select several cards** to move them to another status or sprint, label
+  them or delete them in one go.
 - **On a phone**, one column at a time with the status tabs pinned on top:
   press and hold a card and drop it on a tab to move it, swipe sideways to
   change tab, or use the card's move sheet.

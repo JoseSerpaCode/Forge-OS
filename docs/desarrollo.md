@@ -405,6 +405,14 @@ lo es: los archivos siguen en su Drive.
   recalculan con las cuentas (`updateCounts`).
 - **«Mover a otro sprint» solo sale si hay a dónde ir** (`sprintsAbiertos` en
   `IssueCard`): en el backlog y sin sprints abiertos, el menú salía vacío.
+- **Seleccionar varias** (`montarSeleccion` en `KanbanBoard.astro`) no tiene
+  endpoints propios: cada acción llama, por cada tarea, al mismo que una tarjeta
+  suelta (`/move`, `labels/assign`, `DELETE /api/issues/:id`), de cuatro en
+  cuatro, y luego recarga con el resultado en `forge_aviso`. Así repeticiones,
+  `done_at`, permisos y automatizaciones se aplican igual. El clic se escucha
+  **en captura** en `.kanban-container` y corta la propagación: mientras se
+  selecciona, ningún oyente de la tarjeta (abrir, completar, mover) lo recibe.
+  Arrastrar está apagado en ese modo.
 - **El sprint que se recuerda es el que se está viendo** (`selector.value`), no
   el de la dirección: sin `?sprint=` se guardaba «backlog» y desde la segunda
   visita el tablero abría vacío. Lo fija `tests/e2e/sprint-recordado.spec.ts`.
