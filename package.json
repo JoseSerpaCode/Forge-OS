@@ -23,7 +23,7 @@
     "@astrojs/node": "^11.1.8",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
-    "@tiptap/core": "^3.31.4",
+    "@tiptap/core": "^3.32.0",
     "@tiptap/extension-bubble-menu": "^3.31.4",
     "@tiptap/extension-highlight": "^3.31.4",
     "@tiptap/extension-list": "^3.31.4",
