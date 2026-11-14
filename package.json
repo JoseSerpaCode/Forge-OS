@@ -32,7 +32,7 @@
     "@tiptap/pm": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
     "@tiptap/suggestion": "^3.31.4",
-    "astro": "^7.4.0",
+    "astro": "^7.4.12",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
     "chart.js": "^4.5.1",
